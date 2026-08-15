@@ -17,9 +17,8 @@
     -webkit-text-size-adjust:100%; touch-action:manipulation;
     font-family: ui-sans-serif, system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   }
-  /* Safe Area: ノッチ / ホームインジケータを避ける */
   #root { padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); box-sizing:border-box; }
-  canvas { display:block; will-change: transform; }   /* GPU 合成を促す */
+  canvas { display:block; will-change: transform; }
   #boot { position:fixed; inset:0; display:flex; flex-direction:column; gap:14px;
           align-items:center; justify-content:center; padding:24px; text-align:center;
           color:#2FE3F5; font-weight:800; letter-spacing:.25em; font-size:13px; }
@@ -49,7 +48,6 @@
   }, 8000);
 </script>
 
-<!-- Firebase SDK。失敗してもオフライン部分は遊べる -->
 <script type="module">
   try {
     const a = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -80,7 +78,12 @@
 <script src="app-09.js"></script>
 <script src="app-10.js"></script>
 <script src="app-11.js"></script>
-
+<script src="app-12.js"></script>
+<script src="app-13.js"></script>
+<script src="app-14.js"></script>
+<script src="app-15.js"></script>
+<script src="app-16.js"></script>
+<script src="app-17.js"></script>
 <script>
   (function () {
     try {
