@@ -56,3 +56,34 @@ HEXDROP / 6ボールパズル　全体ラグ・大量崩落カクつき改善版
 【注意】
 今回の主眼は大量崩落時のCPU負荷の山、物理tickと画面リフレッシュレートのズレ、不要な再計算を減らすことである。
 端末GPUやブラウザの省電力設定等によるフレーム制限自体を解除するものではない。
+
+【2026-08-16 ▲三角形・堆積物凸接触の2:1分裂修正】
+目的:
+- 上に凸（▲）の3球三角形が堆積物の凸で分裂する際、3球すべての剛性を同時に失わせない。
+- 凸の中心が落下三角形の中心より右側なら「左2球を結合したまま左へ + 右1球を右へ」に分裂。
+- 凸の中心が落下三角形の中心より左側なら「右2球を結合したまま右へ + 左1球を左へ」に分裂。
+
+実装:
+- ▲ roles を top=0 / right-lower=1 / left-lower=2 として明示。
+- 右凸: pair roles=[0,2]、singleton role=1、pairDir=-1、singleDir=+1。
+- 左凸: pair roles=[0,1]、singleton role=2、pairDir=+1、singleDir=-1。
+- 2球側には slopeRigidGroupId を維持し、up_pair_left / up_pair_right の一時剛性ペアとして継続。
+- 1球側だけ normalizePileBallPhysics() で剛性解除し、凸の外側へ向かう momentumX / subCellBias / rollDir を付与。
+- 2球ペアも同方向の momentumX / subCellBias / rollDir を共有し、共通剛体移動が物理的に不可能になるまで結合を維持。
+- 2球ペアを advanceSlopeRigidGroups / stripFinishedTripletRigidity / applySlopeRigidTranslation の合法な剛性グループとして扱うよう拡張。
+- 左右両側に支持がある棚・谷、または凸が三角形中心と同位置の場合には2:1分裂を強制しない。
+- ▼三角形、通常堆積球、おじゃま球の既存ルールは変更なし。
+
+検証:
+- HTML内ゲームJavaScript syntax: PASS
+- 右凸 → 左2球(top+left)結合 / 右1球分離: PASS
+- 左凸 → 右2球(top+right)結合 / 左1球分離: PASS
+- 右凸時の方向: pair=-1 / singleton=+1: PASS
+- 左凸時の方向: pair=+1 / singleton=-1: PASS
+- 左右両側支持では特殊2:1分裂を発火しない: PASS
+- 中央支持では左右方向を捏造しない: PASS
+- 分裂後2球の slopeRigidGroupId 維持: PASS
+- 分裂した1球のみ slopeRigidGroupId=0 / rigid=false: PASS
+- 2球ペアの進行中 fallPath を pile normalization が消さない: PASS
+- 2球ペアの剛体平行移動 / rigidPair motion metadata: PASS
+- advanceSlopeRigidGroups 統合分岐で2球グループ保持: PASS
