@@ -233,242 +233,254 @@ function stepEngine(g, dt) {
                 g.stateT=0;
                 return;
             }
-            if (g.stateT > (g.garbageWatchdogLimit || GARBAGE_VISUAL_MAX)) {
-                // Watchdogも1球ずつ投入する。タイマーが詰まった場合だけ、1更新につき1球進める。
-                const pendingPlan=g.garbagePlans.find(p=>!p.landed);
-                if (pendingPlan) {
-                    pendingPlan._started=true;
-                    pendingPlan.y=pendingPlan.targetY;
-                    if (materializeGarbagePack(g,pendingPlan)) pendingPlan.landed=true;
-                    else { pendingPlan.landed=true; g.garbBlocked=true; }
-                    g.garbageNextBallAt=g.garbageClock+GARBAGE_PACK_INTERVAL;
-                    g.stateT=0;
-                    return;
+            // 最終保険。パックが何らかの理由で進めない時だけ現在盤面へ合法に再計画し、停止を避ける。
+            if (g.stateT >= Math.max(GARBAGE_VISUAL_MAX, g.garbageWatchdogLimit || 0)) {
+                // 最終保険でも未開始の形状セットを一括実体化しない。
+                // 既に0.5秒間隔で開始済みなのに接触確定だけが詰まったセットを、1セットだけ救済する。
+                const stuckPlan=g.garbagePlans.find(p=>!p.landed && p._started);
+                if (stuckPlan) {
+                    materializeGarbagePack(g,stuckPlan);
+                    stuckPlan.landed=true;
                 }
-                if (g.garbLeft>0) {
+                if (g.garbLeft>0 && g.garbageClock + 1e-9 >= g.garbageNextBallAt) {
+                    // 旧数値互換おじゃまの救済も1回につき1球だけ投入する。
                     const placed=garbageBall(g);
-                    if (placed) g.garbLeft-=1;
-                    else { g.incoming+=g.garbLeft; g.garbLeft=0; g.garbBlocked=true; }
-                    g.garbageNextBallAt=g.garbageClock+GARBAGE_PACK_INTERVAL;
-                    g.stateT=0;
-                    return;
+                    if (placed) {
+                        g.garbLeft-=1;
+                        g.garbageNextBallAt=g.garbageClock+GARBAGE_PACK_INTERVAL;
+                        settlePass(g.board);
+                    }
                 }
-                finishGarbageVisuals(g);
-                g.garbShapes=[];
-                g.garbLeft=0;
-                g.garbagePlans=[];
-                g.activeGarbagePacks=[];
-                g.garbageBatchPrepared=false;
-                g.phase="CHECK";
-                g.stateT=0;
+                if (garbageVisualsDone(g)) {
+                    g.garbShapes=[]; g.garbLeft=0; g.garbagePlans=[]; g.activeGarbagePacks=[];
+                    g.garbageBatchPrepared=false; g.phase="CHECK"; g.stateT=0;
+                }
             }
             return;
         }
-        return;
     }
-    if (g.state === "PLAYING") {
-        // hard dropは入力時の fromY から targetY までを映像基準時間で補間してから lock。
-        if(g.hardDropAnim){
+    if (g.state === "PLAYING" && g.piece) {
+        if (g.ai) {
+            stepAI(g, dt);
+            // AI may hard-drop/lock the piece inside stepAI. Never continue this frame
+            // with a stale null piece; this was the CPU-freeze/crash path.
+            if (g.state !== "PLAYING" || !g.piece) return;
+        }
+        if (g.hardDropAnim) {
             g.hardDropAnim.t += dt;
-            if(g.hardDropAnim.t >= g.hardDropAnim.dur){
-                g.piece={...g.hardDropAnim.target};
-                g.pieceVY=g.piece.y;
-                g.hardDropAnim=null;
-                g.dropT=0;
+            if (g.hardDropAnim.t >= g.hardDropAnim.dur) {
+                g.piece = {...g.hardDropAnim.target};
+                g.hardDropAnim = null;
                 lock(g,5);
             }
             return;
         }
-        if (g.piece) {
+        // 高速落下は「通常落下時計 dropT の進み」だけを速くする。
+        // interval自体は常に同じなので、ON/OFF時に落下進捗率が再解釈されず、
+        // 球が沈む/浮く/上へ戻る現象を構造的に防ぐ。
+        const iv = g.dropInterval;
+        const dropTimeScale = g.fastForward ? FAST_DROP_MULTIPLIER : 1;
+        g.dropT += dt * dropTimeScale;
+        while (g.dropT >= iv) {
+            g.dropT -= iv;
             if (pieceFits(g.board, { ...g.piece, y: g.piece.y + 2 })) {
+                g.piece = { ...g.piece, y: g.piece.y + 2 };
                 g.lockT = 0;
-                // 下入力は通常落下3球だけを高速化する。解決中の物理は加速しない。
-                // dt remains fixed. Only how quickly the active triplet reaches the next drop step changes.
-                g.dropT += dt * (g.fastForward ? FAST_DROP_MULTIPLIER : 1);
-                while (g.dropT >= g.dropInterval && pieceFits(g.board, { ...g.piece, y: g.piece.y + 2 })) {
-                    g.dropT -= g.dropInterval;
-                    g.piece.y += 2;
-                }
             }
-            else {
-                g.dropT = 0;
-                g.lockT += dt;
-                if (g.lockT >= CONTACT_LOCK_DELAY)
-                    lock(g, 3.4);
-            }
+            else
+                break;
         }
-        return;
+        if (!pieceFits(g.board, { ...g.piece, y: g.piece.y + 2 })) {
+            g.dropT = 0;
+            // 本家寄せ:
+            // 操作中ピースだけを「剛体のまま1フレーム単位で斜面移動」させない。
+            // 接触後は短いロック猶予だけを置き、盤面球へ移行した直後から
+            // 通常球と同じ重力・円弧スライド・分裂へ一本化する。
+            g.rigidSlideDir = 0;
+            g.rigidSlideSteps = 0;
+            g.lockT += dt;
+            if (g.lockT >= CONTACT_LOCK_DELAY)
+                lock(g, 3);
+        } else {
+            g.lockT = 0;
+            g.rigidSlideDir = 0;
+            g.rigidSlideSteps = 0;
+        }
     }
 }
 /* =============================================================
  * AI
  * ============================================================= */
 const AI_PARAMS = {
-    1: { beam: 1, think: 1.45, slip: 0.32, delay: 0.18 },
-    2: { beam: 1, think: 1.00, slip: 0.18, delay: 0.13 },
-    3: { beam: 1, think: 0.70, slip: 0.08, delay: 0.10 },
-    4: { beam: 2, think: 0.42, slip: 0.02, delay: 0.072 },
-    5: { beam: 3, think: 0.24, slip: 0.00, delay: 0.052 },
+    1: { think: 0.95, act: 0.3, random: 0.75, depth: 0, name: "とてもよわい" },
+    2: { think: 0.7, act: 0.22, random: 0.4, depth: 0, name: "よわい" },
+    3: { think: 0.5, act: 0.16, random: 0.15, depth: 0, name: "ふつう" },
+    4: { think: 0.32, act: 0.11, random: 0.04, depth: 1, name: "つよい" },
+    5: { think: 0.18, act: 0.08, random: 0, depth: 1, name: "とてもつよい" },
 };
-function dangerHeight(b) {
-    let top = ROWS;
+
+const toColors = (b) => b.map((r) => r.map((v) => getC(v)));
+function heightOf(b) {
     for (let y = 0; y < ROWS; y++)
         for (let x = 0; x < W2; x++)
             if (valid(x, y) && b[y][x] !== null)
-                top = Math.min(top, y);
-    return top === ROWS ? 99 : top;
+                return ROWS - y;
+    return 0;
 }
-function heuristic(b, rr, incoming, level) {
-    let n = 0, sumY = 0, danger = 0, edge = 0;
+function evalBoard(b, res, level, rnd = Math.random) {
+    let s = res.garbage * 280 + res.chain * 40;
+    const h = heightOf(b);
+    s -= h * h * 2.6;
+    if (h > ROWS - 3)
+        s -= 1200;
+    if (level <= 2)
+        return s + rnd() * 30;
+    let pair = 0;
     for (let y = 0; y < ROWS; y++)
         for (let x = 0; x < W2; x++) {
             if (!valid(x, y) || b[y][x] === null)
                 continue;
-            n++;
-            sumY += y;
-            danger += Math.max(0, 4 - y) * 2.5;
-            edge += (x < 3 || x > W2 - 4) ? 0.15 : 0;
+            const c = b[y][x];
+            for (const [dx, dy] of [[2, 0], [1, 1], [-1, 1]])
+                if (valid(x + dx, y + dy) && b[y + dy][x + dx] === c)
+                    pair++;
         }
-    const dangerPenalty = level <= 1 ? 4 : level === 2 ? 9 : level === 3 ? 18 : level === 4 ? 24 : 32;
-    const attackWeight = level <= 1 ? 2 : level === 2 ? 4 : level === 3 ? 7 : level === 4 ? 9 : 11;
-    const chainWeight = level <= 1 ? 18 : level === 2 ? 28 : level === 3 ? 42 : level === 4 ? 55 : 70;
-    return rr.garbage * attackWeight + rr.chain * chainWeight + (n ? sumY / n : ROWS) * 1.5 - danger * dangerPenalty - edge - incoming * (level >= 4 ? 1.6 : level === 3 ? 0.9 : 0.35);
+    const seen = Array.from({ length: ROWS }, () => Array(W2).fill(false));
+    let near = 0;
+    for (let y = 0; y < ROWS; y++)
+        for (let x = 0; x < W2; x++) {
+            if (!valid(x, y) || b[y][x] === null || seen[y][x])
+                continue;
+            const c = b[y][x];
+            const st = [[x, y]];
+            let n = 0;
+            seen[y][x] = true;
+            while (st.length) {
+                const [cx, cy] = st.pop();
+                n++;
+                for (const [dx, dy] of DIRS) {
+                    const nx = cx + dx, ny = cy + dy;
+                    if (valid(nx, ny) && !seen[ny][nx] && b[ny][nx] === c) {
+                        seen[ny][nx] = true;
+                        st.push([nx, ny]);
+                    }
+                }
+            }
+            if (n === 5)
+                near++;
+        }
+    return s + pair * 9 + near * 60;
 }
-function allPlacements(g, colors, cap = 999) {
-    const arr = [];
-    for (let r = 0; r < 6; r++) {
-        for (let x = -2; x < W2 + 2; x++) {
-            const p0 = { x, y: -2, rot: r, colors };
-            if (!pieceFits(g.board, p0))
-                continue;
-            const p = dropPiece(g.board, p0);
-            if (pieceCells(p).some(([, y]) => y < 0))
-                continue;
-            arr.push(p);
-        }
-    }
-    if (arr.length <= cap)
-        return arr;
+function enumerateMoves(board, colors) {
     const out = [];
-    const step = arr.length / cap;
-    for (let i = 0; i < cap; i++)
-        out.push(arr[Math.floor(i * step)]);
+    for (let rot = 0; rot < 6; rot++)
+        for (let x = 0; x < W2; x++) {
+            const p0 = { x, y: -2, rot, colors };
+            if (!pieceFits(board, p0))
+                continue;
+            out.push(dropPiece(board, p0));
+        }
     return out;
 }
-function bestMove(g, level = 3) {
-    level = Math.max(1, Math.min(5, Number(level) || 3));
-    const prm = AI_PARAMS[level] || AI_PARAMS[3];
-    const ps = allPlacements(g, g.piece.colors, level <= 1 ? 8 : level === 2 ? 14 : level === 3 ? 24 : level === 4 ? 36 : 48);
-    if (!ps.length)
+function simulate(cb, p) {
+    const b = cb.map((r) => r.slice());
+    for (const [x, y, c] of pieceCells(p)) {
+        if (y < 0)
+            return null;
+        b[y][x] = c;
+    }
+    return { b, res: resolveInstant(b) };
+}
+function bestMove(board, colors, next, level, rnd = Math.random) {
+    const P = AI_PARAMS[level];
+    const moves = enumerateMoves(board, colors);
+    if (!moves.length)
         return null;
-    let scored = [];
-    for (const p of ps) {
-        const b = g.board.map((r) => r.map((v) => v ? { ...v } : null));
-        let id = 800000;
-        for (const [x, y, c] of pieceCells(p))
-            b[y][x] = { id: id++, c };
-        const rr = resolveInstant(b);
-        let s = heuristic(b, rr, g.incoming, level);
-        if (prm.beam >= 2 && g.queue[0]) {
-            const ng = { board: b, piece: { x: SPAWN_X, y: -2, rot: 0, colors: g.queue[0] } };
-            const p2s = [];
-            for (let r = 0; r < 6; r++)
-                for (let x = 0; x < W2; x++) {
-                    const p0 = { x, y: -2, rot: r, colors: g.queue[0] };
-                    if (!pieceFits(b, p0))
-                        continue;
-                    const q = dropPiece(b, p0);
-                    if (!pieceCells(q).some(([, yy]) => yy < 0))
-                        p2s.push(q);
-                }
-            let best2 = -1e9;
-            const secondCap = level === 4 ? 12 : 22;
-            const list2 = p2s.length > secondCap ? p2s.filter((_, i) => i % Math.ceil(p2s.length / secondCap) === 0) : p2s;
-            for (const p2 of list2) {
-                const b2 = b.map((r) => r.map((v) => v ? { ...v } : null));
-                let id2 = 900000;
-                for (const [x, y, c] of pieceCells(p2))
-                    b2[y][x] = { id: id2++, c };
-                const r2 = resolveInstant(b2);
-                best2 = Math.max(best2, heuristic(b2, r2, g.incoming, level));
+    if (rnd() < P.random)
+        return moves[Math.floor(rnd() * moves.length)];
+    const cb = toColors(board);
+    const scored = [];
+    for (const m of moves) {
+        const sim = simulate(cb, m);
+        if (sim)
+            scored.push({ m, s: evalBoard(sim.b, sim.res, level, rnd), b: sim.b });
+    }
+    if (!scored.length)
+        return moves[0];
+    scored.sort((a, z) => z.s - a.s);
+    if (P.depth >= 1 && next) {
+        const top = scored.slice(0, 8);
+        for (const c of top) {
+            let best = -1e9;
+            for (const mm of enumerateMoves(c.b, next)) {
+                const s2 = simulate(c.b, mm);
+                if (s2)
+                    best = Math.max(best, evalBoard(s2.b, s2.res, level));
             }
-            if (best2 > -1e8)
-                s += (level === 4 ? 0.25 : 0.38) * best2;
+            c.s = c.s * 0.55 + best * 0.45;
         }
-        scored.push([s, p]);
+        top.sort((a, z) => z.s - a.s);
+        return top[0].m;
     }
-    scored.sort((a, b) => b[0] - a[0]);
-    let choice = scored[0];
-    if (prm.slip > 0 && g.aiRng() < prm.slip) {
-        const pool = Math.min(scored.length, level === 1 ? 6 : 3);
-        choice = scored[Math.floor(g.aiRng() * pool)];
-    }
-    return choice[1];
+    return scored[0].m;
 }
 function stepAI(g, dt) {
-    if (!g.ai || g.state !== "PLAYING" || !g.piece)
+    const ai = g.ai, P = AI_PARAMS[ai.level];
+    if (!g.piece || g.state !== "PLAYING") return;
+    if (ai.thinkT > 0) {
+        ai.thinkT -= dt;
         return;
-    const prm = AI_PARAMS[g.ai.level] || AI_PARAMS[3];
-    if (!g.ai.target) {
-        g.ai.thinkT -= dt;
-        if (g.ai.thinkT <= 0) {
-            g.ai.target = bestMove(g, g.ai.level);
-            g.ai.actT = prm.delay * (0.65 + g.aiRng() * 0.7);
+    }
+    if (!ai.target) {
+        ai.target = bestMove(g.board, g.piece.colors, g.queue[0], ai.level, g.aiRng);
+        ai.stuck = 0;
+        if (!ai.target) {
+            hardDrop(g);
+            return;
         }
+    }
+    ai.actT -= dt;
+    if (ai.actT > 0) return;
+    ai.actT = P.act;
+    const t = ai.target;
+    if (g.piece.rot !== t.rot) {
+        const cw = (t.rot - g.piece.rot + 6) % 6;
+        if (!rotate(g, cw <= 3 ? 1 : -1)) {
+            // The board/piece height changed after planning and this rotation is no longer legal.
+            // Replan instead of retrying forever.
+            ai.target = null; ai.stuck = (ai.stuck || 0) + 1; ai.thinkT = Math.min(0.08, P.think * 0.2);
+        } else ai.stuck = 0;
         return;
     }
-    g.ai.actT -= dt;
-    if (g.ai.actT > 0)
-        return;
-    g.ai.actT = prm.delay * (0.7 + g.aiRng() * 0.65);
-    if (g.piece.rot !== g.ai.target.rot) {
-        const cw = (g.ai.target.rot - g.piece.rot + 6) % 6;
-        rotate(g, cw <= 3 ? 1 : -1);
+    if (g.piece.x !== t.x) {
+        if (!move(g, g.piece.x < t.x ? 1 : -1)) {
+            // Same protection for an unreachable horizontal target.
+            ai.target = null; ai.stuck = (ai.stuck || 0) + 1; ai.thinkT = Math.min(0.08, P.think * 0.2);
+        } else ai.stuck = 0;
         return;
     }
-    if (g.piece.x !== g.ai.target.x) {
-        move(g, Math.sign(g.ai.target.x - g.piece.x));
-        return;
-    }
+    ai.stuck = 0;
     hardDrop(g);
 }
 /* =============================================================
- * ゲーム
+ * 描画
  * ============================================================= */
-function newGame(seed, mode, aiLevel, remoteRole = 0) {
-    const baseOpts = { offset: true };
-    const a = createEngine(seed, baseOpts), b = createEngine(seed ^ 0xA5A5A5A5, baseOpts);
-    a.stateT = b.stateT = 0;
-    if (mode === "AI")
-        b.ai = { level: aiLevel, target: null, thinkT: 0, actT: 0 };
-    return { seed, mode, aiLevel, remoteRole, p: [a, b], over: false, winner: null, sent: [0, 0] };
-}
-function transfer(game) {
-    const [a, b] = game.p;
-    for (let i = 0; i < 2; i++) {
-        const me = game.p[i], op = game.p[1 - i];
-        if (me.sendBuffer > 0) {
-            op.incoming += me.sendBuffer;
-            game.sent[i] += me.sendBuffer;
-            me.sendBuffer = 0;
-        }
-        if (me.sendShapes.length) {
-            op.incomingShapes.push(...me.sendShapes);
-            me.sendShapes.length = 0;
-        }
-    }
-    if (!game.over) {
-        if (!a.alive && b.alive) {
-            game.over = true;
-            game.winner = 1;
-        }
-        else if (!b.alive && a.alive) {
-            game.over = true;
-            game.winner = 0;
-        }
-        else if (!a.alive && !b.alive) {
-            game.over = true;
-            game.winner = -1;
-        }
-    }
-}
+const VW = 1280, VH = 720;
+const ME = { D: 44, X: 178, Y: 86 };
+const FOE = { D: 29, X: 822, Y: 86 }; // opponent board +20.8% for better battle readability
+ME.BW = ME.D * 12;
+ME.BH = ME.D * BOARD_FLOOR_N;
+FOE.BW = FOE.D * 12;
+FOE.BH = FOE.D * BOARD_FLOOR_N;
+const DROP_ZONE_Y = 648;
+const NEON = ["#2FE3F5", "#FF3EA5"];
+const STARS = (() => {
+    const r = mulberry32(7);
+    return Array.from({ length: 260 }, () => ({ x: r() * VW, y: r() * VH, s: 0.4 + r() * 1.5, a: 0.25 + r() * 0.6, p: r() * 6.28 }));
+})();
+/* =============================================================
+ * ボールの描画
+ *   透明感のあるガラス玉。内部にマーブル模様とモチーフを持つ。
+ *   毎フレーム勾配を作ると重いので、色ごとに 1 枚だけ高解像度の
+ *   スプライトを作り、以降は drawImage で拡縮して使う。
+ * ============================================================= */
