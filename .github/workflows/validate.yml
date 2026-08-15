@@ -1,0 +1,34 @@
+name: Validate HEXDROP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          set -e
+          for f in public/app-*.js; do
+            node --check "$f"
+          done
+      - name: Check concatenated runtime syntax
+        run: |
+          cat \
+            public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
+            public/app-05.js public/app-06.js public/app-07.js public/app-08.js \
+            public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
+            public/app-16.js public/app-17.js > /tmp/hexdrop-runtime.js
+          node --check /tmp/hexdrop-runtime.js
+      - name: Check deployment files
+        run: |
+          test -f public/index.html
+          test -f wrangler.jsonc
+          grep -q 'app-17.js' public/index.html
