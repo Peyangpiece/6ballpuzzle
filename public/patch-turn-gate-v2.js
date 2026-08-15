@@ -1,4 +1,4 @@
-/* HEXDROP patch v2: ▲ convex split direction + persistent pair rigidity + strict turn gating */
+/* HEXDROP patch v3: axis-side ▲ convex split + locked 2-ball pair + strict turn gating */
 
 function slopeRigidOrientationOf(members){
     return members?.[0]?.ball?.slopeRigidOrientation ||
@@ -77,36 +77,44 @@ function upTriangleConvexSplitInfo(members,continuation){
         const key=c.supportId ?? (c.x+","+c.y);
         if(!uniqueSupports.has(key))uniqueSupports.set(key,c);
     }
-    const contactSides=[...uniqueSupports.values()]
+    const supports=[...uniqueSupports.values()];
+    const supportSides=supports
         .map(c=>Math.sign(c.x-cx))
         .filter(Boolean);
-    if(!contactSides.length)return null;
-    const solverSide=contactSides[0];
-    if(!contactSides.every(v=>v===solverSide))return null;
+    if(!supportSides.length)return null;
+    const supportSide=supportSides[0];
+    if(!supportSides.every(v=>v===supportSide))return null;
 
-    // The previous patch interpreted the solver-side contact directly and was
-    // observed mirrored on screen. Convert it to the visually observed bump side.
-    const bumpSide=-solverSide;
+    /*
+     * 分裂方向の基準は「凸が左右どちらにあるか」そのものではなく、
+     * 凸の中心に対して落下▲三角形の軸(cx)がどちら側へ寄っているか。
+     * supportSide < 0 なら凸は軸の左側 -> 落下軸は右寄り。
+     * supportSide > 0 なら凸は軸の右側 -> 落下軸は左寄り。
+     */
+    const supportX=supports.reduce((n,c)=>n+c.x,0)/supports.length;
+    const axisSide=Math.sign(cx-supportX);
+    if(!axisSide)return null;
 
-    // ▲ roles: 0=top, 1=right lower, 2=left lower.
-    // visual bump right -> left two-ball rigid pair + right singleton
-    // visual bump left  -> right two-ball rigid pair + left singleton
-    const pairRoles=bumpSide>0 ? [0,2] : [0,1];
-    const loneRole=bumpSide>0 ? 1 : 2;
-    const pairDir=-bumpSide;
-    const loneDir=bumpSide;
+    // ▲ roles: 0=top(軸上), 1=right lower, 2=left lower.
+    // 軸が右寄り(axisSide=+1) -> 右2球(top+right)を剛体維持 + 左1球。
+    // 軸が左寄り(axisSide=-1) -> 左2球(top+left)を剛体維持 + 右1球。
+    const pairRoles=axisSide>0 ? [0,1] : [0,2];
+    const loneRole=axisSide>0 ? 2 : 1;
+    const pairDir=axisSide;
+    const loneDir=-axisSide;
 
     const pair=pairRoles.map(role=>members.find(m=>m.role===role)).filter(Boolean);
     const lone=members.find(m=>m.role===loneRole);
     if(pair.length!==2||!lone)return null;
 
-    return {bumpSide,solverSide,pairDir,loneDir,pair,lone,cx};
+    return {axisSide,supportSide,supportX,pairDir,loneDir,pair,lone,cx};
 }
 
 function applyUpTriangleConvexSplit(members,info){
     const oldGroupId=members[0]?.ball?.slopeRigidGroupId || members[0]?.ball?.id || 0;
     const pairOrientation=info.pairDir<0 ? "up_pair_left" : "up_pair_right";
 
+    // 1球側だけ剛性解除。
     normalizePileBallPhysics(info.lone.ball);
     info.lone.ball.rigidityBreakReason="up_convex_split_single";
     info.lone.ball.rigidityBreakSeq=LIVE_MOTION_SEQ;
@@ -114,6 +122,7 @@ function applyUpTriangleConvexSplit(members,info){
     info.lone.ball.momentumX=info.loneDir;
     info.lone.ball.subCellBias=info.loneDir;
 
+    // 2球側は剛体ペアとして保持する。
     for(const m of info.pair){
         m.ball.slopeRigidGroupId=oldGroupId;
         m.ball.slopeRigidRole=m.role;
@@ -183,9 +192,19 @@ function advanceSlopeRigidGroups(b,preview=false){
             }
         }
 
-        // A preserved 2-ball pair does not lose rigidity merely because it is
-        // resting. Release only on a genuine differential physical constraint.
-        if(preservedPair && !continuation.breakRequired)continue;
+        // 分裂後の2球側は、ここでは絶対に個別球へ正規化しない。
+        // 共通剛体移動が無ければ2球の形を保ったまま静止させる。
+        // 片方が消去される等で2球グループそのものが成立しなくなった場合だけ、
+        // 次回の member_missing 経路で残存球を通常球へ戻す。
+        if(preservedPair){
+            for(const m of members){
+                m.ball.rigid=true;
+                m.ball.slopeRigidActive=true;
+                m.ball.slopeRigidPartialPair=true;
+                m.ball.upConvexPairPersistent=true;
+            }
+            continue;
+        }
 
         releaseGroup(
             members,
@@ -210,7 +229,10 @@ function stripFinishedTripletRigidity(g){
         const c=rigidBodyContinuation(g.board,members);
         if(c.move)continue;
 
-        if(isUpSplitRigidPair(members) && !c.breakRequired){
+        // 分裂後2球ペアは静止しただけでは剛性を解除しない。
+        if(isUpSplitRigidPair(members)){
+            // A completed visual path is not permission to split this pair.
+            // Keep the two balls bonded even while resting on the pile.
             for(const m of members){
                 m.ball.rigid=true;
                 m.ball.slopeRigidActive=true;
@@ -224,7 +246,9 @@ function stripFinishedTripletRigidity(g){
     }
 }
 
-/* Normal piece <-> garbage strict turn separation */
+/* =============================================================
+ * 通常ピース <-> おじゃま 完全ターン分離
+ * ============================================================= */
 const __hexPrepareGarbageBatch=prepareGarbageBatch;
 prepareGarbageBatch=function(g){
     __hexPrepareGarbageBatch(g);
@@ -243,9 +267,11 @@ function normalTurnMotionStillActive(g){
 
 const __hexUpdateGarbagePacks=updateGarbagePacks;
 updateGarbagePacks=function(g,dt){
+    // 最初のおじゃまセットは、直前の通常3球とその着地後崩落が完全に終わるまで開始しない。
+    // 一度おじゃまターンが始まった後は従来どおりセット間0.5秒を維持する。
     if(!g.garbageTurnStarted){
         if(normalTurnMotionStillActive(g)){
-            g.stateT=0;
+            g.stateT=0; // watchdogに待機時間を数えさせない
             return;
         }
         g.garbageTurnStarted=true;
@@ -273,6 +299,7 @@ garbageBatchDone=function(g){
 
 const __hexSpawn=spawn;
 spawn=function(g){
+    // おじゃまフェーズの論理着地だけでなく、全ての落下・崩落表示が終わるまで通常3球を出さない。
     const garbageBusy=!!(
         g?.garbageBatchPrepared ||
         (Array.isArray(g?.garbagePlans) && g.garbagePlans.some(p=>p&&!p.landed)) ||
