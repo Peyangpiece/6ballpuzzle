@@ -1,0 +1,10 @@
+{
+  "name": "HEXDROP",
+  "short_name": "HEXDROP",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#060512",
+  "theme_color": "#060512",
+  "orientation": "landscape"
+}
