@@ -1,39 +1,24 @@
 /* =============================================================
- * ボール描画キャッシュ
- *   各色の球を起動時に1回だけオフスクリーンCanvasへ描き、ゲーム中はdrawImageで再利用する。
- *   毎フレームの球ごとのグラデーション生成を避け、大量崩落時の描画負荷を抑える。
+ * ボール描画
+ *   旧HEXDROPのガラス玉デザインをスプライトシートから復元。
+ *   物理・アニメーション処理は変更せず、描画素材だけ旧版へ戻す。
  * ============================================================= */
-function makeBallSprite(ci){
-    if(typeof document==="undefined")return null;
-    const S=144,cv=document.createElement("canvas");cv.width=S;cv.height=S;
-    const c=cv.getContext("2d"),col=COLORS[ci],cx=S/2,cy=S/2,r=S*0.46;
-    const g=c.createRadialGradient(cx-r*0.34,cy-r*0.38,r*0.04,cx,cy,r);
-    g.addColorStop(0,col.hi);g.addColorStop(0.34,col.base);g.addColorStop(0.78,col.base);g.addColorStop(1,col.lo);
-    c.fillStyle=g;c.beginPath();c.arc(cx,cy,r,0,TAU);c.fill();
-    c.lineWidth=S*0.035;c.strokeStyle="rgba(255,255,255,.28)";c.stroke();
-    const shine=c.createRadialGradient(cx-r*.32,cy-r*.36,0,cx-r*.32,cy-r*.36,r*.38);
-    shine.addColorStop(0,"rgba(255,255,255,.72)");shine.addColorStop(1,"rgba(255,255,255,0)");
-    c.fillStyle=shine;c.beginPath();c.arc(cx-r*.30,cy-r*.35,r*.36,0,TAU);c.fill();
-    c.save();c.translate(cx,cy);c.strokeStyle="rgba(255,255,255,.78)";c.fillStyle="rgba(255,255,255,.72)";c.lineWidth=S*.055;c.lineCap="round";c.lineJoin="round";
-    const rr=S*.18;
-    switch(col.sym){
-        case "star":{c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?rr*.45:rr;const x=Math.cos(a)*q,y=Math.sin(a)*q;i?c.lineTo(x,y):c.moveTo(x,y);}c.closePath();c.fill();break;}
-        case "wave":{c.beginPath();c.moveTo(-rr,rr*.15);c.bezierCurveTo(-rr*.55,-rr*.55,-rr*.15,-rr*.55,0,rr*.05);c.bezierCurveTo(rr*.2,rr*.65,rr*.65,rr*.6,rr,-rr*.05);c.stroke();break;}
-        case "cross":{c.beginPath();c.moveTo(-rr,0);c.lineTo(rr,0);c.moveTo(0,-rr);c.lineTo(0,rr);c.stroke();break;}
-        case "bar":{c.beginPath();c.moveTo(-rr,0);c.lineTo(rr,0);c.stroke();break;}
-        case "arc":{c.beginPath();c.arc(0,rr*.28,rr,Math.PI*1.1,Math.PI*1.9);c.stroke();break;}
-    }
-    c.restore();
-    return cv;
-}
-const BALL_IMG=COLORS.map((_,i)=>makeBallSprite(i));
-const imgReady=(i)=>!!BALL_IMG[i];
+const BALL_SHEET_PARTS = (typeof window!=="undefined" && window.__HEX_BALL_SHEET_PARTS) || [];
+const BALL_SHEET_SRC = BALL_SHEET_PARTS.length ? "data:image/webp;base64," + BALL_SHEET_PARTS.join("") : "";
+const BALL_SHEET_IMG = (() => {
+    if (typeof Image === "undefined" || !BALL_SHEET_SRC) return null;
+    const im = new Image();
+    im.decoding = "async";
+    im.src = BALL_SHEET_SRC;
+    return im;
+})();
+const BALL_SHEET_CELL = 72;
+const imgReady = () => !!(BALL_SHEET_IMG && BALL_SHEET_IMG.complete && BALL_SHEET_IMG.naturalWidth >= BALL_SHEET_CELL*5);
 function drawBall(ctx, cx, cy, d, ci, o = {}) {
     const { alpha = 1, scale = 1, sq = 0, aura = 0, ring = 0 } = o;
     const w = d * scale * (1 + sq * 0.45);
     const h = d * scale * (1 - sq * 0.6);
-    if (w <= 1.2 || alpha <= 0.01)
-        return;
+    if (w <= 1.2 || alpha <= 0.01) return;
     const col = COLORS[ci];
     ctx.save();
     ctx.globalAlpha = alpha;
@@ -46,23 +31,21 @@ function drawBall(ctx, cx, cy, d, ci, o = {}) {
         ag.addColorStop(0.5, col.glow + "44");
         ag.addColorStop(1, col.glow + "00");
         ctx.fillStyle = ag;
-        ctx.beginPath();
-        ctx.arc(cx, cy, R, 0, TAU);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
         ctx.globalAlpha = alpha;
     }
     if (imgReady(ci)) {
-        ctx.drawImage(BALL_IMG[ci], cx - w / 2, cy - h / 2 + yShift, w, h);
+        ctx.drawImage(BALL_SHEET_IMG, ci * BALL_SHEET_CELL, 0, BALL_SHEET_CELL, BALL_SHEET_CELL, cx - w / 2, cy - h / 2 + yShift, w, h);
     } else {
-        ctx.fillStyle=col.base;ctx.beginPath();ctx.ellipse(cx,cy+yShift,w/2,h/2,0,0,TAU);ctx.fill();
+        const g = ctx.createRadialGradient(cx - w * 0.17, cy - h * 0.2, w * 0.03, cx, cy, w * 0.55);
+        g.addColorStop(0, col.hi); g.addColorStop(0.4, col.base); g.addColorStop(1, col.lo);
+        ctx.beginPath(); ctx.ellipse(cx, cy + yShift, w / 2, h / 2, 0, 0, TAU);
+        ctx.fillStyle = g; ctx.fill();
     }
     if (ring > 0) {
         ctx.globalAlpha = alpha * ring * 0.75;
-        ctx.beginPath();
-        ctx.ellipse(cx, cy + yShift, w * 0.6, h * 0.6, 0, 0, TAU);
-        ctx.strokeStyle = "#FFFFFF";
-        ctx.lineWidth = w * 0.14;
-        ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(cx, cy + yShift, w * 0.6, h * 0.6, 0, 0, TAU);
+        ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = w * 0.14; ctx.stroke();
     }
     ctx.restore();
 }
