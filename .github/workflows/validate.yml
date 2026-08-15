@@ -47,6 +47,7 @@ jobs:
           grep -q 'manifest.webmanifest' public/index.html
           grep -q -- '-webkit-touch-callout:none' public/index.html
           grep -q 'touch-action:none' public/index.html
-          grep -q 'normalSlideFrames:5' public/patch-v8.js
-          grep -q 'fastSlideFrames:4' public/patch-v8.js
-          grep -q 'pairPivot:true' public/patch-v8.js
+          grep -q 'sourceRule:"reference_single_lower_contact"' public/patch-v8.js
+          grep -q 'sourceRule:"reference_center_groove"' public/patch-v8.js
+          grep -q 'pair_common_motion_end' public/patch-v8.js
+          grep -q 'sourceVideos:6' public/patch-v8.js
