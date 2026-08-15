@@ -1,4 +1,4 @@
-/* HEXDROP controls v5.2: drag horizontal + normal-speed continuous single-hold move + dual gestures */
+/* HEXDROP controls v5.3: iOS-safe game input + drag horizontal + normal-speed single-hold + dual gestures */
 (function installHexTouchV5(){
     if(typeof document==="undefined" || window.__hexTouchV5Installed) return;
     window.__hexTouchV5Installed=true;
@@ -7,9 +7,10 @@
     const singleTimers=new Map();
     const singleRafs=new Map();
     let dual=null;
+    let inputGuardRaf=0;
 
     const SINGLE_HOLD_MS=LONG_PRESS_MS;
-    const HOLD_MOVE_SPEED_X=24.4; // doubled-x units / sec: continuous equivalent of the former ~82ms-per-column normal speed
+    const HOLD_MOVE_SPEED_X=24.4;
     const DUAL_TAP_MAX_MS=320;
     const TAP_MOVE_TOL=24;
     const DRAG_START_TOL=6;
@@ -24,8 +25,8 @@
         };
     };
     const consume=(e)=>{
-        if(e.cancelable)e.preventDefault();
-        e.stopImmediatePropagation();
+        if(e?.cancelable)e.preventDefault();
+        e?.stopImmediatePropagation?.();
     };
     const clearSingleTimer=(id)=>{
         const t=singleTimers.get(id);
@@ -35,14 +36,8 @@
         const raf=singleRafs.get(id);
         if(raf){cancelAnimationFrame(raf);singleRafs.delete(id);}
     };
-    const stopSingleMotion=(rec)=>{
-        if(!rec)return;
-        clearSingleTimer(rec.id);
-        stopSingleRaf(rec.id);
-        rec.longMove=false;
-        rec.drag=false;
-        if(rec.g)rec.g.dragging=false;
-    };
+    const stopFast=(g)=>{ if(g)g.fastForward=false; };
+
     const stopAllSingle=()=>{
         for(const id of [...singleTimers.keys()])clearSingleTimer(id);
         for(const id of [...singleRafs.keys()])stopSingleRaf(id);
@@ -52,9 +47,31 @@
             if(r.g)r.g.dragging=false;
         }
     };
-    const stopFast=(g)=>{
-        if(g)g.fastForward=false;
-    };
+
+    function releaseCaptureSoon(rec){
+        if(!rec?.canvas)return;
+        try{
+            if(rec.canvas.hasPointerCapture?.(rec.id))rec.canvas.releasePointerCapture(rec.id);
+        }catch(_){}
+    }
+
+    function resetAllInputState(reason="reset"){
+        if(dual?.timer)clearTimeout(dual.timer);
+        dual=null;
+        stopAllSingle();
+        const engines=new Set();
+        for(const rec of pointers.values()){
+            if(rec.g)engines.add(rec.g);
+            releaseCaptureSoon(rec);
+        }
+        pointers.clear();
+        for(const g of engines){
+            stopFast(g);
+            g.dragging=false;
+        }
+        window.__hexLastInputResetV53={reason,at:performance.now()};
+    }
+    window.__hexResetTouchInput=resetAllInputState;
 
     function currentFreeX(g){
         if(Number.isFinite(g?.freeX))return g.freeX;
@@ -64,9 +81,6 @@
 
     function instantDropToFloorV5(g){
         if(!g || g.state!=="PLAYING" || !g.piece)return false;
-
-        // Strictly vertical: keep the current logical column fixed and descend
-        // only toward the floor / first blocking pile contact.
         g.fastForward=false;
         g.dragging=false;
         g.freeX=null;
@@ -75,11 +89,8 @@
 
         const fixedX=g.piece.x;
         const target={...g.piece,x:fixedX};
-        while(pieceFits(g.board,{...target,x:fixedX,y:target.y+2})){
-            target.y+=2;
-        }
+        while(pieceFits(g.board,{...target,x:fixedX,y:target.y+2}))target.y+=2;
         target.x=fixedX;
-
         g.pieceVX=fixedX;
         g.freeX=null;
         g.piece={...target};
@@ -90,17 +101,15 @@
     window.__hexInstantDropV5=instantDropToFloorV5;
 
     function beginDrag(rec,anchorAtCurrent=false){
-        if(!rec || rec.consumed && !rec.longMove)return false;
+        if(!rec || (rec.consumed && !rec.longMove))return false;
         const g=rec.g;
         if(!g || g.state!=="PLAYING" || !g.piece || dual)return false;
-
         clearSingleTimer(rec.id);
         stopSingleRaf(rec.id);
         rec.longMove=false;
         rec.drag=true;
         rec.consumed=true;
         g.dragging=true;
-
         if(anchorAtCurrent){
             rec.dragAnchorX=rec.lastX;
             rec.dragBaseX=currentFreeX(g);
@@ -124,7 +133,6 @@
         if(!rec || rec.consumed || dual || pointers.size!==1)return;
         const g=rec.g;
         if(!g || g.state!=="PLAYING" || !g.piece)return;
-
         rec.longMove=true;
         rec.consumed=true;
         rec.holdOriginX=rec.lastX;
@@ -144,8 +152,6 @@
             last=now;
             rec.holdX+=rec.half*HOLD_MOVE_SPEED_X*dt;
             setFreeX(g,rec.holdX);
-            // Keep the integrator aligned with the clamped legal range so it
-            // resumes immediately when the direction becomes available again.
             rec.holdX=currentFreeX(g);
             singleRafs.set(rec.id,requestAnimationFrame(tick));
         };
@@ -171,7 +177,6 @@
         if(pointers.size!==2)return false;
         const arr=[...pointers.values()];
         const g=arr[0].g;
-
         stopAllSingle();
         stopFast(g);
 
@@ -188,14 +193,7 @@
         }
         if(g)g.dragging=false;
 
-        dual={
-            ids:arr.map(r=>r.id),
-            g,
-            startedAt:performance.now(),
-            tapEligible:true,
-            fast:false,
-            timer:null
-        };
+        dual={ids:arr.map(r=>r.id),g,startedAt:performance.now(),tapEligible:true,fast:false,timer:null};
         dual.timer=setTimeout(()=>{
             if(!dual || !dualPointersValid(dual))return;
             const gg=dual.g;
@@ -208,6 +206,22 @@
         return true;
     }
 
+    function purgeDualPointers(d){
+        if(!d)return;
+        for(const did of d.ids){
+            const rec=pointers.get(did);
+            clearSingleTimer(did);
+            stopSingleRaf(did);
+            if(rec){
+                rec.consumed=true;
+                rec.drag=false;
+                rec.longMove=false;
+                releaseCaptureSoon(rec);
+            }
+            pointers.delete(did);
+        }
+    }
+
     function finishDual(id,cancelled){
         if(!dual || !dual.ids.includes(id))return false;
         const d=dual;
@@ -216,18 +230,10 @@
         const elapsed=performance.now()-d.startedAt;
         const g=d.g;
 
-        if(d.fast){
-            stopFast(g);
-        }else if(!cancelled && d.tapEligible && elapsed<=DUAL_TAP_MAX_MS){
-            instantDropToFloorV5(g);
-        }
+        if(d.fast)stopFast(g);
+        else if(!cancelled && d.tapEligible && elapsed<=DUAL_TAP_MAX_MS)instantDropToFloorV5(g);
 
-        for(const did of d.ids){
-            const r=pointers.get(did);
-            if(r)r.consumed=true;
-            clearSingleTimer(did);
-            stopSingleRaf(did);
-        }
+        purgeDualPointers(d);
         if(g)g.dragging=false;
         dual=null;
         return true;
@@ -239,32 +245,27 @@
         if(!g || g.state!=="PLAYING" || !g.piece)return;
         consume(e);
 
+        for(const [,r] of [...pointers]){
+            if(!r?.g || r.g.state!=="PLAYING" || !r.g.piece){
+                resetAllInputState("stale-before-down");
+                break;
+            }
+        }
+
         const p=point(e,e.target);
         const rec={
-            id:e.pointerId,
-            canvas:e.target,
-            g,
+            id:e.pointerId,canvas:e.target,g,
             half:p.x>=VW*0.5?1:-1,
-            startX:p.x,startY:p.y,
-            lastX:p.x,lastY:p.y,
-            startFreeX:currentFreeX(g),
-            downAt:performance.now(),
+            startX:p.x,startY:p.y,lastX:p.x,lastY:p.y,
+            startFreeX:currentFreeX(g),downAt:performance.now(),
             consumed:false,longMove:false,drag:false,dual:false
         };
         pointers.set(e.pointerId,rec);
         try{e.target.setPointerCapture(e.pointerId);}catch(_){}
 
-        if(pointers.size===1){
-            armSingle(rec);
-        }else if(pointers.size===2){
-            startDualIfPossible();
-        }else{
-            stopAllSingle();
-            if(dual?.timer)clearTimeout(dual.timer);
-            stopFast(g);
-            dual=null;
-            for(const r of pointers.values())r.consumed=true;
-        }
+        if(pointers.size===1)armSingle(rec);
+        else if(pointers.size===2)startDualIfPossible();
+        else resetAllInputState("too-many-pointers");
     };
 
     const onMove=(e)=>{
@@ -282,21 +283,13 @@
             return;
         }
 
-        // Restore the old finger-trace horizontal control. Starting a genuine
-        // horizontal swipe cancels the hold action, so dragging never increases
-        // falling speed and never competes with auto horizontal movement.
         if(!r.drag && !r.longMove && Math.abs(dx)>=DRAG_START_TOL && Math.abs(dx)>=Math.abs(dy)*0.65){
             beginDrag(r,false);
         }else if(r.longMove){
             const hdx=r.lastX-(r.holdOriginX??r.lastX);
             const hdy=r.lastY-(r.holdOriginY??r.lastY);
-            if(Math.abs(hdx)>=DRAG_START_TOL && Math.abs(hdx)>=Math.abs(hdy)*0.65){
-                // If the player starts tracing after a hold, hand control over
-                // smoothly from the current auto-move position.
-                beginDrag(r,true);
-            }
+            if(Math.abs(hdx)>=DRAG_START_TOL && Math.abs(hdx)>=Math.abs(hdy)*0.65)beginDrag(r,true);
         }
-
         updateDrag(r);
     };
 
@@ -304,37 +297,67 @@
         const r=pointers.get(e.pointerId);
         if(!r)return;
         consume(e);
-        try{r.canvas.releasePointerCapture(r.id);}catch(_){}
+
+        if(dual && dual.ids.includes(r.id)){
+            finishDual(r.id,cancelled);
+            return;
+        }
+
         clearSingleTimer(r.id);
         stopSingleRaf(r.id);
-
-        const wasDual=finishDual(r.id,cancelled);
         pointers.delete(r.id);
+        releaseCaptureSoon(r);
 
         if(r.drag || r.longMove)r.g.dragging=false;
-
-        if(!wasDual && !cancelled && !r.consumed && !r.longMove && !r.drag && r.g.state==="PLAYING" && r.g.piece){
+        if(!cancelled && !r.consumed && !r.longMove && !r.drag && r.g.state==="PLAYING" && r.g.piece){
             const elapsed=performance.now()-r.downAt;
             const dist=Math.hypot(r.lastX-r.startX,r.lastY-r.startY);
-            if(elapsed<360 && dist<TAP_MOVE_TOL){
-                rotate(r.g,r.half>0?1:-1);
-            }
+            if(elapsed<360 && dist<TAP_MOVE_TOL)rotate(r.g,r.half>0?1:-1);
         }
 
         if(pointers.size===0){
             stopFast(r.g);
             stopAllSingle();
-            dual=null;
             r.g.dragging=false;
         }else{
-            // A remaining finger after a completed two-finger gesture cannot
-            // turn into a single-finger action until it is released.
             for(const rr of pointers.values())rr.consumed=true;
         }
+    };
+
+    const cancelBrowserHold=(e)=>{
+        const t=e?.target;
+        if(t?.tagName==="CANVAS" || t?.closest?.("#root"))consume(e);
     };
 
     document.addEventListener("pointerdown",onDown,true);
     document.addEventListener("pointermove",onMove,true);
     document.addEventListener("pointerup",e=>finish(e,false),true);
     document.addEventListener("pointercancel",e=>finish(e,true),true);
+
+    document.addEventListener("contextmenu",cancelBrowserHold,true);
+    document.addEventListener("selectstart",cancelBrowserHold,true);
+    document.addEventListener("dragstart",cancelBrowserHold,true);
+    document.addEventListener("gesturestart",cancelBrowserHold,{capture:true,passive:false});
+    document.addEventListener("gesturechange",cancelBrowserHold,{capture:true,passive:false});
+    document.addEventListener("gestureend",cancelBrowserHold,{capture:true,passive:false});
+
+    document.addEventListener("lostpointercapture",e=>{
+        const id=e.pointerId;
+        setTimeout(()=>{ if(pointers.has(id))resetAllInputState("lost-pointer-capture"); },0);
+    },true);
+
+    window.addEventListener("blur",()=>resetAllInputState("window-blur"),true);
+    window.addEventListener("pagehide",()=>resetAllInputState("pagehide"),true);
+    document.addEventListener("visibilitychange",()=>{
+        if(document.hidden)resetAllInputState("visibility-hidden");
+    },true);
+
+    const guard=()=>{
+        if(pointers.size){
+            const invalid=[...pointers.values()].some(r=>!r.g || r.g.state!=="PLAYING" || !r.g.piece);
+            if(invalid)resetAllInputState("engine-state-change");
+        }
+        inputGuardRaf=requestAnimationFrame(guard);
+    };
+    inputGuardRaf=requestAnimationFrame(guard);
 })();
