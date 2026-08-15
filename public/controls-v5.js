@@ -1,4 +1,4 @@
-/* HEXDROP controls v5.1: drag horizontal + slow continuous single-hold move + dual gestures */
+/* HEXDROP controls v5.2: drag horizontal + normal-speed continuous single-hold move + dual gestures */
 (function installHexTouchV5(){
     if(typeof document==="undefined" || window.__hexTouchV5Installed) return;
     window.__hexTouchV5Installed=true;
@@ -9,7 +9,7 @@
     let dual=null;
 
     const SINGLE_HOLD_MS=LONG_PRESS_MS;
-    const HOLD_MOVE_SPEED_X=2.2; // doubled-x units / sec: deliberately slow and continuous
+    const HOLD_MOVE_SPEED_X=24.4; // doubled-x units / sec: continuous equivalent of the former ~82ms-per-column normal speed
     const DUAL_TAP_MAX_MS=320;
     const TAP_MOVE_TOL=24;
     const DRAG_START_TOL=6;
