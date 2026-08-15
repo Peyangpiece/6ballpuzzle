@@ -1,19 +1,26 @@
 /* =============================================================
  * ボール描画
- *   旧HEXDROPのガラス玉デザインをスプライトシートから復元。
- *   物理・アニメーション処理は変更せず、描画素材だけ旧版へ戻す。
+ *   旧HEXDROPのPNGボール画像（赤・青・緑・黄・紫）を復元。
+ *   画像はブラウザがデコード・キャッシュし、毎フレームはdrawImageのみ。
  * ============================================================= */
-const BALL_SHEET_PARTS = (typeof window!=="undefined" && window.__HEX_BALL_SHEET_PARTS) || [];
-const BALL_SHEET_SRC = BALL_SHEET_PARTS.length ? "data:image/webp;base64," + BALL_SHEET_PARTS.join("") : "";
-const BALL_SHEET_IMG = (() => {
-    if (typeof Image === "undefined" || !BALL_SHEET_SRC) return null;
+const BALL_SRC = [
+    "assets/ball-red.png",
+    "assets/ball-blue.png",
+    "assets/ball-green.png",
+    "assets/ball-yellow.png",
+    "assets/ball-purple.png",
+];
+const BALL_IMG = BALL_SRC.map((src) => {
+    if (typeof Image === "undefined") return null;
     const im = new Image();
     im.decoding = "async";
-    im.src = BALL_SHEET_SRC;
+    im.src = src;
     return im;
-})();
-const BALL_SHEET_CELL = 72;
-const imgReady = () => !!(BALL_SHEET_IMG && BALL_SHEET_IMG.complete && BALL_SHEET_IMG.naturalWidth >= BALL_SHEET_CELL*5);
+});
+const imgReady = (i) => {
+    const im = BALL_IMG[i];
+    return !!(im && im.complete && im.naturalWidth > 0);
+};
 function drawBall(ctx, cx, cy, d, ci, o = {}) {
     const { alpha = 1, scale = 1, sq = 0, aura = 0, ring = 0 } = o;
     const w = d * scale * (1 + sq * 0.45);
@@ -35,7 +42,7 @@ function drawBall(ctx, cx, cy, d, ci, o = {}) {
         ctx.globalAlpha = alpha;
     }
     if (imgReady(ci)) {
-        ctx.drawImage(BALL_SHEET_IMG, ci * BALL_SHEET_CELL, 0, BALL_SHEET_CELL, BALL_SHEET_CELL, cx - w / 2, cy - h / 2 + yShift, w, h);
+        ctx.drawImage(BALL_IMG[ci], cx - w / 2, cy - h / 2 + yShift, w, h);
     } else {
         const g = ctx.createRadialGradient(cx - w * 0.17, cy - h * 0.2, w * 0.03, cx, cy, w * 0.55);
         g.addColorStop(0, col.hi); g.addColorStop(0.4, col.base); g.addColorStop(1, col.lo);
