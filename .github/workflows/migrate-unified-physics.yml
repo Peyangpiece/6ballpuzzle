@@ -35,8 +35,23 @@ jobs:
             scripts.push(m[2]);
           }
           fs.writeFileSync('/tmp/hexdrop-runtime.js',scripts.join('\n'));
+          fs.writeFileSync('/tmp/hexdrop-generated-index.html',html);
           NODE
-          node --check /tmp/hexdrop-runtime.js
+          if ! node --check /tmp/hexdrop-runtime.js; then
+            cp /tmp/hexdrop-runtime.js /tmp/debug-generated-runtime.js
+            cp /tmp/hexdrop-generated-index.html /tmp/debug-generated-index.html
+            git reset --hard HEAD
+            git clean -fd
+            git checkout -B physics-debug
+            cp /tmp/debug-generated-runtime.js debug-generated-runtime.js
+            cp /tmp/debug-generated-index.html debug-generated-index.html
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add debug-generated-runtime.js debug-generated-index.html
+            git commit -m 'Debug generated unified physics runtime'
+            git push --force origin HEAD:physics-debug
+            exit 1
+          fi
       - name: Validate generated unified physics
         run: node tests/validate-unified-physics.js
       - name: Commit migration
