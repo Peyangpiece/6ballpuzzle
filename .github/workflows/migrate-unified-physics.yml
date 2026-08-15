@@ -1,0 +1,49 @@
+name: Migrate Unified Physics
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/migrate-unified-physics.py'
+      - '.github/workflows/migrate-unified-physics.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: ${{ !contains(github.event.head_commit.message || '', '[physics-migration-complete]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build unified physics runtime and physically remove legacy stack
+        run: python tools/migrate-unified-physics.py
+      - name: Syntax check generated runtime
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('public/index.html','utf8');
+          const scripts=[];
+          for(const m of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)){
+            if(/\bsrc=/.test(m[1])||/type=["']module["']/.test(m[1])) continue;
+            scripts.push(m[2]);
+          }
+          fs.writeFileSync('/tmp/hexdrop-runtime.js',scripts.join('\n'));
+          NODE
+          node --check /tmp/hexdrop-runtime.js
+      - name: Validate generated unified physics
+        run: node tests/validate-unified-physics.js
+      - name: Commit migration
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m 'Replace legacy physics with unified natural-motion solver [physics-migration-complete]'
+          git push origin HEAD:main
