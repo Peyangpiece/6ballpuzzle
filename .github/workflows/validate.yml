@@ -28,7 +28,7 @@ jobs:
             public/app-16.js public/app-17.js \
             public/patch-up-split.js public/patch-turn-gate-v2.js \
             public/patch-axis-pair-v3.js public/patch-v4.js public/patch-v6.js \
-            public/patch-v7.js public/patch-v8.js public/controls-v5.js > /tmp/hexdrop-runtime.js
+            public/patch-v7.js public/patch-v8.js public/patch-v9.js public/controls-v5.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
       - name: Check deployment files
         run: |
@@ -36,6 +36,7 @@ jobs:
           test -f public/patch-v6.js
           test -f public/patch-v7.js
           test -f public/patch-v8.js
+          test -f public/patch-v9.js
           test -f public/controls-v5.js
           test -f public/manifest.webmanifest
           test -f wrangler.jsonc
@@ -43,11 +44,14 @@ jobs:
           grep -q 'patch-v6.js' public/index.html
           grep -q 'patch-v7.js' public/index.html
           grep -q 'patch-v8.js' public/index.html
+          grep -q 'patch-v9.js' public/index.html
           grep -q 'controls-v5.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q -- '-webkit-touch-callout:none' public/index.html
           grep -q 'touch-action:none' public/index.html
           grep -q 'sourceRule:"reference_single_lower_contact"' public/patch-v8.js
           grep -q 'sourceRule:"reference_center_groove"' public/patch-v8.js
-          grep -q 'pair_common_motion_end' public/patch-v8.js
           grep -q 'sourceVideos:6' public/patch-v8.js
+          grep -q 'videoPairPivotV9:true' public/patch-v9.js
+          grep -q 'pairPivot60:true' public/patch-v9.js
+          grep -q 'blockedFlowRepair:true' public/patch-v9.js
