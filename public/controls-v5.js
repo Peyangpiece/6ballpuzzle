@@ -1,17 +1,18 @@
-/* HEXDROP controls v5: single-hold horizontal, dual-tap instant vertical drop, dual-hold fast fall */
+/* HEXDROP controls v5.1: drag horizontal + slow continuous single-hold move + dual gestures */
 (function installHexTouchV5(){
     if(typeof document==="undefined" || window.__hexTouchV5Installed) return;
     window.__hexTouchV5Installed=true;
 
     const pointers=new Map();
     const singleTimers=new Map();
-    const singleRepeats=new Map();
+    const singleRafs=new Map();
     let dual=null;
 
     const SINGLE_HOLD_MS=LONG_PRESS_MS;
-    const MOVE_REPEAT_MS=82;
+    const HOLD_MOVE_SPEED_X=2.2; // doubled-x units / sec: deliberately slow and continuous
     const DUAL_TAP_MAX_MS=320;
     const TAP_MOVE_TOL=24;
+    const DRAG_START_TOL=6;
 
     const isCanvas=(e)=>e?.target && e.target.tagName==="CANVAS";
     const player=()=>typeof hexTouchPlayerEngineV4==="function" ? hexTouchPlayerEngineV4() : null;
@@ -30,24 +31,42 @@
         const t=singleTimers.get(id);
         if(t){clearTimeout(t);singleTimers.delete(id);}
     };
-    const stopSingleRepeat=(id)=>{
-        const t=singleRepeats.get(id);
-        if(t){clearInterval(t);singleRepeats.delete(id);}
+    const stopSingleRaf=(id)=>{
+        const raf=singleRafs.get(id);
+        if(raf){cancelAnimationFrame(raf);singleRafs.delete(id);}
+    };
+    const stopSingleMotion=(rec)=>{
+        if(!rec)return;
+        clearSingleTimer(rec.id);
+        stopSingleRaf(rec.id);
+        rec.longMove=false;
+        rec.drag=false;
+        if(rec.g)rec.g.dragging=false;
     };
     const stopAllSingle=()=>{
         for(const id of [...singleTimers.keys()])clearSingleTimer(id);
-        for(const id of [...singleRepeats.keys()])stopSingleRepeat(id);
-        for(const r of pointers.values())r.longMove=false;
+        for(const id of [...singleRafs.keys()])stopSingleRaf(id);
+        for(const r of pointers.values()){
+            r.longMove=false;
+            r.drag=false;
+            if(r.g)r.g.dragging=false;
+        }
     };
     const stopFast=(g)=>{
         if(g)g.fastForward=false;
     };
 
+    function currentFreeX(g){
+        if(Number.isFinite(g?.freeX))return g.freeX;
+        if(Number.isFinite(g?.pieceVX))return g.pieceVX;
+        return Number.isFinite(g?.piece?.x)?g.piece.x:SPAWN_X;
+    }
+
     function instantDropToFloorV5(g){
         if(!g || g.state!=="PLAYING" || !g.piece)return false;
 
-        // The instant-drop gesture is strictly vertical. Never reuse freeX,
-        // dragging state, wall kicks, or any horizontal search/correction.
+        // Strictly vertical: keep the current logical column fixed and descend
+        // only toward the floor / first blocking pile contact.
         g.fastForward=false;
         g.dragging=false;
         g.freeX=null;
@@ -61,8 +80,6 @@
         }
         target.x=fixedX;
 
-        // Lock the rendered x to the same logical column as well. A stale
-        // interpolation value can therefore never shoot the piece to a wall.
         g.pieceVX=fixedX;
         g.freeX=null;
         g.piece={...target};
@@ -72,21 +89,67 @@
     }
     window.__hexInstantDropV5=instantDropToFloorV5;
 
+    function beginDrag(rec,anchorAtCurrent=false){
+        if(!rec || rec.consumed && !rec.longMove)return false;
+        const g=rec.g;
+        if(!g || g.state!=="PLAYING" || !g.piece || dual)return false;
+
+        clearSingleTimer(rec.id);
+        stopSingleRaf(rec.id);
+        rec.longMove=false;
+        rec.drag=true;
+        rec.consumed=true;
+        g.dragging=true;
+
+        if(anchorAtCurrent){
+            rec.dragAnchorX=rec.lastX;
+            rec.dragBaseX=currentFreeX(g);
+        }else{
+            rec.dragAnchorX=rec.startX;
+            rec.dragBaseX=rec.startFreeX;
+        }
+        g.freeX=currentFreeX(g);
+        return true;
+    }
+
+    function updateDrag(rec){
+        if(!rec?.drag || dual)return;
+        const g=rec.g;
+        if(!g || g.state!=="PLAYING" || !g.piece)return;
+        const dx=rec.lastX-rec.dragAnchorX;
+        setFreeX(g,rec.dragBaseX+(dx/ME.D)*2);
+    }
+
     function startSingleMove(rec){
         if(!rec || rec.consumed || dual || pointers.size!==1)return;
         const g=rec.g;
         if(!g || g.state!=="PLAYING" || !g.piece)return;
+
         rec.longMove=true;
         rec.consumed=true;
-        const step=()=>{
-            if(!pointers.has(rec.id) || dual || g.state!=="PLAYING" || !g.piece){
-                stopSingleRepeat(rec.id);
+        rec.holdOriginX=rec.lastX;
+        rec.holdOriginY=rec.lastY;
+        rec.holdX=currentFreeX(g);
+        g.dragging=true;
+        g.freeX=rec.holdX;
+
+        let last=performance.now();
+        const tick=(now)=>{
+            if(!pointers.has(rec.id) || dual || !rec.longMove || g.state!=="PLAYING" || !g.piece){
+                stopSingleRaf(rec.id);
+                if(!rec.drag)g.dragging=false;
                 return;
             }
-            move(g,rec.half);
+            const dt=Math.min(0.05,Math.max(0,(now-last)/1000));
+            last=now;
+            rec.holdX+=rec.half*HOLD_MOVE_SPEED_X*dt;
+            setFreeX(g,rec.holdX);
+            // Keep the integrator aligned with the clamped legal range so it
+            // resumes immediately when the direction becomes available again.
+            rec.holdX=currentFreeX(g);
+            singleRafs.set(rec.id,requestAnimationFrame(tick));
         };
-        step();
-        singleRepeats.set(rec.id,setInterval(step,MOVE_REPEAT_MS));
+        singleRafs.set(rec.id,requestAnimationFrame(tick));
     }
 
     function armSingle(rec){
@@ -107,18 +170,24 @@
     function startDualIfPossible(){
         if(pointers.size!==2)return false;
         const arr=[...pointers.values()];
+        const g=arr[0].g;
+
+        stopAllSingle();
+        stopFast(g);
+
         if(arr[0].half===arr[1].half){
-            stopAllSingle();
             for(const r of arr)r.consumed=true;
             return false;
         }
-        stopAllSingle();
-        const g=arr[0].g;
-        stopFast(g);
+
         for(const r of arr){
             r.consumed=true;
             r.dual=true;
+            r.drag=false;
+            r.longMove=false;
         }
+        if(g)g.dragging=false;
+
         dual={
             ids:arr.map(r=>r.id),
             g,
@@ -157,8 +226,9 @@
             const r=pointers.get(did);
             if(r)r.consumed=true;
             clearSingleTimer(did);
-            stopSingleRepeat(did);
+            stopSingleRaf(did);
         }
+        if(g)g.dragging=false;
         dual=null;
         return true;
     }
@@ -177,8 +247,9 @@
             half:p.x>=VW*0.5?1:-1,
             startX:p.x,startY:p.y,
             lastX:p.x,lastY:p.y,
+            startFreeX:currentFreeX(g),
             downAt:performance.now(),
-            consumed:false,longMove:false,dual:false
+            consumed:false,longMove:false,drag:false,dual:false
         };
         pointers.set(e.pointerId,rec);
         try{e.target.setPointerCapture(e.pointerId);}catch(_){}
@@ -202,12 +273,31 @@
         consume(e);
         const p=point(e,r.canvas);
         r.lastX=p.x;r.lastY=p.y;
-        const dist=Math.hypot(r.lastX-r.startX,r.lastY-r.startY);
-        if(dual && dual.ids.includes(r.id) && dist>TAP_MOVE_TOL){
-            dual.tapEligible=false;
+        const dx=r.lastX-r.startX;
+        const dy=r.lastY-r.startY;
+        const dist=Math.hypot(dx,dy);
+
+        if(dual && dual.ids.includes(r.id)){
+            if(dist>TAP_MOVE_TOL)dual.tapEligible=false;
+            return;
         }
-        // v5 intentionally has no drag-to-move path. Horizontal motion exists
-        // only as left/right single-finger hold-repeat.
+
+        // Restore the old finger-trace horizontal control. Starting a genuine
+        // horizontal swipe cancels the hold action, so dragging never increases
+        // falling speed and never competes with auto horizontal movement.
+        if(!r.drag && !r.longMove && Math.abs(dx)>=DRAG_START_TOL && Math.abs(dx)>=Math.abs(dy)*0.65){
+            beginDrag(r,false);
+        }else if(r.longMove){
+            const hdx=r.lastX-(r.holdOriginX??r.lastX);
+            const hdy=r.lastY-(r.holdOriginY??r.lastY);
+            if(Math.abs(hdx)>=DRAG_START_TOL && Math.abs(hdx)>=Math.abs(hdy)*0.65){
+                // If the player starts tracing after a hold, hand control over
+                // smoothly from the current auto-move position.
+                beginDrag(r,true);
+            }
+        }
+
+        updateDrag(r);
     };
 
     const finish=(e,cancelled)=>{
@@ -216,12 +306,14 @@
         consume(e);
         try{r.canvas.releasePointerCapture(r.id);}catch(_){}
         clearSingleTimer(r.id);
-        stopSingleRepeat(r.id);
+        stopSingleRaf(r.id);
 
         const wasDual=finishDual(r.id,cancelled);
         pointers.delete(r.id);
 
-        if(!wasDual && !cancelled && !r.consumed && !r.longMove && r.g.state==="PLAYING" && r.g.piece){
+        if(r.drag || r.longMove)r.g.dragging=false;
+
+        if(!wasDual && !cancelled && !r.consumed && !r.longMove && !r.drag && r.g.state==="PLAYING" && r.g.piece){
             const elapsed=performance.now()-r.downAt;
             const dist=Math.hypot(r.lastX-r.startX,r.lastY-r.startY);
             if(elapsed<360 && dist<TAP_MOVE_TOL){
@@ -233,9 +325,10 @@
             stopFast(r.g);
             stopAllSingle();
             dual=null;
+            r.g.dragging=false;
         }else{
-            // The finger left from a completed two-finger gesture is ignored
-            // until release; it cannot turn into an old one-finger gesture.
+            // A remaining finger after a completed two-finger gesture cannot
+            // turn into a single-finger action until it is released.
             for(const rr of pointers.values())rr.consumed=true;
         }
     };
