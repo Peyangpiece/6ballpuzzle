@@ -2,29 +2,40 @@ HEXDROP / 6ボールパズル 修正版
 更新日: 2026-08-16
 公開先: https://6ballpuzzle.hrk-6888.workers.dev
 
+【▲三角形・堆積物の凸 / v7】
+- ▲三角形の下2球の溝へ、堆積球の凸1球が中央から接触したケースを専用判定。
+- 旧処理では support.x == triangle center が左右どちらでもないため分裂対象外だったが、v7では必ず2:1分裂へ移行。
+- 連続操作時に残したsubCellBias / momentumXを使い、軸が右寄りなら右2球+左1球、左寄りなら左2球+右1球。
+- 完全な数学的中央で左右情報が0の場合も3球全解放にはせず、安定した右2球+左1球のタイブレークを使用。
+- 2球側は既存のup_pair_left / up_pair_right剛体ペアを維持。
+- 溝衝突は共通の横逃げ移動より先に判定するため、凸が下の溝へ入ったのに三角形全体が逃げる経路を抑止。
+
+【ボール重なり防止 / v7】
+- 同一live batchという理由だけで相互衝突判定を無視する処理を廃止。
+- visualPointSafeの最小中心間距離を0.99998 ball diameterとして、接触は許可し貫通は拒否。
+- 連続崩落のpileFlowWaveSafeで安全な開始時刻を探索。
+- v6にあった「安全時刻が見つからなくても予定時刻で強行する」経路を削除。
+- 安全な並行軌道を作れない稀な経路だけlegacy swept collision clampへ戻し、重なりを許さない。
+
+【段階的な崩落の削除 / v7】
+- 通常3球のlock直後に、残りの合法崩落経路をsettleAllで先にまとめて計算。
+- 3球/2球のrigid fallPathもabsolute-time pileFlow schedulerへ統合し、1セル移動ごとの停止を削除。
+- 同じ球の次区間は前区間終了時刻へ直結。
+- 支持球に追従する球は、支持球が完全停止してからではなく支持球の移動開始に合わせて動き始められる。
+- wave間の固定待機時間を使わず、実際の衝突回避に必要な時間だけ遅延。
+- 大量崩落を「波ごとの段階移動」ではなく、盤面全体が因果関係に従って重なりながら連動する一連の動作として表示。
+
 【iPhone操作不能バグ修正 / controls v5.3】
 - iOSの長押し・システムジェスチャー割り込み後にpointer状態が残る問題を修正。
-- 2本指操作は片方のpointerupを待たず、操作成立/終了時に2本分のpointerを即時破棄する。
-- lostpointercaptureを監視し、意図しないcapture消失時は全入力状態をリセットする。
-- window blur / pagehide / visibility hiddenでも入力状態を全リセットする。
-- ピースがPLAYINGからRESOLVING等へ遷移した時、押下中の古いpointerを自動破棄する。
-- 次のpointerdown前にも古い無効pointerを検出してリセットする。
-- fastForward / dragging / 長押しtimer / requestAnimationFrameをリセット時に必ず解除する。
+- 2本指操作終了時に2本分のpointerを即時破棄。
+- lostpointercapture / blur / pagehide / visibility hidden / engine state transitionで入力状態を全リセット。
+- fastForward / dragging / 長押しtimer / requestAnimationFrameをリセット時に必ず解除。
 
-【iPhone長押し拡大鏡・ブラウザ操作抑制】
-- canvas / root / bodyにtouch-action:noneを適用。
-- -webkit-user-select:none / user-select:none を適用。
-- -webkit-touch-callout:none を適用。
-- contextmenu / selectstart / dragstartをゲーム領域でpreventDefault。
-- Safariのgesturestart / gesturechange / gestureendもゲーム領域でpreventDefault。
-
-【Webゲーム専用表示 / PWA】
-- manifest.webmanifestを追加。
-- display=standalone、orientation=landscape。
-- categoriesにgames / entertainmentを設定。
-- apple-mobile-web-app-capable / apple-mobile-web-app-titleを設定。
-- iPhoneでホーム画面へ追加して起動した場合、Safariの通常タブUIを使わないstandalone表示を利用可能。
-- iOSのシステムGame ModeそのものをWeb側から強制ONする処理は実装していない。
+【iPhone長押し拡大鏡・Webゲーム表示】
+- canvas / root / bodyにtouch-action:none。
+- -webkit-user-select:none / user-select:none / -webkit-touch-callout:none。
+- contextmenu / selectstart / dragstart / Safari gestureイベントをゲーム領域で抑制。
+- manifest.webmanifest: display=standalone / orientation=landscape。
 
 【現在のタッチ操作】
 - 右半分短タップ: 時計回り60°。
@@ -39,23 +50,20 @@ HEXDROP / 6ボールパズル 修正版
 【おじゃま / 物理 v6 維持】
 - PYRAMID / HEXAGONは6球形状1個を1単位として0.6秒おきに投入。
 - STRAIGHTは23球を一度に投入。
-- おじゃま・大量堆積崩落は連続軌道スケジューラを使用。
 - 壁際を含む閉じた空洞を補正。
 - ゲームオーバーは落下・消去・連鎖・崩落の最終安定後に判定。
 - 逆ピラミッドもPYRAMID判定。
 - 堆積物・実体化後のおじゃま球は剛性0。
 - 多色同時成立時は一色ずつCLEAR。
 - 通常球とおじゃま球のターン分離を維持。
-- ▲凸接触の2:1分裂ルールを維持。
 - 旧ガラス玉デザインを維持。
 
 【検証】
-- public/controls-v5.js node --check: PASS（GitHub Actions対象）
-- 全app / patch / controlsの連結runtime syntax check対象。
-- 2本指終了時の両pointer即時purgeを実装。
-- lostpointercapture / blur / pagehide / visibilitychange resetを実装。
-- engine state transition入力reset guardを実装。
-- iOS callout / selection / context menu抑制を実装。
-- manifest.webmanifest追加・standalone指定。
+- patch-v7.js node --check: PASS（ローカル）。
+- 中央溝 + 右axis -> pair roles [0,1], lone role 2: PASS（ローカル単体テスト）。
+- 中央溝 + 左axis -> pair roles [0,2], lone role 1: PASS（ローカル単体テスト）。
+- 中央溝 + 完全中央 -> 3球全解放せず2:1: PASS（ローカル単体テスト）。
+- public/app / patch / controlsの連結runtime syntax checkをGitHub Actionsで実施。
+- public/index.htmlはpatch-v6.jsの後、controls-v5.jsの前にpatch-v7.jsをロード。
 - GitHub Actions validate: 確認対象。
 - Cloudflare Workers自動デプロイ: 確認対象。
