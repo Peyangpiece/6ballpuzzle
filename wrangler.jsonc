@@ -1,5 +1,7 @@
 {
   "name": "6ballpuzzle",
-  "main": "src/index.js",
-  "compatibility_date": "2026-08-16"
+  "compatibility_date": "2026-08-16",
+  "assets": {
+    "directory": "./"
+  }
 }
