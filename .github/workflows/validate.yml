@@ -28,20 +28,25 @@ jobs:
             public/app-16.js public/app-17.js \
             public/patch-up-split.js public/patch-turn-gate-v2.js \
             public/patch-axis-pair-v3.js public/patch-v4.js public/patch-v6.js \
-            public/patch-v7.js public/controls-v5.js > /tmp/hexdrop-runtime.js
+            public/patch-v7.js public/patch-v8.js public/controls-v5.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
       - name: Check deployment files
         run: |
           test -f public/index.html
           test -f public/patch-v6.js
           test -f public/patch-v7.js
+          test -f public/patch-v8.js
           test -f public/controls-v5.js
           test -f public/manifest.webmanifest
           test -f wrangler.jsonc
           grep -q 'app-17.js' public/index.html
           grep -q 'patch-v6.js' public/index.html
           grep -q 'patch-v7.js' public/index.html
+          grep -q 'patch-v8.js' public/index.html
           grep -q 'controls-v5.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q -- '-webkit-touch-callout:none' public/index.html
           grep -q 'touch-action:none' public/index.html
+          grep -q 'normalSlideFrames:5' public/patch-v8.js
+          grep -q 'fastSlideFrames:4' public/patch-v8.js
+          grep -q 'pairPivot:true' public/patch-v8.js
