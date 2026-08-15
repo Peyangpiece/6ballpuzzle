@@ -2,68 +2,60 @@ HEXDROP / 6ボールパズル 修正版
 更新日: 2026-08-16
 公開先: https://6ballpuzzle.hrk-6888.workers.dev
 
-【操作仕様 v5.2】
-1. 即座落下
-   - 左右に1本ずつ2本指で短く同時タップすると即座落下。
-   - 現在の論理x座標を固定し、横方向探索・wall kick・freeX補正を使わず真下だけを探索する。
-   - 最深合法位置へ即時配置してロックするため、左右壁へ飛ぶ挙動は発生しない。
+【iPhone操作不能バグ修正 / controls v5.3】
+- iOSの長押し・システムジェスチャー割り込み後にpointer状態が残る問題を修正。
+- 2本指操作は片方のpointerupを待たず、操作成立/終了時に2本分のpointerを即時破棄する。
+- lostpointercaptureを監視し、意図しないcapture消失時は全入力状態をリセットする。
+- window blur / pagehide / visibility hiddenでも入力状態を全リセットする。
+- ピースがPLAYINGからRESOLVING等へ遷移した時、押下中の古いpointerを自動破棄する。
+- 次のpointerdown前にも古い無効pointerを検出してリセットする。
+- fastForward / dragging / 長押しtimer / requestAnimationFrameをリセット時に必ず解除する。
 
-2. 2本指長押し
-   - 左右に1本ずつ2本指で長押ししている間だけ落下速度上昇。
-   - 片方を離した瞬間に通常速度へ戻る。
-   - 1本指操作ではfastForwardを変更しない。
+【iPhone長押し拡大鏡・ブラウザ操作抑制】
+- canvas / root / bodyにtouch-action:noneを適用。
+- -webkit-user-select:none / user-select:none を適用。
+- -webkit-touch-callout:none を適用。
+- contextmenu / selectstart / dragstartをゲーム領域でpreventDefault。
+- Safariのgesturestart / gesturechange / gestureendもゲーム領域でpreventDefault。
 
-3. 1本指短タップ
-   - 右半分タップ: 時計回り60°。
-   - 左半分タップ: 反時計回り60°。
+【Webゲーム専用表示 / PWA】
+- manifest.webmanifestを追加。
+- display=standalone、orientation=landscape。
+- categoriesにgames / entertainmentを設定。
+- apple-mobile-web-app-capable / apple-mobile-web-app-titleを設定。
+- iPhoneでホーム画面へ追加して起動した場合、Safariの通常タブUIを使わないstandalone表示を利用可能。
+- iOSのシステムGame ModeそのものをWeb側から強制ONする処理は実装していない。
 
-4. 指でなぞる無段階横移動
-   - 1本指で左右になぞると、指の横移動量をsetFreeXへ連続反映して落下3球を無段階移動する。
-   - 横方向へ6 virtual px以上動いた時点でドラッグへ移行する。
-   - ドラッグ開始時に1本指長押しタイマーを解除するため、なぞり移動中に自動横移動や高速落下へ移行しない。
-   - 指を離した時点でドラッグを終了する。
+【現在のタッチ操作】
+- 右半分短タップ: 時計回り60°。
+- 左半分短タップ: 反時計回り60°。
+- 1本指で左右になぞる: 無段階横移動。
+- 右半分1本指長押し: 通常速度で右へ無段階連続移動。
+- 左半分1本指長押し: 通常速度で左へ無段階連続移動。
+- 左右2本指短タップ: 現在xを固定して真下へ即座落下。
+- 左右2本指長押し: 押している間だけ落下速度上昇。
+- 1本指操作では落下速度を上げない。
 
-5. 1本指長押し横移動を通常速度・無段階化
-   - 右半分長押し: 右方向へ連続移動。
-   - 左半分長押し: 左方向へ連続移動。
-   - requestAnimationFrameによる毎フレーム無段階移動は維持。
-   - 低速設定 2.2 doubled-x units/sec を解除し、24.4 doubled-x units/secへ変更。
-   - これは旧82msごとに1列（doubled-x 2）移動していた通常体感速度に相当する連続速度。
-   - setFreeXを使用するため、速度を戻しても格子単位の段階移動には戻らない。
-   - 長押し中に指を横へなぞり始めた場合は、現在位置からドラッグ操作へ滑らかに引き継ぐ。
-   - 1本指長押しでは落下速度は一切上昇しない。
-
-6. 過去操作との整理
-   - patch-v4の旧touch installerは公開indexで起動前フラグにより無効化。
-   - controls-v5.jsのみをタッチ入力捕捉経路として使用。
-   - 旧「画面下部1本指長押し高速落下」は廃止したまま。
-   - 旧「2本目pointerdown直後の即ハードドロップ」は廃止したまま。
-   - なぞり横移動は正式採用を維持。
-
-【既存仕様の維持】
+【おじゃま / 物理 v6 維持】
+- PYRAMID / HEXAGONは6球形状1個を1単位として0.6秒おきに投入。
+- STRAIGHTは23球を一度に投入。
+- おじゃま・大量堆積崩落は連続軌道スケジューラを使用。
+- 壁際を含む閉じた空洞を補正。
+- ゲームオーバーは落下・消去・連鎖・崩落の最終安定後に判定。
 - 逆ピラミッドもPYRAMID判定。
-- 堆積物・盤面実体化後のおじゃま球は剛性0。
-- おじゃま落下時の閉鎖空洞補正。
+- 堆積物・実体化後のおじゃま球は剛性0。
 - 多色同時成立時は一色ずつCLEAR。
-- 通常球とおじゃま球の完全ターン分離。
-- PYRAMID / HEXAGONのセット投入間隔0.5秒。
-- STRAIGHTは23球セット。
-- ▲凸接触の2:1分裂ルール。
-- 旧ガラス玉デザイン。
-- 大量崩落時の描画・物理負荷最適化。
+- 通常球とおじゃま球のターン分離を維持。
+- ▲凸接触の2:1分裂ルールを維持。
+- 旧ガラス玉デザインを維持。
 
 【検証】
-- controls-v5.js node --check: PASS
-- なぞり右移動 -> freeX連続更新: PASS
-- なぞり中 fastForward=false: PASS
-- 右1本指長押し -> 通常速度の連続右移動: PASS
-- 左1本指長押し -> 通常速度の連続左移動: PASS
-- HOLD_MOVE_SPEED_X=24.4: PASS
-- requestAnimationFrame + setFreeXによる無段階移動維持: PASS
-- 1本指長押し中 fastForward=false: PASS
-- 左右2本指長押し -> fastForward=true: PASS
-- 片方release -> fastForward=false: PASS
-- 即座落下はx固定の真下探索仕様を維持: PASS
-- patch-v4旧touch installer: 公開indexで起動抑止
-- GitHub Actions validate: 確認対象
-- Cloudflare Workers自動デプロイ: 確認対象
+- public/controls-v5.js node --check: PASS（GitHub Actions対象）
+- 全app / patch / controlsの連結runtime syntax check対象。
+- 2本指終了時の両pointer即時purgeを実装。
+- lostpointercapture / blur / pagehide / visibilitychange resetを実装。
+- engine state transition入力reset guardを実装。
+- iOS callout / selection / context menu抑制を実装。
+- manifest.webmanifest追加・standalone指定。
+- GitHub Actions validate: 確認対象。
+- Cloudflare Workers自動デプロイ: 確認対象。
