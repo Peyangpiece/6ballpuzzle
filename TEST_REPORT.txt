@@ -1,0 +1,123 @@
+HEXDROP 堆積球・おじゃま球 本家映像基準 連続崩落修正版
+
+【本家映像の再分析】
+対象: 30fpsの遊び大全6ボールパズル映像、消去→堆積崩落区間。
+観察:
+- 支持球が消えた後、周囲の球は複数フレーム連続して位置を変える。
+- 「全員が1格子移動を終える→停止→次の格子」という同期階段には見えない。
+- 下側の支持喪失が先に始まり、その途中から上側の依存球が動く。因果波は重なっている。
+- 60°接触スライドは既存実測の約5フレーム@30fpsを維持。
+
+【段階的に見えていた原因】
+1. pile/garbageまでmotionSeqの描画同期バッチで待たせていた。
+2. 旧MASS_COLLAPSEの固定0.12秒ステップが人工的な時間区切りを作っていた。
+3. pileの一部斜めfallPathでpivotが失われ、支持球を横切る直線(chord)として描画されていた。
+4. movingSupportIdを持つfollow球を支持球と別々に補間し、接触半径が1球直径未満になって衝突待ちが発生していた。
+5. 各格子境界を個別アニメーション終了点として扱うことで、速度が再初期化されていた。
+
+【新しい pile / garbage 専用定義】
+- 堆積球は剛性0。おじゃま球は盤面実体化後、通常堆積球と完全に同じ物理。
+- CLEAR/garbage materialize時に、settleAll()で合法な最終経路だけを先に生成。
+- motionSeqは物理因果の順序情報としてのみ保存し、描画バリアには使わない。
+- 各因果波を、先行波が完了するまで待たず「衝突しない最短時刻」から重ねて開始。
+- スケジュール候補は1/240秒単位で探索。
+- collision scheduleは各区間144サンプル、最小距離0.9998球直径で検査。
+- 1球の連続経路は前区間終了前には開始しないが、無関係な他球の完了待ちはしない。
+- 最初の直線落下だけ q=t^2(2-t) で自然に加速。2区間目以降は速度を格子境界で0へ戻さない。
+- 60°接触は円弧を維持。
+- pivot欠落の静止支持スライドは、接触幾何からpivotを復元。
+- movingSupportId/followSupportIdsをfallPathへ保存。
+- 動く支持球1個へのfollowは常に中心間距離=1球直径を保つ。
+- 動く支持球2個へのfollowは、2つの半径1円の交点から位置を決定し両接触を維持。
+- schedulerとrendererが同じmoving-support-aware位置関数を使う。
+- pileFlow区間は旧clampVisualSegment/motionSeq sync gateを通さない。
+- 格子終点専用の停止フレームを作らず、完了区間を同じ更新内で連続消費。
+
+【削除した旧定義】
+堆積球・おじゃま球用として残っていたMASS_COLLAPSEを完全削除。
+- MASS_COLLAPSE_THRESHOLD
+- MASS_COLLAPSE_STEP_DURATION
+- massCollapse / massCollapseSeq state
+- _massCollapseId / _massCollapseBurstId
+- beginMassCollapse / endMassCollapse
+- massCollapse専用liveSeg分岐
+- massCollapse専用batch chaining
+旧大量崩落定義はコード内0件。
+
+【比較・検証】
+旧continuous-flow診断:
+- 11ケース
+- path待機中の静止率: 約95.05%
+- 最大連続停止: 500 frames
+
+新方式 代表23ケース:
+- mid-motion stop: 0
+- max mid-stop run: 0
+- 上方向逆行: 0
+- 最小球間距離: 約1.000000球直径
+- moving-support follow 9区間: 最小支持距離 約1.000000
+
+新方式 広範囲80ケース投入:
+- 実際に崩落した75ケース
+- 最小球間距離: 約1.000000球直径
+- 上方向逆行: 0
+- moving-support follow 29区間: 最小支持距離 約1.000000
+- 人工的な繰り返し格子停止なし
+- 物理的な次接触待ちが必要な稀なケースのみ最大4 physics framesの待機を確認
+
+既存回帰:
+- ▼/▲ 空床・▼floor-catch PASS
+- 逆三角形の凸接触時 active rigidity PASS
+- settle後の堆積剛性0 PASS
+- CLEAR自動pileFlow化 PASS
+- pile visual split gate 0 PASS
+- CPU難易度1〜5: 3秒フリーズ0 / 上方向逆行0 / NaN0
+- おじゃま HEXAGON/PYRAMID/STRAIGHT ×10 = 30ケース: フリーズ0 / rigid metadata 0
+- HEXAGON中央空洞定義維持 PASS
+- JavaScript syntax PASS
+
+【注意】
+今回の修正対象は、消去後の堆積球と盤面実体化後のおじゃま球の時間軸・接触追従。
+通常の落下3球の剛性ロジックは変更していない。
+本家映像の連続崩落の特徴を基準に修正したが、実ブラウザ映像との全面ピクセルオーバーレイ一致を主張するものではない。
+
+【2026-08-16 追加修正: おじゃま形状セット0.5秒間隔】
+目的:
+- ピラミッド完成時は「6球のピラミッド型おじゃま」を1個として扱い、4個の形状セットを0.5秒間隔で落下させる。
+- ヘキサゴン完成時は「6球のヘキサゴン型おじゃま」を1個として扱い、6個の形状セットを0.5秒間隔で落下させる。
+- ストレートだけは23球を1個の形状セットとして一度に落下させる。
+- ストレートは1段目12球、2段目11球。上下段で対応する球が同色で斜めに連続して見える配色にする。
+
+実装:
+- STRAIGHT の攻撃量を19球から23球へ変更。
+- STRAIGHT の GARBAGE_SHAPES を 12+11=23座標へ変更。
+- PYRAMID / HEXAGON は1球単位へ分解せず、6球の形状パックをそのまま garbagePlans へ登録。
+- PYRAMID は packs=4、HEXAGON は packs=6、STRAIGHT は packs=1 を維持。
+- GARBAGE_PACK_INTERVAL = 0.5 を使用し、形状セットの投入開始間隔を0.5秒に統一。
+- フレーム落ち後もcatch-upで複数セットを同時開始せず、実際の開始時刻から次の0.5秒を計測。
+- pendingIncomingCount() は技由来おじゃまについて「球数」ではなく「形状セット数」を数えるよう変更。
+- STRAIGHT 配色は、上段 i と下段 i が同色になるよう対応付け。上段は隣接色が単調にならないよう5色を循環。
+- 盤面へ実体化した後のおじゃま球は、従来どおり通常堆積球と同じ continuous pile flow へ解放。
+- 通常3球の剛性ロジックは変更していない。
+
+追加検証:
+- HTML内インラインJavaScript構文チェック: PASS
+- STRAIGHT 座標数: 23 PASS
+- STRAIGHT 1段目: 12球 PASS
+- STRAIGHT 2段目: 11球 PASS
+- STRAIGHT 上段 x=0,2,...,22 / 下段 x=1,3,...,21: PASS
+- PYRAMID 形状セット数: 4 PASS
+- HEXAGON 形状セット数: 6 PASS
+- STRAIGHT 形状セット数: 1 PASS
+- 60fps相当スケジューラ: PYRAMID開始間隔 0.500000秒 PASS
+- 60fps相当スケジューラ: HEXAGON開始間隔 0.500000秒 PASS
+- フレーム落ち混在試験: 複数形状セットの同時catch-upなし PASS
+- STRAIGHT 上下対応11組の同色一致: PASS
+- 旧「技由来おじゃまを1球ずつ0.5秒間隔」分解処理: 削除確認 PASS
+- 通常3球の剛性ロジック: 今回変更なし
+
+【仕様上の意味】
+- ピラミッドのおじゃま1個 = 6球で構成されたピラミッド形状1セット。
+- ヘキサゴンのおじゃま1個 = 6球で構成されたヘキサゴン形状1セット。
+- 0.5秒は「形状セットと次の形状セットの投入開始間隔」。
+- ストレートは例外で、23球全体を1セットとして同時に投入する。
