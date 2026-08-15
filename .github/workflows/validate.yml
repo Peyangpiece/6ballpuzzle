@@ -34,7 +34,12 @@ jobs:
         run: |
           test -f public/index.html
           test -f public/patch-v6.js
+          test -f public/controls-v5.js
+          test -f public/manifest.webmanifest
           test -f wrangler.jsonc
           grep -q 'app-17.js' public/index.html
           grep -q 'patch-v6.js' public/index.html
           grep -q 'controls-v5.js' public/index.html
+          grep -q 'manifest.webmanifest' public/index.html
+          grep -q -- '-webkit-touch-callout:none' public/index.html
+          grep -q 'touch-action:none' public/index.html
