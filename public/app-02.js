@@ -204,12 +204,21 @@ function slopeRigidGroups(b){
     return groups;
 }
 
+function slopeRigidExpectedMemberCount(members){
+    if(!Array.isArray(members)||!members.length)return 0;
+    // ▲が凸で2:1に裂けた後だけ、残った2球を次の物理的分離イベントまで
+    // 1つの剛体ペアとして扱う。通常の落下ピースは従来どおり3球。
+    return members.every(m=>!!m.ball?.slopeRigidPartialPair) ? 2 : 3;
+}
+
 function clearSlopeRigidGroup(members){
     for(const m of members){
         m.ball.slopeRigidGroupId=0;
         m.ball.slopeRigidRole=-1;
         m.ball.slopeRigidOrientation="";
         m.ball.slopeRigidActive=false;
+        m.ball.slopeRigidPartialPair=false;
+        m.ball.slopeRigidSplitDir=0;
         m.ball.rigid=false;
     }
 }
@@ -486,7 +495,8 @@ function applySlopeRigidTranslation(b,members,dx,dy){
             topPivot:null,
             movingSupportId:0,
             motionSeq,
-            rigidTriplet:true,
+            rigidTriplet:members.length===3,
+            rigidPair:members.length===2,
             slopeRigidArc:true,
             slopeDuration,
             slopeFastImpact:fastImpact,
@@ -516,7 +526,7 @@ function applySlopeRigidTranslation(b,members,dx,dy){
     const nextMembers=gid ? slopeRigidGroups(b).get(gid) : null;
 
     let continues=false;
-    if(nextMembers&&nextMembers.length===3){
+    if(nextMembers&&nextMembers.length===slopeRigidExpectedMemberCount(nextMembers)){
         const nextSurface=slopeRigidSurfaceKind(b,nextMembers);
         if(nextSurface.kind==="slope"){
             continues=slopeRigidTranslationSafe(
@@ -605,4 +615,3 @@ function rigidDirectBelowContacts(b,members){
 
     return out;
 }
-
