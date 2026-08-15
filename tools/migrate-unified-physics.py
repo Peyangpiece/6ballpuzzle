@@ -1,4 +1,4 @@
-# One-time HEXDROP unified-physics migration loader.
+# One-time HEXDROP unified-physics migration loader v2.
 from pathlib import Path
 import base64,lzma
 root=Path(__file__).resolve().parents[1]
