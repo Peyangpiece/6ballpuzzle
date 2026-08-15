@@ -1,0 +1,4 @@
+wrangler.jsonc
+TEST_REPORT.txt
+src/*
+.git/*
