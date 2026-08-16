@@ -80,7 +80,11 @@ function landingShadowCells(g){if(!g||g.state!=="PLAYING"||!g.piece)return null;
 function landingShadowVisualCells(g){
  const cs=landingShadowCells(g);if(!cs||!g?.piece)return null;const dxGrid=(Number.isFinite(g.pieceVX)?g.pieceVX:g.piece.x)-g.piece.x;let constrained=false;
  for(const[sx0,sy]of cs){const sxN=latticeRealX(sx0+dxGrid),syN=cellCenterYNorm(sy);for(let by=boardScanMin(g.board);by<ROWS&&!constrained;by++)for(let bx=0;bx<W2;bx++){if(!valid(bx,by)||!g.board[by][bx])continue;const ddx=Math.abs(sxN-latticeRealX(bx));if(ddx>=1-1e-9)continue;const contact=(cellCenterYNorm(by)-syN)-Math.sqrt(Math.max(0,1-ddx*ddx)),floor=FLOOR_CENTER_N-syN;if(contact>=-1e-8&&contact<floor-1e-8){constrained=true;break;}}if(constrained)break;}
- if(!constrained){let lowest=-Infinity;for(const[,sy]of cs)lowest=Math.max(lowest,cellCenterYNorm(sy));const rowOffset=(FLOOR_CENTER_N-lowest)/HEX_ROW_H;return cs.map(([x,y,c])=>[x,y+rowOffset,c]);}
+ // The floor has no board-ball contact, but the guide must still follow the
+ // active piece's continuous horizontal position. Omitting dxGrid here made
+ // only the first (floor) level snap to the logical column while higher-level
+ // guides followed a one-finger slide correctly.
+ if(!constrained){let lowest=-Infinity;for(const[,sy]of cs)lowest=Math.max(lowest,cellCenterYNorm(sy));const rowOffset=(FLOOR_CENTER_N-lowest)/HEX_ROW_H;return cs.map(([x,y,c])=>[x+dxGrid,y+rowOffset,c]);}
  let maxDown=Infinity;for(const[,sy]of cs)maxDown=Math.min(maxDown,FLOOR_CENTER_N-cellCenterYNorm(sy));
  for(const[sx0,sy]of cs){const sxN=latticeRealX(sx0+dxGrid),syN=cellCenterYNorm(sy);for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){if(!valid(bx,by)||!g.board[by][bx])continue;const ddx=Math.abs(sxN-latticeRealX(bx));if(ddx>=1-1e-9)continue;const d=(cellCenterYNorm(by)-syN)-Math.sqrt(Math.max(0,1-ddx*ddx));if(d>=-1e-8)maxDown=Math.min(maxDown,Math.max(0,d));}}
  if(!Number.isFinite(maxDown))maxDown=0;const rowOffset=Math.max(0,maxDown)/HEX_ROW_H;return cs.map(([x,y,c])=>[x+dxGrid,y+rowOffset,c]);

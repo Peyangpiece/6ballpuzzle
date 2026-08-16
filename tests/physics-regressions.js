@@ -15,6 +15,15 @@ expect(GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===0).length===9&&GARBAGE_SHAPES.
 expect(pieceFits(newBoard(),{x:SPAWN_X,y:-2,rot:0,colors:[0,1,2]}),"reference geometry: centred spawn is outside the reversed lattice");
 expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"reference fall timing changed");
 
+// On an empty board, the first-level landing guide follows the continuous
+// one-finger X instead of snapping back to the logical lattice column.
+{
+ const g=createEngine(18);g.state="PLAYING";g.piece={x:SPAWN_X,y:-2,rot:0,colors:[0,1,2]};g.pieceVX=SPAWN_X+.625;g.freeX=g.pieceVX;
+ const logical=landingShadowCells(g),visual=landingShadowVisualCells(g),dx=g.pieceVX-g.piece.x;
+ expect(logical&&visual&&visual.every((cell,i)=>Math.abs(cell[0]-logical[i][0]-dx)<1e-9),"first-level shadow: continuous horizontal offset was lost");
+ expect(Math.abs(Math.max(...visual.map(([,y])=>cellCenterYNorm(y)))-FLOOR_CENTER_N)<1e-9,"first-level shadow: guide did not rest on the visible floor");
+}
+
 // Releasing a one-finger slide retains the exact real-valued X. Only lock()
 // may commit that value to a legal lattice column.
 {
