@@ -39,7 +39,7 @@ jobs:
           cat >> /tmp/floor-test.js <<'EOF'
           {
             const b=newBoard();
-            const x=11, y=ROWS-2;
+            const y=ROWS-2, x=(y&1)?11:10;
             const ball={id:1,c:0,momentumX:0,rollDir:0,subCellBias:0};
             b[y][x]=ball;
             const p=hexPhysNaturalMotion(b,x,y);

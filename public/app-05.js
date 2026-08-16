@@ -3,14 +3,14 @@ function createEngine(seed,opts={}){
   seed,rng:mulberry32(seed),aiRng:mulberry32((seed^0x41A7C15D)>>>0),fxRng:mulberry32((seed^0x9E3779B9)>>>0),
   board:newBoard(),nextId:1,queue:[],piece:null,pieceVX:SPAWN_X,pieceVY:-2,
   rotAnim:{p:1,dir:1,dx:0,dy:0},freeX:null,dragging:false,
-  physicsWatch:{lastSig:"",repeats:0,steps:0,fallbacks:0},balanceWait:0,ver:0,state:"READY",phase:null,stateT:0,
+  physicsWatch:{lastSig:"",repeats:0,steps:0,fallbacks:0},balanceWait:0,ver:0,state:"READY",phase:null,stateT:0,introCue:0,
   dropT:0,dropInterval:opts.dropInterval??DROP_INTERVAL,soft:false,fastForward:false,fastForwardCarry:0,
   lockT:0,hardDropAnim:null,lockResets:0,
   incoming:0,incomingShapes:[],sendBuffer:0,sendShapes:[],garbShapes:[],garbBlocked:false,garbDone:false,garbLeft:0,
   garbageBatchPrepared:false,garbageAnimDuration:2.45,garbageSeq:0,garbagePlans:[],activeGarbagePacks:[],garbageClock:0,garbageMaterializeIndex:0,garbageNextBallAt:0,garbageWatchdogLimit:6,
   chain:0,clearing:null,holdT:0,pileFlowClock:0,vis:new Map(),events:[],
   stats:{maxChain:0,cleared:0,score:0,waza:{STRAIGHT:0,PYRAMID:0,HEXAGON:0}},scoreDisp:0,
-  fx:{toasts:[],shake:0,sink:0,warn:0,fastPulse:0,sparks:[],rings:[],formations:[]},
+  fx:{toasts:[],shake:0,sink:0,warn:0,fastPulse:0,sparks:[],rings:[],formations:[],incomingPreviews:[]},
   gameOverOverflow:[],gameOverReason:null,ai:null,alive:true,offset:opts.offset??false
  };
  for(let i=0;i<3;i++)g.queue.push(makeSet(g));
@@ -31,7 +31,7 @@ function spawn(g){
  if(g.ai){const lv=Math.max(1,Math.min(5,Number(g.ai.level)||1));g.ai.level=lv;g.ai.target=null;g.ai.thinkT=AI_PARAMS[lv].think*(.7+g.aiRng()*.6);g.ai.actT=0;}
 }
 function die(g,overflowCells=null,reason="LIMIT"){
- g.state="GAMEOVER";g.alive=false;g.gameOverOverflow=Array.isArray(overflowCells)?overflowCells.map(v=>Array.isArray(v)?[...v]:v):[];g.gameOverReason=reason;
+ g.state="GAMEOVER";g.stateT=0;g.alive=false;g.gameOverOverflow=Array.isArray(overflowCells)?overflowCells.map(v=>Array.isArray(v)?[...v]:v):[];g.gameOverReason=reason;
  g.piece=null;g.hardDropAnim=null;g.fx.shake=0;g.fx.sink=0;
 }
 function legalXRange(g){

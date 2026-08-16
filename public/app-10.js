@@ -85,17 +85,48 @@ function drawGarbageBubbleBall(ctx,cx,cy,d,ci,age){
 function drawFormationEffects(ctx,g,pos,D){
     for(const fx of g.fx.formations||[]){
         if(!fx?.cells?.length||fx.life<=0)continue;
-        const t=Math.max(0,Math.min(1,1-fx.life/fx.max)),charge=Math.min(1,t/.42),fade=Math.min(1,fx.life/(fx.max*.28));
+        const age=fx.max-fx.life,t=Math.max(0,Math.min(1,age/fx.max));
         const pts=fx.cells.map(([x,y])=>pos(x,y)),cx=pts.reduce((n,p)=>n+p[0],0)/pts.length,cy=pts.reduce((n,p)=>n+p[1],0)/pts.length;
-        const radius=Math.max(D*1.05,...pts.map(p=>Math.hypot(p[0]-cx,p[1]-cy)+D*.55));
+        const radius=Math.max(D*(fx.w==="PYRAMID"?4.1:3.7),...pts.map(p=>Math.hypot(p[0]-cx,p[1]-cy)+D*2.7));
         ctx.save();ctx.globalCompositeOperation="screen";
-        const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,radius*1.45);glow.addColorStop(0,fx.tint+"99");glow.addColorStop(.46,fx.tint+"38");glow.addColorStop(1,fx.tint+"00");
-        ctx.globalAlpha=(.35+.4*charge)*fade;ctx.fillStyle=glow;ctx.beginPath();ctx.arc(cx,cy,radius*1.45,0,TAU);ctx.fill();
-        for(const p of pts){ctx.globalAlpha=(.2+.8*Math.sin(Math.PI*Math.min(1,t/.7)))*fade;ctx.strokeStyle="#FFFFFF";ctx.lineWidth=D*(.12-.065*t);ctx.shadowColor=fx.tint;ctx.shadowBlur=D*(.55+.35*charge);ctx.beginPath();ctx.arc(p[0],p[1],D*(.5+.16*charge),0,TAU);ctx.stroke();}
-        const sides=fx.w==="PYRAMID"?3:6,start=fx.w==="PYRAMID"?(fx.pointDown?Math.PI/2:-Math.PI/2):-Math.PI/2+t*.2;
-        for(let ring=0;ring<(fx.w==="HEXAGON"?3:2);ring++){
-            const rr=radius*(.86+ring*.16+charge*.1);ctx.globalAlpha=(.92-ring*.22)*fade;ctx.strokeStyle=ring===0?"#FFFFFF":fx.tint;ctx.lineWidth=Math.max(1,D*(.095-ring*.02)*(1-.45*t));ctx.shadowColor=fx.tint;ctx.shadowBlur=D*(fx.w==="HEXAGON"?.75:.55);
-            ctx.beginPath();for(let i=0;i<=sides;i++){const a=start+i*TAU/sides,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;(i?ctx.lineTo(x,y):ctx.moveTo(x,y));}ctx.stroke();
+        // The six triggering balls first turn into brilliant white rings.
+        const ballFlash=Math.max(0,1-age/.92);
+        if(ballFlash>0)for(const p of pts){ctx.globalAlpha=Math.min(1,ballFlash*1.7);ctx.strokeStyle="#FFFFFF";ctx.lineWidth=D*.13;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.8;ctx.beginPath();ctx.arc(p[0],p[1],D*(.5+.1*(1-ballFlash)),0,TAU);ctx.stroke();}
+
+        let vertices=[];
+        if(fx.w==="STRAIGHT"){
+            let a=pts[0],b=pts[0],best=-1;
+            for(const p of pts)for(const q of pts){const d=Math.hypot(p[0]-q[0],p[1]-q[1]);if(d>best){best=d;a=p;b=q;}}
+            const dx=(b[0]-a[0])/Math.max(1,best),dy=(b[1]-a[1])/Math.max(1,best);
+            vertices=[[a[0]-dx*D*1.1,a[1]-dy*D*1.1],[b[0]+dx*D*1.1,b[1]+dy*D*1.1]];
+        }else{
+            const sides=fx.w==="PYRAMID"?3:6;
+            const start=fx.w==="PYRAMID"?(fx.pointDown?Math.PI/2:-Math.PI/2):-Math.PI/2;
+            vertices=Array.from({length:sides},(_,i)=>[cx+Math.cos(start+i*TAU/sides)*radius,cy+Math.sin(start+i*TAU/sides)*radius]);
+            vertices.push(vertices[0]);
+        }
+        const trace=(width,alpha,color)=>{ctx.beginPath();vertices.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.globalAlpha=alpha;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.72;ctx.stroke();};
+        // Construction rays, then the large filled flash seen in the captures.
+        if(age<.86)trace(Math.max(1,D*.045),Math.min(1,age/.18),fx.tint);
+        if(age>=.68&&age<1.18){const flash=Math.sin(Math.PI*(age-.68)/.5);if(fx.w!=="STRAIGHT"){ctx.beginPath();vertices.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.globalAlpha=.34*flash;ctx.fillStyle=fx.tint;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*1.7;ctx.fill();}trace(D*(.06+.12*flash),.95*flash,"#FFFFFF");}
+        // The solid geometry dissolves into stable sparkling edge particles.
+        if(age>=1.04){const fade=Math.min(1,(age-1.04)/.3)*Math.min(1,fx.life/.45);for(let e=0;e<vertices.length-1;e++){const a=vertices[e],b=vertices[e+1],n=fx.w==="STRAIGHT"?32:18;for(let i=0;i<=n;i++){const u=i/n,jitter=Math.sin(i*12.9898+e*7.13)*D*.025,px=a[0]+(b[0]-a[0])*u,py=a[1]+(b[1]-a[1])*u;ctx.globalAlpha=fade*(.48+.5*Math.sin(age*10+i*1.7+e));ctx.fillStyle=i%5===0?"#FFFFFF":fx.tint;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.35;ctx.beginPath();ctx.arc(px+jitter,py-jitter,D*(i%5===0?.055:.038),0,TAU);ctx.fill();}}}
+        ctx.restore();
+    }
+}
+
+function drawIncomingPreviews(ctx,g,L){
+    const list=g.fx.incomingPreviews||[];
+    for(let k=0;k<list.length;k++){
+        const fx=list[k],appear=Math.min(1,(fx.max-fx.life)/.22),fade=Math.min(1,fx.life/.35),shapes=fx.shapes?.length?fx.shapes:["PYRAMID"];
+        const d=23,cols=Math.min(3,shapes.length),rows=Math.ceil(shapes.length/cols),packW=82,packH=58;
+        const totalW=cols*packW,totalH=rows*packH,baseX=L.X+L.BW/2-totalW/2,baseY=Math.max(-8,L.Y-34-totalH-k*12);
+        ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=appear*fade;ctx.strokeStyle=fx.tint||"#8CFFB1";ctx.lineWidth=3;ctx.shadowColor=fx.tint||"#8CFFB1";ctx.shadowBlur=13;
+        for(let s=0;s<shapes.length;s++){
+            const pat=GARBAGE_SHAPES[shapes[s]]||GARBAGE_SHAPES.PYRAMID,c=s%cols,r=Math.floor(s/cols),ox=baseX+c*packW+packW/2,oy=baseY+r*packH+9;
+            const minX=Math.min(...pat.map(p=>p[0])),maxX=Math.max(...pat.map(p=>p[0])),minY=Math.min(...pat.map(p=>p[1]));
+            const sample=pat.length>7?pat.filter((_,i)=>i%Math.max(1,Math.floor(pat.length/7))===0).slice(0,7):pat;
+            for(const [x,y] of sample){const px=ox+(x-(minX+maxX)/2)*d*.5,py=oy+(y-minY)*d*HEX_ROW_H;ctx.beginPath();ctx.arc(px,py,d*.42,0,TAU);ctx.stroke();}
         }
         ctx.restore();
     }

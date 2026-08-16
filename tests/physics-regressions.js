@@ -7,6 +7,18 @@ const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-
 const assertions=String.raw`
 function expect(value,message){if(!value)throw new Error(message);}
 
+// Capture-derived field and fall constants stay locked to the reference.
+expect(W2===19&&ROWS===12&&SPAWN_X===8,"reference geometry: 10-column/12-row field changed");
+expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"reference fall timing changed");
+
+// Releasing a one-finger slide retains the exact real-valued X. Only lock()
+// may commit that value to a legal lattice column.
+{
+ const g=createEngine(19);spawn(g);setFreeX(g,SPAWN_X+.6);updateVisuals(g,PHYSICS_FRAME);g.dragging=false;
+ const exact=g.freeX;updateVisuals(g,PHYSICS_FRAME*4);
+ expect(Math.abs(exact-(SPAWN_X+.6))<1e-9&&Math.abs(g.pieceVX-exact)<1e-9,"continuous slide: pointer release snapped the visual X");
+}
+
 // A wall contributes no support rigidity, but touching it alone must not break
 // a freely falling triplet whose cells can still translate together.
 {
@@ -74,9 +86,9 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
 
 // A hexagon hole is retained only when its two lower arch members are fully anchored.
 {
- const b=newBoard(),pat=GARBAGE_SHAPES.HEXAGON,ax=1;
- for(let i=0;i<pat.length;i++){const[x,y]=pat[i],ball={id:250+i,c:2,motionGroupId:0,rigid:false};b[10+y][ax+x]=ball;}
- expect(isBalancedHexagonCenterHole(b,3,11),"balanced gap: floor-anchored hexagon was not recognized");
+ const b=newBoard(),pat=GARBAGE_SHAPES.HEXAGON,ax=0,baseY=ROWS-3;
+ for(let i=0;i<pat.length;i++){const[x,y]=pat[i],ball={id:250+i,c:2,motionGroupId:0,rigid:false};b[baseY+y][ax+x]=ball;}
+ expect(isBalancedHexagonCenterHole(b,ax+2,baseY+1),"balanced gap: floor-anchored hexagon was not recognized");
  expect(!boardHasIllegalFloat(b)&&!hasLegalGravityMove(b),"balanced gap: complete hexagon did not remain in equilibrium");
  expect(classify(findGroups(b)[0].cells)==="HEXAGON","balanced gap: hexagon formation was lost before clear");
 }
@@ -113,13 +125,15 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
 }
 
 // Pyramid and hexagon completion arm their shape-specific reference effects.
-for(const [type,baseY] of [["PYRAMID",10],["HEXAGON",10]]){
+for(const [type,baseY] of [["PYRAMID",ROWS-3],["HEXAGON",ROWS-3]]){
  const g=createEngine(type==="PYRAMID"?23:24),pat=GARBAGE_SHAPES[type];
- const ax=type==="HEXAGON"?1:0;
+ const ax=type==="HEXAGON"?0:1;
  for(let i=0;i<pat.length;i++){const[x,y]=pat[i],ball=mkBall(g,1);g.board[baseY+y][ax+x]=ball;g.vis.set(ball.id,{x:ax+x,y:baseY+y,vy:0,sq:0});}
  g.state="RESOLVING";g.phase="CHECK";g.garbDone=true;
  stepEngine(g,PHYSICS_FRAME);
- expect(g.phase==="CLEAR"&&g.fx.formations.some(f=>f.w===type),type+" effect: shape-specific animation was not armed");
+ const fx=g.fx.formations.find(f=>f.w===type);
+ expect(g.phase==="CLEAR"&&fx,type+" effect: shape-specific animation was not armed");
+ expect(fx.max===WAZA[type].fx&&fx.max>2.5,type+" effect: reference particle hold was shortened");
 }
 
 // Exactly one pinned member must be detached without changing the pair's id.
@@ -142,7 +156,7 @@ for(const [type,baseY] of [["PYRAMID",10],["HEXAGON",10]]){
 {
  const g=createEngine(1),y=ROWS-1;
  const balls=[0,1].map(i=>({id:100+i,c:i,motionGroupId:88,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:2,rigid:true}));
- g.board[y][0]=balls[0];g.board[y][2]=balls[1];
+ g.board[y][1]=balls[0];g.board[y][3]=balls[1];
  normalizeAllNonActivePileBalls(g);
  expect(balls.every(ball=>ball.motionGroupId===0&&ball.rigid===false),"pile rigidity: stable balls remained constrained");
 }

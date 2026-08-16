@@ -20,6 +20,7 @@ function stepEngine(g, dt) {
     g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);
     g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);
     g.fx.formations = (g.fx.formations || []).filter((f) => (f.life -= dt) > 0);
+    g.fx.incomingPreviews = (g.fx.incomingPreviews || []).filter((f) => (f.life -= dt) > 0);
     g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });
     // Visual integration is adaptive. Scheduled pile flow is evaluated from its
     // absolute clock in one pass; only legacy collision-gated paths use a few
@@ -39,7 +40,9 @@ function stepEngine(g, dt) {
         return;
     }
     if (g.state === "READY") {
-        if (g.stateT >= GAME_FRAME) spawn(g);
+        if(g.introCue===0){emit(g,{t:"ready"});g.introCue=1;}
+        if(g.introCue===1&&g.stateT>=READY_START_BEGIN){emit(g,{t:"start"});g.introCue=2;}
+        if (g.stateT >= READY_DURATION) spawn(g);
         return;
     }
     if (g.state === "RESOLVING") {
@@ -125,7 +128,7 @@ function stepEngine(g, dt) {
                 const w = classify(grp.cells);
                 if (w) {
                     waza.push(w);
-                    wazaFx.push({w,cells:grp.cells.map(c=>[...c])});
+                    wazaFx.push({w,cells:grp.cells.map(c=>[...c]),color:grp.color});
                     killColors.add(grp.color);
                 }
                 for (const [x, y] of grp.cells)
@@ -159,14 +162,14 @@ function stepEngine(g, dt) {
             for (const w of waza) {
                 g.stats.waza[w] = (g.stats.waza[w] || 0) + 1;
                 emit(g, { t: "waza", w });
-                g.fx.toasts.push({ text: WAZA[w].jp, life: 1.05, max: 1.05, big: w === "HEXAGON" ? 1 : w === "PYRAMID" ? 0.62 : 0.32, tint: WAZA[w].tint });
-                g.fx.rings.push({ life: 0.65, max: 0.65, tint: WAZA[w].tint });
+                g.fx.toasts.push({ text: WAZA[w].jp+"!", life: 1.25, max: 1.25, big: 0.45, waza:true, tint: WAZA[w].tint });
             }
             for(const wf of wazaFx){
                 const rows=new Map();for(const[,y]of wf.cells)rows.set(y,(rows.get(y)||0)+1);
                 const ys=[...rows.keys()].sort((a,b)=>a-b),pointDown=wf.w==="PYRAMID"&&rows.get(ys[0])>rows.get(ys[ys.length-1]);
-                const max=wf.w==="HEXAGON"?.95:.72;
-                g.fx.formations.push({w:wf.w,cells:wf.cells,tint:WAZA[wf.w].tint,life:max,max,pointDown});
+                const max=WAZA[wf.w].fx;
+                const tint=COLORS[wf.color]?.glow||WAZA[wf.w].tint;
+                g.fx.formations.push({w:wf.w,cells:wf.cells,tint,life:max,max,pointDown});
             }
             return;
         }
@@ -486,11 +489,13 @@ function stepAI(g, dt) {
  * 描画
  * ============================================================= */
 const VW = 1280, VH = 720;
-const ME = { D: 44, X: 178, Y: 86 };
-const FOE = { D: 29, X: 822, Y: 86 }; // opponent board +20.8% for better battle readability
-ME.BW = ME.D * 12;
+// Measurements from the 1920x1080 reference footage, normalized to 1280x720.
+// Both players use the same 10-column playfield and ball scale.
+const ME = { D: 63.4 / 1.5, X: 165, Y: 166 };
+const FOE = { D: 63.4 / 1.5, X: 671, Y: 166 };
+ME.BW = 444;
 ME.BH = ME.D * BOARD_FLOOR_N;
-FOE.BW = FOE.D * 12;
+FOE.BW = 444;
 FOE.BH = FOE.D * BOARD_FLOOR_N;
 const DROP_ZONE_Y = 648;
 const NEON = ["#2FE3F5", "#FF3EA5"];
