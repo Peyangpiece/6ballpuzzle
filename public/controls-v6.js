@@ -10,6 +10,21 @@
     if(typeof document==="undefined" || window.__hexControlsV6Installed)return;
     window.__hexControlsV6Installed=true;
 
+    /* Track engines created after this controller is installed. app-16 creates
+       the player/foe engines only when a match starts, so wrapping createEngine
+       here gives v6 an explicit source of truth without any legacy v4 accessor. */
+    if(!window.__hexEnginesV6)window.__hexEnginesV6=[];
+    if(typeof createEngine==="function" && !window.__hexCreateEngineWrappedV6){
+        window.__hexCreateEngineWrappedV6=true;
+        const originalCreateEngine=createEngine;
+        createEngine=function(...args){
+            const g=originalCreateEngine(...args);
+            window.__hexEnginesV6.push(g);
+            if(window.__hexEnginesV6.length>16)window.__hexEnginesV6.splice(0,window.__hexEnginesV6.length-16);
+            return g;
+        };
+    }
+
     /* app-16 historically registers an older canvas-local pointer controller.
        The v6 reset owns ALL gameplay pointer input at document capture phase.
        Prevent canvas-local gameplay pointer handlers from being registered so
@@ -37,7 +52,14 @@
     const DUAL_HOLD_DRIFT_TOL=30;
 
     const isCanvas=e=>e?.target?.tagName==="CANVAS";
-    const player=()=>typeof hexTouchPlayerEngineV4==="function"?hexTouchPlayerEngineV4():null;
+    const player=()=>{
+        const list=window.__hexEnginesV6||[];
+        for(let i=list.length-1;i>=0;i--){
+            const g=list[i];
+            if(g&&g.state==="PLAYING"&&g.piece&&!g.ai)return g;
+        }
+        return null;
+    };
     const consume=e=>{
         if(e?.cancelable)e.preventDefault();
         e?.stopImmediatePropagation?.();
