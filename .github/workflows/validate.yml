@@ -25,7 +25,7 @@ jobs:
             public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
             public/app-05.js public/app-06.js public/app-07.js public/app-08.js \
             public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
-            public/app-16.js public/app-17.js public/controls-v6.js > /tmp/hexdrop-runtime.js
+            public/app-16.js public/app-17.js public/controls-v7.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
       - name: Check floor parity regression
         run: |
@@ -50,28 +50,34 @@ jobs:
           console.log('floor parity regression PASS');
           EOF
           node /tmp/floor-test.js
-      - name: Check clean touch controls v6
+      - name: Check clean touch controls v7
         run: |
           set -e
-          test -f public/controls-v6.js
+          test -f public/controls-v7.js
+          ! test -e public/controls-v6.js
           ! test -e public/controls-v5.js
-          grep -q 'controls-v6.js' public/index.html
+          grep -q 'controls-v7.js' public/index.html
+          ! grep -q 'controls-v6.js' public/index.html
           ! grep -q 'controls-v5.js' public/index.html
-          grep -q '__hexControlsV6Installed' public/controls-v6.js
-          grep -q '__hexLegacyCanvasPointerBlockV6' public/controls-v6.js
-          grep -q '__hexCreateEngineWrappedV6' public/controls-v6.js
-          grep -q '__hexEnginesV6' public/controls-v6.js
-          ! grep -q 'hexTouchPlayerEngineV4' public/controls-v6.js
-          grep -q 'rec.half>0?1:-1' public/controls-v6.js
-          grep -q '__hexInstantDropV6' public/controls-v6.js
-          grep -q 'dropPiece(g.board' public/controls-v6.js
-          grep -q 'target.x=fixedX' public/controls-v6.js
-          grep -q 'd.g.fastForward=true' public/controls-v6.js
-          grep -q 'rec.longActive=true' public/controls-v6.js
-          grep -q 'setFreeX(g,rec.dragBaseX' public/controls-v6.js
-          ! grep -q 'floorDirectedFinalTarget' public/controls-v6.js
-          ! grep -q 'bottomPress' public/controls-v6.js
-          ! grep -q 'startSingleMove' public/controls-v6.js
+          grep -q '__hexControlsV7Installed' public/controls-v7.js
+          grep -q '__hexLegacyCanvasPointerBlockV7' public/controls-v7.js
+          grep -q '__hexCreateEngineWrappedV7' public/controls-v7.js
+          grep -q '__hexEnginesV7' public/controls-v7.js
+          grep -q '__hexSingleSlideV7' public/controls-v7.js
+          grep -q 'SINGLE_DRAG_START_TOL=4' public/controls-v7.js
+          grep -q 'beginSingleDrag' public/controls-v7.js
+          grep -q 'targetX=rec.dragBaseX+(dx/ME.D)\*2' public/controls-v7.js
+          grep -q 'setFreeX(g,targetX)' public/controls-v7.js
+          grep -q 'if (g.freeX != null) g.pieceVX = g.freeX' public/app-08.js
+          grep -q 'rec.half>0?1:-1' public/controls-v7.js
+          grep -q '__hexInstantDropV7' public/controls-v7.js
+          grep -q 'dropPiece(g.board' public/controls-v7.js
+          grep -q 'target.x=fixedX' public/controls-v7.js
+          grep -q 'd.g.fastForward=true' public/controls-v7.js
+          ! grep -q 'armSingleHold' public/controls-v7.js
+          ! grep -q 'longActive' public/controls-v7.js
+          ! grep -q 'floorDirectedFinalTarget' public/controls-v7.js
+          ! grep -q 'bottomPress' public/controls-v7.js
       - name: Check unified physics architecture
         run: |
           set -e
