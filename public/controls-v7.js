@@ -2,7 +2,7 @@
  * Gestures:
  * - right-half tap: clockwise 60deg
  * - left-half tap: counter-clockwise 60deg
- * - two-finger tap: instant vertical hard drop
+ * - two-finger tap: reference-speed vertical hard drop
  * - two-finger long press: fast fall while held
  * - one-finger horizontal slide: immediate continuous horizontal movement
  */
@@ -78,19 +78,12 @@
     function instantVerticalDrop(g){
         if(!validGame(g))return false;
         stopFast(g);
-        g.hardDropAnim=null;
-        g.dropT=0;
         commitCurrentColumn(g);
-        const fixedX=g.piece.x;
-        const target=dropPiece(g.board,{...g.piece,x:fixedX});
-        target.x=fixedX;
-        g.piece={...target};
-        g.pieceVX=fixedX;
-        g.freeX=null;
-        g.dragging=false;
-        emit(g,{t:"drop"});
-        lock(g,5);
-        return true;
+        // The gesture is instant, the balls are not. Route mobile through the
+        // same capture-calibrated constant-speed animation as keyboard hard
+        // drop; the old shortcut teleported directly to the pile.
+        hardDrop(g);
+        return !!g.hardDropAnim||g.state!=="PLAYING";
     }
     window.__hexInstantDropV7=instantVerticalDrop;
 

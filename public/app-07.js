@@ -120,6 +120,7 @@ function hexContinuousSegments(g){
 function hexScheduleContinuousPaths(g,reason="continuous"){
     const all=hexContinuousSegments(g);
     if(!all.length)return {balls:0,segments:0};
+    g._pileFlowBallById=new Map(all.map(q=>[q.ball.id,q.ball]));
     const now=Math.max(0,g.pileFlowClock||0);
     const lastEndByBall=new Map();
     const endByBallSeq=new Map();
@@ -183,8 +184,7 @@ function updateScheduledPileFlowVisual(g,cell,v,dt,memo=null){
     if(g.pileFlowClock<seg.pileFlowStart-1e-10)return true;
 
     const oldX=v.x,oldY=v.y;
-    const t=(g.pileFlowClock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration);
-    const [nx0,ny0]=liveSegPoint(seg,t,{vy:seg.pileFlowStartVy||0},seg.pileFlowNaturalDuration||seg.pileFlowDuration);
+    const [nx0,ny0]=pileFlowPositionAt(g,cell,g.pileFlowClock,0,null,memo);
     let nx=nx0,ny=ny0;
 
     // Render collision uses the same no-overlap invariant. This is a clamp to
@@ -227,7 +227,25 @@ function collectLiveMotionBatch(g){
     }
     if(!Number.isFinite(seq))return null;
     const members=all.filter(m=>m.seg.motionSeq===seq);
-    return {seq,members,duration:Math.max(1/120,...members.map(m=>m.duration))};
+    return {seq,members,byId:new Map(members.map(m=>[m.cell.id,m])),duration:Math.max(1/120,...members.map(m=>m.duration))};
+}
+
+function liveBatchPointAt(batch,member,t,states,memo=new Map(),stack=new Set()){
+    if(!member)return [0,0];
+    const id=member.cell.id;
+    if(memo.has(id))return memo.get(id);
+    if(member.seg.kind==="FOLLOW_SUPPORT"&&!stack.has(id)){
+        const sid=member.seg.followSupportIds?.[0],support=batch.byId?.get(sid);
+        if(support){
+            stack.add(id);
+            const sp=liveBatchPointAt(batch,support,t,states,memo,stack);
+            stack.delete(id);
+            const out=[member.seg.from[0]+sp[0]-support.seg.from[0],member.seg.from[1]+sp[1]-support.seg.from[1]];
+            memo.set(id,out);return out;
+        }
+    }
+    const st=states?.get(id),out=liveSegPoint(member.seg,t,st?.startState,st?.naturalDuration);
+    memo.set(id,out);return out;
 }
 
 // Pure render-time sampling for the small fixed-step look-ahead used by the
@@ -246,7 +264,16 @@ function pileFlowPositionAt(g,cell,clock,index=0,state=null,memo=null){
         if(clock<seg.pileFlowStart){point=[...seg.from];break;}
         if(clock<=seg.pileFlowEnd){
             const t=(clock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration);
-            point=liveSegPoint(seg,t,{vy:seg.pileFlowStartVy||0},seg.pileFlowNaturalDuration||seg.pileFlowDuration);
+            if(seg.kind==="FOLLOW_SUPPORT"){
+                const sid=seg.followSupportIds?.[0],support=g?._pileFlowBallById?.get(sid);
+                if(support){
+                    const supportPath=Array.isArray(support.fallPath)?support.fallPath:[];
+                    const supportIndex=Math.max(0,supportPath.findIndex(q=>q?.motionSeq===seg.motionSeq));
+                    const sp=pileFlowPositionAt(g,support,clock,supportIndex,null,memo);
+                    const supportSeg=supportPath[supportIndex];
+                    point=supportSeg?.from?[seg.from[0]+sp[0]-supportSeg.from[0],seg.from[1]+sp[1]-supportSeg.from[1]]:liveSegPoint(seg,t,{vy:seg.pileFlowStartVy||0},seg.pileFlowNaturalDuration||seg.pileFlowDuration);
+                }else point=liveSegPoint(seg,t,{vy:seg.pileFlowStartVy||0},seg.pileFlowNaturalDuration||seg.pileFlowDuration);
+            }else point=liveSegPoint(seg,t,{vy:seg.pileFlowStartVy||0},seg.pileFlowNaturalDuration||seg.pileFlowDuration);
             break;
         }
         point=[...seg.to];

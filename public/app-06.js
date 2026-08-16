@@ -60,16 +60,27 @@ function hexGarbageFindAnchor(g,pack){
     return best;
 }
 
-function materializeGarbagePack(g,pack){
+function hexGarbageEntryAnchor(g,pack){
+    const parity=((pack.targetY%2)+2)%2,start=parity?-1:-2;
+    const minX=Math.min(...pack.pat.map(([x])=>x)),maxX=Math.max(...pack.pat.map(([x])=>x));
+    const xs=[];for(let d=0;d<W2;d++){if(pack.ax-d>=-minX)xs.push(pack.ax-d);if(d&&pack.ax+d<=W2-1-maxX)xs.push(pack.ax+d);}
+    for(let ay=start;ay>=BOARD_MIN_ROW;ay-=2)for(const ax of xs){
+        if(pack.pat.every(([dx,dy])=>valid(ax+dx,ay+dy)&&!g.board[ay+dy][ax+dx]))return{ax,ay};
+    }
+    return null;
+}
+
+function materializeGarbagePack(g,pack,atEntry=false){
     clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
-    const anchor=hexGarbageFindAnchor(g,pack);
+    const anchor=atEntry?hexGarbageEntryAnchor(g,pack):hexGarbageFindAnchor(g,pack);
     if(!anchor){g.garbBlocked=true;return false;}
-    pack.ax=anchor.ax;pack.targetY=anchor.ay;
+    pack.ax=anchor.ax;
+    if(atEntry)pack.entryY=anchor.ay;else pack.targetY=anchor.ay;
 
     const made=[];
     for(let i=0;i<pack.pat.length;i++){
         const [dx,dy]=pack.pat[i];
-        const x=pack.ax+dx,y=pack.targetY+dy;
+        const x=pack.ax+dx,y=(atEntry?pack.entryY:pack.targetY)+dy;
         if(!valid(x,y)||g.board[y][x]){g.garbBlocked=true;return false;}
         const ball=mkBall(g,pack.colors[i]);
         ball.isGarbage=true;
@@ -82,16 +93,17 @@ function materializeGarbagePack(g,pack){
         made.push(ball);
     }
 
-    // Shape identity ends here. From this exact contact state onward these are
+    // Shape identity ends here. From this exact entry/contact state onward these are
     // independent balls governed by the same support/natural-motion solver.
     for(const ball of made){
         hexPhysClearGroupBall(ball);
         ball.isGarbage=true;
         ball.garbageType=pack.type;
     }
+    if(atEntry)pack.entryBalls=made.map((ball,i)=>({id:ball.id,c:ball.c,x:pack.ax+pack.pat[i][0],y:pack.entryY+pack.pat[i][1]}));
     // Resolve at most one canonical physics event now. Any remaining motion
-    // is continued by the normal SETTLE phase, keeping each render frame
-    // bounded so the opponent board never disappears during garbage entry.
+    // continues incrementally while later packs enter, keeping each render
+    // frame bounded so the opponent board never disappears during garbage.
     if(settlePass(g.board))g.ver++;
     g.ver++;
     return true;
@@ -127,18 +139,24 @@ function updateGarbagePacks(g,dt){
         if(p.landed)continue;
         const prevAge=Math.max(0,p.bubbleT||0);
         p.bubbleT=Math.max(0,g.garbageClock-(p.actualStartTime||0));
-        const fallDt=Math.max(0,p.bubbleT-HEX_GARBAGE_BUBBLE_DURATION)-Math.max(0,prevAge-HEX_GARBAGE_BUBBLE_DURATION);
-        if(fallDt<=1e-12)continue;
-        // Exact constant-acceleration integration prevents the first falling
-        // frame from jumping when it straddles the end of the bubble phase.
-        p.y+=p.vy*fallDt+.5*GRAV*fallDt*fallDt;
-        p.vy+=GRAV*fallDt;
-        if(p.y<p.targetY)continue;
-        p.y=p.targetY;p.vy=0;
-        const earlier=g.activeGarbagePacks.some(q=>q.seq<p.seq&&!q.landed);
-        if(earlier)continue;
+        if(prevAge+1e-9>=HEX_GARBAGE_BUBBLE_DURATION||p.bubbleT+1e-9<HEX_GARBAGE_BUBBLE_DURATION)continue;
+        // The reference straight attack visibly enters as two top rows and
+        // immediately conforms to the uneven pile. Materializing only at a
+        // precomputed bottom anchor kept the whole sheet rigid in mid-air.
+        // Spawn at the top after the bubble, then give every ball to the same
+        // independent gravity/contact solver used by accumulated balls.
+        p.bubbleT=HEX_GARBAGE_BUBBLE_DURATION;
+        p.releaseTime=(p.actualStartTime||0)+HEX_GARBAGE_BUBBLE_DURATION;
         p.landed=true;
-        if(!materializeGarbagePack(g,p))g.garbBlocked=true;
+        p.vy=0;
+        if(!materializeGarbagePack(g,p,true))g.garbBlocked=true;
+    }
+
+    // Continue one bounded contact event whenever the previous visible event
+    // has finished. This lets early garbage balls keep cascading while the
+    // next half-second packet is still bubbling.
+    if(pendingFallPathCount(g)===0&&hasLegalGravityMove(g.board)){
+        if(settlePass(g.board))g.ver++;
     }
 
     const shapesDone=g.garbagePlans.every(p=>p.landed);

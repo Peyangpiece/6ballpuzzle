@@ -97,7 +97,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     if ((g.state === "PLAYING" || g.state === "NET") && g.piece) {
         const dx = g.pieceVX - g.piece.x;const pulse = 0.75 + 0.25 * Math.sin(t * 7);const cells = pieceCells(g.piece);let dOff = dispOff(g.piece.rot),frac;
         if(g.state==="NET"){frac=Number.isFinite(g.netPieceFrac)?g.netPieceFrac:0;}
-        else if(g.hardDropAnim){const hk=Math.min(1,(g.hardDropAnim.t+renderLead)/Math.max(.001,g.hardDropAnim.dur));const vy=g.hardDropAnim.fromY+(g.hardDropAnim.target.y-g.hardDropAnim.fromY)*hk;frac=vy-g.piece.y;dOff*=1-smoothRotationT(hk);}else{const blocked=!pieceFits(g.board,{...g.piece,y:g.piece.y+2}),align=blocked?Math.max(0,1-Math.min(1,(g.lockT+renderLead)/LANDING_ALIGN_DURATION)):1;dOff*=align;const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
+        else if(g.hardDropAnim){const hk=Math.min(1,(g.hardDropAnim.t+renderLead)/Math.max(.001,g.hardDropAnim.dur));const vy=g.hardDropAnim.fromY+((g.hardDropAnim.targetY??g.hardDropAnim.target.y)-g.hardDropAnim.fromY)*hk;frac=vy-g.piece.y;dOff*=1-smoothRotationT(hk);}else{const blocked=!pieceFits(g.board,{...g.piece,y:g.piece.y+2}),align=blocked?Math.max(0,1-Math.min(1,(g.lockT+renderLead)/LANDING_ALIGN_DURATION)):1;dOff*=align;const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
         const pts = cells.map(([x, y]) => pos(x + dx, y + frac + dOff));
         const gx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3;const gy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
         const ra = g.rotAnim;const renderRotP=Math.min(1,ra.p+renderLead/ROTATE_VISUAL_TIME);const k = renderRotP < 1 ? 1 - smoothRotationT(renderRotP) : 0;const ang = -k * ra.dir * (TAU / 6);const ca = Math.cos(ang), sa = Math.sin(ang);const ox2 = k * (ra.dx || 0) * D * 0.5;const oy2 = k * (ra.dy || 0) * D * HEX_ROW_H;
@@ -179,7 +179,7 @@ function remotePieceVisualSources(g){
     const off=dispOff(g.piece.rot);
     return pieceCells(g.piece).map(([x,y,c])=>({c,x:x+dx,y:y+frac+off,active:true}));
 }
-function applySnapshot(g, str) {
+function applySnapshot(g,str,fx=null) {
     if (typeof str !== "string" || str.length !== VALID_CELLS.length)return;
     const targets=VALID_CELLS.map(([x,y],i)=>({x,y,c:str.charCodeAt(i)-49}));
     const keep=new Set(),pool=[];
@@ -189,6 +189,14 @@ function applySnapshot(g, str) {
         if(cur){const v=g.vis.get(cur.id);pool.push({ball:cur,c:cur.c,x:v?.x??t.x,y:v?.y??t.y,active:false});}
     }
     pool.push(...remotePieceVisualSources(g));
+    // A released garbage sheet is already one logical event below its entry
+    // cells in the sender snapshot. Seed new remote identities at the captured
+    // top-entry coordinates so the opponent view falls continuously instead
+    // of popping one or more rows downward on packet hand-off.
+    for(const e of fx?.e||[])for(let i=0;i<(e.pat||[]).length;i++){
+        const q=e.pat[i],c=e.colors?.[i];if(!q||!Number.isInteger(c))continue;
+        pool.push({ball:null,c,x:e.ax+q[0],y:e.entryY+q[1],active:false,garbage:true});
+    }
     for(const [x,y] of VALID_CELLS){const cur=g.board[y][x];if(cur&&!keep.has(cur.id))g.board[y][x]=null;}
     const used=new Set();
     for(const t of targets){
@@ -206,6 +214,7 @@ function applySnapshot(g, str) {
             b=src.ball||mkBall(g,t.c);
             hexPhysClearGroupBall(b);delete b.fallPath;
             if(src.active)setVis(g,b,src.x,src.y,Math.max(0,REFERENCE_FALL_PX_PER_SEC/REFERENCE_BALL_PX));
+            else if(src.garbage){b.isGarbage=true;setVis(g,b,src.x,src.y,0);}
         }else{
             b=mkBall(g,t.c);setVis(g,b,t.x,t.y,0);
         }
@@ -216,13 +225,14 @@ function applySnapshot(g, str) {
 function pieceSnapshotOf(g){
     if(!g?.piece)return null;
     let frac=activeDropFraction(g);
-    if(g.hardDropAnim){const h=g.hardDropAnim,k=Math.min(1,h.t/Math.max(.001,h.dur));frac=h.fromY+(h.target.y-h.fromY)*k-g.piece.y;}
+    if(g.hardDropAnim){const h=g.hardDropAnim,k=Math.min(1,h.t/Math.max(.001,h.dur));frac=h.fromY+((h.targetY??h.target.y)-h.fromY)*k-g.piece.y;}
     return{x:g.piece.x,y:g.piece.y,r:g.piece.rot,c:g.piece.colors.slice(0,3),vx:Number.isFinite(g.pieceVX)?+g.pieceVX.toFixed(3):g.piece.x,f:+frac.toFixed(3),m:pieceFits(g.board,{...g.piece,y:g.piece.y+2})?1:0,s:g.fastForward?FAST_DROP_MULTIPLIER:1,q:(g.queue[0]||[]).slice(0,3)};
 }
 function remoteFxSnapshotOf(g){
     const f=(g?.fx?.formations||[])[0],toast=(g?.fx?.toasts||[]).find(t=>t.waza);
     const garbage=(g?.activeGarbagePacks||[]).filter(p=>p&&p._started&&!p.landed).map(p=>({type:p.type,seq:p.seq,pat:p.pat.map(q=>q.slice(0,2)),ax:p.ax,y:+p.y.toFixed(3),vy:+(p.vy||0).toFixed(3),bubbleT:+(p.bubbleT||0).toFixed(3),colors:p.colors.slice()}));
-    return{f:f?{w:f.w,cells:f.cells.slice(0,24),tint:f.tint,life:+f.life.toFixed(2),max:f.max,pointDown:!!f.pointDown}:null,t:toast?{text:toast.text,life:+toast.life.toFixed(2),max:toast.max,tint:toast.tint,waza:true,big:toast.big||.45}:null,g:garbage};
+    const entries=(g?.activeGarbagePacks||[]).filter(p=>p?.landed&&Number.isFinite(p.entryY)&&Number.isFinite(p.releaseTime)&&(g.garbageClock-p.releaseTime)<1.2).map(p=>({type:p.type,seq:p.seq,pat:p.pat.map(q=>q.slice(0,2)),ax:p.ax,entryY:p.entryY,colors:p.colors.slice(),age:+Math.max(0,g.garbageClock-p.releaseTime).toFixed(3)}));
+    return{f:f?{w:f.w,cells:f.cells.slice(0,24),tint:f.tint,life:+f.life.toFixed(2),max:f.max,pointDown:!!f.pointDown}:null,t:toast?{text:toast.text,life:+toast.life.toFixed(2),max:toast.max,tint:toast.tint,waza:true,big:toast.big||.45}:null,g:garbage,e:entries};
 }
 function applyRemoteVisualState(g,st){
     const p=st?.piece;

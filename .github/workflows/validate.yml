@@ -85,8 +85,8 @@ jobs:
           grep -q 'if (g.freeX != null) g.pieceVX = g.freeX' public/app-08.js
           grep -q 'rec.half>0?1:-1' public/controls-v7.js
           grep -q '__hexInstantDropV7' public/controls-v7.js
-          grep -q 'dropPiece(g.board' public/controls-v7.js
-          grep -q 'target.x=fixedX' public/controls-v7.js
+          grep -q 'hardDrop(g)' public/controls-v7.js
+          ! grep -q 'g.piece={...target}' public/controls-v7.js
           grep -q 'd.g.fastForward=true' public/controls-v7.js
           ! grep -q 'armSingleHold' public/controls-v7.js
           ! grep -q 'longActive' public/controls-v7.js

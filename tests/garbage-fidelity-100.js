@@ -85,9 +85,10 @@ for(let pass=0;pass<100;pass++){
  expect(close(slow.p.bubbleT,fast.p.bubbleT)&&close(slow.p.y,fast.p.y)&&close(slow.p.vy,fast.p.vy),"pass "+pass+": 30fps/120fps trajectories differ");
  expect(slow.p.pat.length===GARBAGE_SHAPES[type].length,"pass "+pass+": packet shape changed during flight");
 
- const remote=createEngine(seed+10000);remote.state="NET";applyRemoteVisualState(remote,{piece:null,fx:remoteFxSnapshotOf(fast.g)});
- const remoteY=remote.activeGarbagePacks[0]?.y;stepNetGarbageMotion(remote,1/60);
- expect(Number.isFinite(remoteY)&&remote.activeGarbagePacks[0].y>=remoteY,"pass "+pass+": opponent garbage interpolation reversed or disappeared");
+ const remote=createEngine(seed+10000);remote.state="NET";const fx=remoteFxSnapshotOf(fast.g);applySnapshot(remote,snapshotOf(fast.g),fx);applyRemoteVisualState(remote,{piece:null,fx});
+ const remoteBall=(()=>{for(let y=boardScanMin(remote.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?remote.board[y][x]:null;if(b?.isGarbage)return b;}return null;})();
+ const remoteY=remoteBall?remote.vis.get(remoteBall.id)?.y:null;updateVisuals(remote,1/60);
+ expect(remoteBall&&Number.isFinite(remoteY)&&remote.vis.get(remoteBall.id).y>=remoteY,"pass "+pass+": opponent garbage interpolation reversed or disappeared");
 
  const done=finishFlight(seed,type,height);
  expect(done.p?.landed,"pass "+pass+": garbage did not reach contact within the reference envelope");

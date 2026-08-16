@@ -86,11 +86,18 @@ function rotate(g,dir){
  for(const[kx,ky]of KICKS){const q={...from,rot:nr,x:from.x+kx,y:from.y+ky};if(!pieceFits(g.board,q)||!rotationSweepSafe(g.board,from,q,dir))continue;const after=centroidOf(q);g.piece=q;g.rotAnim={p:0,dir:dir>0?1:-1,dx:before[0]-after[0],dy:before[1]-after[1]};emit(g,{t:"rotate"});if(g.lockT>0&&g.lockResets<12){g.lockT=0;g.lockResets++;}return true;}
  return false;
 }
-const HARD_DROP_FRAMES=5,HARD_DROP_FPS=30,HARD_DROP_VISUAL_TIME=HARD_DROP_FRAMES/HARD_DROP_FPS;
+const HARD_DROP_FPS=REFERENCE_VIDEO_FPS,HARD_DROP_MIN_TIME=1/HARD_DROP_FPS;
 function hardDrop(g){
  if(g.state!=="PLAYING"||!g.piece||g.hardDropAnim)return;const target=dropPiece(g.board,g.piece);
  if(target.y===g.piece.y){emit(g,{t:"drop"});lock(g,5);return;}
- g.hardDropAnim={t:0,dur:HARD_DROP_VISUAL_TIME,fromY:g.piece.y+activeDropFraction(g),target:{...target}};g.dropT=0;emit(g,{t:"drop"});
+ const dx=(Number.isFinite(g.pieceVX)?g.pieceVX:g.piece.x)-g.piece.x;
+ // Rotation display offset is fully aligned by the end of a hard drop, so the
+ // terminal collision is measured with dOff=0.
+ const contactFrac=safeActiveFallOffset(g,pieceCells(target),dx,0,2);
+ const fromY=g.piece.y+activeDropFraction(g),targetY=target.y+contactFrac;
+ const physicalDistance=Math.max(0,(targetY-fromY)*HEX_ROW_H);
+ const dur=Math.max(HARD_DROP_MIN_TIME,physicalDistance/Math.max(.0001,HARD_DROP_SPEED));
+ g.hardDropAnim={t:0,dur,fromY,targetY,contactFrac,target:{...target}};g.dropT=0;emit(g,{t:"drop"});
 }
 
 function lock(g,vy=2){
@@ -100,6 +107,10 @@ function lock(g,vy=2){
  if(g.freeX!=null)setColumn(g,g.freeX);
  const splitOffset=Math.max(-1,Math.min(1,preSnapX-g.piece.x));
  let cells=pieceCells(g.piece);
+ // The active triplet can touch a ball between two logical rows. Preserve that
+ // exact centre height at the active-to-pile hand-off, just as X is preserved.
+ // The first fall segment is retimed from this physical contact point below.
+ const releaseFrac=safeActiveFallOffset(g,cells,splitOffset,0,activeDropFraction(g));
  let invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
  if(invalid){
   const before=physicsSignature(g);settleAll(g.board);if(physicsSignature(g)!==before||boardHasIllegalFloat(g.board))g.piece=dropPiece(g.board,g.piece);
@@ -116,7 +127,7 @@ function lock(g,vy=2){
   // the last rendered sub-cell X and let the continuous pile renderer consume
   // the remaining offset.  Snapping here was the visible one-frame sideways
   // jump that occurred at the instant of landing.
-  setVis(g,ball,x+splitOffset,y,Math.max(RELEASE_INITIAL_VY,vy||0));
+  setVis(g,ball,x+splitOffset,y+releaseFrac,Math.max(RELEASE_INITIAL_VY,vy||0));
   const vv=g.vis.get(ball.id);vv.motionSpeed=Math.max(RELEASE_INITIAL_VY,vy||0);vv.justReleased=true;
  }
  const gid=made.length?HEX_PHYS_GROUP_SEQ++:0,orientation=((splitRot&1)===0)?"down":"up";
@@ -125,6 +136,10 @@ function lock(g,vy=2){
   m.ball.visualTripletId=gid;m.ball.visualTripletOrientation=orientation;m.ball.visualTripletRole=m.role;
  }
  const immediateMoved=settlePass(g.board);if(immediateMoved)g.ver++;
+ // Logical proposals originate at lattice cells. Rendering must originate at
+ // the actual fractional contact point or the first resolving frame jumps one
+ // row upward. Translating every member equally preserves triplet rigidity.
+ if(releaseFrac>1e-9)for(const m of made){const seg=m.ball.fallPath?.[0];if(seg?.from)seg.from=[m.x+splitOffset,m.y+releaseFrac];else{const v=g.vis.get(m.ball.id);if(v){v.x=m.x;v.y=m.y;v.vy=0;v.motionSpeed=0;}}}
  g.piece=null;g.hardDropAnim=null;g.freeX=null;g.dragging=false;g.ver++;emit(g,{t:"land"});g.state="RESOLVING";g.phase="SETTLE";g.stateT=0;
  if(immediateMoved&&g.physicsWatch){g.physicsWatch.lastSig=physicsSignature(g);g.physicsWatch.repeats=0;g.physicsWatch.steps=0;}
 }

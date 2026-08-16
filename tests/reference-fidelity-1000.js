@@ -25,7 +25,7 @@ function finishGarbage(seed,type,height){const g=createEngine(seed);flatBase(g,h
 // Reference sources: six 1920x1080 captures at 30fps. Runtime measurements
 // are normalized to the 1280x720 canvas before comparisons below.
 expect(VW===1280&&VH===720,"reference viewport changed");
-expect(close(REFERENCE_BALL_PX,63.4,1e-9)&&close(HARD_DROP_VISUAL_TIME,5/30,1e-9),"capture-derived size or hard-drop timing changed");
+expect(close(REFERENCE_BALL_PX,63.4,1e-9)&&close(REFERENCE_HARD_DROP_PX_PER_FRAME,34.5,1e-9),"capture-derived size or hard-drop speed changed");
 
 // 001-180: active triplet, drag, guide, rotation and hard drop.
 for(let i=0;i<180;i++)pass("active",i,()=>{
@@ -95,7 +95,7 @@ for(let i=0;i<180;i++)pass("garbage",i,()=>{
  expect(a.p&&b.p&&a.p.actualStartTime===0&&b.p.actualStartTime===0,"garbage "+i+": packet start drifted");
  expect(a.mono&&b.mono&&close(a.p.y,b.p.y)&&close(a.p.vy,b.p.vy),"garbage "+i+": fall differs by frame rate");
  if(total<=HEX_GARBAGE_BUBBLE_DURATION)expect(a.p.y===GARBAGE_START_Y,"garbage "+i+": packet moved inside bubble");
- const remote=createEngine(seed+9000);remote.state="NET";applyRemoteVisualState(remote,{piece:null,fx:remoteFxSnapshotOf(b.g)});const ry=remote.activeGarbagePacks[0].y;stepNetGarbageMotion(remote,1/60);expect(remote.activeGarbagePacks[0].y>=ry,"garbage "+i+": opponent packet moved upward");
+ const remote=createEngine(seed+9000);remote.state="NET",fx=remoteFxSnapshotOf(b.g);applySnapshot(remote,snapshotOf(b.g),fx);applyRemoteVisualState(remote,{piece:null,fx});let rb=null;for(let y=boardScanMin(remote.board);y<ROWS&&!rb;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?remote.board[y][x]:null;if(q?.isGarbage){rb=q;break;}}const ry=rb?remote.vis.get(rb.id)?.y:null;updateVisuals(remote,1/60);expect(rb&&Number.isFinite(ry)&&remote.vis.get(rb.id).y>=ry,"garbage "+i+": opponent packet moved upward");
  const done=finishGarbage(seed,type,height);expect(done.p?.landed&&done.t<2.1,"garbage "+i+": packet missed the reference contact envelope");
  expect(done.added.length===GARBAGE_SHAPES[type].length&&done.added.every(v=>valid(v.x,v.y)&&!v.b.rigid&&!v.b.motionGroupId),"garbage "+i+": contact count, overlap or rigidity differs");
 });

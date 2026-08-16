@@ -301,7 +301,9 @@ function stepEngine(g, dt) {
         if (g.hardDropAnim) {
             g.hardDropAnim.t += dt;
             if (g.hardDropAnim.t >= g.hardDropAnim.dur) {
-                g.piece = {...g.hardDropAnim.target};
+                const completed=g.hardDropAnim;
+                g.piece = {...completed.target};
+                g.dropT=g.dropInterval*Math.max(0,Math.min(2,completed.contactFrac||0))/2;
                 g.hardDropAnim = null;
                 lock(g,5);
             }
@@ -313,26 +315,24 @@ function stepEngine(g, dt) {
         const iv = g.dropInterval;
         const dropTimeScale = g.fastForward ? FAST_DROP_MULTIPLIER : 1;
         g.dropT += dt * dropTimeScale;
-        while (g.dropT >= iv) {
+        while (g.dropT >= iv && pieceFits(g.board, { ...g.piece, y: g.piece.y + 2 })) {
             g.dropT -= iv;
-            if (pieceFits(g.board, { ...g.piece, y: g.piece.y + 2 })) {
-                g.piece = { ...g.piece, y: g.piece.y + 2 };
-                g.lockT = 0;
-            }
-            else
-                break;
+            g.piece = { ...g.piece, y: g.piece.y + 2 };
+            g.lockT = 0;
         }
         if (!pieceFits(g.board, { ...g.piece, y: g.piece.y + 2 })) {
-            g.dropT = 0;
-            // 本家寄せ:
-            // 操作中ピースだけを「剛体のまま1フレーム単位で斜面移動」させない。
-            // 接触後は短いロック猶予だけを置き、盤面球へ移行した直後から
-            // 通常球と同じ重力・円弧スライド・分裂へ一本化する。
-            g.rigidSlideDir = 0;
-            g.rigidSlideSteps = 0;
-            g.lockT += dt;
-            if (g.lockT >= CONTACT_LOCK_DELAY)
-                lock(g, 3);
+            const dx=(Number.isFinite(g.pieceVX)?g.pieceVX:g.piece.x)-g.piece.x;
+            const contactFrac=safeActiveFallOffset(g,pieceCells(g.piece),dx,dispOff(g.piece.rot),2);
+            const contactClock=iv*Math.max(0,Math.min(2,contactFrac))/2;
+            // Continue through the open fraction, then hold exactly at first
+            // contact for the short alignment window seen in the capture.
+            if(g.dropT+1e-10>=contactClock){
+                g.dropT=contactClock;
+                g.rigidSlideDir = 0;
+                g.rigidSlideSteps = 0;
+                g.lockT += dt;
+                if (g.lockT >= CONTACT_LOCK_DELAY)lock(g, 3);
+            }else g.lockT=0;
         } else {
             g.lockT = 0;
             g.rigidSlideDir = 0;

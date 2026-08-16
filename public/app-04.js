@@ -100,6 +100,14 @@ const REFERENCE_FALL_PX_PER_SEC=36.239736692842548;
 const REFERENCE_BALL_PX=63.4;
 const REFERENCE_ACTIVE_STEP_PX=2*REFERENCE_BALL_PX*HEX_ROW_H;
 const DROP_INTERVAL=REFERENCE_ACTIVE_STEP_PX/REFERENCE_FALL_PX_PER_SEC;
+// Tracking the unobstructed right-hand drop in the 30 fps reference capture
+// gives a median centre displacement of 34.5 source pixels per frame.  Hard
+// drop is therefore a constant-speed fall whose duration depends on the
+// remaining distance; a fixed five-frame duration made high drops look like a
+// teleport and low drops look artificially slow.
+const REFERENCE_HARD_DROP_PX_PER_FRAME=34.5;
+const REFERENCE_HARD_DROP_PX_PER_SEC=REFERENCE_HARD_DROP_PX_PER_FRAME*30;
+const HARD_DROP_SPEED=REFERENCE_HARD_DROP_PX_PER_SEC/REFERENCE_BALL_PX;
 const FAST_DROP_MULTIPLIER=5.8;
 const LONG_PRESS_MS=260;
 const GRAV=24.329692506794245;
@@ -117,7 +125,27 @@ const REFERENCE_SLOPE_HARD_FRAMES=4,SLOPE_HARD_DURATION=REFERENCE_SLOPE_HARD_FRA
 const LANDING_ALIGN_DURATION=4/60;
 const PIECE_SNAP_SPEED=14.0,CONTACT_LOCK_DELAY=LANDING_ALIGN_DURATION,ROTATE_VISUAL_TIME=.10;
 const smoothRotationT=t=>t*t*(3-2*t);
-const activeDropFraction=(g,renderLead=0)=>{if(!g||!g.piece||!pieceFits(g.board,{...g.piece,y:g.piece.y+2}))return 0;const scale=g.fastForward?FAST_DROP_MULTIPLIER:1,pred=g.dropT+Math.max(0,renderLead)*scale;return Math.min(.999,pred/g.dropInterval)*2;};
+// Keep the active centre moving through the final, partially open lattice
+// interval.  Collision geometry, not pieceFits(), clamps the visible descent.
+// Returning zero as soon as the next complete row was blocked produced a
+// conspicuous pause/upward snap immediately before every non-flat landing.
+const activeDropFraction=(g,renderLead=0)=>{if(!g||!g.piece)return 0;const scale=g.fastForward?FAST_DROP_MULTIPLIER:1,pred=g.dropT+Math.max(0,renderLead)*scale;return Math.max(0,Math.min(.999999,pred/g.dropInterval)*2);};
+function safeActiveFallOffset(g,cells,dx,dOff,desired){
+ if(!g||!g.board)return desired;
+ const H=HEX_ROW_H,R=.998;let safe=desired;
+ for(let i=0;i<cells.length;i++){
+  const ax=(cells[i][0]+dx)*.5,ay0=(cells[i][1]+dOff)*H;
+  const floorOffset=((ROWS-1)*H-ay0)/H;if(floorOffset<safe)safe=floorOffset;
+  for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){
+   const bc=valid(bx,by)?g.board[by][bx]:null;if(!bc)continue;
+   const bv=g.vis.get(bc.id),bxx=(bv?bv.x:bx)*.5,byy=(bv?bv.y:by)*H,hx=Math.abs(ax-bxx);
+   if(hx>=R)continue;
+   const vertical=Math.sqrt(Math.max(0,R*R-hx*hx)),off=(byy-vertical-ay0)/H;
+   if(off<safe)safe=off;
+  }
+ }
+ return Math.max(0,Math.min(desired,safe));
+}
 const CLEAR_SUPPORT_RELEASE_RATIO=.90;
 const LEGACY_VISUAL_SUBSTEPS=4,MAX_PHYSICS_CATCHUP_STEPS=8;
 const clearVisualState=k=>{k=Math.max(0,Math.min(1,k));const scale=Math.max(.04,1+Math.sin(Math.min(1,k/.5)*Math.PI*.5)*.3-Math.max(0,(k-.6)/.4)*1.1),alpha=k<.62?1:Math.max(0,1-(k-.62)/.38);return{scale,alpha};};

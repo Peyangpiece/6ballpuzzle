@@ -4,10 +4,10 @@ const vm=require("vm");
 const read=name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8");
 const names=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js"];
 const runtime=names.map(read).join("\n");
-const app14=read("app-14.js"),app16=read("app-16.js");
+const app14=read("app-14.js"),app16=read("app-16.js"),controls=read("controls-v7.js");
 
 const suite=String.raw`
-const source14=${JSON.stringify(app14)},source16=${JSON.stringify(app16)};
+const source14=${JSON.stringify(app14)},source16=${JSON.stringify(app16)},sourceControls=${JSON.stringify(controls)};
 const completed=[];
 function expect(v,m){if(!v)throw new Error(m);}
 function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
@@ -48,7 +48,12 @@ console.log("reference convergence round 1 1000/1000 PASS");
 // Round 2: expand to 2000 with active-piece, rigidity, pile, garbage and skill samples.
 for(let i=0;i<1000;i++){
  const mode=i%5,seed=12000+i;
- if(mode===0){const g=active(seed),[lo,hi]=legalXRange(g),x=lo+(hi-lo)*((i%37)+.2)/37;setFreeX(g,x);updateVisuals(g,PHYSICS_FRAME);expect(close(g.freeX,x)&&close(g.pieceVX,x),"round2 continuous drag "+i);}
+ if(mode===0){
+  const kind=i%3,g=active(seed);
+  if(kind===0){const[lo,hi]=legalXRange(g),x=lo+(hi-lo)*((i%37)+.2)/37;setFreeX(g,x);updateVisuals(g,PHYSICS_FRAME);expect(close(g.freeX,x)&&close(g.pieceVX,x),"round2 continuous drag "+i);}
+  else if(kind===1){hardDrop(g);const h=g.hardDropAnim,expected=(h.targetY-h.fromY)*HEX_ROW_H/HARD_DROP_SPEED;expect(h&&close(h.dur,expected)&&close(REFERENCE_HARD_DROP_PX_PER_FRAME,34.5)&&sourceControls.includes("hardDrop(g)")&&!sourceControls.includes("g.piece={...target}"),"round2 reference hard drop "+i);}
+  else{g.piece={...g.piece,y:2,rot:0};g.pieceVX=g.piece.x;const support=ball(seed*100,4);put(g,9,4,support);const contact=safeActiveFallOffset(g,pieceCells(g.piece),0,dispOff(g.piece.rot),2);g.dropT=g.dropInterval*contact/4;const before=activeDropFraction(g);stepEngine(g,PHYSICS_FRAME);expect(contact>0&&activeDropFraction(g)>=before&&g.piece&&g.lockT===0,"round2 partial contact fall "+i);}
+ }
  else if(mode===1){const b=newBoard(),base=3+2*(i%6),gid=seed,bs=[0,1,2].map(r=>({id:seed*10+r,c:r,motionGroupId:gid,motionGroupRole:r,motionGroupOrientation:"down",motionGroupSize:3,rigid:true})),m=[{ball:bs[0],x:base,y:2,role:0},{ball:bs[1],x:base+2,y:2,role:1},{ball:bs[2],x:base+1,y:3,role:2}];m.forEach(v=>b[v.y][v.x]=v.ball);const p=hexPhysPlanGroup(b,m,false);expect(p.length===3&&p.every(v=>v.ty-v.y===2)&&bs.every(v=>v.rigid),"round2 rigid freefall "+i);}
  else if(mode===2){const g=createEngine(seed),rng=mulberry32(seed);let id=seed*30;for(let n=0;n<9+(i%9);n++){const y=(n%4)*2,xs=[];for(let x=0;x<W2;x++)if(valid(x,y)&&!g.board[y][x])xs.push(x);if(xs.length)g.board[y][xs[(rng()*xs.length)|0]]=ball(id++,(n+i)%COLORS.length);}settleAll(g.board);expect(!hasLegalGravityMove(g.board)&&!boardHasIllegalFloat(g.board),"round2 pile equilibrium "+i);}
  else if(mode===3){const type=["PYRAMID","HEXAGON","STRAIGHT"][i%3],a=garbageAt(seed,type,i%5,1/30,.42+(i%9)*.03),b=garbageAt(seed,type,i%5,1/120,.42+(i%9)*.03);expect(a&&b&&close(a.y,b.y)&&close(a.vy,b.vy)&&a.y>=GARBAGE_START_Y,"round2 garbage trajectory "+i);}

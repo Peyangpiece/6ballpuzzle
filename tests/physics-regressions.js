@@ -13,7 +13,7 @@ expect(Array.from({length:W2},(_,x)=>x).filter(x=>valid(x,ROWS-1)).length===10,"
 expect(Array.from({length:W2},(_,x)=>x).filter(x=>valid(x,ROWS-2)).length===9,"reference geometry: even second level is not nine balls wide");
 expect(GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===0).length===9&&GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===1).length===10,"reference geometry: straight garbage rows have the wrong phase");
 expect(pieceFits(newBoard(),{x:SPAWN_X,y:-2,rot:0,colors:[0,1,2]}),"reference geometry: centred spawn is outside the reversed lattice");
-expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"reference fall timing changed");
+expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&REFERENCE_HARD_DROP_PX_PER_FRAME===34.5,"reference fall timing changed");
 {
  const pat=GARBAGE_SHAPES.PYRAMID,maxY=Math.max(...pat.map(([,y])=>y)),inverse=pat.map(([x,y])=>[x,maxY-y]);
  expect(classify(pat)==="PYRAMID"&&classify(inverse)==="PYRAMID","pyramid orientation: inverse pyramid did not trigger pyramid garbage");
@@ -158,7 +158,8 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
  updateGarbagePacks(g,HEX_GARBAGE_BUBBLE_DURATION*.5);
  expect(p.y===startY&&p.bubbleT>0,"garbage bubble: pack fell before the bubble finished growing");
  updateGarbagePacks(g,HEX_GARBAGE_BUBBLE_DURATION);
- expect(p.y>startY,"garbage bubble: gravity did not start after the bubble pop");
+ let entered=0,paths=0;for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b?.isGarbage){entered++;if(b.fallPath?.length)paths++;}}
+ expect(p.landed&&entered===GARBAGE_SHAPES.PYRAMID.length&&paths>0,"garbage bubble: independent top-entry fall did not start after the pop");
 }
 
 // Pyramid and hexagon completion arm their shape-specific reference effects.

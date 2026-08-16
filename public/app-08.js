@@ -1,6 +1,7 @@
 function updateVisuals(g, dt) {
 g.pileFlowClock=(g.pileFlowClock||0)+dt;
 const pileMemo=new Map();
+const liveMemo=new Map();
 const alive = new Set();
 const scanMin=boardScanMin(g.board);
 g._visualArcPivotById = new Map();
@@ -121,7 +122,8 @@ if(liveBatchMember){
 const batchDuration=Math.max(1e-9,g._liveBatchClock.duration);
 const t=Math.min(1,g._liveBatchClock.elapsed/batchDuration);
 const motionState=g._liveBatchClock.states?.get(cell.id);
-const [nx,ny]=liveSegPoint(seg,t,motionState?.startState,motionState?.naturalDuration);
+const member=liveBatch.byId?.get(cell.id);
+const [nx,ny]=liveBatchPointAt(liveBatch,member,t,g._liveBatchClock.states,liveMemo);
 
 v.x=nx;
 v.y=Math.max(visualOldY,ny);

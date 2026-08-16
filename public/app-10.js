@@ -283,27 +283,3 @@ function drawAttackFlights(ctx,orbs){
         ctx.restore();
     }
 }
-function safeActiveFallOffset(g, cells, dx, dOff, desired) {
-    if (!g || !g.board) return desired;
-    const H = HEX_ROW_H;
-    let safe = desired;
-    const R = 0.998;
-    for (let i = 0; i < cells.length; i++) {
-        const ax = (cells[i][0] + dx) * 0.5;
-        const ay0 = (cells[i][1] + dOff) * H;
-        for (let by = boardScanMin(g.board); by < ROWS; by++) for (let bx = 0; bx < W2; bx++) {
-            const bc = valid(bx, by) ? g.board[by][bx] : null;
-            if (!bc) continue;
-            const bv = g.vis.get(bc.id);
-            const bxx = ((bv ? bv.x : bx) * 0.5);
-            const byy = ((bv ? bv.y : by) * H);
-            const hx = Math.abs(ax - bxx);
-            if (hx >= R) continue;
-            const vertical = Math.sqrt(Math.max(0, R * R - hx * hx));
-            const ceilingY = byy - vertical;
-            const off = (ceilingY - ay0) / H;
-            if (off < safe) safe = off;
-        }
-    }
-    return Math.max(0, Math.min(desired, safe));
-}
