@@ -128,7 +128,7 @@ function hexPhysAppendSegment(ball,p,eventSeq){
     const last=ball.fallPath[ball.fallPath.length-1];
     if(!last||last.to[0]!==seg.to[0]||last.to[1]!==seg.to[1])ball.fallPath.push(seg);
     const dx=p.tx-p.x,dy=p.ty-p.y;
-    if(dx){ball.rollDir=Math.sign(dx);ball.momentumX=Math.sign(dx);ball.subCellBias=Math.sign(dx);}
+    if(dx){ball.rollDir=Math.sign(dx);ball.momentumX=Math.sign(dx);ball.subCellBias=Math.sign(dx);ball.impactOffsetX=0;}
     else if(dy>=2)ball.rollDir=0;
     ball.forceSplit=false;ball.fallBias=0;ball.fallBiasTTL=0;ball.fixedGarbage=false;
 }

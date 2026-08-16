@@ -84,8 +84,9 @@ function hardDrop(g){
 function lock(g,vy=2){
  if(!g.piece)return;
  clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
- const preSnapX=g.freeX!=null?g.freeX:g.piece.x,splitOffset=preSnapX-g.piece.x,splitRot=g.piece.rot;
+ const preSnapX=g.freeX!=null?g.freeX:g.piece.x,splitRot=g.piece.rot;
  if(g.freeX!=null)setColumn(g,g.freeX);
+ const splitOffset=Math.max(-1,Math.min(1,preSnapX-g.piece.x));
  let cells=pieceCells(g.piece);
  let invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
  if(invalid){
@@ -96,7 +97,7 @@ function lock(g,vy=2){
  const made=[];
  for(let role=0;role<cells.length;role++){
   const[x,y,c]=cells[role],ball=mkBall(g,c);
-  ball.subCellBias=Math.abs(splitOffset)>1e-5?Math.sign(splitOffset):0;ball.momentumX=ball.subCellBias;
+  ball.impactOffsetX=splitOffset;ball.subCellBias=Math.abs(splitOffset)>1e-5?Math.sign(splitOffset):0;ball.momentumX=ball.subCellBias;
   g.board[y][x]=ball;noteBoardCell(g.board,y,ball);made.push({ball,role,x,y});setVis(g,ball,x,y,Math.max(RELEASE_INITIAL_VY,vy||0));
   const vv=g.vis.get(ball.id);vv.motionSpeed=Math.max(RELEASE_INITIAL_VY,vy||0);vv.justReleased=true;
  }

@@ -151,10 +151,17 @@ function hexPhysUpConvexSeparator(b,members,motions){
  if(lower.length!==2||!top||lower[1].x-lower[0].x!==2)return null;
  const px=(lower[0].x+lower[1].x)/2,py=lowerY+1,support=valid(px,py)?b[py][px]:null;
  if(!support||members.some(m=>m.ball.id===support.id))return null;
- const topIndex=members.indexOf(top),topMove=motions[topIndex],bias=Math.sign(topMove?.tx-top.x)||hexPhysBias(top.ball)||Math.sign(members.reduce((n,m)=>n+hexPhysBias(m.ball),0))||-1;
+ // The continuous release offset is measured in doubled-x lattice units.
+ // Split only when the protrusion falls in the middle two quarters of the
+ // actual base segment; contacts in either outer quarter remain rigid slopes.
+ const offset=Math.max(-1,Math.min(1,Number.isFinite(top.ball?.impactOffsetX)?top.ball.impactOffsetX:0));
+ const baseLeft=lower[0].x+offset,baseRight=lower[1].x+offset,hitFraction=(px-baseLeft)/(baseRight-baseLeft);
+ if(hitFraction<.25-1e-9||hitFraction>.75+1e-9)return null;
+ const actualCenter=(baseLeft+baseRight)/2,relative=px-actualCenter,topIndex=members.indexOf(top),topMove=motions[topIndex];
+ const bias=relative>1e-9?-1:relative<-1e-9?1:(Math.sign(topMove?.tx-top.x)||hexPhysBias(top.ball)||Math.sign(members.reduce((n,m)=>n+hexPhysBias(m.ball),0))||-1);
  const pairLower=bias<0?lower[0]:lower[1],solo=bias<0?lower[1]:lower[0],soloMotion=motions[members.indexOf(solo)];
  if(!soloMotion||Math.sign(soloMotion.tx-solo.x)!==-bias)return null;
- return{dir:bias,top,pairLower,solo,soloMotion,support,px,py};
+ return{dir:bias,top,pairLower,solo,soloMotion,support,px,py,hitFraction};
 }
 function hexPhysUpConvexSplitPlan(b,members,info,preview=false){
  if(!info)return null;

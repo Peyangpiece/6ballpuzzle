@@ -46,6 +46,23 @@ function expect(value,message){if(!value)throw new Error(message);}
  expect(plan.filter(p=>p.bundleId===122).every(p=>p.tx-p.x===-1)&&solo&&solo.tx-solo.x===1,"convex split: left/right separation was not produced");
 }
 
+// The upward-triangle split window is exactly the center 2/4 of its continuous
+// base. Boundary contacts split; either outer quarter remains a rigid slope.
+for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[0,true,-1],[.4,true,1],[.5,true,1],[.51,false,0]]){
+ const b=newBoard(),balls=[0,1,2].map(i=>({id:240+i,c:i,motionGroupId:124,motionGroupRole:i,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,momentumX:Math.sign(offset),impactOffsetX:offset}));
+ const members=[{ball:balls[0],x:5,y:3,role:0,orientation:"up"},{ball:balls[1],x:6,y:4,role:1,orientation:"up"},{ball:balls[2],x:4,y:4,role:2,orientation:"up"}];
+ for(const m of members)b[m.y][m.x]=m.ball;b[5][5]={id:249,c:4,motionGroupId:0,rigid:false};
+ const motions=members.map(m=>hexPhysIndependentMemberMotion(b,members,m)),separator=hexPhysUpConvexSeparator(b,members,motions);
+ expect(!!separator===expected,"convex range: offset "+offset+" received the wrong split decision");
+ if(expected&&offset!==0)expect(separator.dir===dir,"convex range: offset "+offset+" split toward the wrong side");
+}
+{
+ const g=createEngine(25);g.state="PLAYING";g.piece={x:10,y:0,rot:1,colors:[0,1,2]};g.pieceVX=10.4;g.freeX=10.4;
+ lock(g,3);
+ const released=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null;if(ball?.motionGroupId)released.push(ball);}
+ expect(released.length===3&&released.every(ball=>Math.abs(ball.impactOffsetX-.4)<1e-9),"convex range: continuous horizontal release offset was not preserved");
+}
+
 // Preview and application must use the same collision acceptance. A rejected
 // proposal is not a legal move and cannot trap SETTLE in an endless loop.
 {
