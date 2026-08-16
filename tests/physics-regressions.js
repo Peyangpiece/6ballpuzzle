@@ -47,6 +47,15 @@ for(let rot=0;rot<6;rot++){
  expect(Math.abs(Math.max(...rightCells)-(W2-1))<1e-9,"continuous wall range: rotation "+rot+" cannot reach the right edge");
 }
 
+// A disconnected fitting region beyond an occupied column is not reachable
+// by a continuous drag. The visual X must stop with the logical piece.
+{
+ const g=createEngine(219);g.state="PLAYING";g.piece={x:SPAWN_X,y:0,rot:0,colors:[0,1,2]};g.pieceVX=SPAWN_X;
+ const blocker={id:2190,c:4,motionGroupId:0,rigid:false};g.board[0][13]=blocker;
+ const range=legalXRange(g);setFreeX(g,100);updateVisuals(g,PHYSICS_FRAME);
+ expect(range[1]===SPAWN_X&&g.freeX===SPAWN_X&&g.pieceVX===SPAWN_X,"continuous obstacle range: drag crossed a blocked column");
+}
+
 // A wall contributes no support rigidity, but touching it alone must not break
 // a freely falling triplet whose cells can still translate together.
 {

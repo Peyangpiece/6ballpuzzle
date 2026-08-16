@@ -35,16 +35,21 @@ function die(g,overflowCells=null,reason="LIMIT"){
  g.piece=null;g.hardDropAnim=null;g.fx.shake=0;g.fx.sink=0;
 }
 function legalXRange(g){
- const p=g.piece;let lo=null,hi=null;
- for(let x=0;x<W2;x++){if(((x-p.x)&1)!==0)continue;if(!pieceFits(g.board,{...p,x}))continue;if(lo===null)lo=x;hi=x;}
- if(lo===null)return[p.x,p.x];
+ const p=g.piece;let lo=p.x,hi=p.x;
+ // Only columns connected to the current position are reachable. Scanning
+ // every fitting column allowed freeX to jump across an occupied column even
+ // though setColumn correctly stopped the logical piece at the obstacle.
+ while(pieceFits(g.board,{...p,x:lo-2}))lo-=2;
+ while(pieceFits(g.board,{...p,x:hi+2}))hi+=2;
  // Logical anchors advance by two doubled-x units, but a dragged piece may
  // occupy the one-unit phase between them. Keep that final half-step at both
  // walls so its outer ball can reach lattice columns 0 and W2-1; lock() alone
- // chooses the nearest legal anchor. The old range stopped at lo/hi and made
- // each side look one ball narrower after the lattice phase was reversed.
+ // chooses the nearest legal anchor. Do not add that step at an occupied-cell
+ // boundary, where it would overlap the blocking ball.
  const offsets=pieceCells(p).map(([x])=>x-p.x),wallLo=-Math.min(...offsets),wallHi=(W2-1)-Math.max(...offsets);
- return[Math.max(wallLo,lo-1),Math.min(wallHi,hi+1)];
+ const leftStoppedByWall=pieceCells({...p,x:lo-2}).some(([x,y])=>!valid(x,y));
+ const rightStoppedByWall=pieceCells({...p,x:hi+2}).some(([x,y])=>!valid(x,y));
+ return[leftStoppedByWall?Math.max(wallLo,lo-1):lo,rightStoppedByWall?Math.min(wallHi,hi+1):hi];
 }
 function setColumn(g,targetX){
  if(g.state!=="PLAYING"||!g.piece)return false;

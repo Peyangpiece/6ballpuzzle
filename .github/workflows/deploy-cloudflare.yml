@@ -32,6 +32,9 @@ jobs:
       - name: Run 100-pass garbage fidelity
         run: node tests/garbage-fidelity-100.js
 
+      - name: Run weighted 1000-pass reference fidelity
+        run: node tests/reference-fidelity-1000.js
+
       - name: Deploy 6ballpuzzle
         uses: cloudflare/wrangler-action@v3
         with:

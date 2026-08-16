@@ -58,6 +58,8 @@ jobs:
         run: node tests/movement-fidelity-100.js
       - name: Check 100-pass garbage motion fidelity
         run: node tests/garbage-fidelity-100.js
+      - name: Check weighted 1000-pass reference fidelity
+        run: node tests/reference-fidelity-1000.js
       - name: Check clean touch controls v7
         run: |
           set -e
