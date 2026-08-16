@@ -29,8 +29,7 @@ function stepEngine(g, dt) {
     const visualSteps=visualSubstepCount(g);
     const visualDt=dt/visualSteps;
     for (let _vs=0; _vs<visualSteps; _vs++) updateVisuals(g,visualDt);
-    // fall-path rendering already follows legal lattice moves; avoid post-step lateral pushback that can deadlock moving packs.
-    // preventVisualOverlap(g);
+    resolveVisualContacts(g);
     // スコアは滑らかに追いつかせる
     g.scoreDisp += (g.stats.score - g.scoreDisp) * Math.min(1, 6 * dt);
     if (g.stats.score - g.scoreDisp < 1)
@@ -272,13 +271,12 @@ function stepEngine(g, dt) {
                 // 既に0.5秒間隔で開始済みなのに接触確定だけが詰まったセットを、1セットだけ救済する。
                 const stuckPlan=g.garbagePlans.find(p=>!p.landed && p._started);
                 if (stuckPlan) {
-                    materializeGarbagePack(g,stuckPlan);
-                    stuckPlan.landed=true;
+                    if(materializeGarbagePack(g,stuckPlan)||g.garbBlocked)stuckPlan.landed=true;
                 }
                 if (g.garbLeft>0 && g.garbageClock + 1e-9 >= g.garbageNextBallAt) {
                     // 旧数値互換おじゃまの救済も1回につき1球だけ投入する。
                     const placed=garbageBall(g);
-                    if (placed) {
+                    if (placed>0) {
                         g.garbLeft-=1;
                         g.garbageNextBallAt=g.garbageClock+HEX_GARBAGE_SHAPE_INTERVAL;
                         settlePass(g.board);

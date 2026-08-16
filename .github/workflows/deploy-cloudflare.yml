@@ -38,6 +38,9 @@ jobs:
       - name: Run staged 3000-pass video convergence
         run: node tests/reference-convergence-3000.js
 
+      - name: Run continuous no-overlap regression
+        run: node tests/overlap-regressions.js
+
       - name: Deploy 6ballpuzzle
         uses: cloudflare/wrangler-action@v3
         with:

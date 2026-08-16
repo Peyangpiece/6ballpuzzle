@@ -134,7 +134,10 @@ const smoothRotationT=t=>t*t*(3-2*t);
 const activeDropFraction=(g,renderLead=0)=>{if(!g||!g.piece)return 0;const scale=g.fastForward?FAST_DROP_MULTIPLIER:1,pred=g.dropT+Math.max(0,renderLead)*scale;return Math.max(0,Math.min(.999999,pred/g.dropInterval)*2);};
 function safeActiveFallOffset(g,cells,dx,dOff,desired){
  if(!g||!g.board)return desired;
- const H=HEX_ROW_H,R=.998;let safe=desired;
+ // Rendering uses full-diameter ball images. The former .998 contact radius
+ // deliberately allowed a small penetration which became visible when a
+ // released triplet immediately started a slope segment.
+ const H=HEX_ROW_H,R=1.000001;let safe=desired;
  for(let i=0;i<cells.length;i++){
   const ax=(cells[i][0]+dx)*.5,ay0=(cells[i][1]+dOff)*H;
   const floorOffset=((ROWS-1)*H-ay0)/H;if(floorOffset<safe)safe=floorOffset;

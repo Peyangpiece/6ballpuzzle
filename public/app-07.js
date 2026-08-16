@@ -124,15 +124,29 @@ function hexScheduleContinuousPaths(g,reason="continuous"){
     const now=Math.max(0,g.pileFlowClock||0);
     const lastEndByBall=new Map();
     const endByBallSeq=new Map();
+    // A later logical event may enter a cell vacated by an earlier event. The
+    // board already contains the final cells, but the renderer still shows the
+    // earlier occupant leaving. Record when each origin is visually clear so a
+    // follower can never arrive at the same centre first.
+    const cellClearAt=new Map();
     const stateByBall=new Map();
     const seqs=[...new Set(all.map(q=>q.seq))].sort((a,b)=>a-b);
+    let previousEventEnd=now;
 
     for(const seq of seqs){
         const entries=all.filter(q=>q.seq===seq);
+        const sameEventOrigins=new Set(entries.map(q=>q.seg.from.join(",")));
         const durations=[];
-        let start=now;
+        // The logical solver computes the next contact event from the state
+        // produced by the previous one. Playing different event sequence IDs
+        // concurrently lets a future ball occupy or cross a path that is still
+        // visibly in use. Members of one event remain parallel; distinct events
+        // retain their causal order with no artificial pause between them.
+        let start=previousEventEnd;
         for(const q of entries){
             start=Math.max(start,lastEndByBall.get(q.ball.id)||now);
+            const targetKey=q.seg.to.join(",");
+            if(!sameEventOrigins.has(targetKey))start=Math.max(start,cellClearAt.get(targetKey)||now);
             for(const sid of q.seg.followSupportIds||[]){
                 // Following a moving support is simultaneous when it belongs to
                 // this event. Only an earlier support event is a causal wait.
@@ -160,7 +174,9 @@ function hexScheduleContinuousPaths(g,reason="continuous"){
             q.seg.continuousChain=true;
             lastEndByBall.set(q.ball.id,start+duration);
             endByBallSeq.set(q.ball.id+":"+seq,start+duration);
+            cellClearAt.set(q.seg.from.join(","),start+duration);
         }
+        previousEventEnd=start+duration;
     }
     return {balls:new Set(all.map(q=>q.ball.id)).size,segments:all.length};
 }

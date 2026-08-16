@@ -43,37 +43,49 @@ function prepareGarbageBatch(g){
     g.ver++;
 }
 
-function hexGarbageFindAnchor(g,pack){
+function hexGarbageAnchorVisualSafe(g,pack,ax,ay){
+    return pack.pat.every(([dx,dy])=>visualPointSafe(g,-1,ax+dx,ay+dy,HEX_MIN_DIST));
+}
+
+function hexGarbageFindAnchor(g,pack,requireVisual=true){
     let ay=shapeFitsAt(g.board,pack.pat,pack.ax,pack.targetY)
         ? pack.targetY
         : deepestRigidAnchor(g.board,pack.pat,pack.ax);
-    if(ay!==null)return {ax:pack.ax,ay};
+    if(ay!==null&&(!requireVisual||hexGarbageAnchorVisualSafe(g,pack,pack.ax,ay)))return {ax:pack.ax,ay};
     let best=null;
     const minX=Math.min(...pack.pat.map(([x])=>x));
     const maxX=Math.max(...pack.pat.map(([x])=>x));
     for(let ax=-minX;ax<=W2-1-maxX;ax++){
         const yy=deepestRigidAnchor(g.board,pack.pat,ax);
-        if(yy===null)continue;
+        if(yy===null||(requireVisual&&!hexGarbageAnchorVisualSafe(g,pack,ax,yy)))continue;
         const d=Math.abs(ax-pack.ax);
         if(!best||d<best.d)best={ax,ay:yy,d};
     }
     return best;
 }
 
-function hexGarbageEntryAnchor(g,pack){
+function hexGarbageEntryAnchor(g,pack,requireVisual=true){
     const parity=((pack.targetY%2)+2)%2,start=parity?-1:-2;
     const minX=Math.min(...pack.pat.map(([x])=>x)),maxX=Math.max(...pack.pat.map(([x])=>x));
     const xs=[];for(let d=0;d<W2;d++){if(pack.ax-d>=-minX)xs.push(pack.ax-d);if(d&&pack.ax+d<=W2-1-maxX)xs.push(pack.ax+d);}
     for(let ay=start;ay>=BOARD_MIN_ROW;ay-=2)for(const ax of xs){
-        if(pack.pat.every(([dx,dy])=>valid(ax+dx,ay+dy)&&!g.board[ay+dy][ax+dx]))return{ax,ay};
+        if(pack.pat.every(([dx,dy])=>valid(ax+dx,ay+dy)&&!g.board[ay+dy][ax+dx])&&
+           (!requireVisual||hexGarbageAnchorVisualSafe(g,pack,ax,ay)))return{ax,ay};
     }
     return null;
 }
 
 function materializeGarbagePack(g,pack,atEntry=false){
     clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
-    const anchor=atEntry?hexGarbageEntryAnchor(g,pack):hexGarbageFindAnchor(g,pack);
-    if(!anchor){g.garbBlocked=true;return false;}
+    const logicalAnchor=atEntry?hexGarbageEntryAnchor(g,pack,false):hexGarbageFindAnchor(g,pack,false);
+    if(!logicalAnchor){g.garbBlocked=true;return false;}
+    // A logical cell can already be empty while its previous occupant is still
+    // travelling away in render space. Spawning into that stale visual centre
+    // created two balls at exactly the same coordinates. Wait a frame (or pick
+    // another legal anchor) until every new centre is physically clear.
+    const anchor=atEntry?hexGarbageEntryAnchor(g,pack,true):hexGarbageFindAnchor(g,pack,true);
+    if(!anchor){pack.visualBlocked=true;return false;}
+    delete pack.visualBlocked;
     pack.ax=anchor.ax;
     if(atEntry)pack.entryY=anchor.ay;else pack.targetY=anchor.ay;
 
@@ -137,19 +149,23 @@ function updateGarbagePacks(g,dt){
 
     for(const p of g.activeGarbagePacks){
         if(p.landed)continue;
-        const prevAge=Math.max(0,p.bubbleT||0);
         p.bubbleT=Math.max(0,g.garbageClock-(p.actualStartTime||0));
-        if(prevAge+1e-9>=HEX_GARBAGE_BUBBLE_DURATION||p.bubbleT+1e-9<HEX_GARBAGE_BUBBLE_DURATION)continue;
+        if(p.bubbleT+1e-9<HEX_GARBAGE_BUBBLE_DURATION)continue;
         // The reference straight attack visibly enters as two top rows and
         // immediately conforms to the uneven pile. Materializing only at a
         // precomputed bottom anchor kept the whole sheet rigid in mid-air.
         // Spawn at the top after the bubble, then give every ball to the same
         // independent gravity/contact solver used by accumulated balls.
-        p.bubbleT=HEX_GARBAGE_BUBBLE_DURATION;
-        p.releaseTime=(p.actualStartTime||0)+HEX_GARBAGE_BUBBLE_DURATION;
-        p.landed=true;
-        p.vy=0;
-        if(!materializeGarbagePack(g,p,true))g.garbBlocked=true;
+        if(materializeGarbagePack(g,p,true)){
+            p.bubbleT=HEX_GARBAGE_BUBBLE_DURATION;
+            p.releaseTime=g.garbageClock;
+            p.landed=true;
+            p.vy=0;
+        }else if(g.garbBlocked){
+            // There is no logical entry at all. This is a true overflow, not a
+            // transient render-space conflict.
+            p.landed=true;
+        }
     }
 
     // Continue one bounded contact event whenever the previous visible event
@@ -162,11 +178,11 @@ function updateGarbagePacks(g,dt){
     const shapesDone=g.garbagePlans.every(p=>p.landed);
     if(shapesDone&&g.garbLeft>0&&g.garbageClock+1e-9>=g.garbageNextBallAt){
         const placed=garbageBall(g);
-        if(!placed){
+        if(placed===0){
             g.garbBlocked=true;
             g.incoming+=g.garbLeft;
             g.garbLeft=0;
-        }else{
+        }else if(placed>0){
             g.garbLeft--;
             g.garbageNextBallAt=g.garbageClock+HEX_GARBAGE_SHAPE_INTERVAL;
             if(settlePass(g.board))g.ver++;

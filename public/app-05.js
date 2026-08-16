@@ -116,11 +116,20 @@ function lock(g,vy=2){
  // The active triplet can touch a ball between two logical rows. Preserve that
  // exact centre height at the active-to-pile hand-off, just as X is preserved.
  // The first fall segment is retimed from this physical contact point below.
- const releaseFrac=safeActiveFallOffset(g,cells,splitOffset,0,activeDropFraction(g));
+ let releaseFrac=safeActiveFallOffset(g,cells,splitOffset,0,activeDropFraction(g));
  let invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
  if(invalid){
-  const before=physicsSignature(g);settleAll(g.board);if(physicsSignature(g)!==before||boardHasIllegalFloat(g.board))g.piece=dropPiece(g.board,g.piece);
-  cells=pieceCells(g.piece);invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
+  // Never settle the pile logically inside lock(). Its old visual centres are
+  // still on screen, so immediately filling the newly vacated cell places two
+  // balls at the same coordinates. Recover the active piece on its own legal
+  // vertical lane and let the normal incremental resolver move the pile later.
+  let recovered=null;
+  for(let y=Math.min(ROWS-1,g.piece.y);y>=BOARD_MIN_ROW;y--){
+   const q={...g.piece,y};
+   if(pieceFits(g.board,q)){recovered=dropPiece(g.board,q);break;}
+  }
+  if(recovered)g.piece=recovered;
+  cells=pieceCells(g.piece);releaseFrac=safeActiveFallOffset(g,cells,splitOffset,0,activeDropFraction(g));invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
   if(invalid){die(g,cells.map(([x,y,c])=>[x,y,c]),"LIMIT");return;}
  }
  const made=[];
@@ -155,7 +164,9 @@ const TOPS=(()=>{const a=[];for(let x=0;x<W2;x++)if(valid(x,GARBAGE_TOP_ROW))a.p
 function armGarbageVisual(g,ball,startX,startY){const v=g.vis.get(ball.id);if(!v)return;v.x=startX;v.y=startY;v.vy=0;v.garbAnim=null;}
 function garbageVisualsDone(g){return nearlySettled(g,.06);}
 function garbageBall(g){
- const free=TOPS.filter(x=>g.board[GARBAGE_TOP_ROW][x]===null);if(!free.length)return 0;const x=free[Math.floor(g.rng()*free.length)],ball=mkBall(g,Math.floor(g.rng()*COLORS.length));
+ const logicalFree=TOPS.filter(x=>g.board[GARBAGE_TOP_ROW][x]===null);if(!logicalFree.length)return 0;
+ const free=logicalFree.filter(x=>visualPointSafe(g,-1,x,GARBAGE_START_Y,HEX_MIN_DIST));if(!free.length)return-1;
+ const x=free[Math.floor(g.rng()*free.length)],ball=mkBall(g,Math.floor(g.rng()*COLORS.length));
  ball.isGarbage=true;ball.garbageBubbleHold=true;ball.garbageBubbleUntil=(g.garbageClock||0)+HEX_GARBAGE_BUBBLE_DURATION;hexPhysClearGroupBall(ball);g.board[GARBAGE_TOP_ROW][x]=ball;noteBoardCell(g.board,GARBAGE_TOP_ROW,ball);setVis(g,ball,x,GARBAGE_START_Y,0);armGarbageVisual(g,ball,x,GARBAGE_START_Y);const v=g.vis.get(ball.id);if(v)v.garbageBubbleT=0;g.fx.shake=0;g.ver++;return 1;
 }
 const pendingIncomingCount=g=>g.incoming+g.incomingShapes.length+g.garbShapes.length+(g.garbagePlans||[]).filter(p=>!p.landed).length+g.garbLeft;

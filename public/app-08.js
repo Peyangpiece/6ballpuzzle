@@ -454,7 +454,7 @@ g.pieceVY += (g.piece.y - g.pieceVY) * Math.min(1, 18 * dt);
 }
 }
 
-function preventVisualOverlap(g) {
+function legacyPreventVisualOverlap(g) {
     const items=[];
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const c=valid(x,y)?g.board[y][x]:null;
@@ -581,6 +581,72 @@ function preventVisualOverlap(g) {
             b.v.y=Math.min(b.v.y,floorMax);
         }
         if(!fixedAny)break;
+    }
+}
+
+// Final render-space contact constraint. Logical cells are always unique, but
+// their continuous trajectories can meet between cells (for example a diagonal
+// follower cutting the chord around a stationary support). Correct only the
+// penetration; keep fallPath and velocity intact so the intended motion resumes
+// on the next frame instead of freezing or teleporting.
+function resolveVisualContacts(g){
+    const items=[];
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null,v=ball&&g.vis.get(ball.id);
+        if(ball&&v&&Number.isFinite(v.x)&&Number.isFinite(v.y))items.push({ball,v,x,y,moving:!!(g._visualMovingIds?.has(ball.id)||ball.fallPath?.length)});
+    }
+    if(items.length<2)return;
+    const H=HEX_ROW_H,MIN=1,floorMax=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H;
+    const shift=(q,px,py)=>{
+        const ox=q.v.x,oy=q.v.y;
+        q.v.x=Math.max(0,Math.min(W2-1,q.v.x+px/.5));
+        q.v.y=Math.min(floorMax,q.v.y+py/H);
+        return[(q.v.x-ox)*.5,(q.v.y-oy)*H];
+    };
+    const solvePair=(a,b)=>{
+        let dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*H,d=Math.hypot(dx,dy);
+        if(d>=MIN-1e-9)return false;
+        if(d<1e-10){
+            const logicalDx=(a.x-b.x)*.5,logicalDy=(a.y-b.y)*H,ld=Math.hypot(logicalDx,logicalDy);
+            if(ld>1e-10){dx=logicalDx/ld;dy=logicalDy/ld;}else{dx=a.ball.id<b.ball.id?-1:1;dy=0;}
+            d=0;
+        }else{dx/=d;dy/=d;}
+        const missing=MIN-d;
+        let wa=a.moving&&!b.moving?1:(!a.moving&&b.moving?0:.5),wb=1-wa;
+        shift(a,dx*missing*wa,dy*missing*wa);
+        shift(b,-dx*missing*wb,-dy*missing*wb);
+        // A wall or the floor can absorb one side's requested displacement.
+        // Give any residual to the other ball, then the first, until contact is exact.
+        for(let retry=0;retry<3;retry++){
+            const rx=(a.v.x-b.v.x)*.5,ry=(a.v.y-b.v.y)*H,rd=Math.hypot(rx,ry);
+            if(rd>=MIN-1e-9)break;
+            const nx=rd>1e-10?rx/rd:dx,ny=rd>1e-10?ry/rd:dy,need=MIN-rd;
+            const first=(a.moving&&!b.moving)?a:((b.moving&&!a.moving)?b:(retry&1?a:b));
+            const sign=first===a?1:-1;
+            const moved=shift(first,nx*need*sign,ny*need*sign),gain=Math.hypot(moved[0],moved[1]);
+            if(gain<need*.25){const other=first===a?b:a;shift(other,-nx*need*sign,-ny*need*sign);}
+        }
+        return true;
+    };
+    // Unit-size spatial buckets make the constraint proportional to nearby
+    // contacts instead of every pair on the board. Rebuild after each changed
+    // pass because a dense projection can create a new neighbour.
+    const nearbyPairs=()=>{
+        const buckets=new Map(),pairs=[];
+        for(let i=0;i<items.length;i++){
+            const q=items[i],bx=Math.floor(q.v.x*.5),by=Math.floor(q.v.y*H),key=bx+","+by;
+            if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(i);
+        }
+        for(let i=0;i<items.length;i++){
+            const q=items[i],bx=Math.floor(q.v.x*.5),by=Math.floor(q.v.y*H);
+            for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++)for(const j of buckets.get((bx+ox)+","+(by+oy))||[])if(j>i)pairs.push([q,items[j]]);
+        }
+        return pairs;
+    };
+    for(let pass=0;pass<48;pass++){
+        let changed=false;
+        for(const[a,b]of nearbyPairs())if(solvePair(a,b))changed=true;
+        if(!changed)break;
     }
 }
 

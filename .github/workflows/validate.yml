@@ -62,6 +62,8 @@ jobs:
         run: node tests/reference-fidelity-1000.js
       - name: Check staged 3000-pass video convergence
         run: node tests/reference-convergence-3000.js
+      - name: Check continuous no-overlap invariant
+        run: node tests/overlap-regressions.js
       - name: Check clean touch controls v7
         run: |
           set -e
