@@ -50,6 +50,8 @@ jobs:
           console.log('floor parity regression PASS');
           EOF
           node /tmp/floor-test.js
+      - name: Check rigidity and garbage regressions
+        run: node tests/physics-regressions.js
       - name: Check clean touch controls v7
         run: |
           set -e

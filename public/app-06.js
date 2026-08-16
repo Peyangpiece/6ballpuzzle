@@ -2,7 +2,7 @@
  * Garbage shapes are spawn patterns only. After first contact/materialization,
  * every garbage ball uses the same unified pile solver as a normal ball.
  */
-const HEX_GARBAGE_SHAPE_INTERVAL=0.6;
+const HEX_GARBAGE_SHAPE_INTERVAL=0.5;
 window.__hexdropGarbageInterval=HEX_GARBAGE_SHAPE_INTERVAL;
 
 function prepareGarbageBatch(g){
@@ -86,7 +86,10 @@ function materializeGarbagePack(g,pack){
         ball.isGarbage=true;
         ball.garbageType=pack.type;
     }
-    prepareContinuousPileFlow(g,"garbage_contact");
+    // Resolve at most one canonical physics event now. Any remaining motion
+    // is continued by the normal SETTLE phase, keeping each render frame
+    // bounded so the opponent board never disappears during garbage entry.
+    if(settlePass(g.board))g.ver++;
     g.ver++;
     return true;
 }
@@ -129,7 +132,7 @@ function updateGarbagePacks(g,dt){
         }else{
             g.garbLeft--;
             g.garbageNextBallAt=g.garbageClock+HEX_GARBAGE_SHAPE_INTERVAL;
-            prepareContinuousPileFlow(g,"numeric_garbage_contact");
+            if(settlePass(g.board))g.ver++;
         }
     }
 }

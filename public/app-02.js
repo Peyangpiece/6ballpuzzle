@@ -100,6 +100,18 @@ function hexPhysPlanGroup(b,members,preview=false){
  if(!moving.length){if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
  if(moving.length===size){const dx=motions[0].tx-motions[0].x,dy=motions[0].ty-motions[0].y;if(motions.every(p=>p.tx-p.x===dx&&p.ty-p.y===dy)&&hexPhysTranslationSafe(b,members,dx,dy)){const bundle=members[0].ball.motionGroupId||HEX_PHYS_GROUP_SEQ;return members.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null,followSupportIds:[],bundleId:bundle,groupSize:size}));}}
  if(size===2){const pivot=hexPhysPairPivotPlan(b,members,motions);if(pivot)return pivot;if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
+ // A released triplet may touch down one ball before the other two. Detach
+ // only the pinned member; the moving pair keeps the original constraint.
+ // This must precede signature bucketing because REST is a valid signature
+ // but is not part of the still-moving rigid pair.
+ const pinned=[];for(let i=0;i<3;i++)if(!motions[i])pinned.push(i);
+ if(pinned.length===1){
+  const fixedIndex=pinned[0],pm=members.filter((_,i)=>i!==fixedIndex);
+  if(preview){const fake=pm.map(m=>({...m,ball:{...m.ball,motionGroupSize:2,rigid:true}}));return hexPhysPlanGroup(b,fake,true);}
+  hexPhysClearGroupBall(members[fixedIndex].ball);
+  for(const m of pm){m.ball.motionGroupSize=2;m.ball.rigid=true;}
+  return hexPhysPlanGroup(b,pm,false);
+ }
  const buckets=new Map();for(let i=0;i<3;i++){const key=proposalSignature(motions[i]);if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(i);}let pair=null;for(const a of buckets.values())if(a.length>=2&&a.length>(pair?.length||0))pair=a.slice(0,2);
  if(pair){const pm=pair.map(i=>members[i]);if(preview){const fake=pm.map((m,j)=>({...m,ball:{...m.ball,motionGroupId:members[0].ball.motionGroupId||1}}));return hexPhysPlanGroup(b,fake,true);}for(const m of members)hexPhysClearGroupBall(m.ball);hexPhysSetGroup(pm,2,pm[0]?.orientation||"");return hexPhysPlanGroup(b,pm,false);}
  if(!preview){for(let a=0;a<3;a++)for(let c=a+1;c<3;c++){const pm=[members[a],members[c]],pivot=hexPhysPairPivotPlan(b,pm,[motions[a],motions[c]]);if(pivot){for(const m of members)hexPhysClearGroupBall(m.ball);hexPhysSetGroup(pm,2,pm[0]?.orientation||"");return pivot;}}for(const m of members)hexPhysClearGroupBall(m.ball);}return[];

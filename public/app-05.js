@@ -132,4 +132,6 @@ function chooseGarbagePlan(g,board,type,seq){
  }else colors=pat.map((_,i)=>(Math.floor(g.rng()*COLORS.length)+i)%COLORS.length);
  return{type,pat,ax:best.ax,targetY:best.ay,startY:GARBAGE_START_Y,delay:0,colors,seq,y:GARBAGE_START_Y,vy:0,landed:false};
 }
-function reserveGarbagePlan(board,plan,tempIdBase){for(let i=0;i<plan.pat.length;i++){const[dx,dy]=plan.pat[i];board[plan.targetY+dy][plan.ax+dx]={id:tempIdBase-i,c:plan.colors[i]};}settleAll(board);}
+// Planning only reserves cells. Running the complete pile solver for every
+// future pack caused a long main-thread stall before the opponent board drew.
+function reserveGarbagePlan(board,plan,tempIdBase){for(let i=0;i<plan.pat.length;i++){const[dx,dy]=plan.pat[i];board[plan.targetY+dy][plan.ax+dx]={id:tempIdBase-i,c:plan.colors[i]};}}

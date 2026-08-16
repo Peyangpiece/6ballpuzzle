@@ -9,7 +9,9 @@ function stripFinishedTripletRigidity(g){
  for(const members of hexPhysGroups(g.board).values()){
   const inFlight=members.some(m=>Array.isArray(m.ball.fallPath)&&m.ball.fallPath.length);
   if(inFlight)continue;
-  if(!hexPhysPlanGroup(g.board,members,true).length)for(const m of members)hexPhysClearGroupBall(m.ball);
+  // A group is active only while it has a legal next motion. Once it becomes
+  // part of the accumulated pile, its rigidity is always exactly zero.
+  if(!hexPhysPlanGroup(g.board,members,true).length)for(const m of members){hexPhysClearGroupBall(m.ball);m.ball.rigid=false;}
  }
 }
 function normalizeAllNonActivePileBalls(g){
