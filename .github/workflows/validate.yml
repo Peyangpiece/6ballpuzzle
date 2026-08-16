@@ -93,6 +93,10 @@ jobs:
           grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.6' public/app-06.js
           grep -q 'prepareContinuousPileFlow' public/app-07.js
           grep -q 'manifest.webmanifest' public/index.html
+          grep -q 'loadCurrentGameBuild' public/index.html
+          grep -q 'Date.now().toString(36)' public/index.html
+          grep -q 'document.write' public/index.html
+          ! grep -q '<script src="app-01.js"></script>' public/index.html
           grep -q -- '-webkit-touch-callout:none' public/index.html
           grep -q 'touch-action:none' public/index.html
           ! grep -q 'patch-' public/index.html
