@@ -16,7 +16,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           set -e
-          for f in public/app-*.js public/patch-*.js public/controls-*.js; do
+          for f in public/app-*.js public/controls-*.js; do
             node --check "$f"
           done
       - name: Check concatenated runtime syntax
@@ -25,33 +25,31 @@ jobs:
             public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
             public/app-05.js public/app-06.js public/app-07.js public/app-08.js \
             public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
-            public/app-16.js public/app-17.js \
-            public/patch-up-split.js public/patch-turn-gate-v2.js \
-            public/patch-axis-pair-v3.js public/patch-v4.js public/patch-v6.js \
-            public/patch-v7.js public/patch-v8.js public/patch-v9.js public/controls-v5.js > /tmp/hexdrop-runtime.js
+            public/app-16.js public/app-17.js public/controls-v5.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
-      - name: Check deployment files
+      - name: Check unified physics architecture
         run: |
+          set -e
           test -f public/index.html
-          test -f public/patch-v6.js
-          test -f public/patch-v7.js
-          test -f public/patch-v8.js
-          test -f public/patch-v9.js
           test -f public/controls-v5.js
           test -f public/manifest.webmanifest
           test -f wrangler.jsonc
-          grep -q 'app-17.js' public/index.html
-          grep -q 'patch-v6.js' public/index.html
-          grep -q 'patch-v7.js' public/index.html
-          grep -q 'patch-v8.js' public/index.html
-          grep -q 'patch-v9.js' public/index.html
+          grep -q 'hexPhysNaturalMotion' public/app-02.js
+          grep -q 'hexPhysPlanGroup' public/app-02.js
+          grep -q 'hexPhysResolveEvent' public/app-03.js
+          grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.6' public/app-06.js
+          grep -q 'prepareContinuousPileFlow' public/app-07.js
           grep -q 'controls-v5.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q -- '-webkit-touch-callout:none' public/index.html
           grep -q 'touch-action:none' public/index.html
-          grep -q 'sourceRule:"reference_single_lower_contact"' public/patch-v8.js
-          grep -q 'sourceRule:"reference_center_groove"' public/patch-v8.js
-          grep -q 'sourceVideos:6' public/patch-v8.js
-          grep -q 'videoPairPivotV9:true' public/patch-v9.js
-          grep -q 'pairPivot60:true' public/patch-v9.js
-          grep -q 'blockedFlowRepair:true' public/patch-v9.js
+          ! grep -q 'patch-' public/index.html
+          ! test -e public/patch-up-split.js
+          ! test -e public/patch-turn-gate-v2.js
+          ! test -e public/patch-axis-pair-v3.js
+          ! test -e public/patch-v4.js
+          ! test -e public/patch-v6.js
+          ! test -e public/patch-v7.js
+          ! test -e public/patch-v8.js
+          ! test -e public/patch-v9.js
+          ! test -e public/patch-v10.js
