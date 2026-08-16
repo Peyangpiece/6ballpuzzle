@@ -23,19 +23,6 @@
         };
     }
 
-    /* app-16 still contains historical canvas-local pointer registration.
-       v7 owns all gameplay pointer input, so those listeners are never installed. */
-    if(typeof HTMLCanvasElement!=="undefined" && !window.__hexLegacyCanvasPointerBlockV7){
-        window.__hexLegacyCanvasPointerBlockV7=true;
-        const proto=HTMLCanvasElement.prototype;
-        const nativeAdd=proto.addEventListener;
-        const blocked=new Set(["pointerdown","pointermove","pointerup","pointercancel"]);
-        proto.addEventListener=function(type,listener,options){
-            if(blocked.has(type))return;
-            return nativeAdd.call(this,type,listener,options);
-        };
-    }
-
     const pointers=new Map();
     let dual=null;
 
@@ -199,9 +186,10 @@
         if(dual?.g)engines.add(dual.g);
         for(const g of engines){
             stopFast(g);
-            if(g.piece&&Number.isFinite(g.freeX))setColumn(g,g.freeX);
-            if(g.piece)g.pieceVX=g.piece.x;
-            g.freeX=null;
+            // Cancellation/visibility changes end the gesture, not its
+            // continuous horizontal placement. Preserve the exact real X in
+            // the same way as an ordinary pointer release.
+            if(g.piece&&Number.isFinite(g.freeX))g.pieceVX=g.freeX;
             g.dragging=false;
         }
         pointers.clear();

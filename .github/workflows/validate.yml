@@ -52,6 +52,8 @@ jobs:
           node /tmp/floor-test.js
       - name: Check rigidity and garbage regressions
         run: node tests/physics-regressions.js
+      - name: Check 50-point reference fidelity
+        run: node tests/reference-fidelity.js
       - name: Check clean touch controls v7
         run: |
           set -e
@@ -62,7 +64,8 @@ jobs:
           ! grep -q 'controls-v6.js' public/index.html
           ! grep -q 'controls-v5.js' public/index.html
           grep -q '__hexControlsV7Installed' public/controls-v7.js
-          grep -q '__hexLegacyCanvasPointerBlockV7' public/controls-v7.js
+          grep -q 'if(window.__hexControlsV7Installed)return' public/app-16.js
+          ! grep -q 'HTMLCanvasElement.prototype' public/controls-v7.js
           grep -q '__hexCreateEngineWrappedV7' public/controls-v7.js
           grep -q '__hexEnginesV7' public/controls-v7.js
           grep -q '__hexSingleSlideV7' public/controls-v7.js

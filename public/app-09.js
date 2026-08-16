@@ -40,8 +40,11 @@ function stepEngine(g, dt) {
         return;
     }
     if (g.state === "READY") {
-        if(g.introCue===0){emit(g,{t:"ready"});g.introCue=1;}
-        if(g.introCue===1&&g.stateT>=READY_START_BEGIN){emit(g,{t:"start"});g.introCue=2;}
+        // In a local CPU match both engines advance through READY, but the
+        // reference has one centred intro cue, not a quieter duplicate from
+        // the opponent simulation.
+        if(g.introCue===0){if(!g.ai)emit(g,{t:"ready"});g.introCue=1;}
+        if(g.introCue===1&&g.stateT>=READY_START_BEGIN){if(!g.ai)emit(g,{t:"start"});g.introCue=2;}
         if (g.stateT >= READY_DURATION) spawn(g);
         return;
     }

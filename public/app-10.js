@@ -108,7 +108,17 @@ function drawFormationEffects(ctx,g,pos,D){
         const trace=(width,alpha,color)=>{ctx.beginPath();vertices.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.globalAlpha=alpha;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.72;ctx.stroke();};
         // Construction rays, then the large filled flash seen in the captures.
         if(age<.86)trace(Math.max(1,D*.045),Math.min(1,age/.18),fx.tint);
-        if(age>=.68&&age<1.18){const flash=Math.sin(Math.PI*(age-.68)/.5);if(fx.w!=="STRAIGHT"){ctx.beginPath();vertices.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.globalAlpha=.34*flash;ctx.fillStyle=fx.tint;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*1.7;ctx.fill();}trace(D*(.06+.12*flash),.95*flash,"#FFFFFF");}
+        if(age>=.68&&age<1.18){
+            const flash=Math.sin(Math.PI*(age-.68)/.5);
+            if(fx.w!=="STRAIGHT"){
+                ctx.beginPath();vertices.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.globalAlpha=.34*flash;ctx.fillStyle=fx.tint;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*1.7;ctx.fill();
+            }else{
+                // The straight capture has a broad solid light blade before
+                // it breaks into edge particles, not merely a thin outline.
+                trace(D*1.34,.36*flash,fx.tint);trace(D*.72,.34*flash,"#FFFFFF");
+            }
+            trace(D*(.06+.12*flash),.95*flash,"#FFFFFF");
+        }
         // The solid geometry dissolves into stable sparkling edge particles.
         if(age>=1.04){const fade=Math.min(1,(age-1.04)/.3)*Math.min(1,fx.life/.45);for(let e=0;e<vertices.length-1;e++){const a=vertices[e],b=vertices[e+1],n=fx.w==="STRAIGHT"?32:18;for(let i=0;i<=n;i++){const u=i/n,jitter=Math.sin(i*12.9898+e*7.13)*D*.025,px=a[0]+(b[0]-a[0])*u,py=a[1]+(b[1]-a[1])*u;ctx.globalAlpha=fade*(.48+.5*Math.sin(age*10+i*1.7+e));ctx.fillStyle=i%5===0?"#FFFFFF":fx.tint;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.35;ctx.beginPath();ctx.arc(px+jitter,py-jitter,D*(i%5===0?.055:.038),0,TAU);ctx.fill();}}}
         ctx.restore();
@@ -119,13 +129,17 @@ function drawIncomingPreviews(ctx,g,L){
     const list=g.fx.incomingPreviews||[];
     for(let k=0;k<list.length;k++){
         const fx=list[k],appear=Math.min(1,(fx.max-fx.life)/.22),fade=Math.min(1,fx.life/.35),shapes=fx.shapes?.length?fx.shapes:["PYRAMID"];
-        const d=23,cols=Math.min(3,shapes.length),rows=Math.ceil(shapes.length/cols),packW=82,packH=58;
+        const soloStraight=shapes.length===1&&shapes[0]==="STRAIGHT";
+        const d=soloStraight?39:23,cols=soloStraight?1:Math.min(3,shapes.length),rows=Math.ceil(shapes.length/cols),packW=soloStraight?L.BW:82,packH=soloStraight?86:58;
         const totalW=cols*packW,totalH=rows*packH,baseX=L.X+L.BW/2-totalW/2,baseY=Math.max(-8,L.Y-34-totalH-k*12);
         ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=appear*fade;ctx.strokeStyle=fx.tint||"#8CFFB1";ctx.lineWidth=3;ctx.shadowColor=fx.tint||"#8CFFB1";ctx.shadowBlur=13;
         for(let s=0;s<shapes.length;s++){
             const pat=GARBAGE_SHAPES[shapes[s]]||GARBAGE_SHAPES.PYRAMID,c=s%cols,r=Math.floor(s/cols),ox=baseX+c*packW+packW/2,oy=baseY+r*packH+9;
             const minX=Math.min(...pat.map(p=>p[0])),maxX=Math.max(...pat.map(p=>p[0])),minY=Math.min(...pat.map(p=>p[1]));
-            const sample=pat.length>7?pat.filter((_,i)=>i%Math.max(1,Math.floor(pat.length/7))===0).slice(0,7):pat;
+            // A straight attack is visibly a complete 10/9 ring lattice in
+            // the reference capture. Sampling it down to seven rings made it
+            // read as an unrelated small icon.
+            const sample=soloStraight?pat:(pat.length>7?pat.filter((_,i)=>i%Math.max(1,Math.floor(pat.length/7))===0).slice(0,7):pat);
             for(const [x,y] of sample){const px=ox+(x-(minX+maxX)/2)*d*.5,py=oy+(y-minY)*d*HEX_ROW_H;ctx.beginPath();ctx.arc(px,py,d*.42,0,TAU);ctx.stroke();}
         }
         ctx.restore();
@@ -161,9 +175,16 @@ function rigidShadowPixelPlacement(g, shadowCells, pos, D, X, Y, BW, BH) {
     return pts.map(p=>[p.px,p.py+dy,p.sc]);
 }
 function drawLandingShadowBall(ctx, cx, cy, d, ci) {
-    drawBall(ctx, cx, cy, d, ci, {alpha:0.28,scale:1.0,aura:0,ring:0,sq:0});
+    // Reference landing guides are dark, hollow silhouettes with only the
+    // colour motif/rim visible; they are not translucent full-colour balls.
+    drawBall(ctx, cx, cy, d, ci, {alpha:0.105,scale:1.0,aura:0,ring:0,sq:0});
+    ctx.save();
+    ctx.globalAlpha=.34;ctx.strokeStyle=COLORS[ci].glow;ctx.lineWidth=Math.max(1.2,d*.045);
+    ctx.shadowColor=COLORS[ci].glow;ctx.shadowBlur=d*.14;
+    ctx.beginPath();ctx.arc(cx,cy,d*.455,0,TAU);ctx.stroke();ctx.restore();
 }
 let STATIC_BG_CANVAS=null;
+const REFERENCE_HORIZON_Y=607;
 function getStaticBackgroundCanvas(){
     if(STATIC_BG_CANVAS)return STATIC_BG_CANVAS;
     if(typeof document==="undefined")return null;
@@ -171,17 +192,64 @@ function getStaticBackgroundCanvas(){
     cv.width=VW;cv.height=VH;
     const c=cv.getContext("2d");
     const g=c.createLinearGradient(0,0,0,VH);
-    g.addColorStop(0,"#080617");g.addColorStop(0.55,"#100B2B");g.addColorStop(1,"#060512");
+    g.addColorStop(0,"#070616");g.addColorStop(0.56,"#0C0A24");g.addColorStop(.83,"#071225");g.addColorStop(1,"#050611");
     c.fillStyle=g;c.fillRect(0,0,VW,VH);
     for(const [x,y,col,r] of [[280,200,"#3C1D7A",380],[1000,260,"#0E5A7A",320],[560,660,"#7A1E58",400]]){
         const rg=c.createRadialGradient(x,y,0,x,y,r);rg.addColorStop(0,col+"55");rg.addColorStop(1,col+"00");c.fillStyle=rg;c.fillRect(x-r,y-r,r*2,r*2);
     }
+    // Coloured star clusters and the glossy horizon/floor are persistent in
+    // every gameplay capture. Bake them once so mobile rendering stays cheap.
+    const rr=mulberry32(1701),starCols=["#50A8FF","#FF416D","#35F0A0","#BE59FF","#FFFFFF"];
+    for(let i=0;i<210;i++){
+        const x=rr()*VW,y=18+rr()*(REFERENCE_HORIZON_Y-36),r=.35+rr()*1.5;
+        c.globalAlpha=.16+rr()*.58;c.fillStyle=starCols[(rr()*starCols.length)|0];
+        c.beginPath();c.arc(x,y,r,0,TAU);c.fill();
+    }
+    c.globalAlpha=1;
+    const hz=c.createLinearGradient(0,REFERENCE_HORIZON_Y-20,0,VH);
+    hz.addColorStop(0,"rgba(49,102,158,.10)");hz.addColorStop(.18,"rgba(8,12,31,.62)");hz.addColorStop(1,"rgba(4,5,15,.92)");
+    c.fillStyle=hz;c.fillRect(0,REFERENCE_HORIZON_Y-20,VW,VH-REFERENCE_HORIZON_Y+20);
+    for(const [x,col] of [[ME.X+ME.BW/2,"#2FE3F5"],[FOE.X+FOE.BW/2,"#FF3EA5"]]){
+        const rg=c.createRadialGradient(x,REFERENCE_HORIZON_Y+18,4,x,REFERENCE_HORIZON_Y+48,310);
+        rg.addColorStop(0,col+"72");rg.addColorStop(.32,col+"22");rg.addColorStop(1,col+"00");
+        c.fillStyle=rg;c.fillRect(x-330,REFERENCE_HORIZON_Y-10,660,VH-REFERENCE_HORIZON_Y+10);
+    }
+    c.lineCap="round";
+    for(let i=0;i<78;i++){
+        const y=REFERENCE_HORIZON_Y+6+rr()*(VH-REFERENCE_HORIZON_Y-8),left=rr()<.5;
+        const cx=left?ME.X+ME.BW/2:FOE.X+FOE.BW/2,w=18+rr()*210;
+        c.globalAlpha=.035+rr()*.18;c.strokeStyle=left?(rr()<.28?"#E9FBFF":"#2FE3F5"):(rr()<.28?"#FFF0FA":"#FF3EA5");
+        c.lineWidth=.5+rr()*2.2;c.beginPath();c.moveTo(cx-w/2,y);c.lineTo(cx+w/2,y);c.stroke();
+    }
+    c.globalAlpha=1;
     STATIC_BG_CANVAS=cv;return cv;
 }
-function drawBackground(ctx,t){
+function drawBackground(ctx,t,me=null,foe=null){
     const bg=getStaticBackgroundCanvas();if(bg)ctx.drawImage(bg,0,0,VW,VH);else{ctx.fillStyle="#080617";ctx.fillRect(0,0,VW,VH);}
     for(const s of STARS){ctx.globalAlpha=s.a*(0.55+0.45*Math.sin(t*1.6+s.p));ctx.fillStyle="#EAF3FF";ctx.fillRect(s.x,s.y,s.s,s.s);}
     ctx.globalAlpha=1;
+    const active=[...(me?.fx?.formations||[]),...(foe?.fx?.formations||[])].sort((a,b)=>(b.life/b.max)-(a.life/a.max))[0];
+    const warning=Math.max(me?.fx?.warn||0,foe?.fx?.warn||0);
+    if(active||warning>0){
+        const tint=active?.tint||"#FF3158",strength=active?Math.min(.19,.07+.13*(active.life/Math.max(.001,active.max))):warning*.09;
+        ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=strength;
+        const wash=ctx.createRadialGradient(VW/2,VH*.47,40,VW/2,VH*.47,VW*.64);
+        wash.addColorStop(0,tint+"DD");wash.addColorStop(.48,tint+"55");wash.addColorStop(1,tint+"00");
+        ctx.fillStyle=wash;ctx.fillRect(0,0,VW,VH);ctx.restore();
+    }
+}
+
+function drawAttackFlights(ctx,orbs){
+    for(const o of orbs||[]){
+        const u=Math.max(0,Math.min(1,o.t/Math.max(.001,o.dur))),e=u*u*(3-2*u);
+        const from=o.side===0?ME:FOE,to=o.side===0?FOE:ME;
+        const sx=from.X+from.BW/2,tx=to.X+to.BW/2,sy=from.Y-34,ty=to.Y-44;
+        const x=sx+(tx-sx)*e,y=sy+(ty-sy)*e-Math.sin(Math.PI*e)*86;
+        const count=Math.max(3,Math.min(9,(o.shapes?.length||0)+3)),d=15;
+        ctx.save();ctx.globalCompositeOperation="screen";ctx.strokeStyle=o.tint||"#B9FFF0";ctx.lineWidth=2.4;ctx.shadowColor=o.tint||"#B9FFF0";ctx.shadowBlur=14;ctx.globalAlpha=Math.sin(Math.PI*Math.min(.98,u))*.9;
+        for(let i=0;i<count;i++){const a=i*TAU/count+u*2.2,r=8+(i%3)*7;ctx.beginPath();ctx.arc(x+Math.cos(a)*r,y+Math.sin(a)*r,d*.45,0,TAU);ctx.stroke();}
+        ctx.restore();
+    }
 }
 function safeActiveFallOffset(g, cells, dx, dOff, desired) {
     if (!g || !g.board) return desired;

@@ -18,7 +18,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     ctx.save();
     ctx.beginPath();
     ctx.rect(X, Y, BW, BH);
-    ctx.fillStyle = "rgba(10,8,26,0.5)";
+    ctx.fillStyle = "rgba(6,5,20,0.24)";
     ctx.fill();
     ctx.shadowColor = NEON[side];
     ctx.shadowBlur = 18;
@@ -91,15 +91,20 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         const shadowCells = landingShadowVisualCells(g);
         if (shadowCells) {const safeShadowPx=rigidShadowPixelPlacement(g,shadowCells,pos,D,X,Y,BW,BH);for(const [spx,spy,sc] of safeShadowPx) drawLandingShadowBall(ctx,spx,spy,D,sc);}
     }
-    if (g.state === "PLAYING" && g.piece) {
+    if ((g.state === "PLAYING" || g.state === "NET") && g.piece) {
         const dx = g.pieceVX - g.piece.x;const pulse = 0.75 + 0.25 * Math.sin(t * 7);const cells = pieceCells(g.piece);let dOff = dispOff(g.piece.rot),frac;
-        if(g.hardDropAnim){const hk=Math.min(1,(g.hardDropAnim.t+renderLead)/Math.max(.001,g.hardDropAnim.dur));const vy=g.hardDropAnim.fromY+(g.hardDropAnim.target.y-g.hardDropAnim.fromY)*hk;frac=vy-g.piece.y;dOff*=1-smoothRotationT(hk);}else{const blocked=!pieceFits(g.board,{...g.piece,y:g.piece.y+2}),align=blocked?Math.max(0,1-Math.min(1,(g.lockT+renderLead)/LANDING_ALIGN_DURATION)):1;dOff*=align;const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
+        if(g.state==="NET"){frac=Number.isFinite(g.netPieceFrac)?g.netPieceFrac:0;}
+        else if(g.hardDropAnim){const hk=Math.min(1,(g.hardDropAnim.t+renderLead)/Math.max(.001,g.hardDropAnim.dur));const vy=g.hardDropAnim.fromY+(g.hardDropAnim.target.y-g.hardDropAnim.fromY)*hk;frac=vy-g.piece.y;dOff*=1-smoothRotationT(hk);}else{const blocked=!pieceFits(g.board,{...g.piece,y:g.piece.y+2}),align=blocked?Math.max(0,1-Math.min(1,(g.lockT+renderLead)/LANDING_ALIGN_DURATION)):1;dOff*=align;const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
         const pts = cells.map(([x, y]) => pos(x + dx, y + frac + dOff));
         const gx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3;const gy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
         const ra = g.rotAnim;const renderRotP=Math.min(1,ra.p+renderLead/ROTATE_VISUAL_TIME);const k = renderRotP < 1 ? 1 - smoothRotationT(renderRotP) : 0;const ang = -k * ra.dir * (TAU / 6);const ca = Math.cos(ang), sa = Math.sin(ang);const ox2 = k * (ra.dx || 0) * D * 0.5;const oy2 = k * (ra.dy || 0) * D * HEX_ROW_H;
         const renderPts = pts.map((pt) => {let px = pt[0], py = pt[1];if (k) {const ax = px - gx, ay = py - gy;px = gx + ax * ca - ay * sa + ox2;py = gy + ax * sa + ay * ca + oy2;}return [px, py];});
         const lift=0;
-        if(g.hardDropAnim) for(let tr=1;tr<=4;tr++){const a=(5-tr)/5, trailY=D*(.30+tr*.24);renderPts.forEach((pt,i)=>drawBall(ctx,pt[0],pt[1]+lift-trailY,D,cells[i][2],{alpha:.07*a,scale:.96,aura:0}));}
+        if(g.hardDropAnim){
+            const top=Math.min(...renderPts.map(p=>p[1]))-D*2.8,bottom=Math.max(...renderPts.map(p=>p[1]))+D*.4;
+            ctx.save();ctx.globalCompositeOperation="screen";const beam=ctx.createLinearGradient(0,top,0,bottom);beam.addColorStop(0,"rgba(255,255,255,0)");beam.addColorStop(.58,"rgba(225,242,255,.13)");beam.addColorStop(1,"rgba(255,255,255,.52)");ctx.fillStyle=beam;ctx.shadowColor="#FFFFFF";ctx.shadowBlur=D*.8;ctx.fillRect(gx-D*.72,top,D*1.44,bottom-top);ctx.restore();
+            for(let tr=1;tr<=4;tr++){const a=(5-tr)/5,trailY=D*(.30+tr*.24);renderPts.forEach((pt,i)=>drawBall(ctx,pt[0],pt[1]+lift-trailY,D,cells[i][2],{alpha:.07*a,scale:.96,aura:0}));}
+        }
         renderPts.forEach((pt, i) => drawBall(ctx, pt[0], pt[1] + lift, D, cells[i][2], { aura: pulse * (big ? 1 : 0.5) }));
     }
     for (const r of g.fx.rings) {const k = 1 - r.life / r.max;ctx.save();ctx.globalAlpha = (1 - k) * 0.85;ctx.strokeStyle = r.tint;ctx.lineWidth = 7 * (1 - k) + 1;ctx.shadowColor = r.tint;ctx.shadowBlur = 26;ctx.beginPath();ctx.arc(X + BW / 2, Y + BH / 2, 24 + k * BW * 0.8, 0, TAU);ctx.stroke();ctx.restore();}
@@ -114,8 +119,8 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     for (const t2 of g.fx.toasts) {const k = t2.life / t2.max;const size = t2.waza ? 40 : 28+t2.big*38;ctx.save();ctx.globalAlpha = Math.min(1, k * 3);ctx.font = `900 ${size * (1 + (1 - k) * 0.08)}px ui-sans-serif, system-ui, sans-serif`;ctx.textAlign = "center";ctx.textBaseline = "middle";ctx.lineJoin="round";ctx.strokeStyle="rgba(0,0,0,.68)";ctx.lineWidth=t2.waza?7:4;ctx.shadowColor = t2.tint;ctx.shadowBlur = 24;const ty=t2.waza?Y+BH+48:Y+BH*(t2.sub?0.58:0.44)-(1-k)*26;ctx.strokeText(t2.text,X+BW/2,ty);ctx.fillStyle = "#FFFFFF";ctx.fillText(t2.text, X + BW / 2,ty);ctx.restore();}
     ctx.restore();
 }
-function drawMatchIntro(ctx,g){if(g.state!=="READY")return;let text="";if(g.stateT<READY_RULE_END)text="同じ色を6つつなげよう！";else if(g.stateT>=READY_START_BEGIN&&g.stateT<READY_START_END)text="スタート！";if(!text)return;const edge=Math.min(g.stateT<READY_RULE_END?g.stateT:Math.max(0,g.stateT-READY_START_BEGIN),g.stateT<READY_RULE_END?READY_RULE_END-g.stateT:READY_START_END-g.stateT),a=Math.min(1,edge/.16);ctx.save();ctx.globalAlpha=a;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font=`900 ${text==="スタート！"?34:27}px ui-sans-serif,system-ui,sans-serif`;ctx.lineJoin="round";ctx.lineWidth=7;ctx.strokeStyle="rgba(0,0,0,.72)";ctx.shadowColor="#FFFFFF";ctx.shadowBlur=12;ctx.strokeText(text,VW/2,VH*.48);ctx.fillStyle="#FFFFFF";ctx.fillText(text,VW/2,VH*.48);ctx.restore();}
-function renderScene(ctx, me, foe, orbs, t, labels, dropFlash, helpAlpha = 1, renderLead=0) {drawBackground(ctx, t);drawSide(ctx, me, ME, 0, t, labels.me, labels.meSub, true,renderLead);drawSide(ctx, foe, FOE, 1, t, labels.foe, labels.foeSub, true,renderLead);drawMatchIntro(ctx,me);}
+function drawMatchIntro(ctx,g){if(g.state!=="READY")return;let text="";if(g.stateT<READY_RULE_END)text="同じ色を6つつなげよう！";else if(g.stateT>=READY_START_BEGIN&&g.stateT<READY_START_END)text="スタート！";if(!text)return;const edge=Math.min(g.stateT<READY_RULE_END?g.stateT:Math.max(0,g.stateT-READY_START_BEGIN),g.stateT<READY_RULE_END?READY_RULE_END-g.stateT:READY_START_END-g.stateT),a=Math.min(1,edge/.16),cx=ME.X+ME.BW/2,cy=ME.Y+ME.BH*.45;ctx.save();ctx.globalAlpha=a;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font=`900 ${text==="スタート！"?34:27}px ui-sans-serif,system-ui,sans-serif`;ctx.lineJoin="round";ctx.lineWidth=7;ctx.strokeStyle="rgba(0,0,0,.72)";ctx.shadowColor="#FFFFFF";ctx.shadowBlur=12;ctx.strokeText(text,cx,cy);ctx.fillStyle="#FFFFFF";ctx.fillText(text,cx,cy);ctx.restore();}
+function renderScene(ctx, me, foe, orbs, t, labels, dropFlash, helpAlpha = 1, renderLead=0) {drawBackground(ctx,t,me,foe);drawSide(ctx,me,ME,0,t,labels.me,labels.meSub,true,renderLead);drawSide(ctx,foe,FOE,1,t,labels.foe,labels.foeSub,true,renderLead);drawAttackFlights(ctx,orbs);drawMatchIntro(ctx,me);}
 const SPACE_BG = "radial-gradient(1000px 500px at 20% 15%, #3C1D7A55, transparent 60%)," + "radial-gradient(900px 500px at 85% 30%, #0E5A7A55, transparent 60%)," + "radial-gradient(900px 600px at 50% 100%, #7A1E5844, transparent 60%)," + "linear-gradient(180deg,#080617 0%,#100B2B 55%,#060512 100%)";
 function Neon({ children, onClick, tone = "cyan", disabled }) {
     const c = tone === "cyan" ? "#2FE3F5" : tone === "pink" ? "#FF3EA5" : "#B9C4E8";const [hover, setHover] = useState(false);const [down, setDown] = useState(false);
@@ -147,4 +152,25 @@ const eloDelta = (mine, foe, win) => Math.round(32 * ((win ? 1 : 0) - 1 / (1 + M
 const VALID_CELLS = (() => {const a = [];for (let y = BOARD_MIN_ROW; y < ROWS; y++) for (let x = 0; x < W2; x++) if (valid(x, y)) a.push([x, y]);return a;})();
 function snapshotOf(g) {let s = "";for (const [x, y] of VALID_CELLS) {const c = g.board[y][x];s += String.fromCharCode(48 + (c ? c.c + 1 : 0));}return s;}
 function applySnapshot(g, str) {if (typeof str !== "string" || str.length !== VALID_CELLS.length)return;for (let i = 0; i < VALID_CELLS.length; i++) {const [x, y] = VALID_CELLS[i], v = str.charCodeAt(i) - 48;const cur = g.board[y][x];if (v <= 0) {if (cur) g.board[y][x] = null;continue;}const c = v - 1;if (cur && cur.c === c)continue;const b = mkBall(g, c);g.board[y][x] = b;noteBoardCell(g.board,y,b);setVis(g, b, x, y, 0);}refreshBoardScanMin(g.board);}
-function stepNetView(g, dt) {g.stateT += dt;g.fx.shake = 0;g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);g.fx.formations=(g.fx.formations||[]).filter((f)=>(f.life-=dt)>0);g.fx.incomingPreviews=(g.fx.incomingPreviews||[]).filter((f)=>(f.life-=dt)>0);g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });for (let _vs = 0; _vs < 4; _vs++) updateVisuals(g, dt * 0.25);if (!g.alive)g.fx.sink = 0;}
+function pieceSnapshotOf(g){
+    if(!g?.piece)return null;
+    let frac=activeDropFraction(g);
+    if(g.hardDropAnim){const h=g.hardDropAnim,k=Math.min(1,h.t/Math.max(.001,h.dur));frac=h.fromY+(h.target.y-h.fromY)*k-g.piece.y;}
+    return{x:g.piece.x,y:g.piece.y,r:g.piece.rot,c:g.piece.colors.slice(0,3),vx:Number.isFinite(g.pieceVX)?+g.pieceVX.toFixed(3):g.piece.x,f:+frac.toFixed(3),q:(g.queue[0]||[]).slice(0,3)};
+}
+function remoteFxSnapshotOf(g){
+    const f=(g?.fx?.formations||[])[0],toast=(g?.fx?.toasts||[]).find(t=>t.waza);
+    return{f:f?{w:f.w,cells:f.cells.slice(0,24),tint:f.tint,life:+f.life.toFixed(2),max:f.max,pointDown:!!f.pointDown}:null,t:toast?{text:toast.text,life:+toast.life.toFixed(2),max:toast.max,tint:toast.tint,waza:true,big:toast.big||.45}:null};
+}
+function applyRemoteVisualState(g,st){
+    const p=st?.piece;
+    if(p&&Array.isArray(p.c)&&p.c.length===3&&p.c.every(c=>Number.isInteger(c)&&c>=0&&c<COLORS.length)){
+        g.piece={x:+p.x||0,y:Number.isFinite(+p.y)?+p.y:-2,rot:(+p.r||0)%6,colors:p.c.slice(0,3)};
+        g.pieceVX=Number.isFinite(+p.vx)?+p.vx:g.piece.x;g.netPieceFrac=Number.isFinite(+p.f)?+p.f:0;
+        g.rotAnim={p:1,dir:1,dx:0,dy:0};if(Array.isArray(p.q)&&p.q.length===3)g.queue[0]=p.q.slice(0,3);
+    }else{g.piece=null;g.netPieceFrac=0;}
+    const fx=st?.fx;
+    if(fx?.f)g.fx.formations=[{...fx.f,cells:(fx.f.cells||[]).map(c=>c.slice(0,2))}];else g.fx.formations=[];
+    if(fx?.t){const incoming=g.fx.toasts.filter(t=>!t.waza);g.fx.toasts=[...incoming,{...fx.t}];}else g.fx.toasts=g.fx.toasts.filter(t=>!t.waza);
+}
+function stepNetView(g, dt) {g.stateT += dt;g.fx.shake = 0;g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);g.fx.formations=(g.fx.formations||[]).filter((f)=>(f.life-=dt)>0);g.fx.incomingPreviews=(g.fx.incomingPreviews||[]).filter((f)=>(f.life-=dt)>0);g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });const n=visualSubstepCount(g),h=dt/n;for(let i=0;i<n;i++)updateVisuals(g,h);if (!g.alive)g.fx.sink = 0;}
