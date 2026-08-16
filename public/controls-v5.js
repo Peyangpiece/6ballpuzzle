@@ -1,4 +1,4 @@
-/* HEXDROP controls v5.4: iOS-safe game input + screen-down dual-tap hard drop */
+/* HEXDROP controls v5.3: iOS-safe game input + drag horizontal + normal-speed single-hold + dual gestures */
 (function installHexTouchV5(){
     if(typeof document==="undefined" || window.__hexTouchV5Installed) return;
     window.__hexTouchV5Installed=true;
@@ -79,10 +79,66 @@
         return Number.isFinite(g?.piece?.x)?g.piece.x:SPAWN_X;
     }
 
-    // Dual-tap hard drop is always world/screen gravity: +Y toward the bottom floor.
-    // It never uses triangle orientation as a direction and never introduces an
-    // intentional horizontal step during the drop. The current visual X is first
-    // committed to the nearest legal logical column, then Y alone is advanced.
+    function floorDirectedFinalTarget(g,base,visualX){
+        if(!g?.board || !base)return base;
+        const fromCells=pieceCells(base);
+        const deepest=Math.max(...fromCells.map(c=>c[1]));
+        // Only repair the special final half-row caused by doubled-x parity.
+        // Higher contacts are genuine pile contacts and must not be bypassed.
+        if(deepest!==ROWS-2)return base;
+
+        const wantedCenter=(Number.isFinite(visualX)?visualX:base.x)+1;
+        const boardCenter=(W2-1)/2;
+        const candidates=[];
+
+        for(const dx of [-1,1]){
+            const q={...base,x:base.x+dx,y:base.y+1};
+            if(!pieceFits(g.board,q))continue;
+            const toCells=pieceCells(q);
+            if(Math.max(...toCells.map(c=>c[1]))!==ROWS-1)continue;
+
+            let safe=true;
+            // The final parity step must itself be collision-safe. This is a
+            // one-row rigid translation toward the floor, never a wall-seeking slide.
+            for(let s=1;s<=24 && safe;s++){
+                const t=s/24;
+                for(let k=0;k<fromCells.length && safe;k++){
+                    const fx=fromCells[k][0],fy=fromCells[k][1];
+                    const tx=toCells[k][0],ty=toCells[k][1];
+                    const px=latticeRealX(fx+(tx-fx)*t);
+                    const py=cellCenterYNorm(fy+(ty-fy)*t);
+                    for(let by=0;by<ROWS && safe;by++)for(let bx=0;bx<W2;bx++){
+                        if(!valid(bx,by) || !g.board[by][bx])continue;
+                        const dist=Math.hypot(px-latticeRealX(bx),py-cellCenterYNorm(by));
+                        if(dist<HEX_MIN_DIST-1e-8)safe=false;
+                    }
+                }
+            }
+            if(!safe)continue;
+
+            const center=q.x+1;
+            candidates.push({
+                q,
+                visualCost:Math.abs(center-wantedCenter),
+                centerCost:Math.abs(center-boardCenter)
+            });
+        }
+
+        if(!candidates.length)return base;
+        candidates.sort((a,b)=>
+            a.visualCost-b.visualCost ||
+            a.centerCost-b.centerCost ||
+            a.q.x-b.q.x
+        );
+        return candidates[0].q;
+    }
+
+    // Dual-tap hard drop is always screen gravity: toward the bottom floor.
+    // The long vertical part keeps X fixed. If doubled-x parity leaves the
+    // rigid triangle exactly one row above an otherwise empty floor, resolve
+    // that final half-row as one rigid floor-directed step BEFORE lock().
+    // This prevents the post-lock solver from interpreting the missing parity
+    // row as a request to travel toward a side wall.
     function instantDropToFloorV5(g){
         if(!g || g.state!=="PLAYING" || !g.piece)return false;
         g.fastForward=false;
@@ -93,14 +149,16 @@
         const visualX=currentFreeX(g);
         setColumn(g,visualX);
         const fixedX=g.piece.x;
-        const target={...g.piece,x:fixedX};
+        let target={...g.piece,x:fixedX};
 
-        // Strict screen-down ray: x is immutable; only +Y is considered.
+        // Strict screen-down ray for the main drop: x is immutable, only +Y.
         while(pieceFits(g.board,{...target,x:fixedX,y:target.y+2}))target.y+=2;
 
-        target.x=fixedX;
+        // Resolve only the unavoidable last parity half-row at the physical floor.
+        target=floorDirectedFinalTarget(g,target,visualX);
+
         g.piece={...target};
-        g.pieceVX=fixedX;
+        g.pieceVX=target.x;
         g.freeX=null;
         emit(g,{t:"drop"});
         lock(g,5);
