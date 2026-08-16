@@ -111,41 +111,6 @@ function hexPhysTranslationSafe(b,members,dx,dy){
  for(const m of members){const p={x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null};if(hexPhysPathHitsStationary(p,b,own))return false;}return true;
 }
 function groupTranslationSafe(b,members,dx,dy){return hexPhysTranslationSafe(b,members,dx,dy);}
-function hexPhysRotateCellAroundPivot(x,y,px,py,angle){
- const ox=latticeRealX(x)-latticeRealX(px),oy=cellCenterYNorm(y)-cellCenterYNorm(py),c=Math.cos(angle),s=Math.sin(angle);
- const rx=latticeRealX(px)+ox*c-oy*s,ry=cellCenterYNorm(py)+ox*s+oy*c;
- const tx=Math.round(rx/.5),ty=Math.round((ry-BOARD_TOP_CENTER_N)/HEX_ROW_H);
- if(Math.abs(latticeRealX(tx)-rx)>1e-7||Math.abs(cellCenterYNorm(ty)-ry)>1e-7)return null;
- return[tx,ty];
-}
-function hexPhysRigidSlopePlan(b,members){
- if(!members||members.length<2)return null;
- const own=new Set(members.map(m=>m.ball.id)),contacts=[];
- for(const m of members)for(const side of[-1,1]){
-  const px=m.x+side,py=m.y+1,support=valid(px,py)?b[py][px]:null;
-  if(support&&!own.has(support.id))contacts.push({member:m,side,px,py,support});
- }
- if(!contacts.length)return null;
- const bundle=members[0].ball.motionGroupId||HEX_PHYS_GROUP_SEQ,candidates=[];
- for(const contact of contacts){
-  const angle=contact.side>0?-Math.PI/3:Math.PI/3,targets=[],used=new Set();
-  let descent=0,safe=true;
-  for(const m of members){
-   const target=hexPhysRotateCellAroundPivot(m.x,m.y,contact.px,contact.py,angle);
-   if(!target){safe=false;break;}
-   const[tx,ty]=target,k=tx+","+ty,q=valid(tx,ty)?b[ty][tx]:null;
-   if(!valid(tx,ty)||used.has(k)||(q&&!own.has(q.id))||ty<m.y){safe=false;break;}
-   used.add(k);descent+=ty-m.y;
-   targets.push({x:m.x,y:m.y,tx,ty,ball:m.ball,kind:"GROUP_SLOPE_ROLL",pivot:[contact.px,contact.py],topPivot:null,followSupportIds:[contact.support.id],bundleId:bundle,groupSize:members.length});
-  }
-  if(!safe||descent<=0)continue;
-  if(targets.some(p=>hexPhysPathHitsStationary(p,b,own)))continue;
-  const bias=members.reduce((n,m)=>n+hexPhysBias(m.ball),0),rollDir=-contact.side;
-  candidates.push({plan:targets,descent,biasMatch:bias&&Math.sign(bias)===rollDir?1:0,pivotId:contact.support.id});
- }
- candidates.sort((a,z)=>z.descent-a.descent||z.biasMatch-a.biasMatch||a.pivotId-z.pivotId);
- return candidates[0]?.plan||null;
-}
 function hexPhysPairPivotPlan(b,members,motions){
  if(members.length!==2)return null;
  for(let i=0;i<2;i++){const fixed=members[i],moving=members[1-i],mp=motions[1-i];if(motions[i]||!mp)continue;if(hexPhysDist(mp.tx,mp.ty,fixed.x,fixed.y)>1.00001)continue;const p={...mp,pivot:[fixed.x,fixed.y],topPivot:null,kind:"PAIR_PIVOT",bundleId:fixed.ball.motionGroupId||0,followSupportIds:[fixed.ball.id]};if(!hexPhysPathHitsStationary(p,b,new Set(members.map(m=>m.ball.id))))return[p];}
@@ -165,12 +130,6 @@ function hexPhysPlanGroup(b,members,preview=false){
  }
  if(!moving.length){if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
  if(moving.length===size){const dx=motions[0].tx-motions[0].x,dy=motions[0].ty-motions[0].y;if(motions.every(p=>p.tx-p.x===dx&&p.ty-p.y===dy)&&hexPhysTranslationSafe(b,members,dx,dy)){const bundle=members[0].ball.motionGroupId||HEX_PHYS_GROUP_SEQ;return members.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null,followSupportIds:[],bundleId:bundle,groupSize:size}));}}
- // A one-sided diagonal contact is an ordinary slope, not a reason to break
- // the released piece. Rotate every member through the same 60-degree arc
- // around the external support so the triangle and all pair distances remain
- // rigid throughout the slide. Only a genuinely blocked rotation may proceed
- // to the differential/pinned-member split rules below.
- const slopePlan=hexPhysRigidSlopePlan(b,members);if(slopePlan)return slopePlan;
  if(size===2){const pivot=hexPhysPairPivotPlan(b,members,motions);if(pivot)return pivot;if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
  // A released triplet may touch down one ball before the other two. Detach
  // only the pinned member; the moving pair keeps the original constraint.
