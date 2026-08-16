@@ -32,6 +32,17 @@ expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"refe
  expect(Math.abs(exact-(SPAWN_X+.6))<1e-9&&Math.abs(g.pieceVX-exact)<1e-9,"continuous slide: pointer release snapped the visual X");
 }
 
+// Every orientation reaches both outer lattice columns continuously. The
+// logical anchor remains valid and is committed only when the piece locks.
+for(let rot=0;rot<6;rot++){
+ const left=createEngine(190+rot);left.state="PLAYING";left.piece={x:SPAWN_X,y:0,rot,colors:[0,1,2]};left.pieceVX=SPAWN_X;
+ setFreeX(left,-100);updateVisuals(left,PHYSICS_FRAME);const leftCells=pieceCells(left.piece).map(([x])=>x+left.pieceVX-left.piece.x);
+ expect(Math.abs(Math.min(...leftCells))<1e-9,"continuous wall range: rotation "+rot+" cannot reach the left edge");
+ const right=createEngine(200+rot);right.state="PLAYING";right.piece={x:SPAWN_X,y:0,rot,colors:[0,1,2]};right.pieceVX=SPAWN_X;
+ setFreeX(right,100);updateVisuals(right,PHYSICS_FRAME);const rightCells=pieceCells(right.piece).map(([x])=>x+right.pieceVX-right.piece.x);
+ expect(Math.abs(Math.max(...rightCells)-(W2-1))<1e-9,"continuous wall range: rotation "+rot+" cannot reach the right edge");
+}
+
 // A wall contributes no support rigidity, but touching it alone must not break
 // a freely falling triplet whose cells can still translate together.
 {

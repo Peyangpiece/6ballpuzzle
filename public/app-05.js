@@ -37,7 +37,14 @@ function die(g,overflowCells=null,reason="LIMIT"){
 function legalXRange(g){
  const p=g.piece;let lo=null,hi=null;
  for(let x=0;x<W2;x++){if(((x-p.x)&1)!==0)continue;if(!pieceFits(g.board,{...p,x}))continue;if(lo===null)lo=x;hi=x;}
- return[lo===null?p.x:lo,hi===null?p.x:hi];
+ if(lo===null)return[p.x,p.x];
+ // Logical anchors advance by two doubled-x units, but a dragged piece may
+ // occupy the one-unit phase between them. Keep that final half-step at both
+ // walls so its outer ball can reach lattice columns 0 and W2-1; lock() alone
+ // chooses the nearest legal anchor. The old range stopped at lo/hi and made
+ // each side look one ball narrower after the lattice phase was reversed.
+ const offsets=pieceCells(p).map(([x])=>x-p.x),wallLo=-Math.min(...offsets),wallHi=(W2-1)-Math.max(...offsets);
+ return[Math.max(wallLo,lo-1),Math.min(wallHi,hi+1)];
 }
 function setColumn(g,targetX){
  if(g.state!=="PLAYING"||!g.piece)return false;

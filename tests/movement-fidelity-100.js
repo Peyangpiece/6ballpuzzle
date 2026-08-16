@@ -34,8 +34,8 @@ check(5,"fixed physics is 120 hertz",PHYSICS_HZ===120&&close(PHYSICS_FRAME,1/120
 // 011-020: finger X, rotation and fast fall.
 {const g=active(11);setFreeX(g,SPAWN_X+.637);check(11,"finger X remains real valued",close(g.freeX,SPAWN_X+.637));}
 {const g=active(12);setFreeX(g,SPAWN_X+.637);updateVisuals(g,PHYSICS_FRAME);check(12,"render X follows finger one to one",close(g.pieceVX,g.freeX));}
-{const g=active(13);setFreeX(g,-100);check(13,"finger X clamps at legal left edge",g.freeX===legalXRange(g)[0]);}
-{const g=active(14);setFreeX(g,100);check(14,"finger X clamps at legal right edge",g.freeX===legalXRange(g)[1]);}
+{const g=active(13);setFreeX(g,-100);updateVisuals(g,PHYSICS_FRAME);const xs=pieceCells(g.piece).map(([x])=>x+g.pieceVX-g.piece.x);check(13,"finger X reaches outer left column",g.freeX===0&&close(Math.min(...xs),0));}
+{const g=active(14);setFreeX(g,100);updateVisuals(g,PHYSICS_FRAME);const xs=pieceCells(g.piece).map(([x])=>x+g.pieceVX-g.piece.x);check(14,"finger X reaches outer right column",g.freeX===W2-3&&close(Math.max(...xs),W2-1));}
 {const g=active(15);setFreeX(g,SPAWN_X+.49);check(15,"sub-cell X does not quantize the visual",close(g.pieceVX,SPAWN_X)&&close(g.freeX,SPAWN_X+.49));}
 check(16,"pointer release preserves fractional X",SOURCE_CONTROLS.includes("Pointer release must not snap")&&SOURCE_CONTROLS.includes("g.pieceVX=g.freeX"));
 {const g=active(17),r=g.piece.rot;check(17,"rotation advances sixty degrees",rotate(g,1)&&g.piece.rot===(r+1)%6);}
