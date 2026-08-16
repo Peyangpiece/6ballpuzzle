@@ -59,6 +59,9 @@ jobs:
           ! grep -q 'controls-v5.js' public/index.html
           grep -q '__hexControlsV6Installed' public/controls-v6.js
           grep -q '__hexLegacyCanvasPointerBlockV6' public/controls-v6.js
+          grep -q '__hexCreateEngineWrappedV6' public/controls-v6.js
+          grep -q '__hexEnginesV6' public/controls-v6.js
+          ! grep -q 'hexTouchPlayerEngineV4' public/controls-v6.js
           grep -q 'rec.half>0?1:-1' public/controls-v6.js
           grep -q '__hexInstantDropV6' public/controls-v6.js
           grep -q 'dropPiece(g.board' public/controls-v6.js
