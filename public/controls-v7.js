@@ -269,9 +269,10 @@
         releaseCapture(rec);
         const g=rec.g;
         if(g&&rec.dragActive){
-            if(Number.isFinite(g.freeX))setColumn(g,g.freeX);
-            if(g.piece)g.pieceVX=g.piece.x;
-            g.freeX=null;
+            // Pointer release must not snap the piece back to the lattice.
+            // Keep the exact sub-cell X through the remaining fall; lock() is
+            // the single place that commits it to the nearest legal column.
+            if(Number.isFinite(g.freeX))g.pieceVX=g.freeX;
             g.dragging=false;
         }
 
