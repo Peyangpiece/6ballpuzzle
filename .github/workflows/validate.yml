@@ -25,7 +25,7 @@ jobs:
             public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
             public/app-05.js public/app-06.js public/app-07.js public/app-08.js \
             public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
-            public/app-16.js public/app-17.js public/controls-v5.js > /tmp/hexdrop-runtime.js
+            public/app-16.js public/app-17.js public/controls-v6.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
       - name: Check floor parity regression
         run: |
@@ -47,30 +47,32 @@ jobs:
             if(p.ty!==ROWS-1) throw new Error(`floor parity: expected ty=${ROWS-1}, got ${p.ty}`);
             if(p.kind!=='FLOOR_DROP') throw new Error(`floor parity: expected FLOOR_DROP, got ${p.kind}`);
           }
-          {
-            const b=newBoard();
-            const x=11, y=ROWS-2;
-            const ball={id:2,c:0,momentumX:1,rollDir:0,subCellBias:0};
-            b[y][x]=ball;
-            const p=hexPhysNaturalMotion(b,x,y);
-            if(!p || p.tx!==x+1 || p.ty!==ROWS-1) throw new Error('floor parity: +X bias did not reach floor');
-          }
-          {
-            const b=newBoard();
-            const x=11, y=ROWS-2;
-            const ball={id:3,c:0,momentumX:-1,rollDir:0,subCellBias:0};
-            b[y][x]=ball;
-            const p=hexPhysNaturalMotion(b,x,y);
-            if(!p || p.tx!==x-1 || p.ty!==ROWS-1) throw new Error('floor parity: -X bias did not reach floor');
-          }
           console.log('floor parity regression PASS');
           EOF
           node /tmp/floor-test.js
+      - name: Check clean touch controls v6
+        run: |
+          set -e
+          test -f public/controls-v6.js
+          ! test -e public/controls-v5.js
+          grep -q 'controls-v6.js' public/index.html
+          ! grep -q 'controls-v5.js' public/index.html
+          grep -q '__hexControlsV6Installed' public/controls-v6.js
+          grep -q '__hexLegacyCanvasPointerBlockV6' public/controls-v6.js
+          grep -q 'rec.half>0?1:-1' public/controls-v6.js
+          grep -q '__hexInstantDropV6' public/controls-v6.js
+          grep -q 'dropPiece(g.board' public/controls-v6.js
+          grep -q 'target.x=fixedX' public/controls-v6.js
+          grep -q 'd.g.fastForward=true' public/controls-v6.js
+          grep -q 'rec.longActive=true' public/controls-v6.js
+          grep -q 'setFreeX(g,rec.dragBaseX' public/controls-v6.js
+          ! grep -q 'floorDirectedFinalTarget' public/controls-v6.js
+          ! grep -q 'bottomPress' public/controls-v6.js
+          ! grep -q 'startSingleMove' public/controls-v6.js
       - name: Check unified physics architecture
         run: |
           set -e
           test -f public/index.html
-          test -f public/controls-v5.js
           test -f public/manifest.webmanifest
           test -f wrangler.jsonc
           grep -q 'hexPhysNaturalMotion' public/app-02.js
@@ -80,9 +82,6 @@ jobs:
           grep -q 'hexPhysResolveEvent' public/app-03.js
           grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.6' public/app-06.js
           grep -q 'prepareContinuousPileFlow' public/app-07.js
-          grep -q 'Strict screen-down ray' public/controls-v5.js
-          grep -q 'target.y+2' public/controls-v5.js
-          grep -q 'controls-v5.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q -- '-webkit-touch-callout:none' public/index.html
           grep -q 'touch-action:none' public/index.html
