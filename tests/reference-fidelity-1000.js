@@ -111,7 +111,7 @@ for(let i=0;i<120;i++)pass("formation",i,()=>{
   const dirs=[[2,0],[1,1],[1,-1]],d=dirs[i%3],x=d[1]<0?2:0,y=d[1]<0?8:0,cells=Array.from({length:6},(_,n)=>[x+d[0]*n,y+d[1]*n]);expect(classify(cells)==="STRAIGHT","formation "+i+": straight direction changed");
  }else{
   expect(WAZA.PYRAMID.garbage===24&&WAZA.HEXAGON.garbage===36&&WAZA.STRAIGHT.garbage===19,"formation "+i+": attack amount changed");
-  expect(close(WAZA.PYRAMID.hold,1.25)&&close(WAZA.HEXAGON.fx,2.9),"formation "+i+": reference effect timing changed");
+  expect(close(WAZA.PYRAMID.hold,1.25)&&close(WAZA.STRAIGHT.fx,4.35)&&close(WAZA.PYRAMID.fx,4.05)&&close(WAZA.HEXAGON.fx,4.15),"formation "+i+": reference effect timing changed");
   const g=createEngine(50000+i);let id=700000+i*100;for(let y=-2;y<ROWS;y++)for(let x=0;x<W2;x++)if(valid(x,y)){const q=ball(id,id++);g.board[y][x]=q;noteBoardCell(g.board,y,q);}g.state="RESOLVING";g.phase="CHECK";g.garbDone=true;stepEngine(g,PHYSICS_FRAME);expect(!g.alive&&g.state==="GAMEOVER","formation "+i+": quiescent overflow did not lose");
  }
 });

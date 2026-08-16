@@ -82,11 +82,14 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         const cv = clearVisualState(k);
         for (const gh of g.clearing.ghosts) {const [px,py] = pos(gh.x, gh.y);drawBall(ctx, px, py, D, gh.c, {alpha:cv.alpha, scale:cv.scale, sq:0, ring:1});}
     }
-    drawFormationEffects(ctx,g,pos,D);
     for (const s of g.fx.sparks) {
         const k = Math.max(0, s.life / s.max);const [px, py] = pos(s.x, s.y);ctx.globalAlpha = k;ctx.beginPath();ctx.arc(px, py, D * 0.1 * (0.4 + k), 0, TAU);ctx.fillStyle = COLORS[s.c].glow;ctx.fill();ctx.globalAlpha = 1;
     }
     ctx.restore();
+    // Technique glyphs intentionally extend above and slightly beyond the
+    // neon playfield in the reference. Draw them after releasing the board
+    // clip; balls and ordinary sparks remain clipped.
+    drawFormationEffects(ctx,g,pos,D);
     if (g.state === "PLAYING" && g.piece) {
         const shadowCells = landingShadowVisualCells(g);
         if (shadowCells) {const safeShadowPx=rigidShadowPixelPlacement(g,shadowCells,pos,D,X,Y,BW,BH);for(const [spx,spy,sc] of safeShadowPx) drawLandingShadowBall(ctx,spx,spy,D,sc);}
@@ -111,7 +114,9 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     drawIncomingPreviews(ctx,g,L);
     const nw = 128, nh = 106;const nx0 = side === 0 ? X - nw + 5 : X + BW - 5, ny0 = 35;
     ctx.save();ctx.strokeStyle = "rgba(255,255,255,0.5)";ctx.lineWidth = 2;ctx.fillStyle = "rgba(255,255,255,0.05)";ctx.beginPath();ctx.rect(nx0, ny0, nw, nh);ctx.fill();ctx.stroke();
-    const nd = 42, ncx = nx0 + nw / 2, ncy = ny0 + nh / 2, q = g.queue[0];
+    // The reference keeps both NEXT windows empty throughout READY. They are
+    // populated on the same frame that the first active triplets appear.
+    const nd = 42, ncx = nx0 + nw / 2, ncy = ny0 + nh / 2, q = g.state === "READY" ? null : g.queue[0];
     if (q) {drawBall(ctx, ncx - nd * 0.5, ncy - nd * 0.42, nd, q[0], {});drawBall(ctx, ncx + nd * 0.5, ncy - nd * 0.42, nd, q[1], {});drawBall(ctx, ncx, ncy + nd * 0.42, nd, q[2], {});}
     ctx.font = "900 17px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.94)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.fillText("つぎ", ncx, ny0 + nh + 7);ctx.restore();
     const avx=side===0?44:VW-44,avy=36;
@@ -119,7 +124,20 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     for (const t2 of g.fx.toasts) {const k = t2.life / t2.max;const size = t2.waza ? 40 : 28+t2.big*38;ctx.save();ctx.globalAlpha = Math.min(1, k * 3);ctx.font = `900 ${size * (1 + (1 - k) * 0.08)}px ui-sans-serif, system-ui, sans-serif`;ctx.textAlign = "center";ctx.textBaseline = "middle";ctx.lineJoin="round";ctx.strokeStyle="rgba(0,0,0,.68)";ctx.lineWidth=t2.waza?7:4;ctx.shadowColor = t2.tint;ctx.shadowBlur = 24;const ty=t2.waza?Y+BH+48:Y+BH*(t2.sub?0.58:0.44)-(1-k)*26;ctx.strokeText(t2.text,X+BW/2,ty);ctx.fillStyle = "#FFFFFF";ctx.fillText(t2.text, X + BW / 2,ty);ctx.restore();}
     ctx.restore();
 }
-function drawMatchIntro(ctx,g){if(g.state!=="READY")return;let text="";if(g.stateT<READY_RULE_END)text="同じ色を6つつなげよう！";else if(g.stateT>=READY_START_BEGIN&&g.stateT<READY_START_END)text="スタート！";if(!text)return;const edge=Math.min(g.stateT<READY_RULE_END?g.stateT:Math.max(0,g.stateT-READY_START_BEGIN),g.stateT<READY_RULE_END?READY_RULE_END-g.stateT:READY_START_END-g.stateT),a=Math.min(1,edge/.16),cx=ME.X+ME.BW/2,cy=ME.Y+ME.BH*.45;ctx.save();ctx.globalAlpha=a;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font=`900 ${text==="スタート！"?34:27}px ui-sans-serif,system-ui,sans-serif`;ctx.lineJoin="round";ctx.lineWidth=7;ctx.strokeStyle="rgba(0,0,0,.72)";ctx.shadowColor="#FFFFFF";ctx.shadowBlur=12;ctx.strokeText(text,cx,cy);ctx.fillStyle="#FFFFFF";ctx.fillText(text,cx,cy);ctx.restore();}
+function drawMatchIntro(ctx,g){
+    if(g.state!=="READY")return;
+    // A short black-to-board reveal separates the menu from the match.
+    if(g.stateT<READY_FADE_IN_DURATION){ctx.save();ctx.globalAlpha=1-Math.min(1,g.stateT/READY_FADE_IN_DURATION);ctx.fillStyle="#000000";ctx.fillRect(0,0,VW,VH);ctx.restore();}
+    let text="",begin=0,end=0;
+    if(g.stateT>=READY_RULE_BEGIN&&g.stateT<READY_RULE_END){text="同じ色を6つつなげよう！";begin=READY_RULE_BEGIN;end=READY_RULE_END;}
+    else if(g.stateT>=READY_START_BEGIN&&g.stateT<READY_START_END){text="スタート！";begin=READY_START_BEGIN;end=READY_START_END;}
+    if(!text)return;
+    const edge=Math.min(g.stateT-begin,end-g.stateT),a=Math.min(1,Math.max(0,edge)/.18),cx=VW/2,cy=400;
+    ctx.save();ctx.globalAlpha=a;ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.font=`900 ${text==="スタート！"?56:42}px ui-sans-serif,system-ui,sans-serif`;
+    ctx.lineJoin="round";ctx.lineWidth=text==="スタート！"?10:8;ctx.strokeStyle="rgba(0,0,0,.78)";ctx.shadowColor="#FFFFFF";ctx.shadowBlur=13;
+    ctx.strokeText(text,cx,cy);ctx.fillStyle="#FFFFFF";ctx.fillText(text,cx,cy);ctx.restore();
+}
 function renderScene(ctx, me, foe, orbs, t, labels, dropFlash, helpAlpha = 1, renderLead=0) {drawBackground(ctx,t,me,foe);drawSide(ctx,me,ME,0,t,labels.me,labels.meSub,true,renderLead);drawSide(ctx,foe,FOE,1,t,labels.foe,labels.foeSub,true,renderLead);drawAttackFlights(ctx,orbs);drawMatchIntro(ctx,me);}
 const SPACE_BG = "radial-gradient(1000px 500px at 20% 15%, #3C1D7A55, transparent 60%)," + "radial-gradient(900px 500px at 85% 30%, #0E5A7A55, transparent 60%)," + "radial-gradient(900px 600px at 50% 100%, #7A1E5844, transparent 60%)," + "linear-gradient(180deg,#080617 0%,#100B2B 55%,#060512 100%)";
 function Neon({ children, onClick, tone = "cyan", disabled }) {
@@ -131,13 +149,16 @@ function Screen({ children, title, back }) {
     return (React.createElement("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center font-sans overflow-y-auto", style: {background:SPACE_BG,opacity:shown?1:0,transform:shown?"none":"scale(1.015)",transition:"opacity .28s ease, transform .28s cubic-bezier(.2,.8,.3,1)",paddingTop:"max(20px, env(safe-area-inset-top))",paddingBottom:"max(20px, env(safe-area-inset-bottom))",paddingLeft:"max(20px, env(safe-area-inset-left))",paddingRight:"max(20px, env(safe-area-inset-right))"} },React.createElement("div", { className: "w-full max-w-sm flex flex-col" },(title || back) && (React.createElement("div", { className: "flex items-center gap-3 mb-5" },back && React.createElement("button", { onClick: back, className: "w-9 h-9 rounded-xl text-white/70 border border-white/20 bg-white/5" }, "←"),React.createElement("div", { className: "font-extrabold text-white/90 tracking-wide" }, title))),children)));
 }
 function ResultOverlay({win,onNext,onExit}){
+    const [phase,setPhase]=useState(0);
+    useEffect(()=>{const a=requestAnimationFrame(()=>setPhase(1)),b=setTimeout(()=>setPhase(2),240),c=setTimeout(()=>setPhase(3),520);return()=>{cancelAnimationFrame(a);clearTimeout(b);clearTimeout(c);};},[]);
     const card=(winner,left)=>React.createElement("div",{className:"relative flex-1 h-[68vh] flex flex-col items-center justify-center",style:{maxWidth:"42vw"}},
-        winner&&React.createElement("div",{className:"absolute top-[16%] text-5xl",style:{filter:"drop-shadow(0 0 14px #FFF36B)"}},"♛"),
-        React.createElement("div",{className:"w-24 h-24 md:w-32 md:h-32 rounded-full border-4 flex items-center justify-center text-4xl md:text-5xl font-black",style:{color:winner?"#5b4210":"#D6D8E0",borderColor:winner?"#FFF36B":"#D6D8E0",background:winner?"radial-gradient(circle at 35% 30%,#FFF8A8,#E7A914 72%)":"linear-gradient(145deg,#88909D,#424854)",boxShadow:winner?"0 0 0 10px #FFD83B55,0 0 42px #FFF36B88":"0 0 24px #FFFFFF22"}},winner?"★":"●"),
-        React.createElement("div",{className:"mt-6 text-5xl md:text-7xl font-black tracking-tight text-white",style:{textShadow:"0 5px 0 #111,0 0 18px #FFFFFF44"}},winner?"Winner!":"Lose..."),
-        winner&&React.createElement("div",{className:"mt-2 text-4xl text-[#FFF36B] tracking-[.5em]"},"♛—♛")
+        winner&&React.createElement("div",{className:"absolute w-56 h-56 rounded-full",style:{opacity:phase>=3?.72:0,transform:`scale(${phase>=3?1:.22}) rotate(${phase>=3?18:0}deg)`,transition:"opacity .28s ease, transform .46s cubic-bezier(.18,.82,.22,1)",background:"repeating-conic-gradient(from 0deg,rgba(255,255,255,.92) 0deg,rgba(255,255,255,.92) 7deg,transparent 7deg,transparent 31deg)",filter:"blur(1px)",maskImage:"radial-gradient(circle,transparent 0 23%,#000 25% 68%,transparent 70%)",WebkitMaskImage:"radial-gradient(circle,transparent 0 23%,#000 25% 68%,transparent 70%)"}}),
+        winner&&React.createElement("div",{className:"absolute top-[20%] text-4xl",style:{opacity:phase>=3?1:0,transform:`translateY(${phase>=3?0:12}px) scale(${phase>=3?1:.6})`,transition:"opacity .25s ease, transform .35s cubic-bezier(.18,.82,.22,1)",filter:"drop-shadow(0 0 14px #FFF36B)"}},"♛"),
+        React.createElement("div",{className:"relative w-16 h-16 rounded-full border-4 flex items-center justify-center text-3xl font-black",style:{opacity:phase>=1?1:0,transform:`scale(${phase>=1?1:.18})`,transition:"opacity .2s ease, transform .34s cubic-bezier(.15,.9,.2,1.18)",color:winner?"#5b4210":"#D6D8E0",borderColor:winner?"#FFF36B":"#D6D8E0",background:winner?"radial-gradient(circle at 35% 30%,#FFF8A8,#E7A914 72%)":"linear-gradient(145deg,#88909D,#424854)",boxShadow:winner?"0 0 0 7px #FFD83B55,0 0 34px #FFF36B88":"0 0 20px #FFFFFF22"}},winner?"★":"●"),
+        React.createElement("div",{className:"mt-4 text-5xl font-black tracking-tight text-white",style:{opacity:phase>=2?1:0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:"0 4px 0 #111,0 0 18px #FFFFFF44"}},winner?"Winner!":"Lose..."),
+        winner&&React.createElement("div",{className:"mt-1 text-2xl text-[#FFF36B] tracking-[.5em]",style:{opacity:phase>=3?1:0,transition:"opacity .25s ease"}},"♛—♛")
     );
-    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",style:{background:"rgba(38,0,43,.64)",backdropFilter:"blur(6px)",WebkitBackdropFilter:"blur(6px)"}},
+    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",style:{background:phase?"rgba(38,0,43,.64)":"rgba(38,0,43,0)",backdropFilter:`blur(${phase?6:0}px)`,WebkitBackdropFilter:`blur(${phase?6:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
         React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]"},card(!!win,true),card(!win,false)),
         React.createElement("div",{className:"absolute right-6 bottom-5 flex gap-8 text-white font-extrabold"},
             React.createElement("button",{onClick:onExit,className:"px-4 py-2 rounded-xl bg-black/25 border border-white/15"},"○○ ヒント"),

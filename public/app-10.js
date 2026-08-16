@@ -86,26 +86,44 @@ function drawFormationEffects(ctx,g,pos,D){
     for(const fx of g.fx.formations||[]){
         if(!fx?.cells?.length||fx.life<=0)continue;
         const age=fx.max-fx.life,t=Math.max(0,Math.min(1,age/fx.max));
-        const pts=fx.cells.map(([x,y])=>pos(x,y)),cx=pts.reduce((n,p)=>n+p[0],0)/pts.length,cy=pts.reduce((n,p)=>n+p[1],0)/pts.length;
-        const radius=Math.max(D*(fx.w==="PYRAMID"?4.1:3.7),...pts.map(p=>Math.hypot(p[0]-cx,p[1]-cy)+D*2.7));
+        const pts=fx.cells.map(([x,y])=>pos(x,y)),sourceCx=pts.reduce((n,p)=>n+p[0],0)/pts.length,sourceCy=pts.reduce((n,p)=>n+p[1],0)/pts.length;
+        const boardTopCenterY=pos(0,0)[1],cx=sourceCx;
+        // The capture's large technique glyph is staged in the open upper
+        // playfield rather than wrapped tightly around the six cleared balls.
+        const cy=fx.w==="PYRAMID"?boardTopCenterY+D*3.7:fx.w==="HEXAGON"?boardTopCenterY+D*2.45:sourceCy;
+        const radius=D*(fx.w==="PYRAMID"?4.1:3.75);
         ctx.save();ctx.globalCompositeOperation="screen";
         // The six triggering balls first turn into brilliant white rings.
         const ballFlash=Math.max(0,1-age/.92);
         if(ballFlash>0)for(const p of pts){ctx.globalAlpha=Math.min(1,ballFlash*1.7);ctx.strokeStyle="#FFFFFF";ctx.lineWidth=D*.13;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.8;ctx.beginPath();ctx.arc(p[0],p[1],D*(.5+.1*(1-ballFlash)),0,TAU);ctx.stroke();}
 
-        let vertices=[];
+        let vertices=[],edges=[];
         if(fx.w==="STRAIGHT"){
             let a=pts[0],b=pts[0],best=-1;
             for(const p of pts)for(const q of pts){const d=Math.hypot(p[0]-q[0],p[1]-q[1]);if(d>best){best=d;a=p;b=q;}}
             const dx=(b[0]-a[0])/Math.max(1,best),dy=(b[1]-a[1])/Math.max(1,best);
-            vertices=[[a[0]-dx*D*1.1,a[1]-dy*D*1.1],[b[0]+dx*D*1.1,b[1]+dy*D*1.1]];
+            const s=[a[0]-dx*D*3.35,a[1]-dy*D*3.35],z=[b[0]+dx*D*3.35,b[1]+dy*D*3.35],nx=-dy*D*.34,ny=dx*D*.34;
+            vertices=[s,z];edges=[[[s[0]+nx,s[1]+ny],[z[0]+nx,z[1]+ny]],[[s[0]-nx,s[1]-ny],[z[0]-nx,z[1]-ny]]];
         }else{
             const sides=fx.w==="PYRAMID"?3:6;
             const start=fx.w==="PYRAMID"?(fx.pointDown?Math.PI/2:-Math.PI/2):-Math.PI/2;
             vertices=Array.from({length:sides},(_,i)=>[cx+Math.cos(start+i*TAU/sides)*radius,cy+Math.sin(start+i*TAU/sides)*radius]);
-            vertices.push(vertices[0]);
+            if(fx.w==="HEXAGON"){
+                // The reference hexagon is a slowly turning wireframe solid,
+                // not a stationary flat six-sided outline.
+                const hexTurn=Math.max(0,age-.42)*.72,squeeze=.82+.18*Math.abs(Math.cos(hexTurn)),skew=Math.sin(hexTurn)*.2;
+                vertices=vertices.map(([x,y])=>[cx+(x-cx)*squeeze+(y-cy)*skew,cy+(y-cy)]);
+            }
+            for(let i=0;i<sides;i++)edges.push([vertices[i],vertices[(i+1)%sides]]);
+            if(fx.w==="PYRAMID"){
+                const baseMid=[(vertices[1][0]+vertices[2][0])/2,(vertices[1][1]+vertices[2][1])/2];edges.push([vertices[0],baseMid]);
+            }else{
+                const inner=vertices.map(p=>[cx+(p[0]-cx)*.51,cy+(p[1]-cy)*.51]);
+                for(let i=0;i<6;i++){edges.push([inner[i],inner[(i+1)%6]]);edges.push([vertices[i],inner[i]]);}
+                edges.push([inner[0],inner[3]],[inner[1],inner[4]],[inner[2],inner[5]]);
+            }
         }
-        const trace=(width,alpha,color)=>{ctx.beginPath();vertices.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.globalAlpha=alpha;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.72;ctx.stroke();};
+        const trace=(width,alpha,color,list=edges)=>{ctx.beginPath();for(const [a,b]of list){ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);}ctx.strokeStyle=color;ctx.lineWidth=width;ctx.globalAlpha=alpha;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.72;ctx.stroke();};
         // Construction rays, then the large filled flash seen in the captures.
         if(age<.86)trace(Math.max(1,D*.045),Math.min(1,age/.18),fx.tint);
         if(age>=.68&&age<1.18){
@@ -120,7 +138,21 @@ function drawFormationEffects(ctx,g,pos,D){
             trace(D*(.06+.12*flash),.95*flash,"#FFFFFF");
         }
         // The solid geometry dissolves into stable sparkling edge particles.
-        if(age>=1.04){const fade=Math.min(1,(age-1.04)/.3)*Math.min(1,fx.life/.45);for(let e=0;e<vertices.length-1;e++){const a=vertices[e],b=vertices[e+1],n=fx.w==="STRAIGHT"?32:18;for(let i=0;i<=n;i++){const u=i/n,jitter=Math.sin(i*12.9898+e*7.13)*D*.025,px=a[0]+(b[0]-a[0])*u,py=a[1]+(b[1]-a[1])*u;ctx.globalAlpha=fade*(.48+.5*Math.sin(age*10+i*1.7+e));ctx.fillStyle=i%5===0?"#FFFFFF":fx.tint;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*.35;ctx.beginPath();ctx.arc(px+jitter,py-jitter,D*(i%5===0?.055:.038),0,TAU);ctx.fill();}}}
+        if(age>=1.04){
+            const fade=Math.min(1,(age-1.04)/.3)*Math.min(1,fx.life/.18),n=fx.w==="STRAIGHT"?130:fx.w==="HEXAGON"?36:90,flow=fx.w==="STRAIGHT"?age*.035:fx.w==="HEXAGON"?age*.014:0;
+            // Dense reference trails are drawn in two batched paths. This
+            // keeps hundreds of glowing motes smooth on mobile without doing
+            // a separate fill and shadow pass for every particle.
+            for(let white=0;white<2;white++){
+                ctx.beginPath();
+                for(let e=0;e<edges.length;e++){const [a,b]=edges[e];for(let i=0;i<=n;i++){
+                    if((i%7===0)!==!!white)continue;
+                    const u=(i/n+flow)%1,jitter=Math.sin(i*12.9898+e*7.13+age*2.1)*D*.034,px=a[0]+(b[0]-a[0])*u,py=a[1]+(b[1]-a[1])*u,r=D*(white?.07:.044);
+                    ctx.moveTo(px+jitter+r,py-jitter);ctx.arc(px+jitter,py-jitter,r,0,TAU);
+                }}
+                ctx.globalAlpha=fade*(white?.94:.74+.18*Math.sin(age*9.5));ctx.fillStyle=white?"#FFFFFF":fx.tint;ctx.shadowColor=fx.tint;ctx.shadowBlur=D*(white?.52:.42);ctx.fill();
+            }
+        }
         ctx.restore();
     }
 }

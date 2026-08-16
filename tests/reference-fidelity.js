@@ -50,19 +50,19 @@ check(31,"bubble growth duration",close(HEX_GARBAGE_BUBBLE_DURATION,.34));
 check(32,"garbage shape cadence",close(HEX_GARBAGE_SHAPE_INTERVAL,.5));
 check(33,"garbage path avoids full solver",!/settleAll\s*\(/.test(reserveGarbagePlan.toString())&&!/settleAll\s*\(/.test(materializeGarbagePack.toString()));
 check(34,"pyramid hold timing",close(WAZA.PYRAMID.hold,1.25));
-check(35,"hexagon particle timing",close(WAZA.HEXAGON.fx,2.9));
+check(35,"capture-length formation afterimages",close(WAZA.STRAIGHT.fx,4.35)&&close(WAZA.PYRAMID.fx,4.05)&&close(WAZA.HEXAGON.fx,4.15));
 check(36,"straight broad light blade",SOURCE_APP10.includes("D*1.34"));
 check(37,"formation particle edges",SOURCE_APP10.includes("stable sparkling edge particles"));
 check(38,"full 19-ring straight preview",SOURCE_APP10.includes("soloStraight?pat"));
 check(39,"travelling attack rings",typeof drawAttackFlights==="function"&&SOURCE_APP14.includes("drawAttackFlights(ctx,orbs)"));
 check(40,"skill atmosphere tint",SOURCE_APP10.includes("const active=[...(me?.fx?.formations||[])")&&SOURCE_APP10.includes("const wash=ctx.createRadialGradient"));
 
-check(41,"match intro total timing",close(READY_DURATION,3.25));
-{const human=createEngine(190),cpu=createEngine(191);cpu.ai={level:1};stepEngine(human,PHYSICS_FRAME);stepEngine(cpu,PHYSICS_FRAME);check(42,"single human intro SE",human.events.some(e=>e.t==="ready")&&!cpu.events.some(e=>e.t==="ready"));}
-check(43,"intro centred over own field",SOURCE_APP14.includes("cx=ME.X+ME.BW/2"));
-check(44,"defeat-to-result timing",SOURCE_APP16.includes("}, 4800)"));
+check(41,"match intro total timing",close(READY_FADE_IN_DURATION,.38)&&close(READY_RULE_BEGIN,.38)&&close(READY_DURATION,3.70));
+{const human=createEngine(190),cpu=createEngine(191);cpu.ai={level:1};for(let i=0;i<60;i++){stepEngine(human,PHYSICS_FRAME);stepEngine(cpu,PHYSICS_FRAME);}check(42,"single human intro SE",human.events.filter(e=>e.t==="ready").length===1&&!cpu.events.some(e=>e.t==="ready"));}
+check(43,"intro centred between fields",SOURCE_APP14.includes("cx=VW/2,cy=400"));
+check(44,"defeat-to-result timing",close(RESULT_REVEAL_DELAY_MS,4250)&&SOURCE_APP16.includes("RESULT_REVEAL_DELAY_MS"));
 {const g=createEngine(200);g.state="PLAYING";g.piece={x:9,y:-2,rot:0,colors:[0,1,2]};g.pieceVX=9;lock(g,3);check(45,"overflow deferred until equilibrium",g.alive&&g.state==="RESOLVING");}
-{const a=createEngine(210);spawn(a);a.pieceVX=9.375;a.dropT=a.dropInterval*.4;a.fx.formations.push({w:"PYRAMID",cells:[[0,0]],tint:"#57FF7D",life:2,max:2.85});const p=pieceSnapshotOf(a),fx=remoteFxSnapshotOf(a),b=createEngine(211);b.state="NET";applyRemoteVisualState(b,{piece:p,fx});check(46,"remote active piece round-trip",b.piece&&close(b.pieceVX,9.375)&&b.piece.colors.join()==a.piece.colors.join());}
+{const a=createEngine(210);spawn(a);a.pieceVX=9.375;a.dropT=a.dropInterval*.4;a.fx.formations.push({w:"PYRAMID",cells:[[0,0]],tint:"#57FF7D",life:2,max:4.05});const p=pieceSnapshotOf(a),fx=remoteFxSnapshotOf(a),b=createEngine(211);b.state="NET";applyRemoteVisualState(b,{piece:p,fx});check(46,"remote active piece round-trip",b.piece&&close(b.pieceVX,9.375)&&b.piece.colors.join()==a.piece.colors.join());}
 check(47,"network sends piece and technique",SOURCE_APP15.includes("piece:p.piece, fx:p.fx")&&SOURCE_APP16.includes("pieceSnapshotOf(me)"));
 check(48,"mobile v7 owns input without prototype patch",SOURCE_CONTROLS.includes("__hexControlsV7Installed")&&!SOURCE_CONTROLS.includes("HTMLCanvasElement.prototype")&&SOURCE_APP16.includes("if(window.__hexControlsV7Installed)return"));
 check(49,"measured SE spectral anchors",SOURCE_APP01.includes("2804,8933,11220")&&SOURCE_APP01.includes("9956")&&SOURCE_APP01.includes("5480"));

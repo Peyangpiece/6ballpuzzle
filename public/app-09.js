@@ -34,6 +34,12 @@ function stepEngine(g, dt) {
     g.scoreDisp += (g.stats.score - g.scoreDisp) * Math.min(1, 6 * dt);
     if (g.stats.score - g.scoreDisp < 1)
         g.scoreDisp = g.stats.score;
+    // Once either player loses, the surviving board is held exactly as it was
+    // in the capture while the defeated board performs its grayscale sink.
+    // Advancing the winner here used to spawn/drop another set during the
+    // 4.25-second result lead-in.
+    if (g.matchFrozen)
+        return;
     if (g.state === "GAMEOVER") {
         // 終了後は物理・描画位置を動かさず、負けた瞬間の盤面を保持する。
         g.fx.sink = 0;
@@ -43,7 +49,7 @@ function stepEngine(g, dt) {
         // In a local CPU match both engines advance through READY, but the
         // reference has one centred intro cue, not a quieter duplicate from
         // the opponent simulation.
-        if(g.introCue===0){if(!g.ai)emit(g,{t:"ready"});g.introCue=1;}
+        if(g.introCue===0&&g.stateT>=READY_RULE_BEGIN){if(!g.ai)emit(g,{t:"ready"});g.introCue=1;}
         if(g.introCue===1&&g.stateT>=READY_START_BEGIN){if(!g.ai)emit(g,{t:"start"});g.introCue=2;}
         if (g.stateT >= READY_DURATION) spawn(g);
         return;

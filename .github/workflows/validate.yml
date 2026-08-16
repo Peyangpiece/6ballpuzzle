@@ -60,6 +60,8 @@ jobs:
         run: node tests/garbage-fidelity-100.js
       - name: Check weighted 1000-pass reference fidelity
         run: node tests/reference-fidelity-1000.js
+      - name: Check staged 3000-pass video convergence
+        run: node tests/reference-convergence-3000.js
       - name: Check clean touch controls v7
         run: |
           set -e
