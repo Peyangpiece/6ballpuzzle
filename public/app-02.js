@@ -33,6 +33,25 @@ function hexPhysNaturalMotion(b,x,y,ignore=null){
  if(l&&!r)return{x,y,tx:x-1,ty:y+1,ball,kind:"ROLL_LEFT",pivot:[x+1,y+1],topPivot:null,followSupportIds:[]};
  if(r&&!l)return{x,y,tx:x+1,ty:y+1,ball,kind:"ROLL_RIGHT",pivot:[x-1,y+1],topPivot:null,followSupportIds:[]};
  if(!l&&!r)return null;
+
+ // Bottom-row parity bridge.
+ // On the row immediately above the floor, y+2 is outside the board even
+ // though both diagonal cells on the physical floor are legal. Treat that as
+ // downward gravity, not REST. This removes the one-row-up error that depended
+ // on triangle orientation / row parity.
+ if(l&&r&&y+1===ROWS-1){
+  let dir=hexPhysBias(ball);
+  if(!dir){
+   const sl=floorPackingScore(b,x-1,y+1),sr=floorPackingScore(b,x+1,y+1);
+   if(sl!==sr)dir=sl>sr?-1:1;
+  }
+  if(!dir)dir=(x<=1?1:(x>=W2-2?-1:-1));
+  const tx=x+dir,ty=y+1;
+  if(hexPhysEmpty(b,tx,ty,ignore))return{x,y,tx,ty,ball,kind:"FLOOR_DROP",pivot:null,topPivot:null,followSupportIds:[]};
+  const alt=x-dir;
+  if(hexPhysEmpty(b,alt,ty,ignore))return{x,y,tx:alt,ty,ball,kind:"FLOOR_DROP",pivot:null,topPivot:null,followSupportIds:[]};
+ }
+
  if(!down&&valid(x,y+2)){
   let dir=hexPhysBias(ball);
   if(!dir&&y+1===ROWS-1){const sl=floorPackingScore(b,x-1,y+1),sr=floorPackingScore(b,x+1,y+1);if(sl!==sr)dir=sl>sr?-1:1;}
