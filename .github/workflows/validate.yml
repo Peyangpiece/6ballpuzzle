@@ -27,6 +27,45 @@ jobs:
             public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
             public/app-16.js public/app-17.js public/controls-v5.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
+      - name: Check floor parity regression
+        run: |
+          set -e
+          cat > /tmp/floor-prefix.js <<'EOF'
+          const React={useRef(){},useEffect(){},useState(){},useCallback(){}};
+          const window={};
+          const navigator={};
+          EOF
+          cat /tmp/floor-prefix.js public/app-01.js public/app-02.js public/app-04.js > /tmp/floor-test.js
+          cat >> /tmp/floor-test.js <<'EOF'
+          {
+            const b=newBoard();
+            const x=11, y=ROWS-2;
+            const ball={id:1,c:0,momentumX:0,rollDir:0,subCellBias:0};
+            b[y][x]=ball;
+            const p=hexPhysNaturalMotion(b,x,y);
+            if(!p) throw new Error('floor parity: missing move from row above floor');
+            if(p.ty!==ROWS-1) throw new Error(`floor parity: expected ty=${ROWS-1}, got ${p.ty}`);
+            if(p.kind!=='FLOOR_DROP') throw new Error(`floor parity: expected FLOOR_DROP, got ${p.kind}`);
+          }
+          {
+            const b=newBoard();
+            const x=11, y=ROWS-2;
+            const ball={id:2,c:0,momentumX:1,rollDir:0,subCellBias:0};
+            b[y][x]=ball;
+            const p=hexPhysNaturalMotion(b,x,y);
+            if(!p || p.tx!==x+1 || p.ty!==ROWS-1) throw new Error('floor parity: +X bias did not reach floor');
+          }
+          {
+            const b=newBoard();
+            const x=11, y=ROWS-2;
+            const ball={id:3,c:0,momentumX:-1,rollDir:0,subCellBias:0};
+            b[y][x]=ball;
+            const p=hexPhysNaturalMotion(b,x,y);
+            if(!p || p.tx!==x-1 || p.ty!==ROWS-1) throw new Error('floor parity: -X bias did not reach floor');
+          }
+          console.log('floor parity regression PASS');
+          EOF
+          node /tmp/floor-test.js
       - name: Check unified physics architecture
         run: |
           set -e
@@ -36,9 +75,13 @@ jobs:
           test -f wrangler.jsonc
           grep -q 'hexPhysNaturalMotion' public/app-02.js
           grep -q 'hexPhysPlanGroup' public/app-02.js
+          grep -q 'FLOOR_DROP' public/app-02.js
+          grep -q 'y+1===ROWS-1' public/app-02.js
           grep -q 'hexPhysResolveEvent' public/app-03.js
           grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.6' public/app-06.js
           grep -q 'prepareContinuousPileFlow' public/app-07.js
+          grep -q 'Strict screen-down ray' public/controls-v5.js
+          grep -q 'target.y+2' public/controls-v5.js
           grep -q 'controls-v5.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q -- '-webkit-touch-callout:none' public/index.html
