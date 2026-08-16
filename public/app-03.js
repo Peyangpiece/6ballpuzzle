@@ -109,6 +109,11 @@ function hexPhysResolveEvent(b,preview=false){
     return accepted;
 }
 function hexPhysAppendSegment(ball,p,eventSeq){
+    // AI evaluation boards store cells as primitive colour numbers. They need
+    // logical gravity resolution only and must never receive render metadata.
+    // Writing fallPath/rollDir to a number throws in strict-mode runtimes and
+    // aborts the shared requestAnimationFrame loop, freezing both boards.
+    if(!ball || typeof ball!=="object")return;
     if(!Array.isArray(ball.fallPath))ball.fallPath=[];
     const seg={
         from:[p.x,p.y],to:[p.tx,p.ty],
