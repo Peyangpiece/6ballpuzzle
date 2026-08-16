@@ -1,11 +1,80 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js"]
+const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js"]
   .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const assertions=String.raw`
 function expect(value,message){if(!value)throw new Error(message);}
+
+// The wall contains balls but must never preserve a falling piece's rigidity.
+{
+ const b=newBoard(),balls=[0,1,2].map(i=>({id:200+i,c:i,motionGroupId:120,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
+ const members=[{ball:balls[0],x:0,y:2,role:0},{ball:balls[1],x:2,y:2,role:1},{ball:balls[2],x:1,y:3,role:2}];
+ for(const m of members)b[m.y][m.x]=m.ball;
+ const plan=hexPhysPlanGroup(b,members,false);
+ expect(plan.length>0,"wall rigidity: released balls received no independent motion");
+ expect(balls.every(ball=>ball.motionGroupId===0&&ball.rigid===false),"wall rigidity: wall contact kept a rigid group");
+}
+
+// Preview and application must use the same collision acceptance. A rejected
+// proposal is not a legal move and cannot trap SETTLE in an endless loop.
+{
+ const b=newBoard(),ball={id:230,c:0,motionGroupId:0,rigid:false};b[0][4]=ball;
+ const original=hexPhysBundleSafe;hexPhysBundleSafe=()=>false;
+ expect(hasLegalGravityMove(b)===false,"gap freeze: preview reported a rejected move as legal");
+ hexPhysBundleSafe=original;
+}
+
+// A hexagon hole is retained only when its two lower arch members are fully anchored.
+{
+ const b=newBoard(),pat=GARBAGE_SHAPES.HEXAGON,ax=1;
+ for(let i=0;i<pat.length;i++){const[x,y]=pat[i],ball={id:250+i,c:2,motionGroupId:0,rigid:false};b[10+y][ax+x]=ball;}
+ expect(isBalancedHexagonCenterHole(b,3,11),"balanced gap: floor-anchored hexagon was not recognized");
+ expect(!boardHasIllegalFloat(b)&&!hasLegalGravityMove(b),"balanced gap: complete hexagon did not remain in equilibrium");
+ expect(classify(findGroups(b)[0].cells)==="HEXAGON","balanced gap: hexagon formation was lost before clear");
+}
+
+// Crossing the visible limit does not lose during a drop; loss is decided at
+// the quiescent CHECK checkpoint after all motion and chains are complete.
+{
+ const b=newBoard();for(let i=0;i<6;i++){const ball={id:300+i,c:3,motionGroupId:0,rigid:false};b[-2][i*2]=ball;noteBoardCell(b,-2,ball);}
+ const groups=findGroups(b);
+ expect(boardHasOverflow(b)&&groups.length===1&&classify(groups[0].cells)==="STRAIGHT","limit timing: balls above the line did not participate in formation clearing");
+}
+{
+ const g=createEngine(20);g.state="PLAYING";g.piece={x:10,y:-2,rot:0,colors:[0,1,2]};g.pieceVX=10;g.pieceVY=-2;
+ lock(g,3);
+ expect(g.alive&&g.state==="RESOLVING","limit timing: locking above the line caused immediate defeat");
+}
+{
+ const g=createEngine(21);let id=1000;
+ for(let y=-2;y<ROWS;y++)for(let x=0;x<W2;x++)if(valid(x,y)){const ball={id:id,c:id++,motionGroupId:0,rigid:false};g.board[y][x]=ball;g.vis.set(ball.id,{x,y,vy:0,sq:0});}
+ g.state="RESOLVING";g.phase="CHECK";g.garbDone=true;g.incoming=0;g.incomingShapes=[];
+ stepEngine(g,PHYSICS_FRAME);
+ expect(!g.alive&&g.state==="GAMEOVER","limit timing: quiescent overflow did not cause defeat");
+}
+
+// Garbage appears inside an expanding bubble before gravity starts.
+{
+ const g=createEngine(22);g.state="RESOLVING";g.phase="GARBAGE";g.garbShapes=["PYRAMID"];
+ prepareGarbageBatch(g);updateGarbagePacks(g,.1);
+ const p=g.activeGarbagePacks[0],startY=p.y;
+ updateGarbagePacks(g,HEX_GARBAGE_BUBBLE_DURATION*.5);
+ expect(p.y===startY&&p.bubbleT>0,"garbage bubble: pack fell before the bubble finished growing");
+ updateGarbagePacks(g,HEX_GARBAGE_BUBBLE_DURATION);
+ expect(p.y>startY,"garbage bubble: gravity did not start after the bubble pop");
+}
+
+// Pyramid and hexagon completion arm their shape-specific reference effects.
+for(const [type,baseY] of [["PYRAMID",10],["HEXAGON",10]]){
+ const g=createEngine(type==="PYRAMID"?23:24),pat=GARBAGE_SHAPES[type];
+ const ax=type==="HEXAGON"?1:0;
+ for(let i=0;i<pat.length;i++){const[x,y]=pat[i],ball=mkBall(g,1);g.board[baseY+y][ax+x]=ball;g.vis.set(ball.id,{x:ax+x,y:baseY+y,vy:0,sq:0});}
+ g.state="RESOLVING";g.phase="CHECK";g.garbDone=true;
+ stepEngine(g,PHYSICS_FRAME);
+ expect(g.phase==="CLEAR"&&g.fx.formations.some(f=>f.w===type),type+" effect: shape-specific animation was not armed");
+}
 
 // Ordinary one-sided slope contact keeps all three balls in one rigid body.
 {

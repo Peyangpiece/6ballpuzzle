@@ -1,5 +1,9 @@
 const { useRef, useEffect, useState, useCallback } = React;
 const W2=23,ROWS=13,CLEAR_MIN=6,TAU=Math.PI*2;
+// Balls are allowed to exist above the visible limit while a drop, garbage
+// batch, or chain is still resolving. This mirrors the reference rule: the
+// limit is judged only after the complete board has reached equilibrium.
+const OVERFLOW_ROWS=16,BOARD_MIN_ROW=-OVERFLOW_ROWS;
 const BALL_RADIUS_N=0.5;
 const HEX_ROW_H=Math.sqrt(3)/2;
 const BOARD_TOP_CENTER_N=BALL_RADIUS_N;
@@ -56,7 +60,24 @@ const Sfx={
 };
 
 /* Basic board storage only. All motion rules live in app-02/app-03. */
-const valid=(x,y)=>y>=0&&y<ROWS&&x>=0&&x<W2&&parityOK(x,y);
-const newBoard=()=>Array.from({length:ROWS},()=>Array(W2).fill(null));
+const valid=(x,y)=>y>=BOARD_MIN_ROW&&y<ROWS&&x>=0&&x<W2&&parityOK(x,y);
+function newHexGrid(fill=null){
+ const b=Array.from({length:ROWS},()=>Array(W2).fill(fill));
+ for(let y=BOARD_MIN_ROW;y<0;y++)b[y]=Array(W2).fill(fill);
+ b._scanMin=fill===null||fill===false?0:BOARD_MIN_ROW;
+ return b;
+}
+const newBoard=()=>newHexGrid(null);
+function noteBoardCell(board,y,value){if(board&&value&&y<0)board._scanMin=Math.min(Number.isFinite(board._scanMin)?board._scanMin:0,y);}
+function refreshBoardScanMin(board){
+ let min=0;for(let y=BOARD_MIN_ROW;y<0;y++){if(board[y]?.some(Boolean)){min=y;break;}}
+ board._scanMin=min;return min;
+}
+function boardScanMin(board){return Math.max(BOARD_MIN_ROW,Math.min(0,Number.isFinite(board?._scanMin)?board._scanMin:0));}
+function cloneHexGrid(board,mapCell=v=>v){
+ const out=newBoard();
+ for(let y=BOARD_MIN_ROW;y<ROWS;y++)for(let x=0;x<W2;x++){const v=mapCell(board[y]?.[x]??null,x,y);out[y][x]=v;noteBoardCell(out,y,v);}
+ return out;
+}
 const getC=v=>(v==null?null:typeof v==="number"?v:v.c);
 function floorPackingScore(b,tx,ty){if(ty!==ROWS-1)return 0;let score=0;for(const nx of[tx-2,tx+2])if(nx>=0&&nx<W2&&b[ty][nx]!==null)score++;if(tx<=0||tx>=W2-1)score+=.5;return score;}

@@ -39,7 +39,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     }
     ctx.save();
     ctx.beginPath();
-    ctx.rect(X, Y - 2, BW, BH + 2);
+    ctx.rect(X, Y - D * 2.7, BW, BH + D * 2.7);
     ctx.clip();
     if (Array.isArray(g.activeGarbagePacks)) {
         for (const pack of g.activeGarbagePacks) {
@@ -47,11 +47,11 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
             for (let i=0;i<pack.pat.length;i++) {
                 const [dx,dy]=pack.pat[i];
                 const [px,py]=pos(pack.ax+dx, pack.y+dy);
-                drawBall(ctx,px,py,D,pack.colors[i],{alpha:1,scale:1,sq:0,ring:0});
+                drawGarbageBubbleBall(ctx,px,py,D,pack.colors[i],Math.max(0,pack.bubbleT||0));
             }
         }
     }
-    for (let y = 0; y < ROWS; y++)
+    for (let y = boardScanMin(g.board); y < ROWS; y++)
         for (let x = 0; x < W2; x++) {
             const cell = valid(x, y) ? g.board[y][x] : null;
             if (!cell) continue;
@@ -67,13 +67,15 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
                 const cv = clearVisualState(k);scale = cv.scale;alpha = cv.alpha;ring = 1;
             }
             const [px, py] = pos(drawVX, drawVY);
-            drawBall(ctx, px, py, D, cell.c, { alpha, scale, sq: v.sq, ring });
+            if(cell.isGarbage&&Number.isFinite(v.garbageBubbleT))drawGarbageBubbleBall(ctx,px,py,D,cell.c,v.garbageBubbleT);
+            else drawBall(ctx, px, py, D, cell.c, { alpha, scale, sq: v.sq, ring });
         }
     if (g.clearing && g.clearing.committed && Array.isArray(g.clearing.ghosts)) {
         const k = Math.min(1, g.stateT / Math.max(0.001, g.holdT));
         const cv = clearVisualState(k);
         for (const gh of g.clearing.ghosts) {const [px,py] = pos(gh.x, gh.y);drawBall(ctx, px, py, D, gh.c, {alpha:cv.alpha, scale:cv.scale, sq:0, ring:1});}
     }
+    drawFormationEffects(ctx,g,pos,D);
     for (const s of g.fx.sparks) {
         const k = Math.max(0, s.life / s.max);const [px, py] = pos(s.x, s.y);ctx.globalAlpha = k;ctx.beginPath();ctx.arc(px, py, D * 0.1 * (0.4 + k), 0, TAU);ctx.fillStyle = COLORS[s.c].glow;ctx.fill();ctx.globalAlpha = 1;
     }
@@ -88,8 +90,8 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         if (shadowCells) {const safeShadowPx=rigidShadowPixelPlacement(g,shadowCells,pos,D,X,Y,BW,BH);for(const [spx,spy,sc] of safeShadowPx) drawLandingShadowBall(ctx,spx,spy,D,sc);}
     }
     if (g.state === "PLAYING" && g.piece) {
-        const dx = g.pieceVX - g.piece.x;const pulse = 0.75 + 0.25 * Math.sin(t * 7);const cells = pieceCells(g.piece);const dOff = dispOff(g.piece.rot);let frac;
-        if(g.hardDropAnim){const hk=Math.min(1,(g.hardDropAnim.t+renderLead)/Math.max(.001,g.hardDropAnim.dur));const vy=g.hardDropAnim.fromY+(g.hardDropAnim.target.y-g.hardDropAnim.fromY)*hk;frac=vy-g.piece.y;}else{const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
+        const dx = g.pieceVX - g.piece.x;const pulse = 0.75 + 0.25 * Math.sin(t * 7);const cells = pieceCells(g.piece);let dOff = dispOff(g.piece.rot),frac;
+        if(g.hardDropAnim){const hk=Math.min(1,(g.hardDropAnim.t+renderLead)/Math.max(.001,g.hardDropAnim.dur));const vy=g.hardDropAnim.fromY+(g.hardDropAnim.target.y-g.hardDropAnim.fromY)*hk;frac=vy-g.piece.y;dOff*=1-smoothRotationT(hk);}else{const blocked=!pieceFits(g.board,{...g.piece,y:g.piece.y+2}),align=blocked?Math.max(0,1-Math.min(1,(g.lockT+renderLead)/LANDING_ALIGN_DURATION)):1;dOff*=align;const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
         const pts = cells.map(([x, y]) => pos(x + dx, y + frac + dOff));
         const gx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3;const gy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
         const ra = g.rotAnim;const renderRotP=Math.min(1,ra.p+renderLead/ROTATE_VISUAL_TIME);const k = renderRotP < 1 ? 1 - smoothRotationT(renderRotP) : 0;const ang = -k * ra.dir * (TAU / 6);const ca = Math.cos(ang), sa = Math.sin(ang);const ox2 = k * (ra.dx || 0) * D * 0.5;const oy2 = k * (ra.dy || 0) * D * HEX_ROW_H;
@@ -125,7 +127,7 @@ const FIREBASE_CONFIG = {apiKey:"AIzaSyAanVETIredUVH1slS8OtIMSPdOn91u2HM",authDo
 const BANDW = 150, STALE_MS = 20000, WAIT_MS = 1600, SNAP_MS = 200, GRACE_MS = 5000;
 const bandOf = (r) => Math.max(0, Math.min(19, Math.floor(r / BANDW)));
 const eloDelta = (mine, foe, win) => Math.round(32 * ((win ? 1 : 0) - 1 / (1 + Math.pow(10, (foe - mine) / 400))));
-const VALID_CELLS = (() => {const a = [];for (let y = 0; y < ROWS; y++) for (let x = 0; x < W2; x++) if (valid(x, y)) a.push([x, y]);return a;})();
+const VALID_CELLS = (() => {const a = [];for (let y = BOARD_MIN_ROW; y < ROWS; y++) for (let x = 0; x < W2; x++) if (valid(x, y)) a.push([x, y]);return a;})();
 function snapshotOf(g) {let s = "";for (const [x, y] of VALID_CELLS) {const c = g.board[y][x];s += String.fromCharCode(48 + (c ? c.c + 1 : 0));}return s;}
-function applySnapshot(g, str) {if (typeof str !== "string" || str.length !== VALID_CELLS.length)return;for (let i = 0; i < VALID_CELLS.length; i++) {const [x, y] = VALID_CELLS[i], v = str.charCodeAt(i) - 48;const cur = g.board[y][x];if (v <= 0) {if (cur) g.board[y][x] = null;continue;}const c = v - 1;if (cur && cur.c === c)continue;const b = mkBall(g, c);g.board[y][x] = b;setVis(g, b, x, y, 0);}}
-function stepNetView(g, dt) {g.stateT += dt;g.fx.shake = 0;g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });for (let _vs = 0; _vs < 4; _vs++) updateVisuals(g, dt * 0.25);if (!g.alive)g.fx.sink = 0;}
+function applySnapshot(g, str) {if (typeof str !== "string" || str.length !== VALID_CELLS.length)return;for (let i = 0; i < VALID_CELLS.length; i++) {const [x, y] = VALID_CELLS[i], v = str.charCodeAt(i) - 48;const cur = g.board[y][x];if (v <= 0) {if (cur) g.board[y][x] = null;continue;}const c = v - 1;if (cur && cur.c === c)continue;const b = mkBall(g, c);g.board[y][x] = b;noteBoardCell(g.board,y,b);setVis(g, b, x, y, 0);}refreshBoardScanMin(g.board);}
+function stepNetView(g, dt) {g.stateT += dt;g.fx.shake = 0;g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);g.fx.formations=(g.fx.formations||[]).filter((f)=>(f.life-=dt)>0);g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });for (let _vs = 0; _vs < 4; _vs++) updateVisuals(g, dt * 0.25);if (!g.alive)g.fx.sink = 0;}

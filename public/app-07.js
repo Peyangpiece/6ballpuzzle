@@ -98,7 +98,7 @@ function pileFlowPoint(seg,t){return liveSegPoint(seg,t);}
 
 function hexContinuousSegments(g){
     const out=[];
-    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const ball=valid(x,y)?g.board[y][x]:null;
         if(!ball||!Array.isArray(ball.fallPath))continue;
         for(let i=0;i<ball.fallPath.length;i++){
@@ -205,7 +205,7 @@ function prepareContinuousPileFlow(g,reason="continuous"){
 function collectLiveMotionBatch(g){
     let seq=Infinity;
     const all=[];
-    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const cell=valid(x,y)?g.board[y][x]:null;
         if(!cell||!Array.isArray(cell.fallPath)||!cell.fallPath.length)continue;
         const seg=cell.fallPath[0];

@@ -98,13 +98,13 @@ function hexPhysResolveEvent(b,preview=false){
     const independent=hexPhysContactEntries(b,groupedIds);
     const proposals=[...groupPlans,...independent];
     if(!proposals.length)return [];
-    if(preview)return proposals.slice(0,1);
 
     const accepted=[];
     for(const bundle of hexPhysCandidateBundles(proposals)){
         if(!hexPhysBundleTargetsFree(bundle,b,accepted))continue;
         if(!hexPhysBundleSafe(bundle,b,accepted))continue;
         accepted.push(...bundle);
+        if(preview)return accepted.slice(0,1);
     }
     return accepted;
 }
@@ -134,12 +134,13 @@ function hexPhysAppendSegment(ball,p,eventSeq){
 }
 function hexPhysApplyEvent(b,accepted){
     if(!accepted.length)return false;
+    clearBoardEquilibriumLocks(b);
     const seq=HEX_PHYS_EVENT_SEQ++;
     for(const p of accepted)if(b[p.y][p.x]===p.ball)b[p.y][p.x]=null;
     const placed=[];
     for(const p of accepted){
         if(!valid(p.tx,p.ty)||b[p.ty][p.tx])continue;
-        b[p.ty][p.tx]=p.ball;placed.push(p);
+        b[p.ty][p.tx]=p.ball;noteBoardCell(b,p.ty,p.ball);placed.push(p);
     }
     for(const p of placed)hexPhysAppendSegment(p.ball,p,seq);
     return placed.length>0;
@@ -151,7 +152,7 @@ function settlePass(b,preview=false){
     return hexPhysApplyEvent(b,accepted);
 }
 const settleAll=(b)=>{
-    const cap=ROWS*W2*4;
+    const cap=(ROWS-BOARD_MIN_ROW)*W2*4;
     let moved=false;
     for(let i=0;i<cap;i++){
         const q=settlePass(b,false);
@@ -174,7 +175,7 @@ function physicsSignature(gOrBoard){
     const b=Array.isArray(gOrBoard)?gOrBoard:gOrBoard?.board;
     if(!b)return "";
     const a=[];
-    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+    for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){
         const v=valid(x,y)?b[y][x]:null;if(v)a.push(v.id+"@"+x+","+y);
     }
     return a.join("|");

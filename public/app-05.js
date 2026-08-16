@@ -3,14 +3,14 @@ function createEngine(seed,opts={}){
   seed,rng:mulberry32(seed),aiRng:mulberry32((seed^0x41A7C15D)>>>0),fxRng:mulberry32((seed^0x9E3779B9)>>>0),
   board:newBoard(),nextId:1,queue:[],piece:null,pieceVX:SPAWN_X,pieceVY:-2,
   rotAnim:{p:1,dir:1,dx:0,dy:0},freeX:null,dragging:false,
-  physicsWatch:{lastSig:"",repeats:0,steps:0,fallbacks:0},ver:0,state:"READY",phase:null,stateT:0,
+  physicsWatch:{lastSig:"",repeats:0,steps:0,fallbacks:0},balanceWait:0,ver:0,state:"READY",phase:null,stateT:0,
   dropT:0,dropInterval:opts.dropInterval??DROP_INTERVAL,soft:false,fastForward:false,fastForwardCarry:0,
   lockT:0,hardDropAnim:null,lockResets:0,
   incoming:0,incomingShapes:[],sendBuffer:0,sendShapes:[],garbShapes:[],garbBlocked:false,garbDone:false,garbLeft:0,
   garbageBatchPrepared:false,garbageAnimDuration:2.45,garbageSeq:0,garbagePlans:[],activeGarbagePacks:[],garbageClock:0,garbageMaterializeIndex:0,garbageNextBallAt:0,garbageWatchdogLimit:6,
   chain:0,clearing:null,holdT:0,pileFlowClock:0,vis:new Map(),events:[],
   stats:{maxChain:0,cleared:0,score:0,waza:{STRAIGHT:0,PYRAMID:0,HEXAGON:0}},scoreDisp:0,
-  fx:{toasts:[],shake:0,sink:0,warn:0,fastPulse:0,sparks:[],rings:[]},
+  fx:{toasts:[],shake:0,sink:0,warn:0,fastPulse:0,sparks:[],rings:[],formations:[]},
   gameOverOverflow:[],gameOverReason:null,ai:null,alive:true,offset:opts.offset??false
  };
  for(let i=0;i<3;i++)g.queue.push(makeSet(g));
@@ -63,7 +63,7 @@ function rotationSweepSafe(board,fromPiece,toPiece,dir){
   const pts=rotationPosePoints(fromPiece,toPiece,dir,i/48);
   for(const[px,py]of pts){
    if(px<-1e-8||px>right+1e-8||py>FLOOR_CENTER_N+1e-8)return false;
-   for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){if(!valid(x,y)||!board[y][x])continue;const q=normPoint(x,y);if(Math.hypot(px-q[0],py-q[1])<HEX_MIN_DIST)return false;}
+   for(let y=BOARD_MIN_ROW;y<ROWS;y++)for(let x=0;x<W2;x++){if(!valid(x,y)||!board[y][x])continue;const q=normPoint(x,y);if(Math.hypot(px-q[0],py-q[1])<HEX_MIN_DIST)return false;}
   }
   for(let a=0;a<pts.length;a++)for(let b=a+1;b<pts.length;b++)if(Math.hypot(pts[a][0]-pts[b][0],pts[a][1]-pts[b][1])<HEX_MIN_DIST)return false;
  }
@@ -83,20 +83,21 @@ function hardDrop(g){
 
 function lock(g,vy=2){
  if(!g.piece)return;
+ clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
  const preSnapX=g.freeX!=null?g.freeX:g.piece.x,splitOffset=preSnapX-g.piece.x,splitRot=g.piece.rot;
  if(g.freeX!=null)setColumn(g,g.freeX);
  let cells=pieceCells(g.piece);
- let invalid=cells.some(([x,y])=>y<0||!valid(x,y)||g.board[y][x]!==null);
+ let invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
  if(invalid){
   const before=physicsSignature(g);settleAll(g.board);if(physicsSignature(g)!==before||boardHasIllegalFloat(g.board))g.piece=dropPiece(g.board,g.piece);
-  cells=pieceCells(g.piece);invalid=cells.some(([x,y])=>y<0||!valid(x,y)||g.board[y][x]!==null);
+  cells=pieceCells(g.piece);invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
   if(invalid){die(g,cells.map(([x,y,c])=>[x,y,c]),"LIMIT");return;}
  }
  const made=[];
  for(let role=0;role<cells.length;role++){
   const[x,y,c]=cells[role],ball=mkBall(g,c);
   ball.subCellBias=Math.abs(splitOffset)>1e-5?Math.sign(splitOffset):0;ball.momentumX=ball.subCellBias;
-  g.board[y][x]=ball;made.push({ball,role,x,y});setVis(g,ball,x,y,Math.max(RELEASE_INITIAL_VY,vy||0));
+  g.board[y][x]=ball;noteBoardCell(g.board,y,ball);made.push({ball,role,x,y});setVis(g,ball,x,y,Math.max(RELEASE_INITIAL_VY,vy||0));
   const vv=g.vis.get(ball.id);vv.motionSpeed=Math.max(RELEASE_INITIAL_VY,vy||0);vv.justReleased=true;
  }
  const gid=made.length?HEX_PHYS_GROUP_SEQ++:0,orientation=((splitRot&1)===0)?"down":"up";
@@ -109,18 +110,19 @@ function lock(g,vy=2){
  if(immediateMoved&&g.physicsWatch){g.physicsWatch.lastSig=physicsSignature(g);g.physicsWatch.repeats=0;g.physicsWatch.steps=0;}
 }
 
-const TOPS=(()=>{const a=[];for(let x=0;x<W2;x++)if(valid(x,0))a.push(x);return a;})();
+const GARBAGE_TOP_ROW=-2;
+const TOPS=(()=>{const a=[];for(let x=0;x<W2;x++)if(valid(x,GARBAGE_TOP_ROW))a.push(x);return a;})();
 function armGarbageVisual(g,ball,startX,startY){const v=g.vis.get(ball.id);if(!v)return;v.x=startX;v.y=startY;v.vy=0;v.garbAnim=null;}
 function garbageVisualsDone(g){return nearlySettled(g,.06);}
 function garbageBall(g){
- const free=TOPS.filter(x=>g.board[0][x]===null);if(!free.length)return 0;const x=free[Math.floor(g.rng()*free.length)],ball=mkBall(g,Math.floor(g.rng()*COLORS.length));
- ball.isGarbage=true;hexPhysClearGroupBall(ball);g.board[0][x]=ball;setVis(g,ball,x,-4.2,0);armGarbageVisual(g,ball,x,-4.2);g.fx.shake=0;g.ver++;return 1;
+ const free=TOPS.filter(x=>g.board[GARBAGE_TOP_ROW][x]===null);if(!free.length)return 0;const x=free[Math.floor(g.rng()*free.length)],ball=mkBall(g,Math.floor(g.rng()*COLORS.length));
+ ball.isGarbage=true;ball.garbageBubbleHold=true;ball.garbageBubbleUntil=(g.garbageClock||0)+HEX_GARBAGE_BUBBLE_DURATION;hexPhysClearGroupBall(ball);g.board[GARBAGE_TOP_ROW][x]=ball;noteBoardCell(g.board,GARBAGE_TOP_ROW,ball);setVis(g,ball,x,GARBAGE_START_Y,0);armGarbageVisual(g,ball,x,GARBAGE_START_Y);const v=g.vis.get(ball.id);if(v)v.garbageBubbleT=0;g.fx.shake=0;g.ver++;return 1;
 }
 const pendingIncomingCount=g=>g.incoming+g.incomingShapes.length+g.garbShapes.length+(g.garbagePlans||[]).filter(p=>!p.landed).length+g.garbLeft;
-const GARBAGE_START_Y=-6.2;
-function cloneBoardForGarbagePlan(board){return board.map(row=>row.map(v=>v?{id:v.id,c:getC(v)}:null));}
+const GARBAGE_START_Y=-2;
+function cloneBoardForGarbagePlan(board){return cloneHexGrid(board,v=>v?{id:v.id,c:getC(v)}:null);}
 function shapeFitsAt(board,pat,ax,ay){for(const[dx,dy]of pat){const x=ax+dx,y=ay+dy;if(!valid(x,y)||board[y][x]!==null)return false;}return true;}
-function deepestRigidAnchor(board,pat,ax){let ay=0;if(!shapeFitsAt(board,pat,ax,ay))return null;while(shapeFitsAt(board,pat,ax,ay+2))ay+=2;return ay;}
+function deepestRigidAnchor(board,pat,ax){let ay=BOARD_MIN_ROW;if(!shapeFitsAt(board,pat,ax,ay))return null;while(shapeFitsAt(board,pat,ax,ay+2))ay+=2;return ay;}
 function chooseGarbagePlan(g,board,type,seq){
  const pat=GARBAGE_SHAPES[type];if(!pat||!WAZA[type])return null;const minX=Math.min(...pat.map(([x])=>x)),maxX=Math.max(...pat.map(([x])=>x)),candidates=[];
  for(let ax=-minX;ax<=W2-1-maxX;ax++){const ay=deepestRigidAnchor(board,pat,ax);if(ay!==null)candidates.push({ax,ay,shapeCenter:ax+(minX+maxX)/2});}
@@ -134,4 +136,4 @@ function chooseGarbagePlan(g,board,type,seq){
 }
 // Planning only reserves cells. Running the complete pile solver for every
 // future pack caused a long main-thread stall before the opponent board drew.
-function reserveGarbagePlan(board,plan,tempIdBase){for(let i=0;i<plan.pat.length;i++){const[dx,dy]=plan.pat[i];board[plan.targetY+dy][plan.ax+dx]={id:tempIdBase-i,c:plan.colors[i]};}}
+function reserveGarbagePlan(board,plan,tempIdBase){for(let i=0;i<plan.pat.length;i++){const[dx,dy]=plan.pat[i],y=plan.targetY+dy,ball={id:tempIdBase-i,c:plan.colors[i]};board[y][plan.ax+dx]=ball;noteBoardCell(board,y,ball);}}

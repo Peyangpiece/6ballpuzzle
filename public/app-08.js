@@ -2,6 +2,7 @@ function updateVisuals(g, dt) {
 g.pileFlowClock=(g.pileFlowClock||0)+dt;
 const pileMemo=new Map();
 const alive = new Set();
+const scanMin=boardScanMin(g.board);
 g._visualArcPivotById = new Map();
 
 const liveBatch=collectLiveMotionBatch(g);
@@ -27,7 +28,7 @@ g._liveBatchClock={seq:0,elapsed:0,duration:1/120};
 g._visualMovingIds = new Set();
 g._visualMotionSeqById = new Map();
 g._liveBatchIds=new Set(liveBatch?liveBatch.members.map(m=>m.cell.id):[]);
-for (let yy = 0; yy < ROWS; yy++) for (let xx = 0; xx < W2; xx++) {
+for (let yy = scanMin; yy < ROWS; yy++) for (let xx = 0; xx < W2; xx++) {
 const cc = valid(xx, yy) ? g.board[yy][xx] : null;
 if (!cc) continue;
 const vv = g.vis.get(cc.id);
@@ -42,7 +43,7 @@ const realDist = (ax, ay, bx, by) => Math.hypot((ax - bx) * 0.5, (ay - by) * H);
 
 g._visualSyncSplitRelease = new Set();
 const syncGroups = new Map();
-for (let gy=0; gy<ROWS; gy++) for (let gx=0; gx<W2; gx++) {
+for (let gy=scanMin; gy<ROWS; gy++) for (let gx=0; gx<W2; gx++) {
 const gc = valid(gx,gy) ? g.board[gy][gx] : null;
 if (!gc || !gc.visualSyncSplitGroup || gc.visualSyncSplitStage !== 0) continue;
 if (!syncGroups.has(gc.visualSyncSplitGroup))
@@ -67,13 +68,14 @@ if (bothReady) g._visualSyncSplitRelease.add(gid);
 }
 
 
-for (let y = ROWS - 1; y >= 0; y--) {
+for (let y = ROWS - 1; y >= scanMin; y--) {
 for (let x = 0; x < W2; x++) {
 const cell = valid(x, y) ? g.board[y][x] : null;
 if (!cell) continue;
 alive.add(cell.id);
 let v = g.vis.get(cell.id);
 if (!v) { v = { x, y, vy: 0, sq: 0 }; g.vis.set(cell.id, v); }
+if(Number.isFinite(v.garbageBubbleT))v.garbageBubbleT+=dt;
 
 if (!Number.isFinite(v.x) || !Number.isFinite(v.y)) {
 const rp = Array.isArray(cell.fallPath) && cell.fallPath.length ? cell.fallPath : null;
@@ -452,7 +454,7 @@ g.pieceVY += (g.piece.y - g.pieceVY) * Math.min(1, 18 * dt);
 
 function preventVisualOverlap(g) {
     const items=[];
-    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const c=valid(x,y)?g.board[y][x]:null;
         if(!c)continue;
         const v=g.vis.get(c.id);
@@ -586,7 +588,7 @@ function preventVisualOverlap(g) {
 // This prevents one side from freezing forever without changing game physics or board results.
 function pendingFallPathCount(g) {
     let n = 0;
-    for (let y=0;y<ROWS;y++) for (let x=0;x<W2;x++) {
+    for (let y=boardScanMin(g.board);y<ROWS;y++) for (let x=0;x<W2;x++) {
         const c = valid(x,y) ? g.board[y][x] : null;
         if (c && Array.isArray(c.fallPath)) n += c.fallPath.length;
     }
@@ -597,7 +599,7 @@ function forceSyncVisualsToLogical(g, reason = "SETTLE_WATCHDOG") {
     // 最終安全弁でも瞬間ワープさせない。
     // staleなfallPathだけ捨て、現在の表示位置は保持する。
     // 次のupdateVisualsで合法な論理セルへ重力/一定速横補正で自然に追いつかせる。
-    for (let y = 0; y < ROWS; y++) for (let x = 0; x < W2; x++) {
+    for (let y = boardScanMin(g.board); y < ROWS; y++) for (let x = 0; x < W2; x++) {
         const cell = valid(x, y) ? g.board[y][x] : null;
         if (!cell) continue;
         if (Array.isArray(cell.fallPath)) delete cell.fallPath;
@@ -623,7 +625,7 @@ function forceSyncVisualsToLogical(g, reason = "SETTLE_WATCHDOG") {
 
 /* tol = 0 で完全一致、0.4 程度なら「だいたい追いついた」判定 */
 function nearlySettled(g, tol) {
-    for (let y = 0; y < ROWS; y++)
+    for (let y = boardScanMin(g.board); y < ROWS; y++)
         for (let x = 0; x < W2; x++) {
             const cell = valid(x, y) ? g.board[y][x] : null;
             if (!cell)

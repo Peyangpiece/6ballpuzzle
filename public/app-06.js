@@ -3,6 +3,8 @@
  * every garbage ball uses the same unified pile solver as a normal ball.
  */
 const HEX_GARBAGE_SHAPE_INTERVAL=0.5;
+const HEX_GARBAGE_BUBBLE_DURATION=0.34;
+const HEX_GARBAGE_BUBBLE_POP_DURATION=0.14;
 window.__hexdropGarbageInterval=HEX_GARBAGE_SHAPE_INTERVAL;
 
 function prepareGarbageBatch(g){
@@ -37,7 +39,7 @@ function prepareGarbageBatch(g){
     }
     g.garbageSeq=g.garbagePlans.length;
     g.garbageNextBallAt=0;
-    g.garbageWatchdogLimit=Math.max(6,(g.garbageSeq+g.garbLeft)*HEX_GARBAGE_SHAPE_INTERVAL+6);
+    g.garbageWatchdogLimit=Math.max(6,(g.garbageSeq+g.garbLeft)*HEX_GARBAGE_SHAPE_INTERVAL+HEX_GARBAGE_BUBBLE_DURATION+6);
     g.ver++;
 }
 
@@ -59,6 +61,7 @@ function hexGarbageFindAnchor(g,pack){
 }
 
 function materializeGarbagePack(g,pack){
+    clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
     const anchor=hexGarbageFindAnchor(g,pack);
     if(!anchor){g.garbBlocked=true;return false;}
     pack.ax=anchor.ax;pack.targetY=anchor.ay;
@@ -74,7 +77,7 @@ function materializeGarbagePack(g,pack){
         ball.motionGroupId=0;
         ball.motionGroupSize=0;
         ball.rigid=false;
-        g.board[y][x]=ball;
+        g.board[y][x]=ball;noteBoardCell(g.board,y,ball);
         setVis(g,ball,x,y,0);
         made.push(ball);
     }
@@ -97,6 +100,13 @@ function materializeGarbagePack(g,pack){
 function updateGarbagePacks(g,dt){
     g.garbageClock+=dt;
 
+    let releasedBubble=false;
+    for(let y=boardScanMin(g.board);y<=0;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        if(ball?.garbageBubbleHold&&g.garbageClock+1e-9>=(ball.garbageBubbleUntil||0)){delete ball.garbageBubbleHold;releasedBubble=true;}
+    }
+    if(releasedBubble&&settlePass(g.board))g.ver++;
+
     // Start at most one complete shape in one update. Frame drops never create
     // catch-up bursts. PYRAMID/HEXAGON are six-ball units; STRAIGHT is one
     // atomic 23-ball unit.
@@ -106,12 +116,15 @@ function updateGarbagePacks(g,dt){
         next.actualStartTime=g.garbageClock;
         next.y=GARBAGE_START_Y;
         next.vy=0;
+        next.bubbleT=0;
         g.activeGarbagePacks.push(next);
         g.garbageNextBallAt=g.garbageClock+HEX_GARBAGE_SHAPE_INTERVAL;
     }
 
     for(const p of g.activeGarbagePacks){
         if(p.landed)continue;
+        p.bubbleT=Math.max(0,g.garbageClock-(p.actualStartTime||0));
+        if(p.bubbleT<HEX_GARBAGE_BUBBLE_DURATION)continue;
         p.vy+=GRAV*dt;
         p.y+=p.vy*dt;
         if(p.y<p.targetY)continue;
@@ -137,7 +150,8 @@ function updateGarbagePacks(g,dt){
     }
 }
 function garbageBatchDone(g){
-    return g.garbagePlans.every(p=>p.landed)&&g.garbLeft===0&&garbageVisualsDone(g);
+    let bubbleHold=false;for(let y=boardScanMin(g.board);y<=0&&!bubbleHold;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null;if(ball?.garbageBubbleHold){bubbleHold=true;break;}}
+    return !bubbleHold&&g.garbagePlans.every(p=>p.landed)&&g.garbLeft===0&&garbageVisualsDone(g);
 }
 function finishGarbageVisuals(g){}
 

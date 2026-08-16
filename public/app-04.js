@@ -16,7 +16,7 @@ function stripFinishedTripletRigidity(g){
 }
 function normalizeAllNonActivePileBalls(g){
  stripFinishedTripletRigidity(g);
- for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+ for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
   const ball=valid(x,y)?g.board[y][x]:null;if(!ball)continue;
   if(ball.isGarbage){hexPhysClearGroupBall(ball);ball.isGarbage=true;}
   else if(!ball.motionGroupId)ball.rigid=false;
@@ -29,7 +29,7 @@ function releaseSettledConstraints(g,reason="clear_release"){
  return reason;
 }
 function releaseAllRigidity(g,reason="safety_release"){
- for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){const v=valid(x,y)?g.board[y][x]:null;if(v)hexPhysClearGroupBall(v);}
+ for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const v=valid(x,y)?g.board[y][x]:null;if(v)hexPhysClearGroupBall(v);}
  if(!g.physicsWatch)g.physicsWatch={lastSig:"",repeats:0,steps:0,fallbacks:0};
  g.physicsWatch.lastSig="";g.physicsWatch.repeats=0;g.physicsWatch.steps=0;g.physicsWatch.fallbacks=(g.physicsWatch.fallbacks||0)+1;return reason;
 }
@@ -42,8 +42,8 @@ function physicsSafetyCheck(g,moved,context="SETTLE"){
 }
 
 function findGroups(b){
- const seen=Array.from({length:ROWS},()=>Array(W2).fill(false)),out=[];
- for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+ const seen=newHexGrid(false),out=[];
+ for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){
   if(!valid(x,y)||b[y][x]===null||seen[y][x])continue;const color=getC(b[y][x]),st=[[x,y]],cells=[];seen[y][x]=true;
   while(st.length){const[cx,cy]=st.pop();cells.push([cx,cy]);for(const[dx,dy]of DIRS){const nx=cx+dx,ny=cy+dy;if(valid(nx,ny)&&!seen[ny][nx]&&getC(b[ny][nx])===color){seen[ny][nx]=true;st.push([nx,ny]);}}}
   if(cells.length>=CLEAR_MIN)out.push({color,cells});
@@ -63,7 +63,7 @@ function resolveInstant(b){
  for(let guard=0;guard<40;guard++){
   settleAll(b);const groups=findGroups(b);if(!groups.length)break;chain++;const kill=new Set(),killColors=new Set();
   for(const g of groups){const w=classify(g.cells);if(w){garbage+=WAZA[w].garbage;killColors.add(g.color);}for(const[x,y]of g.cells)kill.add(x+","+y);}
-  if(killColors.size)for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++)if(valid(x,y)&&b[y][x]!==null&&killColors.has(getC(b[y][x])))kill.add(x+","+y);
+  if(killColors.size)for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++)if(valid(x,y)&&b[y][x]!==null&&killColors.has(getC(b[y][x])))kill.add(x+","+y);
   for(const k of kill){const[x,y]=k.split(",").map(Number);b[y][x]=null;}
  }
  return{chain,garbage};
@@ -73,16 +73,16 @@ function pieceSlots(rot,x,y){return(rot&1)===0?[[x,y],[x+2,y],[x+1,y+1]]:[[x+1,y
 function pieceCells(p){const{x,y,rot,colors}=p;return pieceSlots(rot,x,y).map(([cx,cy],i)=>[cx,cy,colors[(i-(rot>>1)+3)%3]]);}
 const dispOff=rot=>((rot&1)===0?-1/3:1/3);
 function centroidOf(p){return[p.x+1,p.y];}
-function pieceFits(board,p){for(const[x,y]of pieceCells(p)){if(x<0||x>=W2||y>=ROWS||!parityOK(x,y))return false;if(y>=0&&board[y][x]!==null)return false;}return true;}
+function pieceFits(board,p){for(const[x,y]of pieceCells(p)){if(!valid(x,y))return false;if(board[y][x]!==null)return false;}return true;}
 const KICKS=[[0,0],[2,0],[-2,0],[1,1],[-1,1],[1,-1],[-1,-1],[0,2],[4,0],[-4,0]];
 function dropPiece(board,p){const q={...p};while(pieceFits(board,{...q,y:q.y+2}))q.y+=2;return q;}
 function landingShadowCells(g){if(!g||g.state!=="PLAYING"||!g.piece)return null;const p=dropPiece(g.board,g.piece),cs=pieceCells(p);return cs.length===3&&!cs.some(([x,y])=>y<0||!valid(x,y))?cs:null;}
 function landingShadowVisualCells(g){
  const cs=landingShadowCells(g);if(!cs||!g?.piece)return null;const dxGrid=(Number.isFinite(g.pieceVX)?g.pieceVX:g.piece.x)-g.piece.x;let constrained=false;
- for(const[sx0,sy]of cs){const sxN=latticeRealX(sx0+dxGrid),syN=cellCenterYNorm(sy);for(let by=0;by<ROWS&&!constrained;by++)for(let bx=0;bx<W2;bx++){if(!valid(bx,by)||!g.board[by][bx])continue;const ddx=Math.abs(sxN-latticeRealX(bx));if(ddx>=1-1e-9)continue;const contact=(cellCenterYNorm(by)-syN)-Math.sqrt(Math.max(0,1-ddx*ddx)),floor=FLOOR_CENTER_N-syN;if(contact>=-1e-8&&contact<floor-1e-8){constrained=true;break;}}if(constrained)break;}
+ for(const[sx0,sy]of cs){const sxN=latticeRealX(sx0+dxGrid),syN=cellCenterYNorm(sy);for(let by=boardScanMin(g.board);by<ROWS&&!constrained;by++)for(let bx=0;bx<W2;bx++){if(!valid(bx,by)||!g.board[by][bx])continue;const ddx=Math.abs(sxN-latticeRealX(bx));if(ddx>=1-1e-9)continue;const contact=(cellCenterYNorm(by)-syN)-Math.sqrt(Math.max(0,1-ddx*ddx)),floor=FLOOR_CENTER_N-syN;if(contact>=-1e-8&&contact<floor-1e-8){constrained=true;break;}}if(constrained)break;}
  if(!constrained){let lowest=-Infinity;for(const[,sy]of cs)lowest=Math.max(lowest,cellCenterYNorm(sy));const rowOffset=(FLOOR_CENTER_N-lowest)/HEX_ROW_H;return cs.map(([x,y,c])=>[x,y+rowOffset,c]);}
  let maxDown=Infinity;for(const[,sy]of cs)maxDown=Math.min(maxDown,FLOOR_CENTER_N-cellCenterYNorm(sy));
- for(const[sx0,sy]of cs){const sxN=latticeRealX(sx0+dxGrid),syN=cellCenterYNorm(sy);for(let by=0;by<ROWS;by++)for(let bx=0;bx<W2;bx++){if(!valid(bx,by)||!g.board[by][bx])continue;const ddx=Math.abs(sxN-latticeRealX(bx));if(ddx>=1-1e-9)continue;const d=(cellCenterYNorm(by)-syN)-Math.sqrt(Math.max(0,1-ddx*ddx));if(d>=-1e-8)maxDown=Math.min(maxDown,Math.max(0,d));}}
+ for(const[sx0,sy]of cs){const sxN=latticeRealX(sx0+dxGrid),syN=cellCenterYNorm(sy);for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){if(!valid(bx,by)||!g.board[by][bx])continue;const ddx=Math.abs(sxN-latticeRealX(bx));if(ddx>=1-1e-9)continue;const d=(cellCenterYNorm(by)-syN)-Math.sqrt(Math.max(0,1-ddx*ddx));if(d>=-1e-8)maxDown=Math.min(maxDown,Math.max(0,d));}}
  if(!Number.isFinite(maxDown))maxDown=0;const rowOffset=Math.max(0,maxDown)/HEX_ROW_H;return cs.map(([x,y,c])=>[x+dxGrid,y+rowOffset,c]);
 }
 
@@ -98,7 +98,8 @@ const REFERENCE_SLIDE_FRAMES=5,REFERENCE_VIDEO_FPS=30,GAME_FPS=120,GAME_FRAME=1/
 const SLIDE_60_DURATION=REFERENCE_SLIDE_FRAMES/REFERENCE_VIDEO_FPS;
 const SLIDE_SPEED=(Math.PI/3)/SLIDE_60_DURATION;
 const REFERENCE_SLOPE_HARD_FRAMES=4,SLOPE_HARD_DURATION=REFERENCE_SLOPE_HARD_FRAMES/REFERENCE_VIDEO_FPS,SLOPE_NORMAL_DURATION=SLIDE_60_DURATION;
-const PIECE_SNAP_SPEED=14.0,CONTACT_LOCK_DELAY=GAME_FRAME,ROTATE_VISUAL_TIME=.10;
+const LANDING_ALIGN_DURATION=4/60;
+const PIECE_SNAP_SPEED=14.0,CONTACT_LOCK_DELAY=LANDING_ALIGN_DURATION,ROTATE_VISUAL_TIME=.10;
 const smoothRotationT=t=>t*t*(3-2*t);
 const activeDropFraction=(g,renderLead=0)=>{if(!g||!g.piece||!pieceFits(g.board,{...g.piece,y:g.piece.y+2}))return 0;const scale=g.fastForward?FAST_DROP_MULTIPLIER:1,pred=g.dropT+Math.max(0,renderLead)*scale;return Math.min(.999,pred/g.dropInterval)*2;};
 const CLEAR_SUPPORT_RELEASE_RATIO=.90;

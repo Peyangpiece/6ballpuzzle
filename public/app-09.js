@@ -3,7 +3,7 @@ function visualSubstepCount(g){
     // numerical substepping. Legacy contact paths retain four substeps for the
     // collision clamp. The previous unconditional 16x loop was the dominant
     // cost during mass collapses (up to 3840 full visual scans/sec for two boards).
-    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const c=valid(x,y)?g.board[y][x]:null;
         if(!c||!Array.isArray(c.fallPath)||!c.fallPath.length)continue;
         const seg=c.fallPath[0];
@@ -19,6 +19,7 @@ function stepEngine(g, dt) {
     g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);
     g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);
     g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);
+    g.fx.formations = (g.fx.formations || []).filter((f) => (f.life -= dt) > 0);
     g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });
     // Visual integration is adaptive. Scheduled pile flow is evaluated from its
     // absolute clock in one pass; only legacy collision-gated paths use a few
@@ -60,6 +61,7 @@ function stepEngine(g, dt) {
                 const moved=settlePass(g.board);
                 physicsSafetyCheck(g,moved,"SETTLE_INCREMENTAL");
                 if(moved){
+                    g.balanceWait=0;
                     g.ver++;
                     g.stateT=0;
                     return;
@@ -67,11 +69,16 @@ function stepEngine(g, dt) {
             }
 
             if(boardHasIllegalFloat(g.board)){
-                // Unsupported state must remain in SETTLE; do not spawn/check.
-                g.stateT=0;
-                return;
+                // If every canonical move has already failed the exact target
+                // and sweep checks, the remaining contact network is a true
+                // collision-balanced arch. Confirm it for a short fixed window
+                // instead of looping SETTLE forever when a gap is present.
+                g.balanceWait=(g.balanceWait||0)+dt;
+                if(g.balanceWait<.12){g.stateT=0;return;}
+                markCollisionBalancedGaps(g.board);
             }
 
+            g.balanceWait=0;
             normalizeAllNonActivePileBalls(g);
             g._pileFlowBallById=null;
             g.phase="CHECK";
@@ -103,23 +110,29 @@ function stepEngine(g, dt) {
                     g.stateT = 0;
                     return;
                 }
+                // The limit is evaluated only at the quiescent checkpoint:
+                // all falling paths, garbage and chain clears have finished.
+                refreshBoardScanMin(g.board);
+                const overflow=boardOverflowCells(g.board);
+                if(overflow.length){die(g,overflow,"LIMIT");return;}
                 spawn(g);
                 return;
             }
             g.chain++;
             g.stats.maxChain = Math.max(g.stats.maxChain, g.chain);
-            const kill = new Set(), killColors = new Set(), waza = [];
+            const kill = new Set(), killColors = new Set(), waza = [],wazaFx=[];
             for (const grp of groups) {
                 const w = classify(grp.cells);
                 if (w) {
                     waza.push(w);
+                    wazaFx.push({w,cells:grp.cells.map(c=>[...c])});
                     killColors.add(grp.color);
                 }
                 for (const [x, y] of grp.cells)
                     kill.add(x + "," + y);
             }
             if (killColors.size)
-                for (let y = 0; y < ROWS; y++)
+                for (let y = BOARD_MIN_ROW; y < ROWS; y++)
                     for (let x = 0; x < W2; x++)
                         if (valid(x, y) && g.board[y][x] && killColors.has(g.board[y][x].c))
                             kill.add(x + "," + y);
@@ -148,6 +161,12 @@ function stepEngine(g, dt) {
                 emit(g, { t: "waza", w });
                 g.fx.toasts.push({ text: WAZA[w].jp, life: 1.05, max: 1.05, big: w === "HEXAGON" ? 1 : w === "PYRAMID" ? 0.62 : 0.32, tint: WAZA[w].tint });
                 g.fx.rings.push({ life: 0.65, max: 0.65, tint: WAZA[w].tint });
+            }
+            for(const wf of wazaFx){
+                const rows=new Map();for(const[,y]of wf.cells)rows.set(y,(rows.get(y)||0)+1);
+                const ys=[...rows.keys()].sort((a,b)=>a-b),pointDown=wf.w==="PYRAMID"&&rows.get(ys[0])>rows.get(ys[ys.length-1]);
+                const max=wf.w==="HEXAGON"?.95:.72;
+                g.fx.formations.push({w:wf.w,cells:wf.cells,tint:WAZA[wf.w].tint,life:max,max,pointDown});
             }
             return;
         }
@@ -183,6 +202,7 @@ function stepEngine(g, dt) {
                 // 消去球はghostとして残し、支持判定からだけ外す。
                 // これにより上の球は即落下でき、消去演出自体は最後まで自然にフェードする。
                 g.clearing.ghosts = g.clearing.cells.map(([x,y,c,id]) => ({x,y,c,id}));
+                clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
                 for (const [x, y, c] of g.clearing.cells) {
                     g.board[y][x] = null;
                     g.stats.cleared++;
@@ -319,7 +339,7 @@ const AI_PARAMS = {
     5: { think: 0.18, act: 0.08, random: 0, depth: 1, name: "とてもつよい" },
 };
 
-const toColors = (b) => b.map((r) => r.map((v) => getC(v)));
+const toColors = (b) => cloneHexGrid(b,v=>getC(v));
 function heightOf(b) {
     for (let y = 0; y < ROWS; y++)
         for (let x = 0; x < W2; x++)
@@ -360,7 +380,7 @@ function evalBoard(b, res, level, rnd = Math.random) {
                 n++;
                 for (const [dx, dy] of DIRS) {
                     const nx = cx + dx, ny = cy + dy;
-                    if (valid(nx, ny) && !seen[ny][nx] && b[ny][nx] === c) {
+                    if (ny>=0&&valid(nx, ny) && !seen[ny][nx] && b[ny][nx] === c) {
                         seen[ny][nx] = true;
                         st.push([nx, ny]);
                     }
@@ -383,7 +403,7 @@ function enumerateMoves(board, colors) {
     return out;
 }
 function simulate(cb, p) {
-    const b = cb.map((r) => r.slice());
+    const b = cloneHexGrid(cb,v=>v);
     for (const [x, y, c] of pieceCells(p)) {
         if (y < 0)
             return null;

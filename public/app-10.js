@@ -57,6 +57,50 @@ function drawBall(ctx, cx, cy, d, ci, o = {}) {
     ctx.restore();
 }
 
+function drawGarbageBubbleBall(ctx,cx,cy,d,ci,age){
+    const grow=HEX_GARBAGE_BUBBLE_DURATION,pop=HEX_GARBAGE_BUBBLE_POP_DURATION;
+    if(age<grow){
+        const t=Math.max(0,Math.min(1,age/grow)),ease=1-Math.pow(1-t,3),pulse=1+.1*Math.sin(Math.PI*t);
+        const r=d*.56*ease*pulse;
+        ctx.save();
+        ctx.globalCompositeOperation="screen";
+        const bg=ctx.createRadialGradient(cx-r*.28,cy-r*.34,r*.04,cx,cy,Math.max(1,r));
+        bg.addColorStop(0,"rgba(255,255,255,.42)");bg.addColorStop(.45,"rgba(154,238,255,.17)");bg.addColorStop(1,"rgba(100,206,255,.025)");
+        ctx.fillStyle=bg;ctx.beginPath();ctx.arc(cx,cy,Math.max(.5,r),0,TAU);ctx.fill();
+        ctx.globalAlpha=.2+.65*ease;ctx.strokeStyle="#E9FBFF";ctx.lineWidth=Math.max(1,d*(.045-.02*t));ctx.shadowColor="#8CEFFF";ctx.shadowBlur=d*.32;
+        ctx.beginPath();ctx.arc(cx,cy,Math.max(.5,r),0,TAU);ctx.stroke();
+        ctx.globalAlpha=.65*ease;ctx.fillStyle="#FFFFFF";ctx.beginPath();ctx.ellipse(cx-r*.31,cy-r*.34,Math.max(.5,r*.13),Math.max(.5,r*.07),-.65,0,TAU);ctx.fill();
+        ctx.restore();
+        drawBall(ctx,cx,cy,d,ci,{alpha:Math.min(1,t*1.7),scale:.12+.88*ease,aura:.18+.35*t});
+        return;
+    }
+    drawBall(ctx,cx,cy,d,ci,{alpha:1,scale:1,aura:age<grow+pop?.24:0});
+    if(age<grow+pop){
+        const t=(age-grow)/pop;
+        ctx.save();ctx.globalAlpha=(1-t)*.75;ctx.strokeStyle="#ECFDFF";ctx.lineWidth=Math.max(1,d*.04*(1-t));ctx.shadowColor="#8CEFFF";ctx.shadowBlur=d*.26;
+        ctx.beginPath();ctx.arc(cx,cy,d*(.52+.42*t),0,TAU);ctx.stroke();ctx.restore();
+    }
+}
+
+function drawFormationEffects(ctx,g,pos,D){
+    for(const fx of g.fx.formations||[]){
+        if(!fx?.cells?.length||fx.life<=0)continue;
+        const t=Math.max(0,Math.min(1,1-fx.life/fx.max)),charge=Math.min(1,t/.42),fade=Math.min(1,fx.life/(fx.max*.28));
+        const pts=fx.cells.map(([x,y])=>pos(x,y)),cx=pts.reduce((n,p)=>n+p[0],0)/pts.length,cy=pts.reduce((n,p)=>n+p[1],0)/pts.length;
+        const radius=Math.max(D*1.05,...pts.map(p=>Math.hypot(p[0]-cx,p[1]-cy)+D*.55));
+        ctx.save();ctx.globalCompositeOperation="screen";
+        const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,radius*1.45);glow.addColorStop(0,fx.tint+"99");glow.addColorStop(.46,fx.tint+"38");glow.addColorStop(1,fx.tint+"00");
+        ctx.globalAlpha=(.35+.4*charge)*fade;ctx.fillStyle=glow;ctx.beginPath();ctx.arc(cx,cy,radius*1.45,0,TAU);ctx.fill();
+        for(const p of pts){ctx.globalAlpha=(.2+.8*Math.sin(Math.PI*Math.min(1,t/.7)))*fade;ctx.strokeStyle="#FFFFFF";ctx.lineWidth=D*(.12-.065*t);ctx.shadowColor=fx.tint;ctx.shadowBlur=D*(.55+.35*charge);ctx.beginPath();ctx.arc(p[0],p[1],D*(.5+.16*charge),0,TAU);ctx.stroke();}
+        const sides=fx.w==="PYRAMID"?3:6,start=fx.w==="PYRAMID"?(fx.pointDown?Math.PI/2:-Math.PI/2):-Math.PI/2+t*.2;
+        for(let ring=0;ring<(fx.w==="HEXAGON"?3:2);ring++){
+            const rr=radius*(.86+ring*.16+charge*.1);ctx.globalAlpha=(.92-ring*.22)*fade;ctx.strokeStyle=ring===0?"#FFFFFF":fx.tint;ctx.lineWidth=Math.max(1,D*(.095-ring*.02)*(1-.45*t));ctx.shadowColor=fx.tint;ctx.shadowBlur=D*(fx.w==="HEXAGON"?.75:.55);
+            ctx.beginPath();for(let i=0;i<=sides;i++){const a=start+i*TAU/sides,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;(i?ctx.lineTo(x,y):ctx.moveTo(x,y));}ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
 function rigidShadowPixelPlacement(g, shadowCells, pos, D, X, Y, BW, BH) {
     if(!shadowCells||!shadowCells.length)return [];
     const pts=shadowCells.map(([sx,sy,sc])=>{const [px,py]=pos(sx,sy);return {px,py,sc};});
@@ -68,7 +112,7 @@ function rigidShadowPixelPlacement(g, shadowCells, pos, D, X, Y, BW, BH) {
         let changed=false;
         for(const gp of pts){
             const gx=gp.px,gy=gp.py+dy;
-            for(let by=0;by<ROWS;by++)for(let bx=0;bx<W2;bx++){
+            for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){
                 if(!valid(bx,by))continue;
                 const cell=g.board[by][bx];if(!cell)continue;
                 const vv=g.vis.get(cell.id)||{x:bx,y:by};
@@ -116,7 +160,7 @@ function safeActiveFallOffset(g, cells, dx, dOff, desired) {
     for (let i = 0; i < cells.length; i++) {
         const ax = (cells[i][0] + dx) * 0.5;
         const ay0 = (cells[i][1] + dOff) * H;
-        for (let by = 0; by < ROWS; by++) for (let bx = 0; bx < W2; bx++) {
+        for (let by = boardScanMin(g.board); by < ROWS; by++) for (let bx = 0; bx < W2; bx++) {
             const bc = valid(bx, by) ? g.board[by][bx] : null;
             if (!bc) continue;
             const bv = g.vis.get(bc.id);

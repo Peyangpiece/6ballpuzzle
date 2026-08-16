@@ -10,7 +10,7 @@ function hexPhysAdoptGroups(){/* no legacy adoption: motionGroup is canonical */
 function hexPhysClearGroupBall(ball){if(!ball)return;ball.motionGroupId=0;ball.motionGroupRole=-1;ball.motionGroupOrientation="";ball.motionGroupSize=0;ball.rigid=false;}
 function hexPhysGroups(b){
  const mp=new Map();
- for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(!ball?.motionGroupId)continue;if(!mp.has(ball.motionGroupId))mp.set(ball.motionGroupId,[]);mp.get(ball.motionGroupId).push({ball,x,y,role:ball.motionGroupRole,orientation:ball.motionGroupOrientation});}
+ for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(!ball?.motionGroupId)continue;if(!mp.has(ball.motionGroupId))mp.set(ball.motionGroupId,[]);mp.get(ball.motionGroupId).push({ball,x,y,role:ball.motionGroupRole,orientation:ball.motionGroupOrientation});}
  return mp;
 }
 function hexPhysSetGroup(members,size,orientation=""){
@@ -24,10 +24,22 @@ function hexPhysSupportInfo(b,x,y,ignore=null){
  left.occupied=!left.valid||!!(left.ball&&!(ignore&&ignore.has(left.ball.id)));right.occupied=!right.valid||!!(right.ball&&!(ignore&&ignore.has(right.ball.id)));
  return{floor,left,right,count:floor?2:Number(left.occupied)+Number(right.occupied)};
 }
+function isBalancedHexagonCenterHole(b,cx,cy){
+ if(!isHexagonCenterHole(b,cx,cy))return false;
+ return [[cx-1,cy+1],[cx+1,cy+1]].every(([x,y])=>touchesFloorRow(y)||hexPhysSupportInfo(b,x,y).count>=2);
+}
+function ballInBalancedHexagonRing(b,x,y){
+ for(let cy=y-1;cy<=y+1;cy++)for(let cx=x-2;cx<=x+2;cx++)if(isBalancedHexagonCenterHole(b,cx,cy)){
+  if([[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]].some(([dx,dy])=>cx+dx===x&&cy+dy===y))return true;
+ }
+ return false;
+}
 function lowerContactSupportCount(b,x,y){return hexPhysSupportInfo(b,x,y).count;}
 function hexPhysBias(ball){return Math.sign(ball?.momentumX||ball?.rollDir||ball?.subCellBias||0);}
 function hexPhysNaturalMotion(b,x,y,ignore=null){
  if(!valid(x,y)||!b[y][x])return null;const ball=b[y][x];if(touchesFloorRow(y))return null;
+ if(ball.garbageBubbleHold)return null;
+ if(!ignore&&ballInBalancedHexagonRing(b,x,y))return null;
  const l=hexPhysEmpty(b,x-1,y+1,ignore),r=hexPhysEmpty(b,x+1,y+1,ignore),down=hexPhysEmpty(b,x,y+2,ignore);
  if(l&&r&&down)return{x,y,tx:x,ty:y+2,ball,kind:"FREE_FALL",pivot:null,topPivot:null,followSupportIds:[]};
  if(l&&!r)return{x,y,tx:x-1,ty:y+1,ball,kind:"ROLL_LEFT",pivot:[x+1,y+1],topPivot:null,followSupportIds:[]};
@@ -63,9 +75,19 @@ function hexPhysNaturalMotion(b,x,y,ignore=null){
 }
 function settleStep(b,x,y){const p=hexPhysNaturalMotion(b,x,y);return p?[p.tx,p.ty]:null;}
 function unstableFrozenBalls(b){
- const out=[];for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){if(!valid(x,y)||!b[y][x]||touchesFloorRow(y))continue;const s=hexPhysSupportInfo(b,x,y);if(!hexPhysNaturalMotion(b,x,y)&&s.count<2)out.push({x,y,id:b[y][x].id,contacts:s.count});}return out;
+ const out=[];for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){if(!valid(x,y)||!b[y][x]||b[y][x].equilibriumLocked||touchesFloorRow(y)||ballInBalancedHexagonRing(b,x,y))continue;const s=hexPhysSupportInfo(b,x,y);if(!hexPhysNaturalMotion(b,x,y)&&s.count<2)out.push({x,y,id:b[y][x].id,contacts:s.count});}return out;
 }
 function boardHasIllegalFloat(b){return unstableFrozenBalls(b).length>0;}
+function clearBoardEquilibriumLocks(b){for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(ball&&typeof ball==="object")delete ball.equilibriumLocked;}}
+function markCollisionBalancedGaps(b){
+ const stuck=unstableFrozenBalls(b),ids=new Set(stuck.map(q=>q.id));
+ for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(ball&&typeof ball==="object"&&ids.has(ball.id))ball.equilibriumLocked=true;}
+ return stuck.length;
+}
+function boardOverflowCells(b){
+ const out=[];for(let y=BOARD_MIN_ROW;y<0;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(ball)out.push([x,y,getC(ball),ball.id]);}return out;
+}
+function boardHasOverflow(b){return boardOverflowCells(b).length>0;}
 function isHexagonCenterHole(b,cx,cy){return valid(cx,cy)&&b[cy][cx]===null&&[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]].every(([dx,dy])=>valid(cx+dx,cy+dy)&&!!b[cy+dy][cx+dx]);}
 function boardHasIntentionalHexagonHole(b){for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isHexagonCenterHole(b,x,y))return true;return false;}
 function proposalPointAt(p,t){
@@ -76,10 +98,10 @@ function proposalPointAt(p,t){
 }
 function proposalsSweepOverlap(a,b){for(let i=0;i<=32;i++){const t=i/32,pa=proposalPointAt(a,t),pb=proposalPointAt(b,t);if(Math.hypot(pa[0]-pb[0],pa[1]-pb[1])<HEX_MIN_DIST)return true;}return false;}
 function hexPhysPathHitsStationary(p,b,movingIds){
- for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q||q.id===p.ball.id||movingIds.has(q.id))continue;const pv=p.topPivot||p.pivot;if(pv&&pv[0]===x&&pv[1]===y)continue;const qp=normPoint(x,y);for(let i=1;i<=32;i++){const pt=proposalPointAt(p,i/32);if(Math.hypot(pt[0]-qp[0],pt[1]-qp[1])<HEX_MIN_DIST)return true;}}
+ for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q||q.id===p.ball.id||movingIds.has(q.id))continue;const pv=p.topPivot||p.pivot;if(pv&&pv[0]===x&&pv[1]===y)continue;const qp=normPoint(x,y);for(let i=1;i<=32;i++){const pt=proposalPointAt(p,i/32);if(Math.hypot(pt[0]-qp[0],pt[1]-qp[1])<HEX_MIN_DIST)return true;}}
  return false;
 }
-function proposalHitsStationaryBall(p,b,movingOrigins){const ids=new Set();for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(q&&movingOrigins?.has(x+","+y))ids.add(q.id);}return hexPhysPathHitsStationary(p,b,ids);}
+function proposalHitsStationaryBall(p,b,movingOrigins){const ids=new Set();for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(q&&movingOrigins?.has(x+","+y))ids.add(q.id);}return hexPhysPathHitsStationary(p,b,ids);}
 function sameMoveVector(a,b){return!!a&&!!b&&(a.tx-a.x)===(b.tx-b.x)&&(a.ty-a.y)===(b.ty-b.y);}
 function proposalSignature(p){return p?[p.tx-p.x,p.ty-p.y,p.kind].join("|"):"REST";}
 function hexPhysIndependentMemberMotion(b,members,m){const ignore=new Set(members.filter(q=>q.ball.id!==m.ball.id).map(q=>q.ball.id));return hexPhysNaturalMotion(b,m.x,m.y,ignore);}
@@ -129,9 +151,18 @@ function hexPhysPairPivotPlan(b,members,motions){
  for(let i=0;i<2;i++){const fixed=members[i],moving=members[1-i],mp=motions[1-i];if(motions[i]||!mp)continue;if(hexPhysDist(mp.tx,mp.ty,fixed.x,fixed.y)>1.00001)continue;const p={...mp,pivot:[fixed.x,fixed.y],topPivot:null,kind:"PAIR_PIVOT",bundleId:fixed.ball.motionGroupId||0,followSupportIds:[fixed.ball.id]};if(!hexPhysPathHitsStationary(p,b,new Set(members.map(m=>m.ball.id))))return[p];}
  return null;
 }
+function hexPhysTouchesSideWall(members){
+ return(members||[]).some(m=>m.x===(parityOK(0,m.y)?0:1)||m.x===(parityOK(W2-1,m.y)?W2-1:W2-2));
+}
 function hexPhysPlanGroup(b,members,preview=false){
  const size=members.length;if(size<2||size>3){if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
  const motions=members.map(m=>hexPhysIndependentMemberMotion(b,members,m)),moving=motions.filter(Boolean);
+ // The side wall contains balls but contributes no rigidity. Contact with it
+ // releases the motion group immediately; subsequent moves are independent.
+ if(hexPhysTouchesSideWall(members)){
+  if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);
+  return moving.map(p=>({...p,bundleId:0,groupSize:0}));
+ }
  if(!moving.length){if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
  if(moving.length===size){const dx=motions[0].tx-motions[0].x,dy=motions[0].ty-motions[0].y;if(motions.every(p=>p.tx-p.x===dx&&p.ty-p.y===dy)&&hexPhysTranslationSafe(b,members,dx,dy)){const bundle=members[0].ball.motionGroupId||HEX_PHYS_GROUP_SEQ;return members.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null,followSupportIds:[],bundleId:bundle,groupSize:size}));}}
  // A one-sided diagonal contact is an ordinary slope, not a reason to break
@@ -158,7 +189,7 @@ function hexPhysPlanGroup(b,members,preview=false){
  if(!preview){for(let a=0;a<3;a++)for(let c=a+1;c<3;c++){const pm=[members[a],members[c]],pivot=hexPhysPairPivotPlan(b,pm,[motions[a],motions[c]]);if(pivot){for(const m of members)hexPhysClearGroupBall(m.ball);hexPhysSetGroup(pm,2,pm[0]?.orientation||"");return pivot;}}for(const m of members)hexPhysClearGroupBall(m.ball);}return[];
 }
 function hexPhysContactEntries(b,excluded){
- const entries=[],byId=new Map();for(let y=ROWS-1;y>=0;y--)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(!ball||excluded.has(ball.id))continue;const support=hexPhysSupportInfo(b,x,y),e={x,y,ball,support,p:hexPhysNaturalMotion(b,x,y)};entries.push(e);byId.set(ball.id,e);}
+ const entries=[],byId=new Map();for(let y=ROWS-1;y>=boardScanMin(b);y--)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(!ball||excluded.has(ball.id))continue;const support=hexPhysSupportInfo(b,x,y),e={x,y,ball,support,p:hexPhysNaturalMotion(b,x,y)};entries.push(e);byId.set(ball.id,e);}
  for(let guard=0;guard<ROWS*2+4;guard++){let changed=false;for(const e of entries){const supports=[e.support.left,e.support.right].filter(s=>s.valid&&s.ball&&!excluded.has(s.ball.id)),moving=supports.map(s=>byId.get(s.ball.id)).filter(q=>q?.p);let next=e.p;if(supports.length&&moving.length===supports.length){const f=moving[0].p;if(moving.every(q=>sameMoveVector(f,q.p))){const dx=f.tx-f.x,dy=f.ty-f.y;if(valid(e.x+dx,e.y+dy))next={x:e.x,y:e.y,tx:e.x+dx,ty:e.y+dy,ball:e.ball,kind:"FOLLOW_SUPPORT",pivot:null,topPivot:null,followSupportIds:moving.map(q=>q.ball.id)};}}else if(supports.length===2&&moving.length===1){const st=supports.find(s=>s.ball.id!==moving[0].ball.id);if(st){const dir=st.x<e.x?1:-1;if(hexPhysEmpty(b,e.x+dir,e.y+1))next={x:e.x,y:e.y,tx:e.x+dir,ty:e.y+1,ball:e.ball,kind:dir<0?"ROLL_LEFT":"ROLL_RIGHT",pivot:[st.x,st.y],topPivot:null,followSupportIds:[]};}}if(proposalSignature(next)!==proposalSignature(e.p)||(next?.followSupportIds?.join(",")||"")!==(e.p?.followSupportIds?.join(",")||"")){e.p=next;changed=true;}}if(!changed)break;}
  return entries.filter(e=>e.p).map(e=>e.p);
 }
