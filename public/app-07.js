@@ -1,7 +1,7 @@
 // Pile/garbage collapse overlap-scheduler constants.
 // Kept in app-07 so this two-file patch is self-contained on the current main branch.
 const PILE_FLOW_SCHEDULE_STEP = 1 / 240;
-const PILE_FLOW_MIN_WAVE_GAP = 0;
+const PILE_FLOW_MIN_WAVE_GAP = 1 / 120;
 const PILE_FLOW_MIN_DIST = 0.9998;
 const PILE_FLOW_COLLISION_SAMPLES = 144;
 
@@ -302,56 +302,12 @@ function pileFlowWaveSafe(g,waveSegs,start,duration){
     return true;
 }
 
-function pileFlowPreviousEnd(ball,seg,clock){
-    let earliest=Math.max(0,clock||0);
-    const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
-    const idx=path.indexOf(seg);
-    if(idx<=0)return earliest;
-    for(let i=idx-1;i>=0;i--){
-        const prev=path[i];
-        if(Number.isFinite(prev?.pileFlowEnd)){
-            earliest=Math.max(earliest,prev.pileFlowEnd);
-            break;
-        }
-    }
-    return earliest;
-}
-
-function pileFlowSupportStart(g,seg,seq,clock){
-    let earliest=Math.max(0,clock||0);
-    for(const id of pileFlowSupportIds(seg)){
-        const support=pileFlowBallById(g,id);
-        if(!support?.fallPath)continue;
-        let best=null;
-        for(const s of support.fallPath){
-            if(!s?.pileFlow||!Number.isFinite(s.pileFlowStart))continue;
-            const original=Number(s.pileFlowOriginalSeq)||0;
-            if(original<=seq)best=s;
-        }
-        if(best)earliest=Math.max(earliest,best.pileFlowStart);
-    }
-    return earliest;
-}
-
-function pileFlowPriorEnds(g,excludeSeg){
-    const out=[];
-    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
-        const ball=valid(x,y)?g.board[y][x]:null;
-        if(!ball?.fallPath)continue;
-        for(const seg of ball.fallPath){
-            if(seg===excludeSeg)continue;
-            if(seg?.pileFlow&&Number.isFinite(seg.pileFlowEnd))out.push(seg.pileFlowEnd);
-        }
-    }
-    return out;
-}
-
 function scheduleFreshPileFlow(g,fresh){
     if(!fresh.length)return;
 
-    // Carry velocity separately for every ball. Unlike the old wave scheduler,
-    // one blocked ball can no longer delay unrelated balls from the same logic
-    // event; every segment starts at its own earliest collision-free instant.
+    // Nominal duration is computed per ball with carried velocity; wave members
+    // then share the longest duration so same-wave collision sweeps retain the
+    // exact normalized-time relation used by the logical solver.
     const stateByBall=new Map();
     for(const q of fresh){
         if(!stateByBall.has(q.ball.id)){
@@ -370,76 +326,69 @@ function scheduleFreshPileFlow(g,fresh){
     const bySeq=new Map(seqs.map(seq=>[seq,[]]));
     for(const q of fresh)bySeq.get(q.seq).push(q);
 
-    for(const seq of seqs){
-        const pending=[...bySeq.get(seq)];
+    let previousStart=Math.max(0,g.pileFlowClock||0);
 
-        // Within one logical event, schedule moving supports first. Lower balls
-        // are the deterministic fallback. This preserves contact causality while
-        // still allowing unrelated balls to begin immediately.
-        while(pending.length){
-            let pick=-1;
-            for(let i=0;i<pending.length;i++){
-                const deps=pileFlowSupportIds(pending[i].seg);
-                const waitsForPendingSupport=deps.some(id=>
-                    pending.some((q,j)=>j!==i&&q.ball.id===id)
-                );
-                if(!waitsForPendingSupport){pick=i;break;}
-            }
-            if(pick<0){
-                pending.sort((a,b)=>
-                    (b.seg.from?.[1]||0)-(a.seg.from?.[1]||0)||
-                    (a.seg.from?.[0]||0)-(b.seg.from?.[0]||0)
-                );
-                pick=0;
-            }
+    for(let wi=0;wi<seqs.length;wi++){
+        const seq=seqs[wi];
+        const entries=bySeq.get(seq);
+        const segs=entries.map(q=>q.seg);
+        const duration=Math.max(
+            1/120,
+            ...segs.map(seg=>seg._pileNominalDuration||1/120)
+        );
 
-            const {ball,seg}=pending.splice(pick,1)[0];
-            const duration=Math.max(1/120,seg._pileNominalDuration||1/120);
-            let earliest=pileFlowPreviousEnd(ball,seg,g.pileFlowClock||0);
-            earliest=Math.max(
-                earliest,
-                pileFlowSupportStart(g,seg,seq,g.pileFlowClock||0)
-            );
+        let earliest=wi===0
+            ? Math.max(0,g.pileFlowClock||0)
+            : previousStart+PILE_FLOW_MIN_WAVE_GAP;
 
-            const priorEnds=pileFlowPriorEnds(g,seg);
-            const fallback=Math.max(earliest,...priorEnds,earliest);
-            let start=earliest;
-            let safe=false;
-
-            // Search only this ball's path. A difficult contact therefore delays
-            // that ball alone instead of opening a hole across the whole pile.
-            while(start<=fallback+PILE_FLOW_SCHEDULE_STEP+1e-9){
-                if(pileFlowWaveSafe(g,[seg],start,duration)){
-                    safe=true;
-                    break;
-                }
-                start+=PILE_FLOW_SCHEDULE_STEP;
-            }
-
-            if(!safe){
-                start=fallback;
-                if(!pileFlowWaveSafe(g,[seg],start,duration)){
-                    // Logical physics has already proven the endpoint legal.
-                    // Rare numerical edge cases get a short, per-ball search
-                    // beyond the final prior segment rather than serializing a
-                    // whole event wave.
-                    const limit=fallback+Math.max(duration,.5);
-                    while(start<=limit+1e-9){
-                        if(pileFlowWaveSafe(g,[seg],start,duration)){
-                            safe=true;
-                            break;
-                        }
-                        start+=PILE_FLOW_SCHEDULE_STEP;
+        // A single ball can never execute two logical segments at once.
+        for(const {ball} of entries){
+            const path=ball.fallPath||[];
+            const idx=path.indexOf(entries.find(q=>q.ball===ball)?.seg);
+            if(idx>0){
+                for(let j=idx-1;j>=0;j--){
+                    const prev=path[j];
+                    if(Number.isFinite(prev?.pileFlowEnd)){
+                        earliest=Math.max(earliest,prev.pileFlowEnd);
+                        break;
                     }
-                }else safe=true;
+                }
             }
+        }
 
-            if(!safe){
+        // Find the earliest collision-free overlap. This removes the old fixed
+        // 0.12s bulk-step definition: a wave waits only as long as geometry
+        // actually requires, then starts while earlier waves are still moving.
+        const priorEnds=[];
+        for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+            const b=valid(x,y)?g.board[y][x]:null;
+            if(!b?.fallPath)continue;
+            for(const seg of b.fallPath)
+                if(seg?.pileFlow && Number.isFinite(seg.pileFlowEnd) && !segs.includes(seg))
+                    priorEnds.push(seg.pileFlowEnd);
+        }
+        const sequentialFallback=Math.max(earliest,...priorEnds,earliest);
+        let start=earliest;
+        let safe=false;
+
+        while(start<=sequentialFallback+PILE_FLOW_SCHEDULE_STEP+1e-9){
+            if(pileFlowWaveSafe(g,segs,start,duration)){
+                safe=true;
+                break;
+            }
+            start+=PILE_FLOW_SCHEDULE_STEP;
+        }
+
+        if(!safe){
+            start=sequentialFallback;
+            for(const seg of segs){
                 seg.pileFlowStart=start;
                 seg.pileFlowDuration=duration;
                 seg.pileFlowEnd=start+duration;
             }
         }
+
+        previousStart=start;
     }
 }
 
