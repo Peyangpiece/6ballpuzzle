@@ -60,13 +60,15 @@ function hexPhysCandidateBundles(proposals){
         return Math.min(...a.map(p=>p.x))-Math.min(...b.map(p=>p.x));
     });
 }
-function hexPhysBundleTargetsFree(bundle,b,allMovingIds){
-    const own=new Set(bundle.map(p=>p.ball.id)),targets=new Set();
+function hexPhysBundleTargetsFree(bundle,b,accepted){
+    const own=new Set(bundle.map(p=>p.ball.id));
+    const vacating=new Set([...bundle,...accepted].map(p=>p.ball.id));
+    const targets=new Set();
     for(const p of bundle){
         if(!valid(p.tx,p.ty))return false;
         const k=p.tx+","+p.ty;if(targets.has(k))return false;targets.add(k);
         const q=b[p.ty][p.tx];
-        if(q&&!own.has(q.id)&&!allMovingIds.has(q.id))return false;
+        if(q&&!own.has(q.id)&&!vacating.has(q.id))return false;
     }
     return true;
 }
@@ -98,10 +100,9 @@ function hexPhysResolveEvent(b,preview=false){
     if(!proposals.length)return [];
     if(preview)return proposals.slice(0,1);
 
-    const allMovingIds=new Set(proposals.map(p=>p.ball.id));
     const accepted=[];
     for(const bundle of hexPhysCandidateBundles(proposals)){
-        if(!hexPhysBundleTargetsFree(bundle,b,allMovingIds))continue;
+        if(!hexPhysBundleTargetsFree(bundle,b,accepted))continue;
         if(!hexPhysBundleSafe(bundle,b,accepted))continue;
         accepted.push(...bundle);
     }
@@ -129,8 +130,6 @@ function hexPhysAppendSegment(ball,p,eventSeq){
 function hexPhysApplyEvent(b,accepted){
     if(!accepted.length)return false;
     const seq=HEX_PHYS_EVENT_SEQ++;
-    const origins=new Map();
-    for(const p of accepted)origins.set(p.ball.id,[p.x,p.y]);
     for(const p of accepted)if(b[p.y][p.x]===p.ball)b[p.y][p.x]=null;
     const placed=[];
     for(const p of accepted){
@@ -154,7 +153,6 @@ const settleAll=(b)=>{
         if(!q)break;
         moved=true;
     }
-    // Stable pile has no permanent constraint metadata.
     for(const members of hexPhysGroups(b).values()){
         const plan=hexPhysPlanGroup(b,members,true);
         if(!plan.length)for(const m of members)hexPhysClearGroupBall(m.ball);
@@ -177,7 +175,6 @@ function physicsSignature(gOrBoard){
     return a.join("|");
 }
 
-// Compatibility names retained only for non-physics callers; they delegate to the single solver above.
 function commonRigidMomentumDir(members){
     let d=0;for(const m of members||[]){const q=hexPhysBias(m.ball);if(!q)continue;if(d&&d!==q)return 0;d=q;}return d;
 }
