@@ -68,6 +68,7 @@ jobs:
           grep -q 'beginSingleDrag' public/controls-v7.js
           grep -q 'targetX=rec.dragBaseX+(dx/ME.D)\*2' public/controls-v7.js
           grep -q 'setFreeX(g,targetX)' public/controls-v7.js
+          grep -q 'if(Number.isFinite(g.freeX))g.pieceVX=g.freeX' public/controls-v7.js
           grep -q 'if (g.freeX != null) g.pieceVX = g.freeX' public/app-08.js
           grep -q 'rec.half>0?1:-1' public/controls-v7.js
           grep -q '__hexInstantDropV7' public/controls-v7.js
