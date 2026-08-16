@@ -92,7 +92,7 @@ jobs:
           grep -q 'FLOOR_DROP' public/app-02.js
           grep -q 'y+1===ROWS-1' public/app-02.js
           grep -q 'hexPhysResolveEvent' public/app-03.js
-          grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.6' public/app-06.js
+          grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.5' public/app-06.js
           grep -q 'prepareContinuousPileFlow' public/app-07.js
           grep -q 'manifest.webmanifest' public/index.html
           grep -q 'loadCurrentGameBuild' public/index.html
