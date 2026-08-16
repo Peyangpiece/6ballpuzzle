@@ -54,6 +54,8 @@ jobs:
         run: node tests/physics-regressions.js
       - name: Check 50-point reference fidelity
         run: node tests/reference-fidelity.js
+      - name: Check 100-pass ball movement fidelity
+        run: node tests/movement-fidelity-100.js
       - name: Check clean touch controls v7
         run: |
           set -e

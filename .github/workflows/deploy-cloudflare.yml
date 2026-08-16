@@ -26,6 +26,9 @@ jobs:
       - name: Run physics regressions
         run: node tests/physics-regressions.js
 
+      - name: Run 100-pass movement fidelity
+        run: node tests/movement-fidelity-100.js
+
       - name: Deploy 6ballpuzzle
         uses: cloudflare/wrangler-action@v3
         with:

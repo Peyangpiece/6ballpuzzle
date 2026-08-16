@@ -98,7 +98,13 @@ function lock(g,vy=2){
  for(let role=0;role<cells.length;role++){
   const[x,y,c]=cells[role],ball=mkBall(g,c);
   ball.impactOffsetX=splitOffset;ball.subCellBias=Math.abs(splitOffset)>1e-5?Math.sign(splitOffset):0;ball.momentumX=ball.subCellBias;
-  g.board[y][x]=ball;noteBoardCell(g.board,y,ball);made.push({ball,role,x,y});setVis(g,ball,x,y,Math.max(RELEASE_INITIAL_VY,vy||0));
+  g.board[y][x]=ball;noteBoardCell(g.board,y,ball);made.push({ball,role,x,y});
+  // Keep the exact finger-selected horizontal coordinate at the active/pile
+  // hand-off.  The logical cell is discrete, but the released balls begin at
+  // the last rendered sub-cell X and let the continuous pile renderer consume
+  // the remaining offset.  Snapping here was the visible one-frame sideways
+  // jump that occurred at the instant of landing.
+  setVis(g,ball,x+splitOffset,y,Math.max(RELEASE_INITIAL_VY,vy||0));
   const vv=g.vis.get(ball.id);vv.motionSpeed=Math.max(RELEASE_INITIAL_VY,vy||0);vv.justReleased=true;
  }
  const gid=made.length?HEX_PHYS_GROUP_SEQ++:0,orientation=((splitRot&1)===0)?"down":"up";

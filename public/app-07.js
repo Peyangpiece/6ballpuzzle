@@ -62,15 +62,24 @@ function liveSegPoint(seg,t,startState=null,duration=null){
         const sx=latticeRealX(seg.from[0]),sy=cellCenterYNorm(seg.from[1]);
         const cx=latticeRealX(px),cy=cellCenterYNorm(py),contactY=cy-1;
         const fallDist=Math.max(0,contactY-sy);
-        const fallT=Math.sqrt(Math.max(0,2*fallDist/Math.max(0.0001,GRAV)));
+        // Use the same inherited velocity as hexMotionDuration().  Previously
+        // duration carried the incoming velocity while the sampled position
+        // silently restarted from rest, producing a speed kink exactly where
+        // a free-falling ball first touched a protrusion.
+        const v0=Math.max(0,startState?.vy||0);
+        const fallT=fallDist>1e-9
+            ?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallDist)))/Math.max(0.0001,GRAV)
+            :0;
         const tx=latticeRealX(seg.to[0]),ty=cellCenterYNorm(seg.to[1]);
         let da=Math.atan2(ty-cy,tx-cx)+Math.PI/2;
         while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
         const arcT=Math.abs(da)/Math.max(0.0001,SLIDE_SPEED);
-        const total=Math.max(1e-9,fallT+arcT),elapsed=t*total;
+        const naturalTotal=Math.max(1e-9,fallT+arcT);
+        const total=Number.isFinite(duration)?Math.max(1e-9,duration):naturalTotal;
+        const elapsed=t*total;
         if(elapsed<=fallT&&fallT>1e-9){
-            const q=elapsed/fallT,qq=q*q;
-            return [(sx+(cx-sx)*qq)/0.5,(sy+(contactY-sy)*qq-BOARD_TOP_CENTER_N)/H];
+            const q=Math.max(0,Math.min(1,(v0*elapsed+.5*GRAV*elapsed*elapsed)/Math.max(1e-9,fallDist)));
+            return [(sx+(cx-sx)*q)/0.5,(sy+(contactY-sy)*q-BOARD_TOP_CENTER_N)/H];
         }
         const q=arcT<=1e-9?1:Math.max(0,Math.min(1,(elapsed-fallT)/arcT));
         const a=-Math.PI/2+da*q;
