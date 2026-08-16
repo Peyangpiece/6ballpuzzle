@@ -1,4 +1,4 @@
-/* HEXDROP controls v5.3: iOS-safe game input + drag horizontal + normal-speed single-hold + dual gestures */
+/* HEXDROP controls v5.4: iOS-safe game input + screen-down dual-tap hard drop */
 (function installHexTouchV5(){
     if(typeof document==="undefined" || window.__hexTouchV5Installed) return;
     window.__hexTouchV5Installed=true;
@@ -79,21 +79,29 @@
         return Number.isFinite(g?.piece?.x)?g.piece.x:SPAWN_X;
     }
 
+    // Dual-tap hard drop is always world/screen gravity: +Y toward the bottom floor.
+    // It never uses triangle orientation as a direction and never introduces an
+    // intentional horizontal step during the drop. The current visual X is first
+    // committed to the nearest legal logical column, then Y alone is advanced.
     function instantDropToFloorV5(g){
         if(!g || g.state!=="PLAYING" || !g.piece)return false;
         g.fastForward=false;
         g.dragging=false;
-        g.freeX=null;
         g.hardDropAnim=null;
         g.dropT=0;
 
+        const visualX=currentFreeX(g);
+        setColumn(g,visualX);
         const fixedX=g.piece.x;
         const target={...g.piece,x:fixedX};
+
+        // Strict screen-down ray: x is immutable; only +Y is considered.
         while(pieceFits(g.board,{...target,x:fixedX,y:target.y+2}))target.y+=2;
+
         target.x=fixedX;
+        g.piece={...target};
         g.pieceVX=fixedX;
         g.freeX=null;
-        g.piece={...target};
         emit(g,{t:"drop"});
         lock(g,5);
         return true;
