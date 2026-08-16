@@ -14,6 +14,10 @@ expect(Array.from({length:W2},(_,x)=>x).filter(x=>valid(x,ROWS-2)).length===9,"r
 expect(GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===0).length===9&&GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===1).length===10,"reference geometry: straight garbage rows have the wrong phase");
 expect(pieceFits(newBoard(),{x:SPAWN_X,y:-2,rot:0,colors:[0,1,2]}),"reference geometry: centred spawn is outside the reversed lattice");
 expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"reference fall timing changed");
+{
+ const pat=GARBAGE_SHAPES.PYRAMID,maxY=Math.max(...pat.map(([,y])=>y)),inverse=pat.map(([x,y])=>[x,maxY-y]);
+ expect(classify(pat)==="PYRAMID"&&classify(inverse)==="PYRAMID","pyramid orientation: inverse pyramid did not trigger pyramid garbage");
+}
 
 // On an empty board, the first-level landing guide follows the continuous
 // one-finger X instead of snapping back to the logical lattice column.
@@ -195,6 +199,15 @@ for(const [type,baseY] of [["PYRAMID",ROWS-3],["HEXAGON",ROWS-3]]){
  reserveGarbagePlan(shadow,plan,-1);
  expect(materializeGarbagePack(g,plan),"garbage materialization failed");
  expect(HEX_GARBAGE_SHAPE_INTERVAL===0.5,"garbage interval is not 0.5 seconds");
+ expect(!/GARBAGE_PACK_INTERVAL/.test(stepEngine.toString()),"garbage watchdog still references an undefined interval");
+}
+
+// Bubble-to-fall integration is invariant across capture and game frame rates.
+{
+ const run=dt=>{const g=createEngine(31);g.garbShapes=["PYRAMID"];prepareGarbageBatch(g);while(g.garbageClock<.8-1e-9)updateGarbagePacks(g,Math.min(dt,.8-g.garbageClock));return g.activeGarbagePacks[0];};
+ const a=run(1/30),b=run(1/120);
+ expect(Math.abs(a.y-b.y)<1e-9&&Math.abs(a.vy-b.vy)<1e-9,"garbage trajectory differs between 30fps and 120fps");
+ expect(a.actualStartTime===0&&b.actualStartTime===0,"garbage first pack start drifted by one render frame");
 }
 
 // Consecutive free-fall segments carry velocity instead of restarting from rest.

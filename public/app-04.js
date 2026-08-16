@@ -53,8 +53,14 @@ function findGroups(b){
 function classify(cells){
  if(cells.length<6)return null;const key=new Set(cells.map(([x,y])=>x+","+y)),has=(x,y)=>key.has(x+","+y),hasPatternAt=(ax,ay,pat)=>pat.every(([dx,dy])=>has(ax+dx,ay+dy));
  for(const w of WAZA_PRIORITY){
-  if(w==="STRAIGHT"){for(const[x,y]of cells)for(const[dx,dy]of[[2,0],[1,1],[1,-1]]){let ok=true;for(let i=0;i<6;i++)if(!has(x+dx*i,y+dy*i)){ok=false;break;}if(ok)return w;}continue;}
-  const pat=GARBAGE_SHAPES[w];if(!pat)continue;for(const[x,y]of cells)for(const[px,py]of pat)if(hasPatternAt(x-px,y-py,pat))return w;
+ if(w==="STRAIGHT"){for(const[x,y]of cells)for(const[dx,dy]of[[2,0],[1,1],[1,-1]]){let ok=true;for(let i=0;i<6;i++)if(!has(x+dx*i,y+dy*i)){ok=false;break;}if(ok)return w;}continue;}
+  const pat=GARBAGE_SHAPES[w];if(!pat)continue;
+  // The reference awards PYRAMID for either vertical orientation. Incoming
+  // garbage still uses the canonical upright spawn pattern; only formation
+  // recognition is mirrored here.
+  const maxY=Math.max(...pat.map(([,y])=>y));
+  const patterns=w==="PYRAMID"?[pat,pat.map(([x,y])=>[x,maxY-y])]:[pat];
+  for(const matchPat of patterns)for(const[x,y]of cells)for(const[px,py]of matchPat)if(hasPatternAt(x-px,y-py,matchPat))return w;
  }
  return null;
 }

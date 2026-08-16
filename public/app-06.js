@@ -109,24 +109,30 @@ function updateGarbagePacks(g,dt){
 
     // Start at most one complete shape in one update. Frame drops never create
     // catch-up bursts. PYRAMID/HEXAGON are six-ball units; STRAIGHT is one
-    // atomic 23-ball unit.
+    // atomic 19-ball unit. Use the scheduled timestamp so 30/60/120fps all
+    // observe the same bubble age and the half-second cadence never drifts.
     const next=g.garbagePlans.find(p=>!p._started);
     if(next&&g.garbageClock+1e-9>=g.garbageNextBallAt){
+        const scheduledStart=g.garbageNextBallAt;
         next._started=true;
-        next.actualStartTime=g.garbageClock;
+        next.actualStartTime=scheduledStart;
         next.y=GARBAGE_START_Y;
         next.vy=0;
         next.bubbleT=0;
         g.activeGarbagePacks.push(next);
-        g.garbageNextBallAt=g.garbageClock+HEX_GARBAGE_SHAPE_INTERVAL;
+        g.garbageNextBallAt=scheduledStart+HEX_GARBAGE_SHAPE_INTERVAL;
     }
 
     for(const p of g.activeGarbagePacks){
         if(p.landed)continue;
+        const prevAge=Math.max(0,p.bubbleT||0);
         p.bubbleT=Math.max(0,g.garbageClock-(p.actualStartTime||0));
-        if(p.bubbleT<HEX_GARBAGE_BUBBLE_DURATION)continue;
-        p.vy+=GRAV*dt;
-        p.y+=p.vy*dt;
+        const fallDt=Math.max(0,p.bubbleT-HEX_GARBAGE_BUBBLE_DURATION)-Math.max(0,prevAge-HEX_GARBAGE_BUBBLE_DURATION);
+        if(fallDt<=1e-12)continue;
+        // Exact constant-acceleration integration prevents the first falling
+        // frame from jumping when it straddles the end of the bubble phase.
+        p.y+=p.vy*fallDt+.5*GRAV*fallDt*fallDt;
+        p.vy+=GRAV*fallDt;
         if(p.y<p.targetY)continue;
         p.y=p.targetY;p.vy=0;
         const earlier=g.activeGarbagePacks.some(q=>q.seq<p.seq&&!q.landed);

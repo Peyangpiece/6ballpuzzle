@@ -248,10 +248,13 @@ function stepNetPieceMotion(g,dt){
 }
 function stepNetGarbageMotion(g,dt){
     for(const p of g.activeGarbagePacks||[]){
-        p.bubbleT=Math.max(p.bubbleT||0,(p.netBubbleT||0))+dt;
-        if(p.bubbleT<HEX_GARBAGE_BUBBLE_DURATION)continue;
-        p.vy=Math.max(p.vy||0,p.netVy||0)+GRAV*dt;
-        p.y=Math.max(p.y||GARBAGE_START_Y,p.netY||GARBAGE_START_Y)+(p.vy||0)*dt;
+        const prevAge=Math.max(p.bubbleT||0,p.netBubbleT||0),nextAge=prevAge+dt;
+        p.bubbleT=nextAge;
+        const fallDt=Math.max(0,nextAge-HEX_GARBAGE_BUBBLE_DURATION)-Math.max(0,prevAge-HEX_GARBAGE_BUBBLE_DURATION);
+        if(fallDt<=1e-12)continue;
+        const vy=Math.max(p.vy||0,p.netVy||0),y=Math.max(p.y||GARBAGE_START_Y,p.netY||GARBAGE_START_Y);
+        p.y=y+vy*fallDt+.5*GRAV*fallDt*fallDt;
+        p.vy=vy+GRAV*fallDt;
     }
 }
 function stepNetView(g, dt) {g.stateT += dt;stepNetPieceMotion(g,dt);stepNetGarbageMotion(g,dt);g.fx.shake = 0;g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);g.fx.formations=(g.fx.formations||[]).filter((f)=>(f.life-=dt)>0);g.fx.incomingPreviews=(g.fx.incomingPreviews||[]).filter((f)=>(f.life-=dt)>0);g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });const n=visualSubstepCount(g),h=dt/n;for(let i=0;i<n;i++)updateVisuals(g,h);if (!g.alive)g.fx.sink = 0;}

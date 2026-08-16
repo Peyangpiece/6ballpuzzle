@@ -273,7 +273,7 @@ function stepEngine(g, dt) {
                     const placed=garbageBall(g);
                     if (placed) {
                         g.garbLeft-=1;
-                        g.garbageNextBallAt=g.garbageClock+GARBAGE_PACK_INTERVAL;
+                        g.garbageNextBallAt=g.garbageClock+HEX_GARBAGE_SHAPE_INTERVAL;
                         settlePass(g.board);
                     }
                 }
