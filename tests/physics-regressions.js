@@ -7,6 +7,28 @@ const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-
 const assertions=String.raw`
 function expect(value,message){if(!value)throw new Error(message);}
 
+// Ordinary one-sided slope contact keeps all three balls in one rigid body.
+{
+ const b=newBoard(),balls=[0,1,2].map(i=>({id:10+i,c:i,motionGroupId:91,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
+ const members=[
+  {ball:balls[0],x:6,y:2,role:0,orientation:"down"},
+  {ball:balls[1],x:8,y:2,role:1,orientation:"down"},
+  {ball:balls[2],x:7,y:3,role:2,orientation:"down"}
+ ];
+ for(const m of members)b[m.y][m.x]=m.ball;
+ const support={id:99,c:4,motionGroupId:0,rigid:false};b[4][8]=support;
+ const before=[];for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)before.push(hexPhysDist(members[i].x,members[i].y,members[j].x,members[j].y));
+ const plan=hexPhysPlanGroup(b,members,false);
+ expect(plan.length===3&&plan.every(p=>p.kind==="GROUP_SLOPE_ROLL"),"slope rigidity: triplet split on ordinary slope contact");
+ expect(plan.every(p=>p.bundleId===91&&p.pivot[0]===8&&p.pivot[1]===4),"slope rigidity: members did not share one rigid pivot");
+ const after=[];for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)after.push(hexPhysDist(plan[i].tx,plan[i].ty,plan[j].tx,plan[j].ty));
+ expect(after.every((d,i)=>Math.abs(d-before[i])<1e-9),"slope rigidity: triangle geometry changed while sliding");
+ const mid=plan.map(p=>proposalPointAt(p,.5)),midDistances=[];
+ for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)midDistances.push(Math.hypot(mid[i][0]-mid[j][0],mid[i][1]-mid[j][1]));
+ expect(midDistances.every((d,i)=>Math.abs(d-before[i])<1e-9),"slope rigidity: triangle deformed during the slide arc");
+ expect(balls.every(ball=>ball.motionGroupId===91&&ball.motionGroupSize===3&&ball.rigid),"slope rigidity: group metadata was released");
+}
+
 // Exactly one pinned member must be detached without changing the pair's id.
 {
  const b=newBoard(),balls=[0,1,2].map(i=>({id:i+1,c:i,motionGroupId:77,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
