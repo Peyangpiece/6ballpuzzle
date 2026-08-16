@@ -98,7 +98,7 @@ function proposalPointAt(p,t){
 }
 function proposalsSweepOverlap(a,b){for(let i=0;i<=32;i++){const t=i/32,pa=proposalPointAt(a,t),pb=proposalPointAt(b,t);if(Math.hypot(pa[0]-pb[0],pa[1]-pb[1])<HEX_MIN_DIST)return true;}return false;}
 function hexPhysPathHitsStationary(p,b,movingIds){
- for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q||q.id===p.ball.id||movingIds.has(q.id))continue;const pv=p.topPivot||p.pivot;if(pv&&pv[0]===x&&pv[1]===y)continue;const qp=normPoint(x,y);for(let i=1;i<=32;i++){const pt=proposalPointAt(p,i/32);if(Math.hypot(pt[0]-qp[0],pt[1]-qp[1])<HEX_MIN_DIST)return true;}}
+ for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q||q.id===p.ball.id||movingIds.has(q.id))continue;const pv=p.topPivot||p.pivot;if(!p.virtualPivot&&pv&&pv[0]===x&&pv[1]===y)continue;const qp=normPoint(x,y);for(let i=1;i<=32;i++){const pt=proposalPointAt(p,i/32);if(Math.hypot(pt[0]-qp[0],pt[1]-qp[1])<HEX_MIN_DIST)return true;}}
  return false;
 }
 function proposalHitsStationaryBall(p,b,movingOrigins){const ids=new Set();for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(q&&movingOrigins?.has(x+","+y))ids.add(q.id);}return hexPhysPathHitsStationary(p,b,ids);}
@@ -111,25 +111,74 @@ function hexPhysTranslationSafe(b,members,dx,dy){
  for(const m of members){const p={x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null};if(hexPhysPathHitsStationary(p,b,own))return false;}return true;
 }
 function groupTranslationSafe(b,members,dx,dy){return hexPhysTranslationSafe(b,members,dx,dy);}
+function hexPhysGroupTranslationPlan(b,members,dx,dy,kind="GROUP_TRANSLATE"){
+ if(!hexPhysTranslationSafe(b,members,dx,dy))return null;
+ const bundle=members[0]?.ball?.motionGroupId||HEX_PHYS_GROUP_SEQ;
+ return members.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind,pivot:null,topPivot:null,followSupportIds:[],bundleId:bundle,groupSize:members.length}));
+}
+function hexPhysRigidSlidePlanFromContact(b,members,contact,bundleId=null){
+ if(!contact||!members?.length||!contact.dir)return null;
+ const dx=Math.sign(contact.dir),dy=1,own=new Set(members.map(m=>m.ball.id)),targets=new Set();
+ const support=valid(contact.px,contact.py)?b[contact.py][contact.px]:null;
+ if(!support||own.has(support.id))return null;
+ const bundle=bundleId||members[0]?.ball?.motionGroupId||HEX_PHYS_GROUP_SEQ,plan=[];
+ for(const m of members){
+  const tx=m.x+dx,ty=m.y+dy,key=tx+","+ty,q=valid(tx,ty)?b[ty][tx]:null;
+  if(!valid(tx,ty)||targets.has(key)||(q&&!own.has(q.id)))return null;
+  targets.add(key);
+  const pv=[contact.px+(m.x-contact.member.x),contact.py+(m.y-contact.member.y)],isContact=m.ball.id===contact.member.ball.id;
+  plan.push({x:m.x,y:m.y,tx,ty,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",pivot:contact.top?null:pv,topPivot:contact.top?pv:null,virtualPivot:!isContact,followSupportIds:[],bundleId:bundle,groupSize:members.length});
+ }
+ if(plan.some(p=>hexPhysPathHitsStationary(p,b,own)))return null;
+ return plan;
+}
+function hexPhysRigidSlopePlan(b,members,motions){
+ const contacts=[],seen=new Set(),bias=Math.sign(members.reduce((n,m)=>n+hexPhysBias(m.ball),0));
+ for(let i=0;i<members.length;i++){
+  const p=motions[i],pv=p?.topPivot||p?.pivot,dir=Math.sign((p?.tx??members[i].x)-members[i].x);
+  if(!pv||!dir)continue;
+  const q=valid(pv[0],pv[1])?b[pv[1]][pv[0]]:null,key=members[i].ball.id+":"+pv[0]+","+pv[1]+":"+dir;
+  if(!q||seen.has(key))continue;seen.add(key);
+  contacts.push({member:members[i],px:pv[0],py:pv[1],dir,top:!!p.topPivot,biasMatch:bias===dir?1:0});
+ }
+ contacts.sort((a,z)=>z.biasMatch-a.biasMatch||z.member.y-a.member.y||a.member.x-z.member.x);
+ for(const contact of contacts){const plan=hexPhysRigidSlidePlanFromContact(b,members,contact);if(plan)return plan;}
+ return null;
+}
+function hexPhysUpConvexSeparator(b,members,motions){
+ if(members.length!==3||(members[0]?.orientation||members[0]?.ball?.motionGroupOrientation)!=="up")return null;
+ const lowerY=Math.max(...members.map(m=>m.y)),lower=members.filter(m=>m.y===lowerY).sort((a,z)=>a.x-z.x),top=members.find(m=>m.y<lowerY);
+ if(lower.length!==2||!top||lower[1].x-lower[0].x!==2)return null;
+ const px=(lower[0].x+lower[1].x)/2,py=lowerY+1,support=valid(px,py)?b[py][px]:null;
+ if(!support||members.some(m=>m.ball.id===support.id))return null;
+ const topIndex=members.indexOf(top),topMove=motions[topIndex],bias=Math.sign(topMove?.tx-top.x)||hexPhysBias(top.ball)||Math.sign(members.reduce((n,m)=>n+hexPhysBias(m.ball),0))||-1;
+ const pairLower=bias<0?lower[0]:lower[1],solo=bias<0?lower[1]:lower[0],soloMotion=motions[members.indexOf(solo)];
+ if(!soloMotion||Math.sign(soloMotion.tx-solo.x)!==-bias)return null;
+ return{dir:bias,top,pairLower,solo,soloMotion,support,px,py};
+}
+function hexPhysUpConvexSplitPlan(b,members,info,preview=false){
+ if(!info)return null;
+ const pair=[info.top,info.pairLower],gid=members[0]?.ball?.motionGroupId||HEX_PHYS_GROUP_SEQ;
+ const pairPlan=hexPhysRigidSlidePlanFromContact(b,pair,{member:info.pairLower,px:info.px,py:info.py,dir:info.dir,top:false},gid);
+ if(!pairPlan)return null;
+ const soloPlan={...info.soloMotion,bundleId:0,groupSize:0};
+ if(!preview){
+  hexPhysClearGroupBall(info.solo.ball);
+  for(const m of pair){m.ball.motionGroupId=gid;m.ball.motionGroupSize=2;m.ball.rigid=true;m.ball.momentumX=info.dir;m.ball.rollDir=info.dir;m.ball.subCellBias=info.dir;}
+  info.solo.ball.momentumX=-info.dir;info.solo.ball.rollDir=-info.dir;info.solo.ball.subCellBias=-info.dir;
+ }
+ return[...pairPlan,soloPlan];
+}
 function hexPhysPairPivotPlan(b,members,motions){
  if(members.length!==2)return null;
  for(let i=0;i<2;i++){const fixed=members[i],moving=members[1-i],mp=motions[1-i];if(motions[i]||!mp)continue;if(hexPhysDist(mp.tx,mp.ty,fixed.x,fixed.y)>1.00001)continue;const p={...mp,pivot:[fixed.x,fixed.y],topPivot:null,kind:"PAIR_PIVOT",bundleId:fixed.ball.motionGroupId||0,followSupportIds:[fixed.ball.id]};if(!hexPhysPathHitsStationary(p,b,new Set(members.map(m=>m.ball.id))))return[p];}
  return null;
 }
-function hexPhysTouchesSideWall(members){
- return(members||[]).some(m=>m.x===(parityOK(0,m.y)?0:1)||m.x===(parityOK(W2-1,m.y)?W2-1:W2-2));
-}
 function hexPhysPlanGroup(b,members,preview=false){
  const size=members.length;if(size<2||size>3){if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
  const motions=members.map(m=>hexPhysIndependentMemberMotion(b,members,m)),moving=motions.filter(Boolean);
- // The side wall contains balls but contributes no rigidity. Contact with it
- // releases the motion group immediately; subsequent moves are independent.
- if(hexPhysTouchesSideWall(members)){
-  if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);
-  return moving.map(p=>({...p,bundleId:0,groupSize:0}));
- }
  if(!moving.length){if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
- if(moving.length===size){const dx=motions[0].tx-motions[0].x,dy=motions[0].ty-motions[0].y;if(motions.every(p=>p.tx-p.x===dx&&p.ty-p.y===dy)&&hexPhysTranslationSafe(b,members,dx,dy)){const bundle=members[0].ball.motionGroupId||HEX_PHYS_GROUP_SEQ;return members.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null,followSupportIds:[],bundleId:bundle,groupSize:size}));}}
+ if(moving.length===size){const dx=motions[0].tx-motions[0].x,dy=motions[0].ty-motions[0].y;if(motions.every(p=>p.tx-p.x===dx&&p.ty-p.y===dy)){const common=hexPhysGroupTranslationPlan(b,members,dx,dy);if(common)return common;}}
  if(size===2){const pivot=hexPhysPairPivotPlan(b,members,motions);if(pivot)return pivot;if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return[];}
  // A released triplet may touch down one ball before the other two. Detach
  // only the pinned member; the moving pair keeps the original constraint.
@@ -143,9 +192,14 @@ function hexPhysPlanGroup(b,members,preview=false){
   for(const m of pm){m.ball.motionGroupSize=2;m.ball.rigid=true;}
   return hexPhysPlanGroup(b,pm,false);
  }
- const buckets=new Map();for(let i=0;i<3;i++){const key=proposalSignature(motions[i]);if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(i);}let pair=null;for(const a of buckets.values())if(a.length>=2&&a.length>(pair?.length||0))pair=a.slice(0,2);
- if(pair){const pm=pair.map(i=>members[i]);if(preview){const fake=pm.map((m,j)=>({...m,ball:{...m.ball,motionGroupId:members[0].ball.motionGroupId||1}}));return hexPhysPlanGroup(b,fake,true);}for(const m of members)hexPhysClearGroupBall(m.ball);hexPhysSetGroup(pm,2,pm[0]?.orientation||"");return hexPhysPlanGroup(b,pm,false);}
- if(!preview){for(let a=0;a<3;a++)for(let c=a+1;c<3;c++){const pm=[members[a],members[c]],pivot=hexPhysPairPivotPlan(b,pm,[motions[a],motions[c]]);if(pivot){for(const m of members)hexPhysClearGroupBall(m.ball);hexPhysSetGroup(pm,2,pm[0]?.orientation||"");return pivot;}}for(const m of members)hexPhysClearGroupBall(m.ball);}return[];
+ if(pinned.length>1){if(!preview)for(const m of members)hexPhysClearGroupBall(m.ball);return moving.map(p=>({...p,bundleId:0,groupSize:0}));}
+ const vertical=hexPhysGroupTranslationPlan(b,members,0,2);if(vertical)return vertical;
+ const separator=hexPhysUpConvexSeparator(b,members,motions),split=hexPhysUpConvexSplitPlan(b,members,separator,preview);if(split)return split;
+ const slope=hexPhysRigidSlopePlan(b,members,motions);if(slope)return slope;
+ // Different individual tendencies alone never break a triplet. With no legal
+ // rigid continuation it remains at rest; pile cleanup releases it only after
+ // that position has actually settled.
+ return[];
 }
 function hexPhysContactEntries(b,excluded){
  const entries=[],byId=new Map();for(let y=ROWS-1;y>=boardScanMin(b);y--)for(let x=0;x<W2;x++){const ball=valid(x,y)?b[y][x]:null;if(!ball||excluded.has(ball.id))continue;const support=hexPhysSupportInfo(b,x,y),e={x,y,ball,support,p:hexPhysNaturalMotion(b,x,y)};entries.push(e);byId.set(ball.id,e);}

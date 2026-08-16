@@ -7,14 +7,43 @@ const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-
 const assertions=String.raw`
 function expect(value,message){if(!value)throw new Error(message);}
 
-// The wall contains balls but must never preserve a falling piece's rigidity.
+// A wall contributes no support rigidity, but touching it alone must not break
+// a freely falling triplet whose cells can still translate together.
 {
  const b=newBoard(),balls=[0,1,2].map(i=>({id:200+i,c:i,motionGroupId:120,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
  const members=[{ball:balls[0],x:0,y:2,role:0},{ball:balls[1],x:2,y:2,role:1},{ball:balls[2],x:1,y:3,role:2}];
  for(const m of members)b[m.y][m.x]=m.ball;
  const plan=hexPhysPlanGroup(b,members,false);
- expect(plan.length>0,"wall rigidity: released balls received no independent motion");
- expect(balls.every(ball=>ball.motionGroupId===0&&ball.rigid===false),"wall rigidity: wall contact kept a rigid group");
+ expect(plan.length===3&&plan.every(p=>p.tx===p.x&&p.ty===p.y+2),"wall rigidity: wall blocked the triplet's free fall");
+ expect(balls.every(ball=>ball.motionGroupId===120&&ball.rigid),"wall rigidity: wall touch broke an otherwise moving triplet");
+}
+
+// One-sided pile contact is a slope, not a rigidity-break event. All members
+// follow translated arcs, retaining both orientation and pair distances.
+{
+ const b=newBoard(),balls=[0,1,2].map(i=>({id:210+i,c:i,motionGroupId:121,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
+ const members=[{ball:balls[0],x:6,y:2,role:0,orientation:"down"},{ball:balls[1],x:8,y:2,role:1,orientation:"down"},{ball:balls[2],x:7,y:3,role:2,orientation:"down"}];
+ for(const m of members)b[m.y][m.x]=m.ball;b[4][8]={id:219,c:4,motionGroupId:0,rigid:false};
+ const plan=hexPhysPlanGroup(b,members,false),before=[],mid=plan.map(p=>proposalPointAt(p,.5));
+ for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){before.push(hexPhysDist(members[i].x,members[i].y,members[j].x,members[j].y));}
+ const middle=[];for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)middle.push(Math.hypot(mid[i][0]-mid[j][0],mid[i][1]-mid[j][1]));
+ expect(plan.length===3&&plan.every(p=>p.kind==="GROUP_SLOPE_TRANSLATE"&&p.tx-p.x===-1&&p.ty-p.y===1),"slope rigidity: triplet did not slide as one translated body");
+ expect(middle.every((d,i)=>Math.abs(d-before[i])<1e-9),"slope rigidity: shape changed during the translated arc");
+ expect(balls.every(ball=>ball.motionGroupId===121&&ball.rigid),"slope rigidity: ordinary slope contact released the triplet");
+}
+
+// Only the protruding pile ball centered between an upward triangle's lower
+// members may tear it into a rigid pair and one independent ball.
+{
+ const b=newBoard(),balls=[0,1,2].map(i=>({id:220+i,c:i,motionGroupId:122,motionGroupRole:i,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,momentumX:0}));
+ const members=[{ball:balls[0],x:5,y:3,role:0,orientation:"up"},{ball:balls[1],x:6,y:4,role:1,orientation:"up"},{ball:balls[2],x:4,y:4,role:2,orientation:"up"}];
+ for(const m of members)b[m.y][m.x]=m.ball;b[5][5]={id:229,c:4,motionGroupId:0,rigid:false};
+ const plan=hexPhysPlanGroup(b,members,false);
+ expect(plan.length===3,"convex split: upward triangle received no split motion");
+ expect(balls[0].motionGroupId===122&&balls[2].motionGroupId===122&&balls[0].motionGroupSize===2&&balls[2].rigid,"convex split: opposite two-ball side lost its rigidity");
+ expect(balls[1].motionGroupId===0&&!balls[1].rigid,"convex split: separated ball stayed constrained");
+ const solo=plan.find(p=>p.ball.id===221);
+ expect(plan.filter(p=>p.bundleId===122).every(p=>p.tx-p.x===-1)&&solo&&solo.tx-solo.x===1,"convex split: left/right separation was not produced");
 }
 
 // Preview and application must use the same collision acceptance. A rejected

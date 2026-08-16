@@ -1,5 +1,5 @@
 /* HEXDROP unified event resolver.
- * No convex-special split table, no legacy rescue path, no staged wave physics.
+ * One explicit ▲ center-convex split, no legacy rescue path or staged waves.
  */
 function physicalContactInfo(b,x,y){
     const s=hexPhysSupportInfo(b,x,y);
@@ -46,8 +46,8 @@ function rigidDifferentialConstraint(b,members){
     const moving=motions.filter(Boolean);
     if(!moving.length)return {breakRequired:false,reason:"rigid_rest",moves:motions};
     if(moving.length!==members.length)return {breakRequired:true,reason:"member_pinned",moves:motions};
-    const a=moving[0],same=moving.every(p=>sameMoveVector(a,p));
-    return {breakRequired:!same,reason:same?"common_move":"differential_direction",moves:motions};
+    const separator=hexPhysUpConvexSeparator(b,members,motions);
+    return {breakRequired:!!separator,reason:separator?"up_convex_separator":"rigid_slope",moves:motions};
 }
 
 function hexPhysBundleKey(p){return p.bundleId?"g:"+p.bundleId:"b:"+p.ball.id;}
