@@ -1,7 +1,7 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js"]
+const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js"]
   .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const assertions=String.raw`
@@ -42,6 +42,26 @@ function expect(value,message){if(!value)throw new Error(message);}
  reserveGarbagePlan(shadow,plan,-1);
  expect(materializeGarbagePack(g,plan),"garbage materialization failed");
  expect(HEX_GARBAGE_SHAPE_INTERVAL===0.5,"garbage interval is not 0.5 seconds");
+}
+
+// Consecutive free-fall segments carry velocity instead of restarting from rest.
+{
+ const g=createEngine(3),ball=mkBall(g,0),v={x:4,y:0,vy:0,motionSpeed:0,sq:0};
+ g.board[2][4]=ball;g.vis.set(ball.id,v);
+ ball.fallPath=[{from:[4,0],to:[4,2],pivot:null,topPivot:null,motionSeq:1,followSupportIds:[]}];
+ const first=collectLiveMotionBatch(g),firstEnd=first.members[0].endState;
+ v.vy=firstEnd.vy;v.motionSpeed=firstEnd.speed;
+ ball.fallPath=[{from:[4,2],to:[4,4],pivot:null,topPivot:null,motionSeq:2,followSupportIds:[]}];
+ const second=collectLiveMotionBatch(g);
+ expect(second.members[0].duration<first.members[0].duration,"continuous fall: velocity restarted at lattice boundary");
+}
+
+// Render look-ahead for scheduled pile motion must be defined and finite.
+{
+ const g=createEngine(4),ball=mkBall(g,0);g.vis.set(ball.id,{x:4,y:0,vy:0,motionSpeed:0,sq:0});
+ ball.fallPath=[{from:[4,0],to:[4,2],pivot:null,topPivot:null,motionSeq:1,followSupportIds:[],pileFlow:true,pileFlowStart:0,pileFlowDuration:.4,pileFlowEnd:.4,pileFlowStartVy:0,pileFlowNaturalDuration:.4}];
+ const p=pileFlowPositionAt(g,ball,.2,0,null,new Map());
+ expect(Number.isFinite(p[0])&&Number.isFinite(p[1])&&p[1]>0&&p[1]<2,"pile render look-ahead returned an invalid position");
 }
 
 console.log("physics regressions PASS");

@@ -53,7 +53,7 @@ function hexMotionDuration(seg,state={vy:0,speed:0}){
 }
 function liveSegDuration(seg){return hexMotionDuration(seg,{vy:0,speed:0});}
 
-function liveSegPoint(seg,t){
+function liveSegPoint(seg,t,startState=null,duration=null){
     t=Math.max(0,Math.min(1,t));
     if(!seg?.from||!seg?.to)return [0,0];
     const H=HEX_ROW_H;
@@ -85,7 +85,13 @@ function liveSegPoint(seg,t){
         return [px+Math.cos(a)/0.5,py+Math.sin(a)/H];
     }
     const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];
-    const q=(Math.abs(dx)<1e-9&&dy>0)?t*t:t;
+    let q=t;
+    if(Math.abs(dx)<1e-9&&dy>0){
+        if(startState&&Number.isFinite(duration)){
+            const dist=Math.max(1e-9,dy*H),elapsed=t*Math.max(0,duration);
+            q=Math.max(0,Math.min(1,((Math.max(0,startState.vy||0)*elapsed)+.5*GRAV*elapsed*elapsed)/dist));
+        }else q=t*t;
+    }
     return [seg.from[0]+dx*q,seg.from[1]+dy*q];
 }
 function pileFlowPoint(seg,t){return liveSegPoint(seg,t);}
@@ -127,7 +133,10 @@ function hexScheduleContinuousPaths(g,reason="continuous"){
                 const v=g.vis.get(q.ball.id);
                 stateByBall.set(q.ball.id,{vy:Math.max(0,v?.vy||0),speed:Math.max(0,v?.motionSpeed||0)});
             }
-            durations.push(hexMotionDuration(q.seg,stateByBall.get(q.ball.id)));
+            const motionState=stateByBall.get(q.ball.id),startState={...motionState};
+            const duration=hexMotionDuration(q.seg,motionState);
+            q._pileDuration=duration;q._pileStartState=startState;
+            durations.push(duration);
         }
         const duration=Math.max(1/120,...durations);
         for(const q of entries){
@@ -136,6 +145,8 @@ function hexScheduleContinuousPaths(g,reason="continuous"){
             q.seg.pileFlowStart=start;
             q.seg.pileFlowDuration=duration;
             q.seg.pileFlowEnd=start+duration;
+            q.seg.pileFlowStartVy=Math.max(0,q._pileStartState?.vy||0);
+            q.seg.pileFlowNaturalDuration=q._pileDuration||duration;
             q.seg.continuousChain=true;
             lastEndByBall.set(q.ball.id,start+duration);
             endByBallSeq.set(q.ball.id+":"+seq,start+duration);
@@ -164,7 +175,7 @@ function updateScheduledPileFlowVisual(g,cell,v,dt,memo=null){
 
     const oldX=v.x,oldY=v.y;
     const t=(g.pileFlowClock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration);
-    const [nx0,ny0]=liveSegPoint(seg,t);
+    const [nx0,ny0]=liveSegPoint(seg,t,{vy:seg.pileFlowStartVy||0},seg.pileFlowNaturalDuration||seg.pileFlowDuration);
     let nx=nx0,ny=ny0;
 
     // Render collision uses the same no-overlap invariant. This is a clamp to
@@ -200,10 +211,37 @@ function collectLiveMotionBatch(g){
         const seg=cell.fallPath[0];
         if(!seg?.to||seg.pileFlow||!seg.motionSeq)continue;
         const v=g.vis.get(cell.id);if(!v)continue;
-        all.push({cell,v,x,y,seg,duration:liveSegDuration(seg)});
+        const startState={vy:Math.max(0,v?.vy||0),speed:Math.max(0,v?.motionSpeed||0)};
+        const endState={...startState},duration=hexMotionDuration(seg,endState);
+        all.push({cell,v,x,y,seg,duration,startState,endState});
         seq=Math.min(seq,seg.motionSeq);
     }
     if(!Number.isFinite(seq))return null;
     const members=all.filter(m=>m.seg.motionSeq===seq);
     return {seq,members,duration:Math.max(1/120,...members.map(m=>m.duration))};
+}
+
+// Pure render-time sampling for the small fixed-step look-ahead used by the
+// canvas renderer. The old call site referenced this function without a
+// definition, aborting requestAnimationFrame as soon as a pile collapse began.
+function pileFlowPositionAt(g,cell,clock,index=0,state=null,memo=null){
+    const path=Array.isArray(cell?.fallPath)?cell.fallPath:null;
+    const v=cell?g?.vis?.get(cell.id):null;
+    if(!path||!path.length)return [v?.x??0,v?.y??0];
+    const key=cell.id+":"+index+":"+clock;
+    if(memo?.has(key))return memo.get(key);
+    let point=[v?.x??path[0]?.from?.[0]??0,v?.y??path[0]?.from?.[1]??0];
+    for(let i=Math.max(0,index);i<path.length;i++){
+        const seg=path[i];if(!seg?.to)continue;
+        if(!seg.pileFlow){point=[...seg.from];break;}
+        if(clock<seg.pileFlowStart){point=[...seg.from];break;}
+        if(clock<=seg.pileFlowEnd){
+            const t=(clock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration);
+            point=liveSegPoint(seg,t,{vy:seg.pileFlowStartVy||0},seg.pileFlowNaturalDuration||seg.pileFlowDuration);
+            break;
+        }
+        point=[...seg.to];
+    }
+    if(memo)memo.set(key,point);
+    return point;
 }

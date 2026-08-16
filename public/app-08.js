@@ -9,7 +9,10 @@ if(!g._liveBatchClock)g._liveBatchClock={seq:0,elapsed:0,duration:1/120};
 
 if(liveBatch){
 if(g._liveBatchClock.seq!==liveBatch.seq){
-g._liveBatchClock={seq:liveBatch.seq,elapsed:0,duration:liveBatch.duration};
+g._liveBatchClock={
+seq:liveBatch.seq,elapsed:0,duration:liveBatch.duration,
+states:new Map(liveBatch.members.map(m=>[m.cell.id,{startState:m.startState,endState:m.endState,naturalDuration:m.duration}]))
+};
 }else{
 g._liveBatchClock.duration=Math.max(g._liveBatchClock.duration,liveBatch.duration);
 }
@@ -115,7 +118,8 @@ seg.motionSeq===liveBatch.seq;
 if(liveBatchMember){
 const batchDuration=Math.max(1e-9,g._liveBatchClock.duration);
 const t=Math.min(1,g._liveBatchClock.elapsed/batchDuration);
-const [nx,ny]=liveSegPoint(seg,t);
+const motionState=g._liveBatchClock.states?.get(cell.id);
+const [nx,ny]=liveSegPoint(seg,t,motionState?.startState,motionState?.naturalDuration);
 
 v.x=nx;
 v.y=Math.max(visualOldY,ny);
@@ -123,14 +127,8 @@ v.y=Math.max(visualOldY,ny);
 if(seg.pivot)g._visualArcPivotById.set(cell.id,seg.pivot);
 else if(seg.topPivot)g._visualArcPivotById.set(cell.id,seg.topPivot);
 
-v.motionSpeed=Math.max(
-0.0001,
-Math.hypot(
-(seg.to[0]-seg.from[0])*0.5,
-(seg.to[1]-seg.from[1])*H
-)/batchDuration
-);
-v.vy=Math.max(0,(seg.to[1]-seg.from[1])/batchDuration);
+v.motionSpeed=Math.max(0.0001,motionState?.endState?.speed||0);
+v.vy=Math.max(0,motionState?.endState?.vy||0);
 
 if(t>=1-1e-9){
 v.x=seg.to[0];
@@ -388,6 +386,7 @@ m.v.y=m.seg.to[1];
 
 for(const m of liveBatch.members){
 const {cell,v,seg}=m;
+const completedState=g._liveBatchClock.states?.get(cell.id)?.endState;
 if(!Array.isArray(cell.fallPath)||!cell.fallPath.length)continue;
 const cur=cell.fallPath[0];
 if(!cur?.to || cur.motionSeq!==liveBatch.seq)continue;
@@ -410,8 +409,11 @@ delete v._pendingPathComplete;
 
 if(!cell.fallPath.length){
 delete cell.fallPath;
-v.vy=0;
-v.motionSpeed=0;
+// Keep exit velocity until the canonical solver decides whether another
+// segment follows. This removes the one-frame stop/restart at every lattice
+// boundary while a ball is still in uninterrupted free fall.
+v.vy=Math.max(0,completedState?.vy||v.vy||0);
+v.motionSpeed=Math.max(0,completedState?.speed||v.motionSpeed||0);
 }
 }
 
