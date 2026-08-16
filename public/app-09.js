@@ -21,6 +21,7 @@ function stepEngine(g, dt) {
     g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);
     g.fx.formations = (g.fx.formations || []).filter((f) => (f.life -= dt) > 0);
     g.fx.incomingPreviews = (g.fx.incomingPreviews || []).filter((f) => (f.life -= dt) > 0);
+    g.fx.hardDrops = (g.fx.hardDrops || []).filter((f) => (f.life -= dt) > 0);
     g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });
     // Visual integration is adaptive. Scheduled pile flow is evaluated from its
     // absolute clock in one pass; only legacy collision-gated paths use a few
@@ -297,17 +298,6 @@ function stepEngine(g, dt) {
             // AI may hard-drop/lock the piece inside stepAI. Never continue this frame
             // with a stale null piece; this was the CPU-freeze/crash path.
             if (g.state !== "PLAYING" || !g.piece) return;
-        }
-        if (g.hardDropAnim) {
-            g.hardDropAnim.t += dt;
-            if (g.hardDropAnim.t >= g.hardDropAnim.dur) {
-                const completed=g.hardDropAnim;
-                g.piece = {...completed.target};
-                g.dropT=g.dropInterval*Math.max(0,Math.min(2,completed.contactFrac||0))/2;
-                g.hardDropAnim = null;
-                lock(g,5);
-            }
-            return;
         }
         // 高速落下は「通常落下時計 dropT の進み」だけを速くする。
         // interval自体は常に同じなので、ON/OFF時に落下進捗率が再解釈されず、

@@ -1,3 +1,35 @@
+function hardDropImpactState(fx){
+    const age=Math.max(0,(fx?.max||HARD_DROP_IMPACT_DURATION)-(fx?.life||0));
+    const peak=2/30,beam=age<=peak?.18+.82*(age/peak):Math.max(0,(HARD_DROP_BEAM_DURATION-age)/Math.max(1e-9,HARD_DROP_BEAM_DURATION-peak));
+    const height=Math.max(0,Math.sin(Math.PI*Math.min(1,age/HARD_DROP_BEAM_DURATION)));
+    const sparks=age<1/30?0:Math.max(0,Math.min(1,(age-1/30)/(2/30)))*Math.max(0,Math.min(1,(HARD_DROP_IMPACT_DURATION-age)/(HARD_DROP_IMPACT_DURATION-HARD_DROP_BEAM_DURATION)));
+    return{age,beam,height,sparks};
+}
+function drawHardDropImpacts(ctx,g,pos,D){
+    for(const fx of g?.fx?.hardDrops||[]){
+        if(!fx?.cells?.length||fx.life<=0)continue;
+        const pts=fx.cells.map(([x,y])=>pos(x,y)),gx=pts.reduce((n,p)=>n+p[0],0)/pts.length,baseY=Math.min(...pts.map(p=>p[1]))+D*.18;
+        const st=hardDropImpactState(fx);
+        ctx.save();ctx.globalCompositeOperation="screen";
+        if(st.beam>0){
+            const height=D*(1.05+2.75*st.height),top=baseY-height;
+            const glow=ctx.createLinearGradient(0,top,0,baseY+D*.25);glow.addColorStop(0,"rgba(255,255,255,0)");glow.addColorStop(.42,`rgba(230,240,255,${.11*st.beam})`);glow.addColorStop(1,`rgba(255,255,255,${.54*st.beam})`);
+            ctx.fillStyle=glow;ctx.shadowColor="#FFFFFF";ctx.shadowBlur=D*(.55+.45*st.height);ctx.globalAlpha=st.beam;ctx.fillRect(gx-D*.58,top,D*1.16,height+D*.25);
+            for(let i=0;i<4;i++){
+                const off=(-.33+i*.22)*D,w=D*(.10+(i&1)*.055),h=height*(.64+(i%3)*.12);
+                const streak=ctx.createLinearGradient(0,baseY-h,0,baseY);streak.addColorStop(0,"rgba(255,255,255,0)");streak.addColorStop(1,"rgba(255,255,255,.92)");ctx.fillStyle=streak;ctx.globalAlpha=st.beam*(.32+(i%2)*.14);ctx.fillRect(gx+off-w/2,baseY-h,w,h);
+            }
+            ctx.beginPath();ctx.ellipse(gx,baseY,D*(.7+.18*st.height),D*(.18+.08*st.height),0,0,TAU);ctx.fillStyle="#FFFFFF";ctx.globalAlpha=st.beam*.42;ctx.fill();
+        }
+        if(st.sparks>0)for(let i=0;i<18;i++){
+            const start=1/30+(i%5)/300;if(st.age<=start)continue;
+            const p=Math.min(1,(st.age-start)/(.18+(i%4)*.012)),ang=i*2.399963+fx.seq*.71,spread=D*(.18+p*(.8+(i%3)*.23));
+            const px=gx+Math.cos(ang)*spread,py=baseY-D*(.12+p*(.48+(i%4)*.19)),r=D*(.025+(i%3)*.009)*(1-p);
+            ctx.beginPath();ctx.arc(px,py,Math.max(.5,r),0,TAU);ctx.fillStyle=i%4===0?"#FFFFFF":"#DDEBFF";ctx.globalAlpha=st.sparks*(1-p)*(.55+(i%3)*.16);ctx.shadowBlur=D*.28;ctx.fill();
+        }
+        ctx.restore();
+    }
+}
 function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     const { D, X, Y, BW, BH } = L;
     // Centre the lattice when the neon frame contains a small side gutter.
@@ -52,6 +84,9 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
             }
         }
     }
+    // Reference instant drop is already at contact on its next visible frame.
+    // Only the post-impact pillar remains, behind the newly landed balls.
+    drawHardDropImpacts(ctx,g,pos,D);
     for (let y = boardScanMin(g.board); y < ROWS; y++)
         for (let x = 0; x < W2; x++) {
             const cell = valid(x, y) ? g.board[y][x] : null;
@@ -97,17 +132,12 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     if ((g.state === "PLAYING" || g.state === "NET") && g.piece) {
         const dx = g.pieceVX - g.piece.x;const pulse = 0.75 + 0.25 * Math.sin(t * 7);const cells = pieceCells(g.piece);let dOff = dispOff(g.piece.rot),frac;
         if(g.state==="NET"){frac=Number.isFinite(g.netPieceFrac)?g.netPieceFrac:0;}
-        else if(g.hardDropAnim){const hk=Math.min(1,(g.hardDropAnim.t+renderLead)/Math.max(.001,g.hardDropAnim.dur));const vy=g.hardDropAnim.fromY+((g.hardDropAnim.targetY??g.hardDropAnim.target.y)-g.hardDropAnim.fromY)*hk;frac=vy-g.piece.y;dOff*=1-smoothRotationT(hk);}else{const blocked=!pieceFits(g.board,{...g.piece,y:g.piece.y+2}),align=blocked?Math.max(0,1-Math.min(1,(g.lockT+renderLead)/LANDING_ALIGN_DURATION)):1;dOff*=align;const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
+        else{const blocked=!pieceFits(g.board,{...g.piece,y:g.piece.y+2}),align=blocked?Math.max(0,1-Math.min(1,(g.lockT+renderLead)/LANDING_ALIGN_DURATION)):1;dOff*=align;const rawFrac=activeDropFraction(g,renderLead);frac=safeActiveFallOffset(g,cells,dx,dOff,rawFrac);}
         const pts = cells.map(([x, y]) => pos(x + dx, y + frac + dOff));
         const gx = (pts[0][0] + pts[1][0] + pts[2][0]) / 3;const gy = (pts[0][1] + pts[1][1] + pts[2][1]) / 3;
         const ra = g.rotAnim;const renderRotP=Math.min(1,ra.p+renderLead/ROTATE_VISUAL_TIME);const k = renderRotP < 1 ? 1 - smoothRotationT(renderRotP) : 0;const ang = -k * ra.dir * (TAU / 6);const ca = Math.cos(ang), sa = Math.sin(ang);const ox2 = k * (ra.dx || 0) * D * 0.5;const oy2 = k * (ra.dy || 0) * D * HEX_ROW_H;
         const renderPts = pts.map((pt) => {let px = pt[0], py = pt[1];if (k) {const ax = px - gx, ay = py - gy;px = gx + ax * ca - ay * sa + ox2;py = gy + ax * sa + ay * ca + oy2;}return [px, py];});
         const lift=0;
-        if(g.hardDropAnim){
-            const top=Math.min(...renderPts.map(p=>p[1]))-D*2.8,bottom=Math.max(...renderPts.map(p=>p[1]))+D*.4;
-            ctx.save();ctx.globalCompositeOperation="screen";const beam=ctx.createLinearGradient(0,top,0,bottom);beam.addColorStop(0,"rgba(255,255,255,0)");beam.addColorStop(.58,"rgba(225,242,255,.13)");beam.addColorStop(1,"rgba(255,255,255,.52)");ctx.fillStyle=beam;ctx.shadowColor="#FFFFFF";ctx.shadowBlur=D*.8;ctx.fillRect(gx-D*.72,top,D*1.44,bottom-top);ctx.restore();
-            for(let tr=1;tr<=4;tr++){const a=(5-tr)/5,trailY=D*(.30+tr*.24);renderPts.forEach((pt,i)=>drawBall(ctx,pt[0],pt[1]+lift-trailY,D,cells[i][2],{alpha:.07*a,scale:.96,aura:0}));}
-        }
         renderPts.forEach((pt, i) => drawBall(ctx, pt[0], pt[1] + lift, D, cells[i][2], { aura: pulse * (big ? 1 : 0.5) }));
     }
     for (const r of g.fx.rings) {const k = 1 - r.life / r.max;ctx.save();ctx.globalAlpha = (1 - k) * 0.85;ctx.strokeStyle = r.tint;ctx.lineWidth = 7 * (1 - k) + 1;ctx.shadowColor = r.tint;ctx.shadowBlur = 26;ctx.beginPath();ctx.arc(X + BW / 2, Y + BH / 2, 24 + k * BW * 0.8, 0, TAU);ctx.stroke();ctx.restore();}
@@ -225,14 +255,14 @@ function applySnapshot(g,str,fx=null) {
 function pieceSnapshotOf(g){
     if(!g?.piece)return null;
     let frac=activeDropFraction(g);
-    if(g.hardDropAnim){const h=g.hardDropAnim,k=Math.min(1,h.t/Math.max(.001,h.dur));frac=h.fromY+((h.targetY??h.target.y)-h.fromY)*k-g.piece.y;}
     return{x:g.piece.x,y:g.piece.y,r:g.piece.rot,c:g.piece.colors.slice(0,3),vx:Number.isFinite(g.pieceVX)?+g.pieceVX.toFixed(3):g.piece.x,f:+frac.toFixed(3),m:pieceFits(g.board,{...g.piece,y:g.piece.y+2})?1:0,s:g.fastForward?FAST_DROP_MULTIPLIER:1,q:(g.queue[0]||[]).slice(0,3)};
 }
 function remoteFxSnapshotOf(g){
     const f=(g?.fx?.formations||[])[0],toast=(g?.fx?.toasts||[]).find(t=>t.waza);
     const garbage=(g?.activeGarbagePacks||[]).filter(p=>p&&p._started&&!p.landed).map(p=>({type:p.type,seq:p.seq,pat:p.pat.map(q=>q.slice(0,2)),ax:p.ax,y:+p.y.toFixed(3),vy:+(p.vy||0).toFixed(3),bubbleT:+(p.bubbleT||0).toFixed(3),colors:p.colors.slice()}));
     const entries=(g?.activeGarbagePacks||[]).filter(p=>p?.landed&&Number.isFinite(p.entryY)&&Number.isFinite(p.releaseTime)&&(g.garbageClock-p.releaseTime)<1.2).map(p=>({type:p.type,seq:p.seq,pat:p.pat.map(q=>q.slice(0,2)),ax:p.ax,entryY:p.entryY,colors:p.colors.slice(),age:+Math.max(0,g.garbageClock-p.releaseTime).toFixed(3)}));
-    return{f:f?{w:f.w,cells:f.cells.slice(0,24),tint:f.tint,life:+f.life.toFixed(2),max:f.max,pointDown:!!f.pointDown}:null,t:toast?{text:toast.text,life:+toast.life.toFixed(2),max:toast.max,tint:toast.tint,waza:true,big:toast.big||.45}:null,g:garbage,e:entries};
+    const drops=(g?.fx?.hardDrops||[]).filter(d=>d?.life>0).map(d=>({seq:d.seq,cells:d.cells.map(c=>c.slice(0,3)),life:+d.life.toFixed(3),max:d.max||HARD_DROP_IMPACT_DURATION}));
+    return{f:f?{w:f.w,cells:f.cells.slice(0,24),tint:f.tint,life:+f.life.toFixed(2),max:f.max,pointDown:!!f.pointDown}:null,t:toast?{text:toast.text,life:+toast.life.toFixed(2),max:toast.max,tint:toast.tint,waza:true,big:toast.big||.45}:null,g:garbage,e:entries,d:drops};
 }
 function applyRemoteVisualState(g,st){
     const p=st?.piece;
@@ -262,6 +292,8 @@ function applyRemoteVisualState(g,st){
     const fx=st?.fx;
     if(fx?.f)g.fx.formations=[{...fx.f,cells:(fx.f.cells||[]).map(c=>c.slice(0,2))}];else g.fx.formations=[];
     if(fx?.t){const incoming=g.fx.toasts.filter(t=>!t.waza);g.fx.toasts=[...incoming,{...fx.t}];}else g.fx.toasts=g.fx.toasts.filter(t=>!t.waza);
+    const oldDrops=new Map((g.fx.hardDrops||[]).map(d=>[d.seq,d]));
+    g.fx.hardDrops=(fx?.d||[]).map(d=>{const old=oldDrops.get(d.seq),max=Number.isFinite(d.max)?d.max:HARD_DROP_IMPACT_DURATION,life=Math.max(0,Math.min(max,old?Math.min(old.life,d.life):d.life));return{seq:d.seq,cells:(d.cells||[]).map(c=>c.slice(0,3)),life,max};});
     const oldPacks=new Map((g.activeGarbagePacks||[]).map(q=>[q.type+":"+q.seq,q]));
     g.activeGarbagePacks=(fx?.g||[]).map(q=>{
         const old=oldPacks.get(q.type+":"+q.seq);
@@ -288,4 +320,4 @@ function stepNetGarbageMotion(g,dt){
         p.vy=vy+GRAV*fallDt;
     }
 }
-function stepNetView(g, dt) {g.stateT += dt;stepNetPieceMotion(g,dt);stepNetGarbageMotion(g,dt);g.fx.shake = 0;g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);g.fx.formations=(g.fx.formations||[]).filter((f)=>(f.life-=dt)>0);g.fx.incomingPreviews=(g.fx.incomingPreviews||[]).filter((f)=>(f.life-=dt)>0);g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });const n=visualSubstepCount(g),h=dt/n;for(let i=0;i<n;i++)updateVisuals(g,h);if (!g.alive)g.fx.sink = 0;}
+function stepNetView(g, dt) {g.stateT += dt;stepNetPieceMotion(g,dt);stepNetGarbageMotion(g,dt);g.fx.shake = 0;g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);g.fx.toasts = g.fx.toasts.filter((t) => (t.life -= dt) > 0);g.fx.rings = g.fx.rings.filter((r) => (r.life -= dt) > 0);g.fx.formations=(g.fx.formations||[]).filter((f)=>(f.life-=dt)>0);g.fx.incomingPreviews=(g.fx.incomingPreviews||[]).filter((f)=>(f.life-=dt)>0);g.fx.hardDrops=(g.fx.hardDrops||[]).filter((f)=>(f.life-=dt)>0);g.fx.sparks = g.fx.sparks.filter((s) => { s.life -= dt; s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 12 * dt; return s.life > 0; });const n=visualSubstepCount(g),h=dt/n;for(let i=0;i<n;i++)updateVisuals(g,h);if (!g.alive)g.fx.sink = 0;}

@@ -87,6 +87,9 @@ jobs:
           grep -q '__hexInstantDropV7' public/controls-v7.js
           grep -q 'hardDrop(g)' public/controls-v7.js
           ! grep -q 'g.piece={...target}' public/controls-v7.js
+          grep -q 'REFERENCE_INSTANT_DROP_MAX_FRAMES=1' public/app-04.js
+          ! grep -q 'g.hardDropAnim={' public/app-05.js
+          grep -q 'drawHardDropImpacts' public/app-14.js
           grep -q 'd.g.fastForward=true' public/controls-v7.js
           ! grep -q 'armSingleHold' public/controls-v7.js
           ! grep -q 'longActive' public/controls-v7.js

@@ -31,7 +31,7 @@ check(13,"cancel retains real-valued X",SOURCE_CONTROLS.includes("Cancellation/v
 check(14,"capture-derived natural fall",close(REFERENCE_FALL_PX_PER_SEC,36.239736692842548,1e-9));
 check(15,"held fast-fall multiplier",close(FAST_DROP_MULTIPLIER,5.8));
 check(16,"rotation is exactly sixty degrees",close(TAU/6,Math.PI/3));
-check(17,"hard drop speed is 34.5 capture pixels per frame",close(REFERENCE_HARD_DROP_PX_PER_FRAME,34.5));
+check(17,"instant drop transfers within one capture frame",REFERENCE_INSTANT_DROP_MAX_FRAMES===1&&HARD_DROP_BEAM_FRAMES===5&&HARD_DROP_SPARK_FRAMES===9);
 check(18,"landing alignment duration",close(LANDING_ALIGN_DURATION,4/60));
 {const b=newBoard(),balls=[0,1,2].map(i=>({id:120+i,c:i,motionGroupId:12,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true})),m=[{ball:balls[0],x:1,y:2,role:0},{ball:balls[1],x:3,y:2,role:1},{ball:balls[2],x:2,y:3,role:2}];m.forEach(v=>b[v.y][v.x]=v.ball);const p=hexPhysPlanGroup(b,m,false);check(19,"wall adds zero rigidity",p.length===3&&balls.every(v=>v.rigid));}
 {const b=newBoard(),balls=[0,1,2].map(i=>({id:130+i,c:i,motionGroupId:13,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true})),m=[{ball:balls[0],x:7,y:2,role:0,orientation:"down"},{ball:balls[1],x:9,y:2,role:1,orientation:"down"},{ball:balls[2],x:8,y:3,role:2,orientation:"down"}];m.forEach(v=>b[v.y][v.x]=v.ball);b[4][9]={id:139,c:4};const p=hexPhysPlanGroup(b,m,false);check(20,"slope keeps triplet rigidity",p.length===3&&p.every(v=>v.kind==="GROUP_SLOPE_TRANSLATE")&&balls.every(v=>v.rigid));}

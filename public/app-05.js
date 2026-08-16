@@ -5,12 +5,12 @@ function createEngine(seed,opts={}){
   rotAnim:{p:1,dir:1,dx:0,dy:0},freeX:null,dragging:false,
   physicsWatch:{lastSig:"",repeats:0,steps:0,fallbacks:0},balanceWait:0,ver:0,state:"READY",phase:null,stateT:0,introCue:0,
   dropT:0,dropInterval:opts.dropInterval??DROP_INTERVAL,soft:false,fastForward:false,fastForwardCarry:0,
-  lockT:0,hardDropAnim:null,lockResets:0,
+  lockT:0,hardDropAnim:null,hardDropSeq:0,lockResets:0,
   incoming:0,incomingShapes:[],sendBuffer:0,sendShapes:[],garbShapes:[],garbBlocked:false,garbDone:false,garbLeft:0,
   garbageBatchPrepared:false,garbageAnimDuration:2.45,garbageSeq:0,garbagePlans:[],activeGarbagePacks:[],garbageClock:0,garbageMaterializeIndex:0,garbageNextBallAt:0,garbageWatchdogLimit:6,
   chain:0,clearing:null,holdT:0,pileFlowClock:0,vis:new Map(),events:[],
   stats:{maxChain:0,cleared:0,score:0,waza:{STRAIGHT:0,PYRAMID:0,HEXAGON:0}},scoreDisp:0,
-  fx:{toasts:[],shake:0,sink:0,warn:0,fastPulse:0,sparks:[],rings:[],formations:[],incomingPreviews:[]},
+  fx:{toasts:[],shake:0,sink:0,warn:0,fastPulse:0,sparks:[],rings:[],formations:[],incomingPreviews:[],hardDrops:[]},
   gameOverOverflow:[],gameOverReason:null,ai:null,alive:true,offset:opts.offset??false
  };
  for(let i=0;i<3;i++)g.queue.push(makeSet(g));
@@ -86,18 +86,24 @@ function rotate(g,dir){
  for(const[kx,ky]of KICKS){const q={...from,rot:nr,x:from.x+kx,y:from.y+ky};if(!pieceFits(g.board,q)||!rotationSweepSafe(g.board,from,q,dir))continue;const after=centroidOf(q);g.piece=q;g.rotAnim={p:0,dir:dir>0?1:-1,dx:before[0]-after[0],dy:before[1]-after[1]};emit(g,{t:"rotate"});if(g.lockT>0&&g.lockResets<12){g.lockT=0;g.lockResets++;}return true;}
  return false;
 }
-const HARD_DROP_FPS=REFERENCE_VIDEO_FPS,HARD_DROP_MIN_TIME=1/HARD_DROP_FPS;
+function armHardDropImpact(g,target,dx,contactFrac){
+ const cells=pieceCells(target).map(([x,y,c])=>[x+dx,y+contactFrac,c]);
+ const max=HARD_DROP_IMPACT_DURATION;
+ if(!Array.isArray(g.fx.hardDrops))g.fx.hardDrops=[];
+ g.fx.hardDrops.push({seq:++g.hardDropSeq,cells,life:max,max});
+ if(g.fx.hardDrops.length>4)g.fx.hardDrops.splice(0,g.fx.hardDrops.length-4);
+}
 function hardDrop(g){
  if(g.state!=="PLAYING"||!g.piece||g.hardDropAnim)return;const target=dropPiece(g.board,g.piece);
- if(target.y===g.piece.y){emit(g,{t:"drop"});lock(g,5);return;}
  const dx=(Number.isFinite(g.pieceVX)?g.pieceVX:g.piece.x)-g.piece.x;
- // Rotation display offset is fully aligned by the end of a hard drop, so the
- // terminal collision is measured with dOff=0.
  const contactFrac=safeActiveFallOffset(g,pieceCells(target),dx,0,2);
- const fromY=g.piece.y+activeDropFraction(g),targetY=target.y+contactFrac;
- const physicalDistance=Math.max(0,(targetY-fromY)*HEX_ROW_H);
- const dur=Math.max(HARD_DROP_MIN_TIME,physicalDistance/Math.max(.0001,HARD_DROP_SPEED));
- g.hardDropAnim={t:0,dur,fromY,targetY,contactFrac,target:{...target}};g.dropT=0;emit(g,{t:"drop"});
+ // Reference instant drop crosses the entire open field between two adjacent
+ // source frames. Commit the logical contact in this input transaction and
+ // render only its measured post-impact white pillar/sparks.
+ armHardDropImpact(g,target,dx,contactFrac);
+ g.piece={...target};
+ g.dropT=g.dropInterval*Math.max(0,Math.min(2,contactFrac))/2;
+ emit(g,{t:"drop"});lock(g,5);
 }
 
 function lock(g,vy=2){

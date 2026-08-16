@@ -67,23 +67,14 @@
         }catch(_){}
     };
 
-    function commitCurrentColumn(g){
-        if(!validGame(g))return;
-        if(Number.isFinite(g.freeX))setColumn(g,g.freeX);
-        g.pieceVX=g.piece.x;
-        g.freeX=null;
-        g.dragging=false;
-    }
-
     function instantVerticalDrop(g){
         if(!validGame(g))return false;
         stopFast(g);
-        commitCurrentColumn(g);
-        // The gesture is instant, the balls are not. Route mobile through the
-        // same capture-calibrated constant-speed animation as keyboard hard
-        // drop; the old shortcut teleported directly to the pile.
+        // setFreeX() has already selected the nearest legal logical column.
+        // Keep the exact sub-cell visual X through the instant transfer and
+        // let lock() perform the single final lattice hand-off.
         hardDrop(g);
-        return !!g.hardDropAnim||g.state!=="PLAYING";
+        return g.state!=="PLAYING";
     }
     window.__hexInstantDropV7=instantVerticalDrop;
 
@@ -122,9 +113,9 @@
         /* If the first finger was sliding, freeze that exact horizontal place
            before interpreting the gesture as a two-finger action. */
         if(g){
+            const exactX=currentX(g);
             if(Number.isFinite(g.freeX))setColumn(g,g.freeX);
-            if(g.piece)g.pieceVX=g.piece.x;
-            g.freeX=null;
+            if(g.piece){g.pieceVX=exactX;g.freeX=exactX;}
             g.dragging=false;
         }
         for(const r of arr){

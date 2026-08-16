@@ -25,7 +25,7 @@ function finishGarbage(seed,type,height){const g=createEngine(seed);flatBase(g,h
 // Reference sources: six 1920x1080 captures at 30fps. Runtime measurements
 // are normalized to the 1280x720 canvas before comparisons below.
 expect(VW===1280&&VH===720,"reference viewport changed");
-expect(close(REFERENCE_BALL_PX,63.4,1e-9)&&close(REFERENCE_HARD_DROP_PX_PER_FRAME,34.5,1e-9),"capture-derived size or hard-drop speed changed");
+expect(close(REFERENCE_BALL_PX,63.4,1e-9)&&REFERENCE_INSTANT_DROP_MAX_FRAMES===1&&HARD_DROP_BEAM_FRAMES===5&&HARD_DROP_SPARK_FRAMES===9,"capture-derived size or instant-drop timing changed");
 
 // 001-180: active triplet, drag, guide, rotation and hard drop.
 for(let i=0;i<180;i++)pass("active",i,()=>{
@@ -50,6 +50,7 @@ for(let i=0;i<180;i++)pass("active",i,()=>{
   const visual=pieceCells(g.piece).map(([x,y])=>[x+g.pieceVX-g.piece.x,y]);
   expect(visual.every(([x,y])=>dist(x,y,blocked[0],blocked[1])>=1-1e-8),"active "+i+": drag crossed a disconnected occupied column");
  }
+ if(i%6===0){const h=active(60000+i),target=dropPiece(h.board,h.piece),cells=pieceCells(target);hardDrop(h);expect(h.state==="RESOLVING"&&!h.piece&&!h.hardDropAnim&&cells.every(([x,y])=>!!h.board[y][x])&&h.fx.hardDrops.length===1,"active "+i+": instant drop exposed an intermediate position");}
  expect(close(ROTATE_VISUAL_TIME,.1)&&close(LANDING_ALIGN_DURATION,4/60),"active "+i+": capture animation timing drifted");
 });
 

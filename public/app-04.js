@@ -100,14 +100,16 @@ const REFERENCE_FALL_PX_PER_SEC=36.239736692842548;
 const REFERENCE_BALL_PX=63.4;
 const REFERENCE_ACTIVE_STEP_PX=2*REFERENCE_BALL_PX*HEX_ROW_H;
 const DROP_INTERVAL=REFERENCE_ACTIVE_STEP_PX/REFERENCE_FALL_PX_PER_SEC;
-// Tracking the unobstructed right-hand drop in the 30 fps reference capture
-// gives a median centre displacement of 34.5 source pixels per frame.  Hard
-// drop is therefore a constant-speed fall whose duration depends on the
-// remaining distance; a fixed five-frame duration made high drops look like a
-// teleport and low drops look artificially slow.
-const REFERENCE_HARD_DROP_PX_PER_FRAME=34.5;
-const REFERENCE_HARD_DROP_PX_PER_SEC=REFERENCE_HARD_DROP_PX_PER_FRAME*30;
-const HARD_DROP_SPEED=REFERENCE_HARD_DROP_PX_PER_SEC/REFERENCE_BALL_PX;
+// The capture contains two distinct actions. Held fast-fall travels at about
+// 34.5 source pixels per frame, while instant drop has no visible intermediate
+// position: it moves from spawn to contact between adjacent 30 fps frames.
+// Keep the measurements separate so instant drop can never regress into the
+// much slower held-fall animation again.
+const REFERENCE_FAST_FALL_PX_PER_FRAME=34.5;
+const REFERENCE_INSTANT_DROP_MAX_FRAMES=1;
+const HARD_DROP_BEAM_FRAMES=5,HARD_DROP_SPARK_FRAMES=9;
+const HARD_DROP_BEAM_DURATION=HARD_DROP_BEAM_FRAMES/30;
+const HARD_DROP_IMPACT_DURATION=HARD_DROP_SPARK_FRAMES/30;
 const FAST_DROP_MULTIPLIER=5.8;
 const LONG_PRESS_MS=260;
 const GRAV=24.329692506794245;

@@ -13,7 +13,12 @@ expect(Array.from({length:W2},(_,x)=>x).filter(x=>valid(x,ROWS-1)).length===10,"
 expect(Array.from({length:W2},(_,x)=>x).filter(x=>valid(x,ROWS-2)).length===9,"reference geometry: even second level is not nine balls wide");
 expect(GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===0).length===9&&GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===1).length===10,"reference geometry: straight garbage rows have the wrong phase");
 expect(pieceFits(newBoard(),{x:SPAWN_X,y:-2,rot:0,colors:[0,1,2]}),"reference geometry: centred spawn is outside the reversed lattice");
-expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&REFERENCE_HARD_DROP_PX_PER_FRAME===34.5,"reference fall timing changed");
+expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&REFERENCE_INSTANT_DROP_MAX_FRAMES===1&&HARD_DROP_BEAM_FRAMES===5&&HARD_DROP_SPARK_FRAMES===9,"reference instant-drop timing changed");
+{
+ const g=createEngine(901);spawn(g);const target=dropPiece(g.board,g.piece),cells=pieceCells(target);hardDrop(g);
+ expect(g.state==="RESOLVING"&&!g.piece&&!g.hardDropAnim,"instant drop retained a visible travel phase");
+ expect(cells.every(([x,y])=>!!g.board[y][x])&&g.fx.hardDrops.length===1,"instant drop missed contact or its impact effect");
+}
 {
  const pat=GARBAGE_SHAPES.PYRAMID,maxY=Math.max(...pat.map(([,y])=>y)),inverse=pat.map(([x,y])=>[x,maxY-y]);
  expect(classify(pat)==="PYRAMID"&&classify(inverse)==="PYRAMID","pyramid orientation: inverse pyramid did not trigger pyramid garbage");
