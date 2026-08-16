@@ -8,7 +8,11 @@ const assertions=String.raw`
 function expect(value,message){if(!value)throw new Error(message);}
 
 // Capture-derived field and fall constants stay locked to the reference.
-expect(W2===19&&ROWS===12&&SPAWN_X===8,"reference geometry: 10-column/12-row field changed");
+expect(W2===19&&ROWS===12&&SPAWN_X===9,"reference geometry: floor-wide 10/9 field changed");
+expect(Array.from({length:W2},(_,x)=>x).filter(x=>valid(x,ROWS-1)).length===10,"reference geometry: odd floor level is not ten balls wide");
+expect(Array.from({length:W2},(_,x)=>x).filter(x=>valid(x,ROWS-2)).length===9,"reference geometry: even second level is not nine balls wide");
+expect(GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===0).length===9&&GARBAGE_SHAPES.STRAIGHT.filter(([,y])=>y===1).length===10,"reference geometry: straight garbage rows have the wrong phase");
+expect(pieceFits(newBoard(),{x:SPAWN_X,y:-2,rot:0,colors:[0,1,2]}),"reference geometry: centred spawn is outside the reversed lattice");
 expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"reference fall timing changed");
 
 // Releasing a one-finger slide retains the exact real-valued X. Only lock()
@@ -23,7 +27,7 @@ expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"refe
 // a freely falling triplet whose cells can still translate together.
 {
  const b=newBoard(),balls=[0,1,2].map(i=>({id:200+i,c:i,motionGroupId:120,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
- const members=[{ball:balls[0],x:0,y:2,role:0},{ball:balls[1],x:2,y:2,role:1},{ball:balls[2],x:1,y:3,role:2}];
+ const members=[{ball:balls[0],x:1,y:2,role:0},{ball:balls[1],x:3,y:2,role:1},{ball:balls[2],x:2,y:3,role:2}];
  for(const m of members)b[m.y][m.x]=m.ball;
  const plan=hexPhysPlanGroup(b,members,false);
  expect(plan.length===3&&plan.every(p=>p.tx===p.x&&p.ty===p.y+2),"wall rigidity: wall blocked the triplet's free fall");
@@ -34,8 +38,8 @@ expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"refe
 // follow translated arcs, retaining both orientation and pair distances.
 {
  const b=newBoard(),balls=[0,1,2].map(i=>({id:210+i,c:i,motionGroupId:121,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
- const members=[{ball:balls[0],x:6,y:2,role:0,orientation:"down"},{ball:balls[1],x:8,y:2,role:1,orientation:"down"},{ball:balls[2],x:7,y:3,role:2,orientation:"down"}];
- for(const m of members)b[m.y][m.x]=m.ball;b[4][8]={id:219,c:4,motionGroupId:0,rigid:false};
+ const members=[{ball:balls[0],x:7,y:2,role:0,orientation:"down"},{ball:balls[1],x:9,y:2,role:1,orientation:"down"},{ball:balls[2],x:8,y:3,role:2,orientation:"down"}];
+ for(const m of members)b[m.y][m.x]=m.ball;b[4][9]={id:219,c:4,motionGroupId:0,rigid:false};
  const plan=hexPhysPlanGroup(b,members,false),before=[],mid=plan.map(p=>proposalPointAt(p,.5));
  for(let i=0;i<3;i++)for(let j=i+1;j<3;j++){before.push(hexPhysDist(members[i].x,members[i].y,members[j].x,members[j].y));}
  const middle=[];for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)middle.push(Math.hypot(mid[i][0]-mid[j][0],mid[i][1]-mid[j][1]));
@@ -48,8 +52,8 @@ expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"refe
 // members may tear it into a rigid pair and one independent ball.
 {
  const b=newBoard(),balls=[0,1,2].map(i=>({id:220+i,c:i,motionGroupId:122,motionGroupRole:i,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,momentumX:0}));
- const members=[{ball:balls[0],x:5,y:3,role:0,orientation:"up"},{ball:balls[1],x:6,y:4,role:1,orientation:"up"},{ball:balls[2],x:4,y:4,role:2,orientation:"up"}];
- for(const m of members)b[m.y][m.x]=m.ball;b[5][5]={id:229,c:4,motionGroupId:0,rigid:false};
+ const members=[{ball:balls[0],x:6,y:3,role:0,orientation:"up"},{ball:balls[1],x:7,y:4,role:1,orientation:"up"},{ball:balls[2],x:5,y:4,role:2,orientation:"up"}];
+ for(const m of members)b[m.y][m.x]=m.ball;b[5][6]={id:229,c:4,motionGroupId:0,rigid:false};
  const plan=hexPhysPlanGroup(b,members,false);
  expect(plan.length===3,"convex split: upward triangle received no split motion");
  expect(balls[0].motionGroupId===122&&balls[2].motionGroupId===122&&balls[0].motionGroupSize===2&&balls[2].rigid,"convex split: opposite two-ball side lost its rigidity");
@@ -62,14 +66,14 @@ expect(Math.abs(REFERENCE_BALL_PX-63.4)<1e-9&&HARD_DROP_VISUAL_TIME===5/30,"refe
 // base. Boundary contacts split; either outer quarter remains a rigid slope.
 for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[0,true,-1],[.4,true,1],[.5,true,1],[.51,false,0]]){
  const b=newBoard(),balls=[0,1,2].map(i=>({id:240+i,c:i,motionGroupId:124,motionGroupRole:i,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,momentumX:Math.sign(offset),impactOffsetX:offset}));
- const members=[{ball:balls[0],x:5,y:3,role:0,orientation:"up"},{ball:balls[1],x:6,y:4,role:1,orientation:"up"},{ball:balls[2],x:4,y:4,role:2,orientation:"up"}];
- for(const m of members)b[m.y][m.x]=m.ball;b[5][5]={id:249,c:4,motionGroupId:0,rigid:false};
+ const members=[{ball:balls[0],x:6,y:3,role:0,orientation:"up"},{ball:balls[1],x:7,y:4,role:1,orientation:"up"},{ball:balls[2],x:5,y:4,role:2,orientation:"up"}];
+ for(const m of members)b[m.y][m.x]=m.ball;b[5][6]={id:249,c:4,motionGroupId:0,rigid:false};
  const motions=members.map(m=>hexPhysIndependentMemberMotion(b,members,m)),separator=hexPhysUpConvexSeparator(b,members,motions);
  expect(!!separator===expected,"convex range: offset "+offset+" received the wrong split decision");
  if(expected&&offset!==0)expect(separator.dir===dir,"convex range: offset "+offset+" split toward the wrong side");
 }
 {
- const g=createEngine(25);g.state="PLAYING";g.piece={x:10,y:0,rot:1,colors:[0,1,2]};g.pieceVX=10.4;g.freeX=10.4;
+ const g=createEngine(25);g.state="PLAYING";g.piece={x:9,y:0,rot:1,colors:[0,1,2]};g.pieceVX=9.4;g.freeX=9.4;
  lock(g,3);
  const released=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null;if(ball?.motionGroupId)released.push(ball);}
  expect(released.length===3&&released.every(ball=>Math.abs(ball.impactOffsetX-.4)<1e-9),"convex range: continuous horizontal release offset was not preserved");
@@ -78,7 +82,7 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
 // Preview and application must use the same collision acceptance. A rejected
 // proposal is not a legal move and cannot trap SETTLE in an endless loop.
 {
- const b=newBoard(),ball={id:230,c:0,motionGroupId:0,rigid:false};b[0][4]=ball;
+ const b=newBoard(),ball={id:230,c:0,motionGroupId:0,rigid:false};b[0][5]=ball;
  const original=hexPhysBundleSafe;hexPhysBundleSafe=()=>false;
  expect(hasLegalGravityMove(b)===false,"gap freeze: preview reported a rejected move as legal");
  hexPhysBundleSafe=original;
@@ -86,7 +90,7 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
 
 // A hexagon hole is retained only when its two lower arch members are fully anchored.
 {
- const b=newBoard(),pat=GARBAGE_SHAPES.HEXAGON,ax=0,baseY=ROWS-3;
+ const b=newBoard(),pat=GARBAGE_SHAPES.HEXAGON,ax=1,baseY=ROWS-3;
  for(let i=0;i<pat.length;i++){const[x,y]=pat[i],ball={id:250+i,c:2,motionGroupId:0,rigid:false};b[baseY+y][ax+x]=ball;}
  expect(isBalancedHexagonCenterHole(b,ax+2,baseY+1),"balanced gap: floor-anchored hexagon was not recognized");
  expect(!boardHasIllegalFloat(b)&&!hasLegalGravityMove(b),"balanced gap: complete hexagon did not remain in equilibrium");
@@ -96,12 +100,12 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
 // Crossing the visible limit does not lose during a drop; loss is decided at
 // the quiescent CHECK checkpoint after all motion and chains are complete.
 {
- const b=newBoard();for(let i=0;i<6;i++){const ball={id:300+i,c:3,motionGroupId:0,rigid:false};b[-2][i*2]=ball;noteBoardCell(b,-2,ball);}
+ const b=newBoard();for(let i=0;i<6;i++){const ball={id:300+i,c:3,motionGroupId:0,rigid:false};b[-2][1+i*2]=ball;noteBoardCell(b,-2,ball);}
  const groups=findGroups(b);
  expect(boardHasOverflow(b)&&groups.length===1&&classify(groups[0].cells)==="STRAIGHT","limit timing: balls above the line did not participate in formation clearing");
 }
 {
- const g=createEngine(20);g.state="PLAYING";g.piece={x:10,y:-2,rot:0,colors:[0,1,2]};g.pieceVX=10;g.pieceVY=-2;
+ const g=createEngine(20);g.state="PLAYING";g.piece={x:9,y:-2,rot:0,colors:[0,1,2]};g.pieceVX=9;g.pieceVY=-2;
  lock(g,3);
  expect(g.alive&&g.state==="RESOLVING","limit timing: locking above the line caused immediate defeat");
 }
@@ -127,7 +131,7 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
 // Pyramid and hexagon completion arm their shape-specific reference effects.
 for(const [type,baseY] of [["PYRAMID",ROWS-3],["HEXAGON",ROWS-3]]){
  const g=createEngine(type==="PYRAMID"?23:24),pat=GARBAGE_SHAPES[type];
- const ax=type==="HEXAGON"?0:1;
+ const ax=type==="HEXAGON"?1:0;
  for(let i=0;i<pat.length;i++){const[x,y]=pat[i],ball=mkBall(g,1);g.board[baseY+y][ax+x]=ball;g.vis.set(ball.id,{x:ax+x,y:baseY+y,vy:0,sq:0});}
  g.state="RESOLVING";g.phase="CHECK";g.garbDone=true;
  stepEngine(g,PHYSICS_FRAME);
@@ -139,7 +143,7 @@ for(const [type,baseY] of [["PYRAMID",ROWS-3],["HEXAGON",ROWS-3]]){
 // Exactly one pinned member must be detached without changing the pair's id.
 {
  const b=newBoard(),balls=[0,1,2].map(i=>({id:i+1,c:i,motionGroupId:77,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:3,rigid:true}));
- const members=balls.map((ball,i)=>({ball,x:4+i*2,y:4,role:i,orientation:"down"}));
+ const members=balls.map((ball,i)=>({ball,x:5+i*2,y:4,role:i,orientation:"down"}));
  for(const m of members)b[m.y][m.x]=m.ball;
  const original=hexPhysIndependentMemberMotion;
  hexPhysIndependentMemberMotion=(board,group,m)=>m.role===0?null:{x:m.x,y:m.y,tx:m.x,ty:m.y+2,ball:m.ball,kind:"FREE_FALL",pivot:null,topPivot:null,followSupportIds:[]};
@@ -156,7 +160,7 @@ for(const [type,baseY] of [["PYRAMID",ROWS-3],["HEXAGON",ROWS-3]]){
 {
  const g=createEngine(1),y=ROWS-1;
  const balls=[0,1].map(i=>({id:100+i,c:i,motionGroupId:88,motionGroupRole:i,motionGroupOrientation:"down",motionGroupSize:2,rigid:true}));
- g.board[y][1]=balls[0];g.board[y][3]=balls[1];
+ g.board[y][0]=balls[0];g.board[y][2]=balls[1];
  normalizeAllNonActivePileBalls(g);
  expect(balls.every(ball=>ball.motionGroupId===0&&ball.rigid===false),"pile rigidity: stable balls remained constrained");
 }
@@ -175,12 +179,12 @@ for(const [type,baseY] of [["PYRAMID",ROWS-3],["HEXAGON",ROWS-3]]){
 
 // Consecutive free-fall segments carry velocity instead of restarting from rest.
 {
- const g=createEngine(3),ball=mkBall(g,0),v={x:4,y:0,vy:0,motionSpeed:0,sq:0};
- g.board[2][4]=ball;g.vis.set(ball.id,v);
- ball.fallPath=[{from:[4,0],to:[4,2],pivot:null,topPivot:null,motionSeq:1,followSupportIds:[]}];
+ const g=createEngine(3),ball=mkBall(g,0),v={x:5,y:0,vy:0,motionSpeed:0,sq:0};
+ g.board[2][5]=ball;g.vis.set(ball.id,v);
+ ball.fallPath=[{from:[5,0],to:[5,2],pivot:null,topPivot:null,motionSeq:1,followSupportIds:[]}];
  const first=collectLiveMotionBatch(g),firstEnd=first.members[0].endState;
  v.vy=firstEnd.vy;v.motionSpeed=firstEnd.speed;
- ball.fallPath=[{from:[4,2],to:[4,4],pivot:null,topPivot:null,motionSeq:2,followSupportIds:[]}];
+ ball.fallPath=[{from:[5,2],to:[5,4],pivot:null,topPivot:null,motionSeq:2,followSupportIds:[]}];
  const second=collectLiveMotionBatch(g);
  expect(second.members[0].duration<first.members[0].duration,"continuous fall: velocity restarted at lattice boundary");
 }

@@ -1,6 +1,6 @@
 const { useRef, useEffect, useState, useCallback } = React;
-// Reference capture: ten balls fit across and twelve lattice rows fit between
-// the top and floor rails. W2 is the half-column representation (10/9 rows).
+// Reference capture: counting levels upward from the floor, odd levels hold
+// ten balls and even levels hold nine. W2 is the doubled-x representation.
 const W2=19,ROWS=12,CLEAR_MIN=6,TAU=Math.PI*2;
 // Balls are allowed to exist above the visible limit while a drop, garbage
 // batch, or chain is still resolving. This mirrors the reference rule: the
@@ -16,7 +16,9 @@ const cellCenterYNorm=row=>BOARD_TOP_CENTER_N+row*HEX_ROW_H;
 const ballBottomYNorm=row=>cellCenterYNorm(row)+BALL_RADIUS_N;
 const touchesFloorRow=row=>Math.abs(ballBottomYNorm(row)-BOARD_FLOOR_N)<=FLOOR_EPS;
 const latticeRealX=x=>x*0.5;
-const parityOK=(x,y)=>(((x+y)&1)===0);
+// ROWS is even, so reversing the old top-based phase makes the floor row
+// (y=ROWS-1) the wide ten-ball row seen in the reference footage.
+const parityOK=(x,y)=>(((x+y)&1)===1);
 const DIRS=[[2,0],[1,1],[-1,1],[-2,0],[-1,-1],[1,-1]];
 const COLORS=[
  {base:"#FF3B4D",hi:"#FFC8CC",lo:"#7E0E1B",glow:"#FF6E7C",sym:"star"},
@@ -31,7 +33,9 @@ const WAZA={
  HEXAGON:{jp:"ヘキサゴン",garbage:36,packs:6,hold:1.35,tint:"#3DEBFF",fx:2.9}
 };
 const GARBAGE_SHAPES={
- STRAIGHT:[[0,0],[2,0],[4,0],[6,0],[8,0],[10,0],[12,0],[14,0],[16,0],[18,0],[1,1],[3,1],[5,1],[7,1],[9,1],[11,1],[13,1],[15,1],[17,1]],
+ // Nine balls on the upper row, ten on the lower row. This matches the
+ // floor-based odd/even phase instead of placing the short row on the floor.
+ STRAIGHT:[[1,0],[3,0],[5,0],[7,0],[9,0],[11,0],[13,0],[15,0],[17,0],[0,1],[2,1],[4,1],[6,1],[8,1],[10,1],[12,1],[14,1],[16,1],[18,1]],
  PYRAMID:[[2,0],[1,1],[3,1],[0,2],[2,2],[4,2]],
  HEXAGON:[[1,0],[3,0],[0,1],[4,1],[1,2],[3,2]]
 };

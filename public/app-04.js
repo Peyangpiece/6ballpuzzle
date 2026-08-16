@@ -106,5 +106,5 @@ const activeDropFraction=(g,renderLead=0)=>{if(!g||!g.piece||!pieceFits(g.board,
 const CLEAR_SUPPORT_RELEASE_RATIO=.90;
 const LEGACY_VISUAL_SUBSTEPS=4,MAX_PHYSICS_CATCHUP_STEPS=8;
 const clearVisualState=k=>{k=Math.max(0,Math.min(1,k));const scale=Math.max(.04,1+Math.sin(Math.min(1,k/.5)*Math.PI*.5)*.3-Math.max(0,(k-.6)/.4)*1.1),alpha=k<.62?1:Math.max(0,1-(k-.62)/.38);return{scale,alpha};};
-const GARBAGE_VISUAL_MAX=4.2,SETTLE_VISUAL_WATCHDOG=1.25,SPAWN_X=8;
+const GARBAGE_VISUAL_MAX=4.2,SETTLE_VISUAL_WATCHDOG=1.25,SPAWN_X=9;
 const makeSet=g=>[0,1,2].map(()=>Math.floor(g.rng()*COLORS.length));

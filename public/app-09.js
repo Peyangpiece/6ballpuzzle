@@ -493,7 +493,7 @@ function stepAI(g, dt) {
  * ============================================================= */
 const VW = 1280, VH = 720;
 // Measurements from the 1920x1080 reference footage, normalized to 1280x720.
-// Both players use the same 10-column playfield and ball scale.
+// Both players use the same floor-wide 10/9 alternating playfield and scale.
 const ME = { D: 63.4 / 1.5, X: 165, Y: 166 };
 const FOE = { D: 63.4 / 1.5, X: 671, Y: 166 };
 ME.BW = 444;
