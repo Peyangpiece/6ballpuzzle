@@ -23,8 +23,20 @@ function normalizeAllNonActivePileBalls(g){
   ball.fixedGarbage=false;
  }
 }
+function zeroAccumulatedPileRigidity(g){
+ // Once a clear is armed, every ball already on the board is accumulated pile.
+ // Remove both physical and visual triplet constraints before support loss so
+ // the collapse is solved as independent single-ball motion from frame one.
+ for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+  const ball=valid(x,y)?g.board[y][x]:null;if(!ball)continue;
+  normalizePileBallPhysics(ball);
+  ball.rigid=false;
+ }
+}
 function releaseSettledConstraints(g,reason="clear_release"){
- normalizeAllNonActivePileBalls(g);
+ const forceZeroPile=/^clear(?:_|$)/i.test(String(reason||""));
+ if(forceZeroPile)zeroAccumulatedPileRigidity(g);
+ else normalizeAllNonActivePileBalls(g);
  if(g.physicsWatch){g.physicsWatch.lastSig="";g.physicsWatch.repeats=0;g.physicsWatch.steps=0;}
  return reason;
 }
