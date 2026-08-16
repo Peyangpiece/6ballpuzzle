@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
 <meta name="theme-color" content="#060512">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="HEXDROP">
@@ -20,6 +23,14 @@
 <script>var bootMsg=document.getElementById("bootMsg");function fail(m){if(bootMsg)bootMsg.textContent=m;}window.addEventListener("error",function(e){fail("エラー: "+(e&&e.message?e.message:e)+"\n"+(e.filename||""));});</script>
 <script type="module">try{const a=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");const u=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js");const d=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");window.FB={initializeApp:a.initializeApp,getAuth:u.getAuth,signInAnonymously:u.signInAnonymously,onAuthStateChanged:u.onAuthStateChanged,getDatabase:d.getDatabase,ref:d.ref,set:d.set,get:d.get,update:d.update,remove:d.remove,push:d.push,onValue:d.onValue,off:d.off,runTransaction:d.runTransaction,onDisconnect:d.onDisconnect,serverTimestamp:d.serverTimestamp};}catch(e){console.warn("Firebase SDK load failed",e);}</script>
 <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script><script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script><script src="https://cdn.tailwindcss.com"></script>
-<script src="app-01.js"></script><script src="app-02.js"></script><script src="app-03.js"></script><script src="app-04.js"></script><script src="app-05.js"></script><script src="app-06.js"></script><script src="app-07.js"></script><script src="app-08.js"></script><script src="app-09.js"></script><script src="app-10.js"></script><script src="app-14.js"></script><script src="app-15.js"></script><script src="app-16.js"></script><script src="app-17.js"></script><script src="controls-v7.js?v=f51c050"></script>
+<script>
+(function loadCurrentGameBuild(){
+    var cacheKey=Date.now().toString(36);
+    var files=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-15.js","app-16.js","app-17.js","controls-v7.js"];
+    for(var i=0;i<files.length;i++){
+        document.write('<script src="'+files[i]+'?v='+cacheKey+'"><\\/script>');
+    }
+})();
+</script>
 <script>(function(){try{if(typeof React==="undefined"||typeof ReactDOM==="undefined"){fail("Reactを読み込めませんでした");return;}window.__mountHexdrop();var b=document.getElementById("boot");if(b)b.remove();}catch(err){fail("起動時エラー: "+(err&&err.message?err.message:err));}})();</script>
 </body></html>
