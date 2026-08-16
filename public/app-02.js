@@ -1,617 +1,332 @@
-function applyHeldGroupMove(b,members,dx,dy){
-    for(const m of members)b[m.y][m.x]=null;
-    for(const m of members){
-        const nx=m.x+dx,ny=m.y+dy;
-        b[ny][nx]=m.ball;
-        if(!Array.isArray(m.ball.fallPath))m.ball.fallPath=[];
-        const pivot=(dy===1&&Math.abs(dx)===1)?[m.x-dx,m.y+1]:null;
-        m.ball.fallPath.push({from:[m.x,m.y],to:[nx,ny],pivot});
-        if(dx){
-            m.ball.rollDir=Math.sign(dx);
-            m.ball.momentumX=Math.sign(dx);
-            m.ball.subCellBias=Math.sign(dx);
-        }else if(dy>=2){
-            m.ball.rollDir=0;
-        }
+/* HEXDROP unified physics core
+ * Source of truth: support -> natural motion -> temporary motion constraint -> collision-safe event.
+ * Legacy slope/convex/wave-specific physics has been removed from this file.
+ */
+let HEX_PHYS_EVENT_SEQ=1;
+let HEX_PHYS_GROUP_SEQ=1;
+const HEX_MIN_DIST=0.9995;
+
+function normPoint(x,y){return [latticeRealX(x),cellCenterYNorm(y)];}
+function lerp2(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
+function hexPhysDist(ax,ay,bx,by){return Math.hypot((ax-bx)*0.5,(ay-by)*HEX_ROW_H);}
+function hexPhysOccupied(b,x,y,ignoreIds=null){
+    if(!valid(x,y))return true;
+    const q=b[y][x];
+    return !!q && !(ignoreIds&&ignoreIds.has(q.id));
+}
+function hexPhysEmpty(b,x,y,ignoreIds=null){return valid(x,y)&&!hexPhysOccupied(b,x,y,ignoreIds);}
+function hexPhysLegacyToMotionGroup(ball){
+    if(!ball||typeof ball!=="object")return;
+    if(!ball.motionGroupId&&ball.slopeRigidGroupId){
+        ball.motionGroupId=ball.slopeRigidGroupId;
+        ball.motionGroupRole=Number.isFinite(ball.slopeRigidRole)?ball.slopeRigidRole:-1;
+        ball.motionGroupOrientation=ball.slopeRigidOrientation||"";
+        ball.motionGroupSize=3;
     }
+    ball.slopeRigidGroupId=0;
+    ball.slopeRigidRole=-1;
+    ball.slopeRigidOrientation="";
+    ball.slopeRigidActive=false;
+    ball.slopeRigidPartialPair=false;
+    ball.slopeRigidSplitDir=0;
+    ball.shapeHeld=false;
+    ball.shapeGroupId=0;
+    ball.shapeOrientation="";
+    ball.forceSplit=false;
+    ball.fallBias=0;
+    ball.fallBiasTTL=0;
+    ball.rigid=!!ball.motionGroupId;
 }
-function markVisualReleaseStage(members, orientation, gateRoles){
-    const gid=members[0]?.ball?.visualTripletId || members[0]?.ball?.shapeGroupId || 0;
-    for(const m of members){
-        const p=Array.isArray(m.ball.fallPath)?m.ball.fallPath:[];
-        m.ball.visualPreReleaseRemaining=p.length;
-        m.ball.visualReleaseGroupId=gid;
-        m.ball.visualReleaseOrientation=orientation;
-        m.ball.visualReleaseGateRoles=gateRoles.slice();
-    }
-}
-function releaseDownTriangle(members){
-    // ▼ roles: 0=left upper, 1=right upper, 2=bottom.
-    markVisualReleaseStage(members,"down",[2]);
-    for(const m of members){
-        m.ball.shapeHeld=false;
-        m.ball.shapeGroupId=0;
-        m.ball.shapeOrientation="";
-        if(m.role===0){
-            m.ball.fallBias=-1;
-            m.ball.fallBiasTTL=1;
-            m.ball.forceSplit=true;
-        }else if(m.role===1){
-            m.ball.fallBias=1;
-            m.ball.fallBiasTTL=1;
-            m.ball.forceSplit=true;
-        }else{
-            m.ball.fallBias=0;
-            m.ball.fallBiasTTL=0;
-            m.ball.forceSplit=false;
-        }
-    }
-}
-function releaseUpTriangle(members, gateRoles=[1,2]){
-    // ▲ roles: 0=top, 1=right lower, 2=left lower.
-    markVisualReleaseStage(members,"up",gateRoles);
-    // Release condition only; direction after release is determined by live contacts.
-    for(const m of members){
-        m.ball.shapeHeld=false;
-        m.ball.shapeGroupId=0;
-        m.ball.shapeOrientation="";
-        m.ball.forceSplit=false;
-        m.ball.fallBias=0;
-        m.ball.fallBiasTTL=0;
-    }
-}
-function memberMoveWithoutGroup(b,members,m){
-    // Keep the queried ball itself on the board; remove only the other two members.
-    // Removing the queried ball as well made settleStep() return null and falsely
-    // classified every bottom ball as "fixed".
-    const others=members.filter(q=>q.ball!==m.ball);
-    return withMembersRemoved(b,others,()=>settleStep(b,m.x,m.y));
-}
-function advanceHeldShapes(b){
-    let cleared=false;
+function hexPhysAdoptGroups(b){
     for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
-        if(!valid(x,y))continue;
-        const ball=b[y][x];
-        if(!ball||!ball.shapeHeld)continue;
-        ball.shapeHeld=false;
-        ball.shapeGroupId=0;
-        ball.shapeOrientation="";
-        ball.forceSplit=false;
-        ball.fallBias=0;
-        ball.fallBiasTTL=0;
-        ball.visualReleaseGroupId=0;
-        ball.visualPreReleaseRemaining=0;
-        cleared=true;
+        const ball=valid(x,y)?b[y][x]:null;
+        if(ball)hexPhysLegacyToMotionGroup(ball);
     }
-    return {moved:false,released:cleared};
+}
+function hexPhysClearGroupBall(ball){
+    if(!ball)return;
+    ball.motionGroupId=0;
+    ball.motionGroupRole=-1;
+    ball.motionGroupOrientation="";
+    ball.motionGroupSize=0;
+    ball.rigid=false;
+}
+function hexPhysGroups(b){
+    const mp=new Map();
+    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?b[y][x]:null;
+        if(!ball?.motionGroupId)continue;
+        if(!mp.has(ball.motionGroupId))mp.set(ball.motionGroupId,[]);
+        mp.get(ball.motionGroupId).push({ball,x,y,role:ball.motionGroupRole,orientation:ball.motionGroupOrientation});
+    }
+    return mp;
+}
+function hexPhysSetGroup(members,size,orientation=""){
+    const gid=HEX_PHYS_GROUP_SEQ++;
+    for(const m of members){
+        m.ball.motionGroupId=gid;
+        m.ball.motionGroupRole=Number.isFinite(m.role)?m.role:-1;
+        m.ball.motionGroupOrientation=orientation||m.orientation||"";
+        m.ball.motionGroupSize=size;
+        m.ball.rigid=true;
+    }
+    return gid;
 }
 
-let LIVE_MOTION_SEQ=1;
-
-function physicalContactInfo(b,x,y){
-    const tangent=[];
-    for(const dx of [-1,1]){
-        const sx=x+dx,sy=y+1;
-        if(valid(sx,sy)&&b[sy][sx]!==null)
-            tangent.push({dx,x:sx,y:sy,ball:b[sy][sx]});
-    }
-    const directBelow=valid(x,y+2)&&b[y+2][x]!==null
-        ? {x,y:y+2,ball:b[y+2][x]} : null;
-    return {tangent,directBelow};
+function hexPhysSupportInfo(b,x,y,ignoreIds=null){
+    const floor=touchesFloorRow(y);
+    const left={x:x-1,y:y+1,valid:valid(x-1,y+1)};
+    const right={x:x+1,y:y+1,valid:valid(x+1,y+1)};
+    left.ball=left.valid?b[left.y][left.x]:null;
+    right.ball=right.valid?b[right.y][right.x]:null;
+    left.occupied=!left.valid||!!(left.ball&&!(ignoreIds&&ignoreIds.has(left.ball.id)));
+    right.occupied=!right.valid||!!(right.ball&&!(ignoreIds&&ignoreIds.has(right.ball.id)));
+    return {floor,left,right,count:floor?2:Number(left.occupied)+Number(right.occupied)};
 }
-function rawNaturalProposal(b,x,y){
-    if(!valid(x,y)||b[y][x]===null)return null;
+function lowerContactSupportCount(b,x,y){return hexPhysSupportInfo(b,x,y).count;}
+
+function hexPhysBias(ball){
+    return Math.sign(ball?.momentumX||ball?.rollDir||ball?.subCellBias||0);
+}
+function hexPhysNaturalMotion(b,x,y,ignoreIds=null){
+    if(!valid(x,y)||!b[y][x])return null;
     const ball=b[y][x];
-    const empty=(tx,ty)=>valid(tx,ty)&&b[ty][tx]===null;
-    const l=empty(x-1,y+1),r=empty(x+1,y+1);
-    const sideL=valid(x-2,y)&&b[y][x-2]!==null;
-    const sideR=valid(x+2,y)&&b[y][x+2]!==null;
-    let tx=x,ty=y,kind="";
-    if(l&&r&&empty(x,y+2)){tx=x;ty=y+2;kind="fall";}
-    else if(l&&!r){if(sideL)return null;tx=x-1;ty=y+1;kind="roll";}
-    else if(r&&!l){if(sideR)return null;tx=x+1;ty=y+1;kind="roll";}
-    else if(!l&&!r)return null;
-    else{
-        let dir=Math.sign(ball?.rollDir||ball?.momentumX||ball?.subCellBias||0);
-        if(y+1===ROWS-1){
-            const sl=floorPackingScore(b,x-1,y+1),sr=floorPackingScore(b,x+1,y+1);
-            if(sl>sr)dir=-1; else if(sr>sl)dir=1;
+    if(touchesFloorRow(y))return null;
+    const lOpen=hexPhysEmpty(b,x-1,y+1,ignoreIds);
+    const rOpen=hexPhysEmpty(b,x+1,y+1,ignoreIds);
+    const downOpen=hexPhysEmpty(b,x,y+2,ignoreIds);
+
+    if(lOpen&&rOpen&&downOpen){
+        return {x,y,tx:x,ty:y+2,ball,kind:"FREE_FALL",pivot:null,topPivot:null,followSupportIds:[]};
+    }
+    if(lOpen&&!rOpen){
+        return {x,y,tx:x-1,ty:y+1,ball,kind:"ROLL_LEFT",pivot:[x+1,y+1],topPivot:null,followSupportIds:[]};
+    }
+    if(rOpen&&!lOpen){
+        return {x,y,tx:x+1,ty:y+1,ball,kind:"ROLL_RIGHT",pivot:[x-1,y+1],topPivot:null,followSupportIds:[]};
+    }
+    if(!lOpen&&!rOpen)return null;
+
+    // Exact top of a single support: preserve incoming horizontal tendency.
+    if(!downOpen&&valid(x,y+2)){
+        let dir=hexPhysBias(ball);
+        if(!dir&&y+1===ROWS-1){
+            const sl=typeof floorPackingScore==="function"?floorPackingScore(b,x-1,y+1):0;
+            const sr=typeof floorPackingScore==="function"?floorPackingScore(b,x+1,y+1):0;
+            if(sl!==sr)dir=sl>sr?-1:1;
         }
         if(!dir)dir=-1;
-        tx=x+dir;ty=y+1;kind="topRoll";
+        const tx=x+dir,ty=y+1;
+        if(hexPhysEmpty(b,tx,ty,ignoreIds))
+            return {x,y,tx,ty,ball,kind:dir<0?"ROLL_LEFT":"ROLL_RIGHT",pivot:null,topPivot:[x,y+2],followSupportIds:[]};
+        const alt=x-dir;
+        if(hexPhysEmpty(b,alt,ty,ignoreIds))
+            return {x,y,tx:alt,ty,ball,kind:dir<0?"ROLL_RIGHT":"ROLL_LEFT",pivot:null,topPivot:[x,y+2],followSupportIds:[]};
     }
-    if(!valid(tx,ty))return null;
-    const p={x,y,tx,ty,ball,kind,visualPivot:null,topPivot:null,movingSupportId:0,followSupportIds:[]};
-    const dx=tx-x,dy=ty-y;
-    if(kind==="roll"&&dy===1&&Math.abs(dx)===1){
-        const pv=[x-dx,y+1];
-        if(valid(pv[0],pv[1])&&b[pv[1]][pv[0]]!==null)p.visualPivot=pv;
-    }else if(kind==="topRoll"&&valid(x,y+2)&&b[y+2][x]!==null){
-        p.topPivot=[x,y+2];
+    return null;
+}
+function settleStep(b,x,y){
+    const p=hexPhysNaturalMotion(b,x,y,null);
+    return p?[p.tx,p.ty]:null;
+}
+function unstableFrozenBalls(b){
+    const out=[];
+    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+        if(!valid(x,y)||!b[y][x]||touchesFloorRow(y))continue;
+        const s=hexPhysSupportInfo(b,x,y);
+        if(!hexPhysNaturalMotion(b,x,y,null)&&s.count<2)out.push({x,y,id:b[y][x].id,contacts:s.count});
     }
-    return p;
+    return out;
 }
-function sameMoveVector(a,b){
-    return !!a&&!!b&&(a.tx-a.x)===(b.tx-b.x)&&(a.ty-a.y)===(b.ty-b.y);
+function boardHasIllegalFloat(b){return unstableFrozenBalls(b).length>0;}
+function isHexagonCenterHole(b,cx,cy){
+    if(!valid(cx,cy)||b[cy][cx]!==null)return false;
+    return [[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]].every(([dx,dy])=>valid(cx+dx,cy+dy)&&!!b[cy+dy][cx+dx]);
 }
-function proposalSignature(p){
-    if(!p)return "null";
-    return [p.tx,p.ty,p.kind,p.visualPivot?.join(",")||"",p.topPivot?.join(",")||"",
-        p.movingSupportId||0,(p.followSupportIds||[]).join(",")].join("|");
+function boardHasIntentionalHexagonHole(b){
+    for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isHexagonCenterHole(b,x,y))return true;
+    return false;
 }
-function buildContactAwareProposals(b,bannedIds=new Set()){
+
+function proposalPointAt(p,t){
+    t=Math.max(0,Math.min(1,t));
+    const a=normPoint(p.x,p.y),z=normPoint(p.tx,p.ty);
+    const pivot=p.topPivot||p.pivot||null;
+    if(p.topPivot){
+        const pv=normPoint(p.topPivot[0],p.topPivot[1]);
+        const contact=[pv[0],pv[1]-1];
+        const fallLen=Math.max(0,contact[1]-a[1]);
+        const fallT=Math.sqrt(Math.max(0,2*fallLen/Math.max(0.0001,GRAV)));
+        let a1=Math.atan2(z[1]-pv[1],z[0]-pv[0]);
+        let da=a1+Math.PI/2; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU;
+        const arcT=Math.abs(da)/Math.max(0.0001,SLIDE_SPEED);
+        const total=Math.max(1e-9,fallT+arcT),cut=fallT/total;
+        if(t<=cut&&cut>1e-9){const q=t/cut;return lerp2(a,contact,q*q);}
+        const q=cut>=1-1e-9?1:(t-cut)/(1-cut),ang=-Math.PI/2+da*Math.max(0,Math.min(1,q));
+        return [pv[0]+Math.cos(ang),pv[1]+Math.sin(ang)];
+    }
+    if(pivot){
+        const pv=normPoint(pivot[0],pivot[1]);
+        const a0=Math.atan2(a[1]-pv[1],a[0]-pv[0]);
+        const a1=Math.atan2(z[1]-pv[1],z[0]-pv[0]);
+        let da=a1-a0; while(da>Math.PI)da-=TAU; while(da<-Math.PI)da+=TAU;
+        const r=Math.hypot(a[0]-pv[0],a[1]-pv[1]);
+        const ang=a0+da*t;
+        return [pv[0]+Math.cos(ang)*r,pv[1]+Math.sin(ang)*r];
+    }
+    const q=(Math.abs(p.ty-p.y)>=2||p.tx===p.x)?t*t:t;
+    return lerp2(a,z,q);
+}
+function proposalsSweepOverlap(a,b){
+    for(let i=0;i<=32;i++){
+        const t=i/32,pa=proposalPointAt(a,t),pb=proposalPointAt(b,t);
+        if(Math.hypot(pa[0]-pb[0],pa[1]-pb[1])<HEX_MIN_DIST)return true;
+    }
+    return false;
+}
+function hexPhysPathHitsStationary(p,b,movingIds){
+    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+        const q=valid(x,y)?b[y][x]:null;
+        if(!q||q.id===p.ball.id||movingIds.has(q.id))continue;
+        const pv=p.topPivot||p.pivot;
+        if(pv&&pv[0]===x&&pv[1]===y)continue;
+        const qp=normPoint(x,y);
+        for(let i=1;i<=32;i++){
+            const pt=proposalPointAt(p,i/32);
+            if(Math.hypot(pt[0]-qp[0],pt[1]-qp[1])<HEX_MIN_DIST)return true;
+        }
+    }
+    return false;
+}
+function proposalHitsStationaryBall(p,b,movingOrigins,movingTargets){
+    const movingIds=new Set();
+    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+        const q=valid(x,y)?b[y][x]:null;
+        if(q&&movingOrigins?.has(x+","+y))movingIds.add(q.id);
+    }
+    return hexPhysPathHitsStationary(p,b,movingIds);
+}
+function sameMoveVector(a,b){return !!a&&!!b&&(a.tx-a.x)===(b.tx-b.x)&&(a.ty-a.y)===(b.ty-b.y);}
+function proposalSignature(p){return p?[p.tx-p.x,p.ty-p.y,p.kind].join("|"):"REST";}
+
+function hexPhysIndependentMemberMotion(b,members,m){
+    const ignore=new Set(members.filter(q=>q.ball.id!==m.ball.id).map(q=>q.ball.id));
+    return hexPhysNaturalMotion(b,m.x,m.y,ignore);
+}
+function hexPhysTranslationSafe(b,members,dx,dy){
+    const own=new Set(members.map(m=>m.ball.id));
+    const targets=new Set();
+    for(const m of members){
+        const tx=m.x+dx,ty=m.y+dy;
+        if(!valid(tx,ty))return false;
+        const k=tx+","+ty;if(targets.has(k))return false;targets.add(k);
+        const q=b[ty][tx];if(q&&!own.has(q.id))return false;
+    }
+    for(const m of members){
+        const p={x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null};
+        if(hexPhysPathHitsStationary(p,b,own))return false;
+    }
+    return true;
+}
+function groupTranslationSafe(b,members,dx,dy){return hexPhysTranslationSafe(b,members,dx,dy);}
+function hexPhysPairPivotPlan(b,members,motions){
+    if(members.length!==2)return null;
+    for(let i=0;i<2;i++){
+        const fixed=members[i],moving=members[1-i],mp=motions[1-i];
+        if(motions[i]||!mp)continue;
+        if(hexPhysDist(mp.tx,mp.ty,fixed.x,fixed.y)>1.00001)continue;
+        const pivot=[fixed.x,fixed.y];
+        const p={...mp,pivot,topPivot:null,kind:"PAIR_PIVOT",bundleId:fixed.ball.motionGroupId||0,followSupportIds:[fixed.ball.id]};
+        if(!hexPhysPathHitsStationary(p,b,new Set(members.map(m=>m.ball.id))))return [p];
+    }
+    return null;
+}
+function hexPhysPlanGroup(b,members,preview=false){
+    const size=members.length;
+    if(size<2||size>3){for(const m of members)hexPhysClearGroupBall(m.ball);return [];}
+    const motions=members.map(m=>hexPhysIndependentMemberMotion(b,members,m));
+    const moving=motions.filter(Boolean);
+    if(!moving.length){for(const m of members)hexPhysClearGroupBall(m.ball);return [];}
+
+    if(moving.length===size){
+        const dx=motions[0].tx-motions[0].x,dy=motions[0].ty-motions[0].y;
+        if(motions.every(p=>p.tx-p.x===dx&&p.ty-p.y===dy)&&hexPhysTranslationSafe(b,members,dx,dy)){
+            const bundle=members[0].ball.motionGroupId||HEX_PHYS_GROUP_SEQ++;
+            return members.map((m,i)=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind:"GROUP_TRANSLATE",pivot:null,topPivot:null,followSupportIds:[],bundleId:bundle,groupSize:size}));
+        }
+    }
+
+    if(size===2){
+        const pivot=hexPhysPairPivotPlan(b,members,motions);
+        if(pivot)return pivot;
+        for(const m of members)hexPhysClearGroupBall(m.ball);
+        return [];
+    }
+
+    // 3 -> 2+1: retain the largest compatible natural-motion pair.
+    const buckets=new Map();
+    for(let i=0;i<3;i++){
+        const key=proposalSignature(motions[i]);
+        if(!buckets.has(key))buckets.set(key,[]);
+        buckets.get(key).push(i);
+    }
+    let pair=null;
+    for(const idxs of buckets.values())if(idxs.length>=2&&idxs.length>(pair?.length||0))pair=idxs.slice(0,2);
+    if(pair){
+        const pairMembers=pair.map(i=>members[i]);
+        const single=members.find((_,i)=>!pair.includes(i));
+        for(const m of members)hexPhysClearGroupBall(m.ball);
+        hexPhysSetGroup(pairMembers,2,pairMembers[0]?.orientation||"");
+        if(single)hexPhysClearGroupBall(single.ball);
+        return hexPhysPlanGroup(b,pairMembers,preview);
+    }
+
+    // If no equal-vector pair exists, preserve a geometrically valid pivot pair once.
+    for(let a=0;a<3;a++)for(let c=a+1;c<3;c++){
+        const pairMembers=[members[a],members[c]],pairMotions=[motions[a],motions[c]];
+        const pivot=hexPhysPairPivotPlan(b,pairMembers,pairMotions);
+        if(pivot){
+            for(const m of members)hexPhysClearGroupBall(m.ball);
+            hexPhysSetGroup(pairMembers,2,pairMembers[0]?.orientation||"");
+            return pivot;
+        }
+    }
+    for(const m of members)hexPhysClearGroupBall(m.ball);
+    return [];
+}
+
+function hexPhysContactEntries(b,excludedIds){
     const entries=[],byId=new Map();
     for(let y=ROWS-1;y>=0;y--)for(let x=0;x<W2;x++){
-        if(!valid(x,y)||b[y][x]===null)continue;
-        const ball=b[y][x];
-        const e={x,y,ball,id:ball.id,raw:rawNaturalProposal(b,x,y),contact:physicalContactInfo(b,x,y),p:null};
+        const ball=valid(x,y)?b[y][x]:null;
+        if(!ball||excludedIds.has(ball.id))continue;
+        const support=hexPhysSupportInfo(b,x,y);
+        const e={x,y,ball,support,p:hexPhysNaturalMotion(b,x,y,null)};
         entries.push(e);byId.set(ball.id,e);
     }
-    for(const e of entries)if(!bannedIds.has(e.id)&&e.raw)e.p={...e.raw,followSupportIds:[]};
-    for(let guard=0;guard<ROWS*3+12;guard++){
+    // Support dependency fixpoint: moving support immediately releases/follows upper balls.
+    for(let guard=0;guard<ROWS*2+4;guard++){
         let changed=false;
         for(const e of entries){
-            if(bannedIds.has(e.id))continue;
-            const old=e.p;
-            let next=e.raw?{...e.raw,followSupportIds:[]}:null;
-            const contacts=e.contact.tangent;
-            if(contacts.length){
-                const supportEntries=contacts.map(c=>byId.get(c.ball.id)).filter(Boolean);
-                const moving=supportEntries.filter(se=>se.p);
-                if(supportEntries.length&&moving.length===supportEntries.length){
-                    const first=moving[0].p;
-                    if(moving.every(se=>sameMoveVector(first,se.p))){
-                        const dx=first.tx-first.x,dy=first.ty-first.y,tx=e.x+dx,ty=e.y+dy;
-                        if(valid(tx,ty))next={x:e.x,y:e.y,tx,ty,ball:e.ball,kind:"follow",
-                            visualPivot:null,topPivot:null,movingSupportId:moving[0].id,
-                            followSupportIds:moving.map(se=>se.id)};
-                    }
-                }else if(contacts.length===2&&moving.length===1){
-                    const movingId=moving[0].id;
-                    const stationary=contacts.find(c=>c.ball.id!==movingId);
-                    if(stationary){
-                        const dir=-stationary.dx,tx=e.x+dir,ty=e.y+1;
-                        if(valid(tx,ty))next={x:e.x,y:e.y,tx,ty,ball:e.ball,kind:"roll",
-                            visualPivot:[stationary.x,stationary.y],topPivot:null,movingSupportId:0,
-                            followSupportIds:[]};
-                    }
+            const supports=[e.support.left,e.support.right].filter(s=>s.valid&&s.ball&&!excludedIds.has(s.ball.id));
+            const moving=supports.map(s=>byId.get(s.ball.id)).filter(q=>q?.p);
+            let next=e.p;
+            if(supports.length&&moving.length===supports.length){
+                const first=moving[0].p;
+                if(moving.every(q=>sameMoveVector(first,q.p))){
+                    const dx=first.tx-first.x,dy=first.ty-first.y;
+                    if(valid(e.x+dx,e.y+dy))next={x:e.x,y:e.y,tx:e.x+dx,ty:e.y+dy,ball:e.ball,kind:"FOLLOW_SUPPORT",pivot:null,topPivot:null,followSupportIds:moving.map(q=>q.ball.id)};
+                }
+            }else if(supports.length===2&&moving.length===1){
+                const stationary=supports.find(s=>s.ball.id!==moving[0].ball.id);
+                if(stationary){
+                    const dir=stationary.x<e.x?1:-1;
+                    if(hexPhysEmpty(b,e.x+dir,e.y+1,null))next={x:e.x,y:e.y,tx:e.x+dir,ty:e.y+1,ball:e.ball,kind:dir<0?"ROLL_LEFT":"ROLL_RIGHT",pivot:[stationary.x,stationary.y],topPivot:null,followSupportIds:[]};
                 }
             }
-            if(proposalSignature(old)!==proposalSignature(next)){e.p=next;changed=true;}
+            if(proposalSignature(next)!==proposalSignature(e.p)||(next?.followSupportIds?.join(",")||"")!==(e.p?.followSupportIds?.join(",")||"")){e.p=next;changed=true;}
         }
         if(!changed)break;
     }
     return entries.filter(e=>e.p).map(e=>e.p);
-}
-
-function slopeRigidGroups(b){
-    const groups=new Map();
-
-    for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
-        if(!valid(x,y))continue;
-        const ball=b[y][x];
-        if(!ball||!ball.slopeRigidGroupId)continue;
-
-        const gid=ball.slopeRigidGroupId;
-        if(!groups.has(gid))groups.set(gid,[]);
-        groups.get(gid).push({
-            ball,x,y,
-            role:ball.slopeRigidRole,
-            orientation:ball.slopeRigidOrientation
-        });
-    }
-
-    return groups;
-}
-
-function slopeRigidExpectedMemberCount(members){
-    if(!Array.isArray(members)||!members.length)return 0;
-    // ▲が凸で2:1に裂けた後だけ、残った2球を次の物理的分離イベントまで
-    // 1つの剛体ペアとして扱う。通常の落下ピースは従来どおり3球。
-    return members.every(m=>!!m.ball?.slopeRigidPartialPair) ? 2 : 3;
-}
-
-function clearSlopeRigidGroup(members){
-    for(const m of members){
-        m.ball.slopeRigidGroupId=0;
-        m.ball.slopeRigidRole=-1;
-        m.ball.slopeRigidOrientation="";
-        m.ball.slopeRigidActive=false;
-        m.ball.slopeRigidPartialPair=false;
-        m.ball.slopeRigidSplitDir=0;
-        m.ball.rigid=false;
-    }
-}
-
-function slopeRigidExternalContacts(b,members){
-    const own=new Set(members.map(m=>m.ball.id));
-    const contacts=[];
-
-    for(const m of members){
-        if(m.y===ROWS-1){
-            contacts.push({
-                kind:"floor",
-                memberId:m.ball.id,
-                x:m.x,y:ROWS,
-                side:0
-            });
-        }
-
-        for(const dx of [-1,1]){
-            const sx=m.x+dx,sy=m.y+1;
-            if(!valid(sx,sy))continue;
-            const v=b[sy][sx];
-            if(v&&!own.has(v.id)){
-                contacts.push({
-                    kind:"ball",
-                    memberId:m.ball.id,
-                    supportId:v.id,
-                    x:sx,y:sy,
-                    side:dx
-                });
-            }
-        }
-    }
-
-    return contacts;
-}
-
-
-function slopeExternalBallAt(b,ownIds,x,y){
-    return valid(x,y) &&
-        b[y][x]!==null &&
-        !ownIds.has(b[y][x].id);
-}
-
-function straightDiagonalChainThrough(b,ownIds,sx,sy,dir){
-    // dir=+1: x-y is constant, descending to the right.
-    // dir=-1: x+y is constant, descending to the left.
-    if(!slopeExternalBallAt(b,ownIds,sx,sy))
-        return [];
-
-    const out=[[sx,sy]];
-
-    let x=sx,y=sy;
-    for(let i=0;i<ROWS;i++){
-        x+=dir;y+=1;
-        if(!slopeExternalBallAt(b,ownIds,x,y))break;
-        out.push([x,y]);
-    }
-
-    x=sx;y=sy;
-    for(let i=0;i<ROWS;i++){
-        x-=dir;y-=1;
-        if(!slopeExternalBallAt(b,ownIds,x,y))break;
-        out.unshift([x,y]);
-    }
-
-    return out;
-}
-
-function strictStraightSlopeInfo(b,members,contacts){
-    const ownIds=new Set(members.map(m=>m.ball.id));
-    const ballContacts=contacts.filter(c=>c.kind==="ball");
-
-    if(!ballContacts.length)
-        return null;
-
-    // Every contact underneath the rigid body must belong to ONE contiguous
-    // diagonal line. A valley pair, a step, or a protruding bump therefore
-    // cannot be classified as a slope.
-    for(const dir of [-1,1]){
-        for(const seed of ballContacts){
-            const chain=straightDiagonalChainThrough(
-                b,ownIds,seed.x,seed.y,dir
-            );
-
-            // Two balls can occur almost anywhere by accident. Require a real
-            // diagonal surface of at least three consecutive tangent balls.
-            if(chain.length<3)continue;
-
-            const keys=new Set(chain.map(([x,y])=>x+","+y));
-            if(!ballContacts.every(c=>keys.has(c.x+","+c.y)))
-                continue;
-
-            // Reject a convexity immediately touching the triplet.
-            // Any external lower contact outside this line means the surface
-            // below the body is not one straight diagonal plane.
-            let clean=true;
-            for(const m of members){
-                for(const dx of [-1,1]){
-                    const x=m.x+dx,y=m.y+1;
-                    if(!slopeExternalBallAt(b,ownIds,x,y))continue;
-                    if(!keys.has(x+","+y)){
-                        clean=false;
-                        break;
-                    }
-                }
-                if(!clean)break;
-            }
-            if(!clean)continue;
-
-            return {
-                dir,
-                chain,
-                invariant:dir===1
-                    ? seed.x-seed.y
-                    : seed.x+seed.y
-            };
-        }
-    }
-
-    return null;
-}
-
-function slopeRigidSurfaceKind(b,members){
-    const contacts=slopeRigidExternalContacts(b,members);
-    const orientation=
-        members[0]?.orientation ||
-        members[0]?.ball?.slopeRigidOrientation ||
-        "";
-
-    // A physical floor is never a slope.
-    if(contacts.some(c=>c.kind==="floor"))
-        return {kind:"release",contacts,dir:0};
-
-    // ▼ reaches the empty floor one logical row before y=ROWS-1.
-    if(orientation==="down"){
-        const bottom=members.find(m=>m.role===2);
-        if(bottom &&
-           bottom.y===ROWS-2 &&
-           valid(bottom.x-1,ROWS-1) &&
-           valid(bottom.x+1,ROWS-1) &&
-           b[ROWS-1][bottom.x-1]===null &&
-           b[ROWS-1][bottom.x+1]===null){
-            return {kind:"release",contacts,dir:0};
-        }
-    }
-
-    const ballContacts=contacts.filter(c=>c.kind==="ball");
-
-    // Before first contact the body remains rigid while freely falling.
-    if(!ballContacts.length)
-        return {kind:"air",contacts,dir:0};
-
-    const straight=strictStraightSlopeInfo(
-        b,members,contacts
-    );
-
-    if(straight){
-        return {
-            kind:"slope",
-            contacts,
-            dir:straight.dir,
-            chain:straight.chain,
-            invariant:straight.invariant
-        };
-    }
-
-    // Everything else is NOT a slope:
-    // horizontal shelf, isolated support, valley, step, convex bump,
-    // concave pocket, or mixed-height contact.
-    return {kind:"release",contacts,dir:0};
-}
-
-function slopeRigidMemberPivot(m,dx,dy){
-    if(dy===1&&Math.abs(dx)===1)
-        return [m.x-dx,m.y+1];
-    return null;
-}
-
-function slopeRigidTranslationSafe(b,members,dx,dy){
-    const ownIds=new Set(members.map(m=>m.ball.id));
-    const targets=new Set();
-
-    // Endpoints must be valid and free of external balls.
-    for(const m of members){
-        const tx=m.x+dx,ty=m.y+dy;
-
-        if(!valid(tx,ty))
-            return false;
-
-        const key=tx+","+ty;
-        if(targets.has(key))
-            return false;
-        targets.add(key);
-
-        const occ=b[ty][tx];
-        if(occ&&!ownIds.has(occ.id))
-            return false;
-    }
-
-    // On a 60° straight slope the rigid body does NOT travel along the
-    // straight chord between lattice centers. That chord cuts through the
-    // supporting ball. Every member follows the same 60° circular displacement
-    // around a geometrically corresponding pivot, preserving the triangle
-    // exactly throughout the motion.
-    for(const m of members){
-        const pivot=slopeRigidMemberPivot(m,dx,dy);
-
-        const p={
-            x:m.x,
-            y:m.y,
-            tx:m.x+dx,
-            ty:m.y+dy,
-            visualPivot:pivot,
-            topPivot:null,
-            _effectiveVisualPivot:pivot,
-            _effectiveTopPivot:null
-        };
-
-        for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
-            if(!valid(x,y))
-                continue;
-
-            const qball=b[y][x];
-            if(!qball||ownIds.has(qball.id))
-                continue;
-
-            // The real support at this member's pivot is an intentional
-            // tangent contact throughout the roll.
-            if(pivot&&pivot[0]===x&&pivot[1]===y)
-                continue;
-
-            const q=normPoint(x,y);
-
-            for(let i=1;i<=96;i++){
-                const pt=proposalPointAt(p,i/96);
-
-                if(Math.hypot(
-                    pt[0]-q[0],
-                    pt[1]-q[1]
-                )<0.9995)
-                    return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-function applySlopeRigidTranslation(b,members,dx,dy){
-    const motionSeq=LIVE_MOTION_SEQ++;
-    const fastImpact=members.some(m=>!!m.ball.slopeImpactFast);
-    const slopeDuration=fastImpact
-        ? SLOPE_HARD_DURATION
-        : SLOPE_NORMAL_DURATION;
-
-    const pushed=[];
-
-    for(const m of members)b[m.y][m.x]=null;
-
-    for(const m of members){
-        const nx=m.x+dx,ny=m.y+dy;
-        b[ny][nx]=m.ball;
-
-        if(!Array.isArray(m.ball.fallPath))
-            m.ball.fallPath=[];
-
-        const pivot=slopeRigidMemberPivot(m,dx,dy);
-
-        const seg={
-            from:[m.x,m.y],
-            to:[nx,ny],
-            pivot,
-            topPivot:null,
-            movingSupportId:0,
-            motionSeq,
-            rigidTriplet:members.length===3,
-            rigidPair:members.length===2,
-            slopeRigidArc:true,
-            slopeDuration,
-            slopeFastImpact:fastImpact,
-            slopeContinues:false,
-            slopeTerminal:true
-        };
-
-        m.ball.fallPath.push(seg);
-        pushed.push({ball:m.ball,seg});
-
-        m.ball.rigid=true;
-        m.ball.slopeRigidActive=true;
-
-        if(dx){
-            m.ball.rollDir=Math.sign(dx);
-            m.ball.momentumX=Math.sign(dx);
-            m.ball.subCellBias=Math.sign(dx);
-        }else if(dy>=2){
-            m.ball.rollDir=0;
-        }
-    }
-
-    // Inspect the NEW rigid pose without advancing it. If the same true
-    // straight slope continues, do not ease out at this lattice boundary:
-    // reference footage flows through the middle of a slope continuously.
-    const gid=members[0]?.ball?.slopeRigidGroupId||0;
-    const nextMembers=gid ? slopeRigidGroups(b).get(gid) : null;
-
-    let continues=false;
-    if(nextMembers&&nextMembers.length===slopeRigidExpectedMemberCount(nextMembers)){
-        const nextSurface=slopeRigidSurfaceKind(b,nextMembers);
-        if(nextSurface.kind==="slope"){
-            continues=slopeRigidTranslationSafe(
-                b,nextMembers,nextSurface.dir,1
-            );
-        }
-    }
-
-    for(const p of pushed){
-        p.seg.slopeContinues=continues;
-        p.seg.slopeTerminal=!continues;
-    }
-}
-function commonRigidMomentumDir(members){
-    let sum=0;
-    let seen=0;
-
-    for(const m of members){
-        const d=Math.sign(
-            m.ball.rollDir ||
-            m.ball.momentumX ||
-            m.ball.subCellBias ||
-            0
-        );
-        if(d){
-            sum+=d;
-            seen++;
-        }
-    }
-
-    if(!seen)return 0;
-    if(Math.abs(sum)!==seen)return 0;
-    return Math.sign(sum);
-}
-
-function rigidContactPreferredDir(contacts,members){
-    const ballContacts=contacts.filter(c=>c.kind==="ball");
-    if(!ballContacts.length)return 0;
-
-    // A single convex contact determines the physically downhill side:
-    // support lower-left => body continues right, support lower-right => left.
-    const sideSum=ballContacts.reduce(
-        (n,c)=>n+Math.sign(c.side||0),0
-    );
-
-    if(Math.abs(sideSum)===ballContacts.length)
-        return -Math.sign(sideSum);
-
-    // Mixed contacts do not invent a direction. Preserve an already shared
-    // lateral tendency only if all three members agree.
-    return commonRigidMomentumDir(members);
-}
-
-function rigidMemberIndependentMove(b,members,m){
-    const to=memberMoveWithoutGroup(
-        b,members,m
-    );
-
-    if(!to)return null;
-
-    return {
-        dx:to[0]-m.x,
-        dy:to[1]-m.y,
-        to
-    };
-}
-
-
-function rigidDirectBelowContacts(b,members){
-    const ownIds=new Set(members.map(m=>m.ball.id));
-    const out=[];
-
-    for(const m of members){
-        const info=physicalContactInfo(
-            b,m.x,m.y
-        );
-        const d=info.directBelow;
-
-        if(d && !ownIds.has(d.ball.id)){
-            out.push({
-                member:m,
-                support:d
-            });
-        }
-    }
-
-    return out;
 }
