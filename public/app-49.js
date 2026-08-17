@@ -1,41 +1,36 @@
-/* Continuous-rest aware garbage completion.
+/* Continuous-rest aware settlement predicates.
  *
- * app-48 intentionally keeps a settled garbage ball at its exact continuous
- * physical centre instead of snapping it back to the reserved lattice cell.
- * The legacy garbageVisualsDone() delegates to nearlySettled(), whose visual
- * part assumes every settled board ball must converge back to that logical
- * lattice centre.  That made an already-motionless garbage batch remain in
- * RESOLVING/GARBAGE forever.
+ * app-48 intentionally keeps a released garbage ball at its exact continuous
+ * physical rest centre instead of snapping it back to the reserved lattice
+ * cell. The legacy nearlySettled() equated "settled" with "visual centre is
+ * near logical cell". That blocked both GARBAGE completion and later ordinary
+ * SETTLE checkpoints even though the garbage circles were physically motionless.
  *
- * Preserve every legacy completion condition for ordinary/moving balls.  Only
- * while evaluating the legacy predicate, temporarily present app-48's frozen
- * continuous-rest members at their bookkeeping lattice centres.  Restore their
- * real continuous centres immediately after the synchronous predicate returns,
- * so neither rendering nor subsequent physics ever observes a snap.
+ * A continuous-rest ball counts as settled only while it has no new fallPath
+ * and its authoritative visual centre is finite. If support changes later,
+ * app-48 bridges the continuous rest centre into the newly created fallPath
+ * before the resolver reaches this predicate, so the normal path check blocks
+ * phase completion exactly as before. Ordinary balls retain the legacy rules.
  */
-const __hexGarbageVisualsDoneBeforeContinuousRestAware = garbageVisualsDone;
-
-garbageVisualsDone = function(g){
-    if(!g?.board)return __hexGarbageVisualsDoneBeforeContinuousRestAware(g);
-    const saved=[];
+const __hexNearlySettledBeforeContinuousRestAware=nearlySettled;
+nearlySettled=function(g,tol){
+    if(!g?.board)return __hexNearlySettledBeforeContinuousRestAware(g,tol);
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const ball=valid(x,y)?g.board[y][x]:null;
-        if(!ball?._hexGarbageContinuousRest)continue;
-        const v=g.vis.get(ball.id);if(!v)continue;
-        saved.push({v,x:v.x,y:v.y,vy:v.vy,motionSpeed:v.motionSpeed});
-        v.x=x;
-        v.y=y;
-        v.vy=0;
-        v.motionSpeed=0;
-    }
-    try{
-        return __hexGarbageVisualsDoneBeforeContinuousRestAware(g);
-    }finally{
-        for(const s of saved){
-            s.v.x=s.x;
-            s.v.y=s.y;
-            s.v.vy=s.vy;
-            s.v.motionSpeed=s.motionSpeed;
+        if(!ball)continue;
+        if(Array.isArray(ball.fallPath)&&ball.fallPath.length)return false;
+        const v=g.vis.get(ball.id);
+        if(ball._hexGarbageContinuousRest){
+            if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))return false;
+            if(Math.abs(Number(v.vy)||0)>1e-8||Math.abs(Number(v.motionSpeed)||0)>1e-8)return false;
+            continue;
         }
+        if(v&&(Math.abs(v.y-y)>tol||Math.abs(v.x-x)>tol))return false;
     }
+    return true;
 };
+
+/* Keep the public garbage completion hook explicit. It now delegates to the
+ * continuous-rest-aware nearlySettled() above, without temporarily moving any
+ * rendered centre to its bookkeeping lattice cell. */
+garbageVisualsDone=function(g){return nearlySettled(g,.06);};
