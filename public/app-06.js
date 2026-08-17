@@ -1,10 +1,9 @@
 /* HEXDROP garbage entry + render collision guard.
- * Reference garbage packets remain a visible rigid spawn shape only until
- * their first physical contact with the settled pile or the floor. Airborne
- * garbage packets never become supports for one another; they continue their
- * straight free fall through packet-to-packet contact. After pile/floor
- * contact every ball immediately becomes an ordinary independent pile ball
- * and uses the unified solver.
+ * Airborne garbage is evaluated ball-by-ball. A falling garbage ball becomes
+ * a board/lattice ball only when that exact ball reaches the settled pile or
+ * the floor. Other balls from the same packet stay airborne and continue the
+ * same absolute-time free fall. Airborne garbage packets never support or
+ * collide with one another.
  */
 const HEX_GARBAGE_SHAPE_INTERVAL=0.5;
 const HEX_GARBAGE_BUBBLE_DURATION=0.34;
@@ -42,6 +41,9 @@ function prepareGarbageBatch(g){
             _started:false,
             flightAge:0,
             contactY:null,
+            totalBalls:plan.pat.length,
+            landedCount:0,
+            entryBalls:[],
             straightAtomic:type==="STRAIGHT"
         });
     }
@@ -56,6 +58,7 @@ function hexGarbageAnchorVisualSafe(g,pack,ax,ay){
 }
 
 function hexGarbageFindAnchor(g,pack,requireVisual=true){
+    if(!pack.pat.length)return null;
     let ay=shapeFitsAt(g.board,pack.pat,pack.ax,pack.targetY)
         ? pack.targetY
         : deepestRigidAnchor(g.board,pack.pat,pack.ax);
@@ -73,6 +76,7 @@ function hexGarbageFindAnchor(g,pack,requireVisual=true){
 }
 
 function hexGarbageEntryAnchor(g,pack,requireVisual=true){
+    if(!pack.pat.length)return null;
     const parity=((pack.targetY%2)+2)%2,start=parity?-1:-2;
     const minX=Math.min(...pack.pat.map(([x])=>x)),maxX=Math.max(...pack.pat.map(([x])=>x));
     const xs=[];for(let d=0;d<W2;d++){if(pack.ax-d>=-minX)xs.push(pack.ax-d);if(d&&pack.ax+d<=W2-1-maxX)xs.push(pack.ax+d);}
@@ -83,98 +87,127 @@ function hexGarbageEntryAnchor(g,pack,requireVisual=true){
     return null;
 }
 
+// Emergency compatibility path used only by the watchdog. It intentionally
+// releases at most one still-airborne ball per call. Returning true means the
+// packet has become completely materialized; partial release returns false so
+// the watchdog can never mark the whole packet landed after one contact.
 function materializeGarbagePack(g,pack,atEntry=false){
-    clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
-    const logicalAnchor=atEntry?hexGarbageEntryAnchor(g,pack,false):hexGarbageFindAnchor(g,pack,false);
-    if(!logicalAnchor){g.garbBlocked=true;return false;}
-    const anchor=atEntry?hexGarbageEntryAnchor(g,pack,true):hexGarbageFindAnchor(g,pack,true);
-    if(!anchor){pack.visualBlocked=true;return false;}
-    delete pack.visualBlocked;
-    pack.ax=anchor.ax;
-    if(atEntry)pack.entryY=anchor.ay;else pack.targetY=anchor.ay;
-
-    const made=[];
-    for(let i=0;i<pack.pat.length;i++){
-        const [dx,dy]=pack.pat[i];
-        const x=pack.ax+dx,y=(atEntry?pack.entryY:pack.targetY)+dy;
-        if(!valid(x,y)||g.board[y][x]){g.garbBlocked=true;return false;}
-        const ball=mkBall(g,pack.colors[i]);
-        ball.isGarbage=true;
-        ball.garbageType=pack.type;
-        ball.motionGroupId=0;
-        ball.motionGroupSize=0;
-        ball.rigid=false;
-        g.board[y][x]=ball;noteBoardCell(g.board,y,ball);
-        setVis(g,ball,x,y,0);
-        made.push(ball);
-    }
-
-    for(const ball of made){
-        hexPhysClearGroupBall(ball);
-        ball.isGarbage=true;
-        ball.garbageType=pack.type;
-    }
-    if(atEntry)pack.entryBalls=made.map((ball,i)=>({id:ball.id,c:ball.c,x:pack.ax+pack.pat[i][0],y:pack.entryY+pack.pat[i][1]}));
-    if(settlePass(g.board))g.ver++;
-    g.ver++;
-    return true;
+    if(!pack?.pat?.length){pack.landed=true;return true;}
+    const index=0,[dx,dy]=pack.pat[index];
+    const anchor=atEntry?hexGarbageEntryAnchor(g,{...pack,pat:[[dx,dy]]},false):null;
+    const contactAnchorY=atEntry?(anchor?.ay??pack.y):hexGarbageBallContactY(g,pack,index);
+    if(!Number.isFinite(contactAnchorY))return false;
+    const ok=materializeGarbageBallAtContact(g,pack,index,contactAnchorY);
+    return !!ok&&pack.landed;
 }
 
-// Lowest vertical anchor the still-rigid visual packet may occupy without
-// crossing the floor or the settled/rendered pile. Airborne garbage packets
-// are deliberately ignored here: packet-to-packet contact must never trigger
-// lattice materialization. This remains continuous circle contact, not a
-// lattice step.
-function hexGarbageFlightContactY(g,pack){
-    const H=HEX_ROW_H,maxDy=Math.max(...pack.pat.map(([,dy])=>dy));
-    let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-maxDy;
-    const consider=(px,relY,ox,oy)=>{
-        const hx=Math.abs((px-ox)*.5);
-        if(hx>=1-1e-10)return;
+// Continuous contact limit for one airborne ball, expressed as the packet's
+// anchor Y. Only board/rendered pile balls and the floor participate. Other
+// airborne garbage is not in g.vis and is deliberately ignored.
+function hexGarbageBallContactY(g,pack,index){
+    if(!pack?.pat?.[index])return Infinity;
+    const [dx,dy]=pack.pat[index],px=pack.ax+dx,H=HEX_ROW_H;
+    let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-dy;
+    for(const [,ov] of g.vis.entries()){
+        if(!ov||!Number.isFinite(ov.x)||!Number.isFinite(ov.y))continue;
+        const hx=Math.abs((px-ov.x)*.5);
+        if(hx>=1-1e-10)continue;
         const vertical=Math.sqrt(Math.max(0,1-hx*hx))/H;
-        limit=Math.min(limit,oy-relY-vertical);
-    };
-    for(const [dx,dy] of pack.pat){
-        const px=pack.ax+dx;
-        for(const [,ov] of g.vis.entries())if(ov&&Number.isFinite(ov.x)&&Number.isFinite(ov.y))consider(px,dy,ov.x,ov.y);
+        limit=Math.min(limit,ov.y-dy-vertical);
     }
     return limit;
 }
 
-function hexGarbageFlightLogicalAnchor(g,pack){
-    const maxDy=Math.max(...pack.pat.map(([,dy])=>dy));
-    let ay=Math.min(ROWS-1-maxDy,Math.floor(pack.y+1e-9));
-    while((((ay-pack.targetY)%2)+2)%2!==0)ay--;
-    for(;ay>=BOARD_MIN_ROW;ay-=2){
-        let ok=true;
-        for(const[dx,dy]of pack.pat){const x=pack.ax+dx,y=ay+dy;if(!valid(x,y)||g.board[y][x]){ok=false;break;}}
-        if(ok)return{ax:pack.ax,ay};
+// Compatibility helper: earliest contact among the still-airborne balls.
+function hexGarbageFlightContactY(g,pack){
+    if(!pack?.pat?.length)return Infinity;
+    let limit=Infinity;
+    for(let i=0;i<pack.pat.length;i++)limit=Math.min(limit,hexGarbageBallContactY(g,pack,i));
+    return limit;
+}
+
+function hexGarbageSingleLogicalCell(g,x,visualY){
+    let y=Math.min(ROWS-1,Math.floor(visualY+1e-9));
+    for(;y>=BOARD_MIN_ROW;y--){
+        if(valid(x,y)&&!g.board[y][x])return{x,y};
     }
     return null;
 }
 
-function materializeGarbagePackAtContact(g,pack){
+function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
+    const slot=pack?.pat?.[index];
+    if(!slot)return false;
+    const [dx,dy]=slot,x=pack.ax+dx,visualY=contactAnchorY+dy;
+    const cell=hexGarbageSingleLogicalCell(g,x,visualY);
+    if(!cell)return false;
+
     clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
-    const anchor=hexGarbageFlightLogicalAnchor(g,pack);
-    if(!anchor){g.garbBlocked=true;return false;}
-    pack.ax=anchor.ax;pack.entryY=anchor.ay;
-    const made=[];
-    for(let i=0;i<pack.pat.length;i++){
-        const [dx,dy]=pack.pat[i],x=pack.ax+dx,y=pack.entryY+dy;
-        if(!valid(x,y)||g.board[y][x]){g.garbBlocked=true;return false;}
-        const ball=mkBall(g,pack.colors[i]);
-        ball.isGarbage=true;ball.garbageType=pack.type;hexPhysClearGroupBall(ball);ball.rigid=false;
-        g.board[y][x]=ball;noteBoardCell(g.board,y,ball);
-        // Seamless visual hand-off: the first board-rendered frame uses the
-        // exact contact coordinates of the airborne packet, not the logical row.
-        setVis(g,ball,x,pack.y+dy,Math.max(0,(pack.vy||0)/HEX_ROW_H));
-        const v=g.vis.get(ball.id);if(v){v.motionSpeed=Math.max(RELEASE_INITIAL_VY,pack.vy||0);v.garbageBubbleT=pack.bubbleT;}
-        made.push(ball);
+    const color=pack.colors[index],ball=mkBall(g,color);
+    ball.isGarbage=true;
+    ball.garbageType=pack.type;
+    ball.garbageSourceSeq=pack.seq;
+    ball.garbageSourceRole=(pack.totalBalls||0)-(pack.pat.length||0);
+    hexPhysClearGroupBall(ball);
+    ball.rigid=false;
+    g.board[cell.y][cell.x]=ball;noteBoardCell(g.board,cell.y,ball);
+
+    // Preserve the exact continuous collision point and downward velocity.
+    // The logical cell only selects the lattice lane; ordinary pile physics
+    // takes over from this visual contact coordinate on the same frame.
+    setVis(g,ball,cell.x,visualY,Math.max(0,(pack.vy||0)/HEX_ROW_H));
+    const v=g.vis.get(ball.id);
+    if(v){
+        v.motionSpeed=Math.max(RELEASE_INITIAL_VY,pack.vy||0);
+        v.garbageBubbleT=pack.bubbleT;
+        v.justReleased=true;
     }
-    pack.entryBalls=made.map((ball,i)=>({id:ball.id,c:ball.c,x:pack.ax+pack.pat[i][0],y:pack.entryY+pack.pat[i][1]}));
+
+    if(!Array.isArray(pack.entryBalls))pack.entryBalls=[];
+    pack.entryBalls.push({id:ball.id,c:ball.c,x:cell.x,y:cell.y,contactY:visualY});
+    pack.entryY=cell.y;
+    pack.lastReleaseTime=g.garbageClock;
+    pack.landedCount=(pack.landedCount||0)+1;
+
+    // Remove only this physical ball from the airborne packet. The remaining
+    // slots keep their original offsets and continue the same free-fall law.
+    pack.pat.splice(index,1);
+    pack.colors.splice(index,1);
+
     if(settlePass(g.board))g.ver++;
     g.ver++;
+
+    if(pack.pat.length===0){
+        pack.landed=true;
+        pack.releaseTime=g.garbageClock;
+    }
     return true;
+}
+
+// Release every ball whose own contact surface has been reached at desiredY.
+// Recompute after each release because the new lattice ball may immediately
+// become a legitimate pile surface for another still-airborne ball.
+function materializeGarbageContactsThrough(g,pack,desiredY){
+    let made=0,guard=0;
+    while(pack?.pat?.length&&guard++<64){
+        let hitIndex=-1,hitY=Infinity;
+        for(let i=0;i<pack.pat.length;i++){
+            const cy=hexGarbageBallContactY(g,pack,i);
+            if(desiredY+HEX_GARBAGE_CONTACT_EPS>=cy&&cy<hitY){hitY=cy;hitIndex=i;}
+        }
+        if(hitIndex<0)break;
+        if(!materializeGarbageBallAtContact(g,pack,hitIndex,hitY))break;
+        made++;
+    }
+    return made;
+}
+
+// Compatibility name retained for tests/older callers. It no longer releases
+// a whole packet: only balls that have individually reached pile/floor contact
+// at the packet's current continuous Y are materialized.
+function materializeGarbagePackAtContact(g,pack){
+    const before=pack?.pat?.length||0;
+    materializeGarbageContactsThrough(g,pack,pack?.y??GARBAGE_START_Y);
+    return (pack?.pat?.length||0)<before;
 }
 
 function updateGarbagePacks(g,dt){
@@ -198,6 +231,9 @@ function updateGarbagePacks(g,dt){
         next.vy=0;
         next.flightAge=0;
         next.bubbleT=0;
+        if(!Number.isFinite(next.totalBalls))next.totalBalls=next.pat.length;
+        if(!Number.isFinite(next.landedCount))next.landedCount=0;
+        if(!Array.isArray(next.entryBalls))next.entryBalls=[];
         g.activeGarbagePacks.push(next);
         g.garbageNextBallAt=scheduledStart+HEX_GARBAGE_SHAPE_INTERVAL;
     }
@@ -207,27 +243,21 @@ function updateGarbagePacks(g,dt){
         p.bubbleT=Math.max(0,g.garbageClock-(p.actualStartTime||0));
         if(p.bubbleT+1e-9<HEX_GARBAGE_BUBBLE_DURATION){p.y=GARBAGE_START_Y;p.vy=0;continue;}
 
-        // Absolute-time free fall keeps the source trajectory identical at
-        // 30/60/120 fps and removes the visible per-cell stepping.
+        // Every still-airborne ball shares the source packet's absolute-time
+        // free fall until its own pile/floor contact. One contacted ball never
+        // clamps the Y position of its siblings.
         const flightAge=Math.max(0,p.bubbleT-HEX_GARBAGE_BUBBLE_DURATION);
         p.flightAge=flightAge;
         const desiredY=GARBAGE_START_Y+(HEX_GARBAGE_FLIGHT_V0*flightAge+.5*GRAV*flightAge*flightAge)/HEX_ROW_H;
         p.vy=HEX_GARBAGE_FLIGHT_V0+GRAV*flightAge;
-        const contactY=hexGarbageFlightContactY(g,p);
-        p.contactY=contactY;
-        if(desiredY<contactY-HEX_GARBAGE_CONTACT_EPS){p.y=desiredY;continue;}
-
-        p.y=contactY;
-        if(materializeGarbagePackAtContact(g,p)){
-            p.releaseTime=g.garbageClock;
-            p.landed=true;
-        }else if(g.garbBlocked){
-            p.landed=true;
-        }
+        p.y=desiredY;
+        p.contactY=hexGarbageFlightContactY(g,p);
+        materializeGarbageContactsThrough(g,p,desiredY);
+        if(!p.pat.length){p.landed=true;p.releaseTime=g.garbageClock;}
     }
 
-    // After first pile/floor contact the shape identity is gone. Continue the
-    // exact same bounded independent-ball solver used by ordinary pile balls.
+    // Any ball that has individually crossed into the lattice is now ordinary
+    // independent pile physics. Airborne siblings are not obstacles/supports.
     if(pendingFallPathCount(g)===0&&hasLegalGravityMove(g.board)){
         if(settlePass(g.board))g.ver++;
     }
@@ -253,7 +283,7 @@ function garbageBatchDone(g){
 function finishGarbageVisuals(g){}
 
 /* Continuous render-space collision guard. There is no moving-vs-moving
- * exemption: every rendered center must remain at least one diameter apart.
+ * exemption: every rendered board center must remain at least one diameter apart.
  */
 function visualPointSafe(g,id,x,y,minDist=0.999999){
     const maxVisualRowY=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H;
