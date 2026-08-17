@@ -13,7 +13,7 @@ permissions:
 jobs:
   quick:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -34,11 +34,14 @@ jobs:
           touch=$?
           node tests/audit-attack-conservation.js >> audit-results/quick.log 2>&1
           attack=$?
-          printf '{"sha":"%s","knownBugs":%s,"garbageInterval":%s,"touch":%s,"attackConservation":%s}\n' "$GITHUB_SHA" "$known" "$garbage" "$touch" "$attack" > audit-results/quick.json
+          node tests/ball-conservation-fast.js >> audit-results/quick.log 2>&1
+          conservation=$?
+          printf '{"sha":"%s","knownBugs":%s,"garbageInterval":%s,"touch":%s,"attackConservation":%s,"ballConservation":%s}\n' "$GITHUB_SHA" "$known" "$garbage" "$touch" "$attack" "$conservation" > audit-results/quick.json
           echo "known=$known" >> "$GITHUB_OUTPUT"
           echo "garbage=$garbage" >> "$GITHUB_OUTPUT"
           echo "touch=$touch" >> "$GITHUB_OUTPUT"
           echo "attack=$attack" >> "$GITHUB_OUTPUT"
+          echo "conservation=$conservation" >> "$GITHUB_OUTPUT"
           exit 0
       - name: Commit quick report
         shell: bash
@@ -56,3 +59,4 @@ jobs:
           test "${{ steps.gate.outputs.garbage }}" = "0"
           test "${{ steps.gate.outputs.touch }}" = "0"
           test "${{ steps.gate.outputs.attack }}" = "0"
+          test "${{ steps.gate.outputs.conservation }}" = "0"
