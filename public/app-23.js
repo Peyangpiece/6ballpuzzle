@@ -140,11 +140,34 @@ function hexGarbagePrepareContinuousPath(g,ball,entry,from){
     v.motionSpeed=Math.max(v.motionSpeed||0,Math.max(0,v.vy||0)*HEX_ROW_H,0.0001);
 }
 
+function hexGarbageContactPointReserved(g,x,y){
+    // The logical-cell reservation in app-17 protects future lattice nodes, but
+    // a continuous handoff begins at the physical contact centre, which may be
+    // between lattice nodes. Reserve that exact centre against every remaining
+    // visual path as well. If a prior moving ball will pass within one diameter,
+    // keep this member airborne and retry after the corridor clears.
+    if(typeof __hexdropGarbageCellCrossesActivePath==="function"&&__hexdropGarbageCellCrossesActivePath(g,x,y))return true;
+    for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){
+        const b=valid(bx,by)?g.board[by][bx]:null;
+        if(!b||!hexGarbageBallStillMoving(b))continue;
+        const v=g.vis.get(b.id);if(!v)continue;
+        if(hexPhysDist(v.x,v.y,x,y)<HEX_MIN_DIST-1e-7)return true;
+    }
+    return false;
+}
+
 const __hexGarbageMaterializeBeforeContinuousHandoff=materializeGarbageBallAtContact;
 materializeGarbageBallAtContact=function(g,pack,index,contactAnchorY){
     const slot=pack?.pat?.[index];
     if(!slot)return false;
     const exactX=pack.ax+slot[0],exactY=contactAnchorY+slot[1];
+
+    // Do not convert an airborne member into a board ball at a centre that is
+    // currently occupied OR will be traversed by an earlier active path. This
+    // is the continuous-coordinate equivalent of reserving an intermediate
+    // lattice cell and prevents a waiting handoff from being hit later.
+    if(hexGarbageContactPointReserved(g,exactX,exactY))return false;
+
     const before=Array.isArray(pack.entryBalls)?pack.entryBalls.length:0;
     const ok=__hexGarbageMaterializeBeforeContinuousHandoff(g,pack,index,contactAnchorY);
     if(!ok)return false;
