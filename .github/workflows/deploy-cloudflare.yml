@@ -29,6 +29,9 @@ jobs:
       - name: Run rotation regressions
         run: node tests/rotation-regressions.js
 
+      - name: Run gravity pile-flow regressions
+        run: node tests/gravity-pile-flow-regressions.js
+
       - name: Run airborne garbage pass-through regression
         run: node tests/garbage-airborne-pass-through.js
 
