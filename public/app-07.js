@@ -7,6 +7,31 @@ const PILE_FLOW_COLLISION_SAMPLES = 144;
 const PILE_FLOW_CONTACT_EPS = 0.014;
 const PILE_FLOW_SUPPORT_MOVE_EPS = 0.004;
 
+// A geometric six-ball ring is not automatically an intentional HEXAGON.
+// The old global hole exception froze any mixed-colour ring after a PYRAMID
+// clear, producing suspended bridges that could never exist in the reference.
+// Preserve a centre hole only for an actual same-colour HEXAGON technique or
+// for balls that explicitly came from HEXAGON garbage.
+function referenceHexagonRingBalls(b,cx,cy){
+    const cells=[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]],balls=[];
+    if(!valid(cx,cy)||b[cy][cx]!==null)return null;
+    for(const[dx,dy]of cells){const x=cx+dx,y=cy+dy;if(!valid(x,y)||!b[y][x])return null;balls.push(b[y][x]);}
+    const c=getC(balls[0]),sameColour=balls.every(ball=>getC(ball)===c);
+    const explicitGarbage=balls.every(ball=>!!ball?.isGarbage&&ball.garbageType==="HEXAGON");
+    return sameColour||explicitGarbage?balls:null;
+}
+isBalancedHexagonCenterHole=function(b,cx,cy){
+    const ring=referenceHexagonRingBalls(b,cx,cy);if(!ring)return false;
+    return [[cx-1,cy+1],[cx+1,cy+1]].every(([x,y])=>touchesFloorRow(y)||hexPhysSupportInfo(b,x,y).count>=2);
+};
+ballInBalancedHexagonRing=function(b,x,y){
+    for(let cy=y-1;cy<=y+1;cy++)for(let cx=x-2;cx<=x+2;cx++)if(isBalancedHexagonCenterHole(b,cx,cy)){
+        if([[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]].some(([dx,dy])=>cx+dx===x&&cy+dy===y))return true;
+    }
+    return false;
+};
+boardHasIntentionalHexagonHole=function(b){for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isBalancedHexagonCenterHole(b,x,y))return true;return false;};
+
 function pileFlowPoint(seg,t){
     t=Math.max(0,Math.min(1,t));
     const H=HEX_ROW_H;
@@ -164,10 +189,6 @@ function repairPileFlowSegmentGeometry(g,ball,seg,reason="pile_flow"){
         const H=HEX_ROW_H,d0=Math.hypot((seg.from[0]-px)*0.5,(seg.from[1]-py)*H),d1=Math.hypot((seg.to[0]-px)*0.5,(seg.to[1]-py)*H);
         if(Math.abs(d0-1)<1e-6&&Math.abs(d1-1)<1e-6){
             seg.pivot=[px,py];seg.pileFlowRepairedPivot=true;
-            // During a clear the visual centre of an otherwise static support
-            // may still be a few thousandths away from its logical lattice
-            // centre. Follow that actual support centre so the rolling ball
-            // stays exactly tangent instead of cutting through it by ~0.4%.
             if(reason==="clear_support_loss"){
                 seg.followSupportIds=[support.id];
                 seg.movingSupportId=support.id;
@@ -201,8 +222,19 @@ function updateScheduledPileFlowVisual(g,cell,v,dt){
     const q=(g.pileFlowClock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration),[nx,ny]=pileFlowPointForBall(g,cell,seg,q,g.pileFlowClock);v.x=nx;v.y=Math.max(oldY,ny);const physicalSpeed=Math.hypot((v.x-oldX)*0.5,(v.y-oldY)*HEX_ROW_H)/Math.max(1e-9,dt);v.motionSpeed=physicalSpeed;v.vy=Math.max(0,(v.y-oldY)/Math.max(1e-9,dt));return true;
 }
 
+function snapQuiescentPileVisuals(g,maxDist=.02){
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;if(!ball)continue;
+        if(Array.isArray(ball.fallPath)&&ball.fallPath.length)continue;
+        const v=g.vis.get(ball.id);if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
+        if(pileFlowPhysicalDist([v.x,v.y],[x,y])>maxDist)continue;
+        v.x=x;v.y=y;v.vy=0;v.motionSpeed=0;
+    }
+}
 function prepareContinuousPileFlow(g,reason="pile_flow"){
-    normalizeAllNonActivePileBalls(g);const before=physicsSignature(g);settleAll(g.board);const after=physicsSignature(g),tagged=markPileFlowPaths(g,reason),moved=before!==after||tagged.segments>0;if(moved)g.ver++;return{moved,...tagged};
+    normalizeAllNonActivePileBalls(g);
+    if(reason==="clear_support_loss")snapQuiescentPileVisuals(g);
+    const before=physicsSignature(g);settleAll(g.board);const after=physicsSignature(g),tagged=markPileFlowPaths(g,reason),moved=before!==after||tagged.segments>0;if(moved)g.ver++;return{moved,...tagged};
 }
 
 function hexMotionPhysicalDist(seg){if(!seg?.from||!seg?.to)return 0;return Math.hypot((seg.to[0]-seg.from[0])*0.5,(seg.to[1]-seg.from[1])*HEX_ROW_H);}
