@@ -12,6 +12,13 @@ function put(g,x,y,id,garbage=false){
   if(garbage)b.isGarbage=true;
   g.board[y][x]=b;setVis(g,b,x,y,0);return b;
 }
+function putMinimal(g,x,y,id,garbage=false){
+  const b={id,c:id%5,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};
+  if(garbage)b.isGarbage=true;
+  g.board[y][x]=b;
+  g.vis.set(id,{x,y,vy:0,motionSpeed:0});
+  return b;
+}
 function makePack(ax){
   return{
     type:"PYRAMID",seq:1,pat:[[0,0]],colors:[0],ax,targetY:0,
@@ -53,27 +60,22 @@ function minPackPileDistance(g,p){
   expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-7,
     "clamped airborne garbage penetrated accumulated pile: "+minPackPileDistance(g,p));
 
-  // Once the reservation clears, retry the same existing materializer at the
-  // exact continuous contact. It must immediately hand the ball into ordinary
-  // pile physics rather than requiring another downward airborne frame.
   delete p._hexContactFrame;
   const resumed=materializeGarbageContactsThrough(g,p,physicalContact+HEX_GARBAGE_CONTACT_EPS);
   expect(resumed===1&&p.pat.length===0,
     "contacted garbage did not resume materialization when reservation cleared");
 }
 
-// 1000 direct overshoot cases. These isolate the new invariant itself without
-// paying the cost of the entire production update stack 1000 times. Existing
-// production-stack 100/1000/3000 tests still run separately in CI.
+// 1000 direct overshoot cases using only the state required by the contact
+// barrier. This keeps the invariant test fast; separate CI tests still exercise
+// the complete production engine 100/1000/3000 times.
 for(let i=0;i<1000;i++){
-  const g=createEngine(98100+i);
+  const g={board:newBoard(),vis:new Map(),activeGarbagePacks:[],garbageClock:1+(i%17)*.01,_hexGarbageObstacleFrame:null};
   const y=3+(i%8);
   let x=((y&1)?1:0)+2*(1+(i%8));
   while(x>=W2||!valid(x,y))x-=2;
-  put(g,x,y,990000+i,i%4===0);
-  g.state="RESOLVING";g.phase="GARBAGE";g.garbageClock=1+(i%17)*.01;
+  putMinimal(g,x,y,990000+i,i%4===0);
   const p=makePack(x);g.activeGarbagePacks=[p];
-  g._hexGarbageObstacleFrame=null;
   const contact=hexGarbageRemainingContactBarrier(g,p);
   expect(Number.isFinite(contact),"case "+i+": contact barrier missing");
   const overshoot=[.0001,.01,.05,.2,.75,1.5][i%6];
