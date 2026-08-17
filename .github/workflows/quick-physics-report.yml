@@ -13,22 +13,29 @@ permissions:
 jobs:
   quick:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run targeted gate
+      - name: Run quick regression gates
         id: gate
         shell: bash
         run: |
           set +e
           mkdir -p audit-results
-          node tests/verify-known-bugs.js > audit-results/quick.log 2>&1
-          code=$?
-          printf '{"sha":"%s","knownBugs":%s}\n' "$GITHUB_SHA" "$code" > audit-results/quick.json
-          echo "code=$code" >> "$GITHUB_OUTPUT"
+          : > audit-results/quick.log
+          node tests/verify-known-bugs.js >> audit-results/quick.log 2>&1
+          known=$?
+          node tests/garbage-ball-interval-regression.js >> audit-results/quick.log 2>&1
+          garbage=$?
+          node tests/touch-control-regression.js >> audit-results/quick.log 2>&1
+          touch=$?
+          printf '{"sha":"%s","knownBugs":%s,"garbageInterval":%s,"touch":%s}\n' "$GITHUB_SHA" "$known" "$garbage" "$touch" > audit-results/quick.json
+          echo "known=$known" >> "$GITHUB_OUTPUT"
+          echo "garbage=$garbage" >> "$GITHUB_OUTPUT"
+          echo "touch=$touch" >> "$GITHUB_OUTPUT"
           exit 0
       - name: Commit quick report
         shell: bash
@@ -39,5 +46,9 @@ jobs:
           git add audit-results/quick.json audit-results/quick.log
           git diff --cached --quiet || git commit -m "Record quick physics report [skip ci]"
           git push
-      - name: Enforce targeted gate
-        run: test "${{ steps.gate.outputs.code }}" = "0"
+      - name: Enforce quick gates
+        shell: bash
+        run: |
+          test "${{ steps.gate.outputs.known }}" = "0"
+          test "${{ steps.gate.outputs.garbage }}" = "0"
+          test "${{ steps.gate.outputs.touch }}" = "0"
