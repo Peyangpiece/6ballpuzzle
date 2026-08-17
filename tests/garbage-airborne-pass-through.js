@@ -1,8 +1,11 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js"]
-  .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
+const runtime=[
+  "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
+  "app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
+  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js"
+].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const assertions=String.raw`
 function expect(value,message){if(!value)throw new Error(message);}
@@ -77,6 +80,43 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
  expect(pack.entryBalls.every(e=>e.y>=e.contactY-1e-7),"a packet member was registered above physical contact");
 }
 
+// Non-grid physical contact must stay at the exact continuous contact centre.
+// The ball may reserve a logical cell internally, but the rendered centre may
+// reach that lattice cell only through a continuous gravity/contact-arc path.
+{
+ const g=createEngine(91002);let id=810000;
+ function put(x,y,c){const b={id:id++,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};g.board[y][x]=b;setVis(g,b,x,y,0);return b;}
+ put(6,11,0);put(8,11,1);put(10,11,2);put(7,10,3);put(9,10,4);put(8,9,0);
+ const pack={
+  type:"PYRAMID",seq:8,pat:[[0,0]],colors:[1],ax:8,targetY:0,
+  y:GARBAGE_START_Y,vy:9,landed:false,_started:true,actualStartTime:0,
+  bubbleT:1,totalBalls:1,landedCount:0,entryBalls:[],_hexSplitTriggered:true
+ };
+ g.activeGarbagePacks=[pack];g.garbageClock=1;
+ const contact=hexGarbageBallContactY(g,pack,0);
+ expect(Math.abs(contact-Math.round(contact))>.05,"continuous hand-off fixture accidentally landed on a grid row");
+ const made=materializeGarbageBallAtContact(g,pack,0,contact);
+ expect(made,"continuous hand-off contact did not materialize");
+ const entry=pack.entryBalls[0],ball=hexGarbageBoardBallById(g,entry.id),v=g.vis.get(entry.id);
+ expect(ball&&v,"continuous hand-off ball missing after contact");
+ expect(close(v.x,8,1e-8)&&close(v.y,contact,1e-8),"garbage visually snapped to lattice at contact");
+ expect(close(entry.handoffX,8,1e-8)&&close(entry.handoffY,contact,1e-8),"entry metadata lost exact physical contact");
+ const first=Array.isArray(ball.fallPath)?ball.fallPath[0]:null;
+ expect(first?.pileFlow,"non-grid contact did not receive a continuous pile-flow segment");
+ expect(close(first.from[0],8,1e-8)&&close(first.from[1],contact,1e-8),"continuous path did not start at exact physical contact");
+ let maxStep=0,prev=[v.x,v.y];
+ for(let i=0;i<480&&pendingFallPathCount(g)>0;i++){
+  updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);
+  const now=[v.x,v.y];maxStep=Math.max(maxStep,hexPhysDist(prev[0],prev[1],now[0],now[1]));prev=now;
+ }
+ expect(pendingFallPathCount(g)===0,"continuous garbage hand-off never finished");
+ let finalCell=null;
+ for(let y=boardScanMin(g.board);y<ROWS&&!finalCell;y++)for(let x=0;x<W2;x++)if(valid(x,y)&&g.board[y][x]===ball){finalCell=[x,y];break;}
+ expect(finalCell,"continuous garbage ball disappeared from logical board");
+ expect(close(v.x,finalCell[0],1e-6)&&close(v.y,finalCell[1],1e-6),"garbage final rendered position did not settle on lattice");
+ expect(maxStep<0.35,"continuous garbage hand-off contained a visible grid snap: "+maxStep);
+}
+
 // A complete pyramid must still finish after all six individual contacts.
 {
  const g=createEngine(22);g.state="RESOLVING";g.phase="GARBAGE";g.garbShapes=["PYRAMID"];
@@ -94,7 +134,7 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
  expect(p.entryBalls.every(e=>e.y>=e.contactY-1e-7),"full pyramid registered a garbage ball above physical contact");
 }
 
-console.log("garbage airborne pass-through + individual contact PASS");
+console.log("garbage airborne pass-through + continuous handoff PASS");
 `;
 
 vm.runInNewContext(runtime+assertions,{
