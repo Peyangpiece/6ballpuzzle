@@ -3,7 +3,7 @@ const vm=require("vm");
 
 const runtime=[
  "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js",
- "app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js"
+ "app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js"
 ].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 const seeds=process.argv[2]?process.argv[2].split(",").map(Number):[1,7,19,37];
 const seconds=Math.max(30,Number(process.argv[3])||60);
@@ -79,10 +79,6 @@ function makeParallelFixture(){
 }
 function makeVacatedSupportFixture(){
  const g=createEngine(9107),support=mkBall(g,0),upper=mkBall(g,2);
- // Logical gravity resolves these as two consecutive events on valid doubled-x
- // hex cells: the lower ball vacates [10,5], then the upper ball enters it.
- // Reference PYRAMID/HEXAGON footage shows the upper ball moving during the
- // support's motion, not after it reaches the next lattice cell.
  support.fallPath=[{from:[10,5],to:[9,6],kind:"ROLL_LEFT",pivot:null,topPivot:null,motionSeq:1,followSupportIds:[]}];
  upper.fallPath=[{from:[9,4],to:[10,5],kind:"ROLL_RIGHT",pivot:null,topPivot:null,motionSeq:2,followSupportIds:[]}];
  g.board[6][9]=support;g.board[5][10]=upper;
