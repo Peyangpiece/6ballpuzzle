@@ -598,6 +598,17 @@ function resolveVisualContacts(g){
     if(items.length<2)return;
     const H=HEX_ROW_H,MIN=1,floorMax=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H;
     const shift=(q,px,py)=>{
+        // Once an individual garbage ball has gridified it may slide/fall, but
+        // collision correction itself must never lift it. Convert an attempted
+        // upward correction into an equal horizontal escape so y remains
+        // monotone. Repeated contact passes distribute any residual safely.
+        if(q.ball?.isGarbage&&py<0){
+            const mag=Math.hypot(px,py);
+            let dir=Math.sign(px);
+            if(!dir)dir=Math.sign(q.x-q.v.x)||((q.ball.id&1)?1:-1);
+            px=dir*mag;
+            py=0;
+        }
         const ox=q.v.x,oy=q.v.y;
         q.v.x=Math.max(0,Math.min(W2-1,q.v.x+px/.5));
         q.v.y=Math.min(floorMax,q.v.y+py/H);
