@@ -33,9 +33,9 @@ function minPackPileDistance(g,p){
   return best;
 }
 
-// Reproduce the real tunnel: pile contact is reached, but the continuous
-// hand-off is temporarily refused because its corridor is reserved. Jump the
-// absolute clock beyond contact to exercise the exact one-frame tunneling risk.
+// Full production integration: contact has already been crossed by absolute
+// time, but lattice hand-off is deliberately refused for one update. The
+// renderer-visible packet centre must be pulled back to exact circle contact.
 {
   const g=createEngine(98001);put(g,5,5,980010,false);const p=makePack(5);
   g.state="RESOLVING";g.phase="GARBAGE";g.garbageClock=HEX_GARBAGE_BUBBLE_DURATION+1.25;
@@ -53,6 +53,7 @@ function minPackPileDistance(g,p){
   expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-7,
     "clamped airborne garbage penetrated accumulated pile: "+minPackPileDistance(g,p));
 
+  // Once the reservation clears, the existing continuous hand-off must resume.
   let guard=0;
   while(p.pat.length&&guard++<240){
     updateGarbagePacks(g,PHYSICS_FRAME);
@@ -64,26 +65,29 @@ function minPackPileDistance(g,p){
   expect(!p.pat.length,"contacted garbage never resumed materialization after reservation cleared");
 }
 
-// 1000 varied delayed-contact frames. Each case starts with absolute time
-// already beyond first contact, directly testing large one-frame overshoot.
+// 1000 direct overshoot cases. These isolate the new invariant itself without
+// paying the cost of the entire production update stack 1000 times. Existing
+// production-stack 100/1000/3000 tests still run separately in CI.
 for(let i=0;i<1000;i++){
   const g=createEngine(98100+i);
   const y=3+(i%8);
   let x=((y&1)?1:0)+2*(1+(i%8));
   while(x>=W2||!valid(x,y))x-=2;
   put(g,x,y,990000+i,i%4===0);
-  g.state="RESOLVING";g.phase="GARBAGE";
-  const p=makePack(x);
-  g.garbageClock=HEX_GARBAGE_BUBBLE_DURATION+1.1+(i%5)*.12;
-  g.garbagePlans=[p];g.activeGarbagePacks=[p];g.garbageNextBallAt=999;g.garbLeft=0;
-  const originalReserved=hexGarbageContactPointReserved;
-  hexGarbageContactPointReserved=()=>true;
-  updateGarbagePacks(g,[1/30,1/60,1/120,.08,.16,.24][i%6]);
-  hexGarbageContactPointReserved=originalReserved;
-  expect(p._hexContactClamped===true,"case "+i+": delayed contact was not clamped");
+  g.state="RESOLVING";g.phase="GARBAGE";g.garbageClock=1+(i%17)*.01;
+  const p=makePack(x);g.activeGarbagePacks=[p];
+  g._hexGarbageObstacleFrame=null;
+  const contact=hexGarbageRemainingContactBarrier(g,p);
+  expect(Number.isFinite(contact),"case "+i+": contact barrier missing");
+  const overshoot=[.0001,.01,.05,.2,.75,1.5][i%6];
+  p.y=contact+overshoot;
+  p.vy=1+(i%23);
+  const didClamp=hexGarbageClampAirborneAtContact(g,p);
+  expect(didClamp===true&&p._hexContactClamped===true,"case "+i+": overshoot was not clamped");
+  expect(Math.abs(p.y-contact)<1e-8,"case "+i+": clamp did not restore exact contact");
+  expect(p.vy===0,"case "+i+": clamped packet kept downward velocity");
   expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-6,
-    "case "+i+": airborne garbage tunneled through pile: "+minPackPileDistance(g,p));
-  expect(p.vy===0,"case "+i+": clamped packet could still interpolate downward");
+    "case "+i+": clamped packet penetrated pile: "+minPackPileDistance(g,p));
 }
 
 console.log("garbage delayed-contact no-tunnel 1000/1000 PASS");
