@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   targeted:
     runs-on: ubuntu-latest
@@ -16,4 +19,16 @@ jobs:
           node-version: '22'
       - run: node tests/audit-targeted-first-failures.js
       - run: node tests/seed7-step3414-parallel-pile-contact.js
-      - run: node tests/seed7-step3414-write-trace.js
+      - name: Capture exact visual writes
+        run: |
+          mkdir -p diagnostics
+          node tests/seed7-step3414-write-trace.js > diagnostics/seed7-step3414-write-trace.log
+      - name: Persist trace
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add diagnostics/seed7-step3414-write-trace.log
+          if ! git diff --cached --quiet; then
+            git commit -m "Store seed7 visual write trace [skip ci]"
+            git push
+          fi
