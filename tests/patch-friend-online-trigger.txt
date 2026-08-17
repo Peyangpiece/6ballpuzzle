@@ -1,0 +1,1 @@
+apply real room and rating wiring 1
