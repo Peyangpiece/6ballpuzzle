@@ -257,6 +257,63 @@ resolveVisualContacts=function(g){
     g._visualMovingIds=savedMoving;
 };
 
+// The collision test for a rotation must use exactly the pose that the renderer
+// will display: continuous pieceVX/freeX, fractional fall height, landing dOff,
+// kick translation and the 0.10 s rotation interpolation. The older logical
+// sweep omitted continuous X and landing alignment, so a legal logical rotation
+// could still visibly cut through a pile ball near the top of the field.
+function __hexdropRenderedRotationPose(g,from,to,dir,t){
+    t=Math.max(0,Math.min(1,t));
+    const elapsed=t*ROTATE_VISUAL_TIME;
+    const startVX=Number.isFinite(g.pieceVX)?g.pieceVX:from.x;
+    let visualX;
+    if(Number.isFinite(g.freeX))visualX=g.freeX;
+    else{
+        const delta=to.x-startVX,step=PIECE_SNAP_SPEED*elapsed;
+        visualX=Math.abs(delta)<=step?to.x:startVX+Math.sign(delta)*step;
+    }
+    const dxGrid=visualX-to.x;
+    const frac=activeDropFraction(g,elapsed);
+    let dOff=dispOff(to.rot);
+    const blocked=!pieceFits(g.board,{...to,y:to.y+2});
+    const resetLock=(g.lockT>0&&g.lockResets<12)?0:g.lockT;
+    const futureLock=blocked?resetLock+elapsed:0;
+    const align=blocked?Math.max(0,1-Math.min(1,futureLock/LANDING_ALIGN_DURATION)):1;
+    dOff*=align;
+    const pts=pieceCells(to).map(([x,y])=>[latticeRealX(x+dxGrid),cellCenterYNorm(y+frac+dOff)]);
+    const gx=(pts[0][0]+pts[1][0]+pts[2][0])/3,gy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+    const k=1-smoothRotationT(t),ang=-k*(dir>0?1:-1)*(TAU/6),ca=Math.cos(ang),sa=Math.sin(ang);
+    const before=centroidOf(from),after=centroidOf(to),ox=k*(before[0]-after[0])*.5,oy=k*(before[1]-after[1])*HEX_ROW_H;
+    return pts.map(([px,py])=>{const ax=px-gx,ay=py-gy;return[gx+ax*ca-ay*sa+ox,gy+ax*sa+ay*ca+oy];});
+}
+function __hexdropRenderedRotationSweepSafe(g,from,to,dir){
+    const right=latticeRealX(W2-1),MIN=1.000001;
+    for(let i=0;i<=64;i++){
+        const pts=__hexdropRenderedRotationPose(g,from,to,dir,i/64);
+        for(const [px,py] of pts){
+            if(px<-1e-8||px>right+1e-8||py>FLOOR_CENTER_N+1e-8)return false;
+            for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+                const ball=valid(x,y)?g.board[y][x]:null;if(!ball)continue;
+                const v=g.vis.get(ball.id),bx=latticeRealX(v&&Number.isFinite(v.x)?v.x:x),by=cellCenterYNorm(v&&Number.isFinite(v.y)?v.y:y);
+                if(Math.hypot(px-bx,py-by)<MIN)return false;
+            }
+        }
+        for(let a=0;a<pts.length;a++)for(let b=a+1;b<pts.length;b++)if(Math.hypot(pts[a][0]-pts[b][0],pts[a][1]-pts[b][1])<MIN)return false;
+    }
+    return true;
+}
+rotate=function(g,dir){
+    if(g.state!=="PLAYING"||!g.piece)return false;
+    const nr=(g.piece.rot+(dir>0?1:5))%6,from={...g.piece},before=centroidOf(from);
+    for(const[kx,ky]of KICKS){
+        const q={...from,rot:nr,x:from.x+kx,y:from.y+ky};
+        if(!pieceFits(g.board,q)||!rotationSweepSafe(g.board,from,q,dir))continue;
+        if(!__hexdropRenderedRotationSweepSafe(g,from,q,dir))continue;
+        const after=centroidOf(q);g.piece=q;g.rotAnim={p:0,dir:dir>0?1:-1,dx:before[0]-after[0],dy:before[1]-after[1]};emit(g,{t:"rotate"});if(g.lockT>0&&g.lockResets<12){g.lockT=0;g.lockResets++;}return true;
+    }
+    return false;
+};
+
 // Network packets arrive at a much lower cadence than the 120 Hz game loop.
 // Advance the opponent's airborne garbage with the same capture-derived
 // absolute free-fall law used by the authoritative engine. Snapshot values
