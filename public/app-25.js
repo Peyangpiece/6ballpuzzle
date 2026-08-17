@@ -1,22 +1,28 @@
 /* Authoritative scheduled pile-flow positions.
  *
  * pileFlow is an analytic absolute-time animation. Its scheduler has already
- * chosen collision-safe start/end times, so a ball whose segment has not yet
- * started must stay at the position implied by that schedule. The generic
- * visual contact solver used to classify every ball with fallPath as moving and
- * could therefore push future-scheduled balls a little on every frame. Those
- * tiny pushes accumulated until a waiting ball visibly entered settled garbage.
+ * chosen collision-safe start/end times, so generic visual contact projection
+ * must never become a second trajectory generator. In particular, future
+ * scheduled balls previously drifted a little on every frame and could appear
+ * to lock into / cut through lattice geometry before their motion actually
+ * started.
  *
- * Re-evaluate every currently scheduled pileFlow ball from the shared
- * pileFlowClock immediately before the generic contact solver. The solver is
- * still retained for sub-pixel residual precision; because the authoritative
- * position is restored every frame, its tiny numerical correction cannot
- * accumulate into a new trajectory or an intermediate lattice lock.
+ * Restore analytic pileFlow centres both before AND after the generic contact
+ * solver. The solver may still correct legacy/non-pileFlow motion, but it cannot
+ * deform an absolute-time pileFlow path. Quiescent balls whose paths have
+ * already ended are allowed a tiny canonical snap to their final logical cell;
+ * that is the only place where lattice position is authoritative visually.
  */
+const HEX_PILEFLOW_FINAL_SNAP_EPS=0.002;
+
+function hexPileFlowPhaseAllowsAuthoritativeRestore(g){
+    return !!g&&g.state==="RESOLVING"&&(
+        g.phase==="SETTLE"||(g.phase==="CLEAR"&&g.clearing?.committed)
+    );
+}
+
 function hexRestoreAuthoritativePileFlowPositions(g){
-    if(!g||g.state!=="RESOLVING"||!g.board||!g.vis)return 0;
-    const phaseAllows=g.phase==="SETTLE"||(g.phase==="CLEAR"&&g.clearing?.committed);
-    if(!phaseAllows)return 0;
+    if(!hexPileFlowPhaseAllowsAuthoritativeRestore(g)||!g.board||!g.vis)return 0;
     let restored=0;
     const clock=Number(g.pileFlowClock)||0;
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -26,9 +32,6 @@ function hexRestoreAuthoritativePileFlowPositions(g){
         if(!seg?.pileFlow||!Number.isFinite(seg.pileFlowStart)||!Number.isFinite(seg.pileFlowEnd))continue;
         const v=g.vis.get(ball.id);
         if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
-        // A late-settled garbage support can become authoritative after the
-        // original schedule was compiled. Repair that geometry before asking
-        // pileFlowPositionAt() for the absolute-time centre.
         if(typeof hexGarbageAttachLateSettledPivot==="function"){
             hexGarbageAttachLateSettledPivot(g,ball,seg);
         }
@@ -41,8 +44,36 @@ function hexRestoreAuthoritativePileFlowPositions(g){
     return restored;
 }
 
+function hexCanonicalizeFinishedPileVisuals(g){
+    if(!hexPileFlowPhaseAllowsAuthoritativeRestore(g)||!g.board||!g.vis)return 0;
+    let snapped=0;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        if(!ball||(Array.isArray(ball.fallPath)&&ball.fallPath.length))continue;
+        const v=g.vis.get(ball.id);
+        if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
+        if(pileFlowPhysicalDist([v.x,v.y],[x,y])>HEX_PILEFLOW_FINAL_SNAP_EPS)continue;
+        v.x=x;
+        v.y=y;
+        v.vy=0;
+        v.motionSpeed=0;
+        snapped++;
+    }
+    return snapped;
+}
+
+function hexRestorePileFlowFrame(g){
+    if(!hexPileFlowPhaseAllowsAuthoritativeRestore(g))return;
+    hexRestoreAuthoritativePileFlowPositions(g);
+    hexCanonicalizeFinishedPileVisuals(g);
+}
+
 const __hexResolveVisualContactsBeforeAuthoritativePileFlow=resolveVisualContacts;
 resolveVisualContacts=function(g){
-    hexRestoreAuthoritativePileFlowPositions(g);
-    return __hexResolveVisualContactsBeforeAuthoritativePileFlow(g);
+    hexRestorePileFlowFrame(g);
+    const result=__hexResolveVisualContactsBeforeAuthoritativePileFlow(g);
+    // Do not render the contact solver's displacement of an analytic path.
+    // Any legitimate non-pileFlow correction has already been applied above.
+    hexRestorePileFlowFrame(g);
+    return result;
 };
