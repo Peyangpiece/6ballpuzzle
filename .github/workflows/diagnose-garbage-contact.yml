@@ -13,9 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Diagnose garbage contact monotonicity
+        run: node tests/garbage-contact-monotone-diagnostic.js
       - name: Diagnose STRAIGHT individual contacts
         run: node tests/garbage-straight-contact-diagnostic.js
       - name: Diagnose settled-garbage pivot priority
         run: node tests/settle-garbage-pivot-diagnostic.js
-      - name: Diagnose garbage contact monotonicity
-        run: node tests/garbage-contact-monotone-diagnostic.js
