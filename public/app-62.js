@@ -1,19 +1,19 @@
 /* Final garbage-side boundary convergence after the complete physics frame.
  *
- * Normal accumulated-pile centres remain authoritative (app-59).  A continuous
+ * Normal accumulated-pile centres remain authoritative (app-59). A continuous
  * rest garbage ball may be displaced by a moving normal pile ball, and that
  * displacement can propagate through a dense garbage contact chain. One local
  * 72-pass solve is usually enough, but seed-7 proves that a long chain can still
- * end the frame a few 1e-3 diameters inside the boundary.
+ * end the frame slightly inside the numerical one-diameter boundary.
  *
  * Do NOT re-enable normal-pile projection. Instead, after app-61 has finished
  * the whole frame transaction, measure only garbage-related contacts. If a real
- * penetration remains, run the same garbage-side solver up to three additional
+ * penetration remains, run the same garbage-side solver up to four additional
  * times. Normal pile centres stay fixed; only garbage/rest centres yield and
  * app-51 persists their new continuous resting coordinates.
  */
 const HEX_GARBAGE_FRAME_SAFE_DIST=1-1e-7;
-const HEX_GARBAGE_FRAME_EXTRA_SOLVES=3;
+const HEX_GARBAGE_FRAME_EXTRA_SOLVES=4;
 
 function hexGarbageFrameMinDistance(g){
     const items=hexRenderBoardVisuals(g);
