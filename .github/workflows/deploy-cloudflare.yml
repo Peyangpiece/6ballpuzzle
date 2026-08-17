@@ -36,10 +36,10 @@ jobs:
         run: node tests/garbage-fidelity-100.js
 
       - name: Run weighted 1000-pass reference fidelity
-        run: node tests/reference-fidelity-1000.js
+        run: node tests/run-reference-fidelity-1000.js
 
       - name: Run staged 3000-pass video convergence
-        run: node tests/reference-convergence-3000.js
+        run: node tests/run-reference-convergence-3000.js
 
       - name: Run continuous no-overlap regression
         run: node tests/overlap-regressions.js
