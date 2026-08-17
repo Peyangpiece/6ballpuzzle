@@ -51,4 +51,28 @@ visualSubstepCount=function(g){
     return __hexdropVisualSubstepCount(g);
 };
 
+// Network packets arrive at a much lower cadence than the 120 Hz game loop.
+// Advance the opponent's airborne garbage with the same capture-derived
+// absolute free-fall law used by the authoritative engine.  Snapshot values
+// remain a monotone lower bound, so packet refreshes never pull a shape upward.
+stepNetGarbageMotion=function(g,dt){
+    for(const p of g.activeGarbagePacks||[]){
+        const snapshotAge=Number.isFinite(p.netBubbleT)?p.netBubbleT:(p.bubbleT||0);
+        if(!Number.isFinite(p._netGarbageLead))p._netGarbageLead=0;
+        p._netGarbageLead=Math.min(SNAP_MS/1000+.04,p._netGarbageLead+Math.max(0,dt));
+        const age=Math.max(p.bubbleT||0,snapshotAge+p._netGarbageLead);
+        p.bubbleT=age;
+        if(age<=HEX_GARBAGE_BUBBLE_DURATION+1e-12){
+            p.y=Math.max(GARBAGE_START_Y,Number.isFinite(p.netY)?p.netY:GARBAGE_START_Y);
+            p.vy=0;
+            continue;
+        }
+        const flightAge=age-HEX_GARBAGE_BUBBLE_DURATION;
+        const referenceY=GARBAGE_START_Y+(HEX_GARBAGE_FLIGHT_V0*flightAge+.5*GRAV*flightAge*flightAge)/HEX_ROW_H;
+        const snapshotY=Number.isFinite(p.netY)?p.netY:GARBAGE_START_Y;
+        p.y=Math.max(Number.isFinite(p.y)?p.y:GARBAGE_START_Y,snapshotY,referenceY);
+        p.vy=Math.max(Number.isFinite(p.netVy)?p.netVy:0,HEX_GARBAGE_FLIGHT_V0+GRAV*flightAge);
+    }
+};
+
 window.__mountHexdrop = function () { ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App)); };
