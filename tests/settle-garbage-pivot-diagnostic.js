@@ -4,7 +4,7 @@ const vm=require('vm');
 const names=[
   'app-01.js','app-02.js','app-03.js','app-04.js','app-05.js','app-06.js',
   'app-07.js','app-08.js','app-09.js','app-10.js','app-14.js','app-17.js',
-  'app-18.js','app-19.js','app-20.js','app-21.js','app-22.js','app-23.js','app-24.js','app-25.js','app-26.js','app-27.js'
+  'app-18.js','app-19.js','app-20.js','app-21.js','app-22.js','app-23.js','app-24.js','app-25.js','app-26.js','app-27.js','app-28.js'
 ];
 const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,'utf8')).join('\n');
 
