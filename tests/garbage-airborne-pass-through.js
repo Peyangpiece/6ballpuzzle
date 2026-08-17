@@ -30,9 +30,9 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
 // Its sibling stays airborne even though both balls belong to the same packet.
 {
  const g=createEngine(91001),support=mkBall(g,3);
- g.board[4][4]=support;setVis(g,support,4,4,0);
+ g.board[4][5]=support;setVis(g,support,5,4,0);
  const pack={
-  type:"PYRAMID",seq:7,pat:[[0,0],[2,0]],colors:[0,1],ax:4,targetY:0,
+  type:"PYRAMID",seq:7,pat:[[0,0],[2,0]],colors:[0,1],ax:5,targetY:0,
   y:GARBAGE_START_Y,vy:12,landed:false,_started:true,actualStartTime:0,
   bubbleT:1,totalBalls:2,landedCount:0,entryBalls:[]
  };
