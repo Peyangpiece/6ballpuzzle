@@ -8,7 +8,7 @@ let source=fs.readFileSync(sourcePath,"utf8");
 const oldTimeout='vm.runInNewContext(runtime+assertions,context,{timeout:120000});';
 const newTimeout='vm.runInNewContext(runtime+assertions,context,{timeout:300000});';
 const oldRuntime='"app-10.js","app-14.js","app-17.js"';
-const newRuntime='"app-10.js","app-14.js","app-17.js","app-18.js","app-19.js","app-20.js","app-21.js"';
+const newRuntime='"app-10.js","app-14.js","app-17.js","app-18.js","app-19.js","app-20.js","app-21.js","app-22.js"';
 
 if(!source.includes(oldTimeout)){
   throw new Error("overlap regression timeout declaration changed; update runner explicitly");
