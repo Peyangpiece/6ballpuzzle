@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Profile 30s production pile performance
-        run: node tests/pile-performance-30s-diagnostic.js
+      - name: Profile dense settle stage breakdown
+        run: node tests/pile-step-stage-profile.js
