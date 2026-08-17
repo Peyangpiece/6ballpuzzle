@@ -4,7 +4,7 @@ const vm=require("vm");
 const names=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
   "app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
-  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js"
+  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js","app-26.js"
 ];
 const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
@@ -91,9 +91,6 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
 }
 
 // Future-scheduled pileFlow is absolute-time state, not a soft contact body.
-// Reproduce the accumulated drift from the seed-19 failure: while the segment
-// is still waiting, generic contact correction must not preserve an already
-// drifted visual centre. It is restored to the scheduled start before solving.
 {
   const g=createEngine(11003),support=mkBall(g,1),mover=mkBall(g,2);
   support.isGarbage=true;support.fallPath=[];
@@ -111,6 +108,24 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   const v=g.vis.get(mover.id);
   expect(pileFlowPhysicalDist([v.x,v.y],[13,8])<1e-6,'future pileFlow waiter retained accumulated contact drift');
   expect(pileFlowPhysicalDist([v.x,v.y],[15,8])>=.999999,'future pileFlow waiter remained inside settled garbage');
+}
+
+// Adjacent garbage members in the same translational wave may inherit different
+// entry speeds, but they must share one scalar progress so their separation is
+// exactly preserved throughout the continuous move.
+{
+  const g=createEngine(11004),a=mkBall(g,1),b=mkBall(g,2);
+  a.isGarbage=true;b.isGarbage=true;
+  const sa={from:[9,4],to:[8,5],kind:'ROLL_LEFT',motionSeq:0,pileFlow:true,pileFlowStart:0,pileFlowDuration:1,pileFlowEnd:1,pivot:null,topPivot:null,followSupportIds:[],movingSupportId:0};
+  const sb={from:[11,4],to:[10,5],kind:'ROLL_LEFT',motionSeq:0,pileFlow:true,pileFlowStart:0,pileFlowDuration:1,pileFlowEnd:1,pivot:null,topPivot:null,followSupportIds:[],movingSupportId:0};
+  pileFlowNominalDuration(sa,{vy:0,speed:.35});
+  pileFlowNominalDuration(sb,{vy:0,speed:2.4});
+  sa.pileFlowStart=sb.pileFlowStart=0;sa.pileFlowEnd=sb.pileFlowEnd=1;sa.pileFlowDuration=sb.pileFlowDuration=1;
+  a.fallPath=[sa];b.fallPath=[sb];g.board[5][8]=a;g.board[5][10]=b;setVis(g,a,9,4,0);setVis(g,b,11,4,0);
+  for(const t of [0,.1,.25,.5,.75,.9,1]){
+    const pa=pileFlowPositionAt(g,a,t),pb=pileFlowPositionAt(g,b,t);
+    expect(Math.abs(pileFlowPhysicalDist(pa,pb)-1)<1e-9,'parallel garbage wave lost one-diameter spacing at t='+t);
+  }
 }
 
 console.log('gravity pile flow regressions PASS');
