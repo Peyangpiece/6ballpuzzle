@@ -38,6 +38,9 @@ jobs:
       - name: Run airborne garbage pass-through regression
         run: node tests/garbage-airborne-pass-through.js
 
+      - name: Run garbage versus accumulated pile collision regression
+        run: node tests/garbage-pile-collision-regressions.js
+
       - name: Run 100-pass movement fidelity
         run: node tests/run-movement-fidelity-100.js
 
