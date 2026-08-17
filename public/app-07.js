@@ -4,6 +4,8 @@ const PILE_FLOW_SCHEDULE_STEP = 1 / 240;
 const PILE_FLOW_MIN_WAVE_GAP = 1 / 120;
 const PILE_FLOW_MIN_DIST = 0.9998;
 const PILE_FLOW_COLLISION_SAMPLES = 144;
+const PILE_FLOW_CONTACT_EPS = 0.014;
+const PILE_FLOW_SUPPORT_MOVE_EPS = 0.004;
 
 function pileFlowPoint(seg,t){
     t=Math.max(0,Math.min(1,t));
@@ -94,16 +96,53 @@ function scheduleFreshPileFlowWave(g,fresh){
 function pileFlowPreviousEnd(ball,seg,clock){let earliest=Math.max(0,clock||0),path=Array.isArray(ball?.fallPath)?ball.fallPath:[],idx=path.indexOf(seg);if(idx<=0)return earliest;for(let i=idx-1;i>=0;i--){const prev=path[i];if(Number.isFinite(prev?.pileFlowEnd)){earliest=Math.max(earliest,prev.pileFlowEnd);break;}}return earliest;}
 function pileFlowPriorEnds(g,excludeSeg){const out=[];for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null;if(!ball?.fallPath)continue;for(const seg of ball.fallPath)if(seg!==excludeSeg&&seg?.pileFlow&&Number.isFinite(seg.pileFlowEnd))out.push(seg.pileFlowEnd);}return out;}
 
+// Reference PYRAMID/HEXAGON clears do not animate as discrete lattice waves.
+// A ball resting on a support begins moving as soon as that support moves and
+// remains tangent to it. Infer that causal contact from already-scheduled lower
+// balls so upper pile members can start in the same collapse interval instead
+// of waiting for the lower ball to finish a whole logical cell transition.
+function pileFlowInferMovingSupportIds(g,ball,seg,start,duration){
+    if(!seg?.from||!seg?.to||pileFlowSupportIds(seg).length)return[];
+    const out=[],from=seg.from,to=seg.to,H=HEX_ROW_H,end=start+duration;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const other=valid(x,y)?g.board[y][x]:null;if(!other||other===ball)continue;
+        const p0=pileFlowPositionAt(g,other,start),dy0=(p0[1]-from[1])*H;
+        if(dy0<=0.10)continue;
+        const d0=pileFlowPhysicalDist(from,p0);if(Math.abs(d0-1)>PILE_FLOW_CONTACT_EPS)continue;
+        const p1=pileFlowPositionAt(g,other,end),moved=pileFlowPhysicalDist(p0,p1);
+        if(moved<PILE_FLOW_SUPPORT_MOVE_EPS)continue;
+        const d1=pileFlowPhysicalDist(to,p1);if(Math.abs(d1-1)>PILE_FLOW_CONTACT_EPS)continue;
+        out.push({id:other.id,y:p0[1],x:p0[0],move:moved});
+    }
+    out.sort((a,b)=>b.y-a.y||b.move-a.move||Math.abs(a.x-from[0])-Math.abs(b.x-from[0]));
+    return out.slice(0,2).map(q=>q.id);
+}
+function pileFlowAttachCausalSupports(g,ball,seg,start,duration){
+    if(pileFlowSupportIds(seg).length)return false;
+    const ids=pileFlowInferMovingSupportIds(g,ball,seg,start,duration);if(!ids.length)return false;
+    seg.followSupportIds=ids;seg.movingSupportId=ids[0];seg.pileFlowInferredSupport=true;return true;
+}
+
 function scheduleFreshPileFlowPerBall(g,fresh){
     if(!fresh.length)return;preparePileFlowDurations(g,fresh);
     const seqs=[...new Set(fresh.map(q=>q.seq))].sort((a,b)=>a-b),bySeq=new Map(seqs.map(seq=>[seq,[]]));for(const q of fresh)bySeq.get(q.seq).push(q);
     for(const seq of seqs){
         const pending=[...bySeq.get(seq)];
+        // Lower supports are scheduled first. Upper balls can then inspect their
+        // continuous path and attach to it without introducing a staged wait.
         pending.sort((a,b)=>(b.seg.from?.[1]||0)-(a.seg.from?.[1]||0)||(a.seg.from?.[0]||0)-(b.seg.from?.[0]||0));
         while(pending.length){
             const {ball,seg}=pending.shift(),duration=Math.max(1/120,seg._pileNominalDuration||1/120);let earliest=pileFlowPreviousEnd(ball,seg,g.pileFlowClock||0);
+            pileFlowAttachCausalSupports(g,ball,seg,earliest,duration);
             const priorEnds=pileFlowPriorEnds(g,seg),fallback=Math.max(earliest,...priorEnds,earliest);let start=earliest,safe=false;
             while(start<=fallback+PILE_FLOW_SCHEDULE_STEP+1e-9){if(pileFlowWaveSafe(g,[seg],start,duration)){safe=true;break;}start+=PILE_FLOW_SCHEDULE_STEP;}
+            // If the first contact inference was made before the support began
+            // moving, retry once at the first collision-free candidate. This is
+            // still causal motion, not a fixed wave delay.
+            if(!safe&&!pileFlowSupportIds(seg).length){
+                const ids=pileFlowInferMovingSupportIds(g,ball,seg,start,duration);
+                if(ids.length){seg.followSupportIds=ids;seg.movingSupportId=ids[0];seg.pileFlowInferredSupport=true;if(pileFlowWaveSafe(g,[seg],earliest,duration)){start=earliest;safe=true;}}
+            }
             if(!safe){start=fallback;if(!pileFlowWaveSafe(g,[seg],start,duration)){const limit=fallback+Math.max(duration,.5);while(start<=limit+1e-9){if(pileFlowWaveSafe(g,[seg],start,duration)){safe=true;break;}start+=PILE_FLOW_SCHEDULE_STEP;}}else safe=true;}
             if(!safe){seg.pileFlowStart=start;seg.pileFlowDuration=duration;seg.pileFlowEnd=start+duration;}
         }
