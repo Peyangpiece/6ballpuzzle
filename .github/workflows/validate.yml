@@ -52,6 +52,8 @@ jobs:
           node /tmp/floor-test.js
       - name: Check rigidity and garbage regressions
         run: node tests/physics-regressions.js
+      - name: Check airborne garbage pass-through
+        run: node tests/garbage-airborne-pass-through.js
       - name: Check 50-point reference fidelity
         run: node tests/reference-fidelity.js
       - name: Check 100-pass ball movement fidelity
