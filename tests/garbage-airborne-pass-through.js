@@ -83,7 +83,7 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
 
 // Non-grid physical contact must stay at the exact continuous contact centre.
 // The ball may reserve a logical cell internally, but the rendered centre may
-// reach that lattice cell only through a continuous gravity/contact-arc path.
+// reach that lattice cell only through a continuous, motion-sequenced path.
 {
  const g=createEngine(91002);let id=810000;
  function put(x,y,c){const b={id:id++,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};g.board[y][x]=b;setVis(g,b,x,y,0);return b;}
@@ -103,7 +103,8 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
  expect(close(v.x,8,1e-8)&&close(v.y,contact,1e-8),"garbage visually snapped to lattice at contact");
  expect(close(entry.handoffX,8,1e-8)&&close(entry.handoffY,contact,1e-8),"entry metadata lost exact physical contact");
  const first=Array.isArray(ball.fallPath)?ball.fallPath[0]:null;
- expect(first?.pileFlow,"non-grid contact did not receive a continuous pile-flow segment");
+ expect(first?.garbageContinuousHandoff,"non-grid contact did not receive a continuous hand-off segment");
+ expect(Number(first.motionSeq)>0,"continuous hand-off was removed from garbage motion ordering");
  expect(close(first.from[0],8,1e-8)&&close(first.from[1],contact,1e-8),"continuous path did not start at exact physical contact");
  let maxStep=0,prev=[v.x,v.y];
  for(let i=0;i<480&&pendingFallPathCount(g)>0;i++){
@@ -135,7 +136,7 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
  expect(p.entryBalls.every(e=>e.y>=e.contactY-1e-7),"full pyramid registered a garbage ball above physical contact");
 }
 
-console.log("garbage airborne pass-through + continuous handoff PASS");
+console.log("garbage airborne pass-through + ordered continuous handoff PASS");
 `;
 
 vm.runInNewContext(runtime+assertions,{
