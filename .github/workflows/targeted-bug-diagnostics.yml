@@ -8,7 +8,7 @@ on:
 jobs:
   targeted:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,3 +16,4 @@ jobs:
           node-version: '22'
       - run: node tests/audit-targeted-first-failures.js
       - run: node tests/seed7-step3414-parallel-pile-contact.js
+      - run: node tests/seed7-step3414-write-trace.js
