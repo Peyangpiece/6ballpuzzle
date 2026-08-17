@@ -32,6 +32,9 @@ jobs:
       - name: Run gravity pile-flow regressions
         run: node tests/gravity-pile-flow-regressions.js
 
+      - name: Run causal reference pile architecture regression
+        run: node tests/pile-reference-architecture-regressions.js
+
       - name: Run garbage performance regressions
         run: node tests/garbage-performance-regressions.js
 
