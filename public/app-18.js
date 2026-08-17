@@ -38,8 +38,6 @@ function hexRotationRenderedSweepSafe(g,fromPiece,toPiece,dir){
         const simPiece={...toPiece};
         let dropClock=startDropT+elapsed*scale;
 
-        // stepEngine advances a complete logical row only after the normal
-        // drop clock crosses one interval and the next row is actually free.
         while(dropClock>=iv&&pieceFits(g.board,{...simPiece,y:simPiece.y+2})){
             dropClock-=iv;
             simPiece.y+=2;
@@ -61,8 +59,6 @@ function hexRotationRenderedSweepSafe(g,fromPiece,toPiece,dir){
         const blocked=!pieceFits(g.board,{...simPiece,y:simPiece.y+2});
 
         if(blocked){
-            // This is intentionally identical to the PLAYING contact gate in
-            // stepEngine: lockT remains zero until dropT reaches contactClock.
             const contactFrac=safeActiveFallOffset(g,cells,dxGrid,fullDOff,2);
             const contactClock=iv*Math.max(0,Math.min(2,contactFrac))/2;
             if(dropClock+1e-10>=contactClock){
@@ -124,20 +120,12 @@ rotate=function(g,dir){
     return false;
 };
 
-/* Pile-flow endpoint precision.
- *
- * Contact arcs can finish a few millionths inside an exact hex tangent because
- * a moving-support circle projection is evaluated with floating-point trig.
- * The logical path endpoints are exact lattice contacts. When the analytic
- * result is already indistinguishably close to one of those endpoints, snap to
- * that exact point. This changes no visible trajectory and prevents a nominal
- * diameter-1 contact from becoming 0.999998... in the long overlap invariant.
- */
+/* Pile-flow endpoint precision. */
 function hexSnapPileFlowEndpoint(seg,point,oldY){
     if(!seg||!point)return point;
     for(const ep of [seg.from,seg.to]){
         if(!Array.isArray(ep)||ep.length<2)continue;
-        if(ep[1]<oldY-1e-9)continue; // pile visuals never move upward
+        if(ep[1]<oldY-1e-9)continue;
         if(pileFlowPhysicalDist(point,ep)<=1e-5)return[ep[0],ep[1]];
     }
     return point;
@@ -171,10 +159,105 @@ updateScheduledPileFlowVisual=function(g,cell,v,dt){
     return true;
 };
 
-// resolveVisualContacts can make a microscopic secondary correction after a
-// pile-flow ball has already been placed on an exact lattice tangent. Restore
-// that exact endpoint only when it is still collision-free against every other
-// rendered board ball. This is a precision cleanup, never a collision bypass.
+/*
+ * Contact-network precision normalization.
+ *
+ * A clear can leave several resting/waiting pile balls only a few millionths
+ * away from exact hex-lattice tangency. Correcting one ball at a time fails:
+ * its neighbour is also microscopically displaced, so the single correction
+ * appears to overlap that neighbour. Build the entire quiescent contact target
+ * set first, validate those targets together, and apply the safe set at once.
+ *
+ * This is deliberately tiny (5e-5 physical units), excludes garbage and any
+ * visibly moving ball, and never relaxes the diameter rule.
+ */
+const HEX_QUIESCENT_SNAP_EPS=5e-5;
+const HEX_QUIESCENT_SAFE_DIST=0.9999999;
+
+function hexQuiescentPileTarget(g,cell,x,y,v){
+    if(!cell||cell.isGarbage||!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))return null;
+    const path=Array.isArray(cell.fallPath)?cell.fallPath:null;
+    const seg=path&&path.length?path[0]:null;
+    const speed=Math.max(Math.abs(v.vy||0),Math.abs(v.motionSpeed||0));
+    const waiting=!!seg?.pileFlow&&Number.isFinite(seg.pileFlowStart)&&g.pileFlowClock<seg.pileFlowStart-1e-10;
+    if(!waiting&&speed>1e-3)return null;
+
+    const choices=[];
+    if(seg?.pileFlow){
+        for(const ep of [seg.from,seg.to]){
+            if(!Array.isArray(ep)||ep.length<2)continue;
+            const d=pileFlowPhysicalDist([v.x,v.y],ep);
+            if(d<=HEX_QUIESCENT_SNAP_EPS)choices.push({target:[ep[0],ep[1]],d});
+        }
+    }else if(!path||!path.length){
+        const d=pileFlowPhysicalDist([v.x,v.y],[x,y]);
+        if(d<=HEX_QUIESCENT_SNAP_EPS)choices.push({target:[x,y],d});
+    }
+    if(!choices.length)return null;
+    choices.sort((a,b)=>a.d-b.d);
+    return choices[0].target;
+}
+
+function hexRenderedBoardEntries(g){
+    const out=[];
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const cell=valid(x,y)?g.board[y][x]:null;
+        if(!cell)continue;
+        const v=g.vis.get(cell.id);
+        const current=v&&Number.isFinite(v.x)&&Number.isFinite(v.y)?[v.x,v.y]:[x,y];
+        out.push({cell,v,x,y,current});
+    }
+    return out;
+}
+
+function hexNormalizeQuiescentPileNetwork(g){
+    if(!g?.board||!g?.vis)return;
+    const entries=hexRenderedBoardEntries(g);
+    const byId=new Map(entries.map(e=>[e.cell.id,e]));
+    const targets=new Map();
+
+    for(const e of entries){
+        const target=hexQuiescentPileTarget(g,e.cell,e.x,e.y,e.v);
+        if(target)targets.set(e.cell.id,target);
+    }
+    if(!targets.size)return;
+
+    // Remove unsafe candidates iteratively. Candidate-vs-candidate checks use
+    // both exact targets, which is the key difference from one-ball snapping.
+    const active=new Set(targets.keys());
+    let changed=true;
+    while(changed&&active.size){
+        changed=false;
+        const remove=[];
+        for(const id of active){
+            const a=byId.get(id),ap=targets.get(id);
+            if(!a||!ap){remove.push(id);continue;}
+            for(const b of entries){
+                if(b.cell.id===id)continue;
+                const bp=active.has(b.cell.id)?targets.get(b.cell.id):b.current;
+                if(!bp)continue;
+                if(pileFlowPhysicalDist(ap,bp)<HEX_QUIESCENT_SAFE_DIST){
+                    remove.push(id);
+                    break;
+                }
+            }
+        }
+        if(remove.length){
+            changed=true;
+            for(const id of remove)active.delete(id);
+        }
+    }
+
+    for(const id of active){
+        const e=byId.get(id),target=targets.get(id);
+        if(!e?.v||!target)continue;
+        e.v.x=target[0];
+        e.v.y=target[1];
+        const seg=Array.isArray(e.cell.fallPath)&&e.cell.fallPath.length?e.cell.fallPath[0]:null;
+        if(!seg||g.pileFlowClock<seg.pileFlowStart){e.v.vy=0;e.v.motionSpeed=0;}
+    }
+}
+
 const __hexResolveVisualContactsBeforeEndpointStabilize=resolveVisualContacts;
 function hexPileEndpointSafeNow(g,cell,ep){
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -182,30 +265,11 @@ function hexPileEndpointSafeNow(g,cell,ep){
         if(!other||other===cell)continue;
         const ov=g.vis.get(other.id);
         const op=ov&&Number.isFinite(ov.x)&&Number.isFinite(ov.y)?[ov.x,ov.y]:[x,y];
-        if(pileFlowPhysicalDist(ep,op)<0.9999999)return false;
+        if(pileFlowPhysicalDist(ep,op)<HEX_QUIESCENT_SAFE_DIST)return false;
     }
     return true;
 }
 resolveVisualContacts=function(g){
     __hexResolveVisualContactsBeforeEndpointStabilize(g);
-    if(!g?.board||!g?.vis)return;
-    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-        const cell=valid(x,y)?g.board[y][x]:null;
-        const seg=cell&&Array.isArray(cell.fallPath)&&cell.fallPath.length?cell.fallPath[0]:null;
-        if(!cell||!seg?.pileFlow)continue;
-        const v=g.vis.get(cell.id);
-        if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
-        const candidates=[seg.from,seg.to]
-            .filter(ep=>Array.isArray(ep)&&ep.length>=2&&ep[1]>=v.y-1e-8)
-            .map(ep=>({ep,d:pileFlowPhysicalDist([v.x,v.y],ep)}))
-            .filter(q=>q.d<=2e-5)
-            .sort((a,b)=>a.d-b.d);
-        for(const {ep} of candidates){
-            if(!hexPileEndpointSafeNow(g,cell,ep))continue;
-            v.x=ep[0];
-            v.y=ep[1];
-            if(g.pileFlowClock<seg.pileFlowStart){v.vy=0;v.motionSpeed=0;}
-            break;
-        }
-    }
+    hexNormalizeQuiescentPileNetwork(g);
 };
