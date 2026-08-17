@@ -7,22 +7,6 @@ const HEX_GARBAGE_BUBBLE_DURATION=0.34;
 const HEX_GARBAGE_BUBBLE_POP_DURATION=0.14;
 window.__hexdropGarbageInterval=HEX_GARBAGE_SHAPE_INTERVAL;
 
-// Garbage used to leave each newly resolved contact segment on the legacy
-// render path. visualSubstepCount() then forced four full updateVisuals scans
-// for the receiving board on every 120 Hz physics step. Because both boards
-// share one browser thread, heavy opponent garbage could make the local active
-// triplet appear frozen even though its logical engine was still advancing.
-// Convert every garbage-induced contact event to the absolute-time pileFlow
-// renderer immediately. Final logical cells/cadence are unchanged; only the
-// expensive legacy visual integration path is removed.
-function runGarbageGravityEvent(g,reason="garbage_flow"){
-    const moved=settlePass(g.board);
-    if(!moved)return false;
-    if(typeof markPileFlowPaths==="function")markPileFlowPaths(g,reason);
-    g.ver++;
-    return true;
-}
-
 function prepareGarbageBatch(g){
     if(g.garbageBatchPrepared)return;
     g.garbageBatchPrepared=true;
@@ -129,10 +113,10 @@ function materializeGarbagePack(g,pack,atEntry=false){
         ball.garbageType=pack.type;
     }
     if(atEntry)pack.entryBalls=made.map((ball,i)=>({id:ball.id,c:ball.c,x:pack.ax+pack.pat[i][0],y:pack.entryY+pack.pat[i][1]}));
-    // Resolve at most one canonical physics event now. Immediately schedule
-    // that event through pileFlow so opponent garbage never forces the shared
-    // frame loop back into the expensive 4x legacy visual substeps.
-    runGarbageGravityEvent(g,"garbage_entry");
+    // Resolve at most one canonical physics event now. Any remaining motion
+    // continues incrementally while later packs enter, keeping each render
+    // frame bounded so the opponent board never disappears during garbage.
+    if(settlePass(g.board))g.ver++;
     g.ver++;
     return true;
 }
@@ -145,7 +129,7 @@ function updateGarbagePacks(g,dt){
         const ball=valid(x,y)?g.board[y][x]:null;
         if(ball?.garbageBubbleHold&&g.garbageClock+1e-9>=(ball.garbageBubbleUntil||0)){delete ball.garbageBubbleHold;releasedBubble=true;}
     }
-    if(releasedBubble)runGarbageGravityEvent(g,"garbage_bubble_release");
+    if(releasedBubble&&settlePass(g.board))g.ver++;
 
     // Start at most one complete shape in one update. Frame drops never create
     // catch-up bursts. PYRAMID/HEXAGON are six-ball units; STRAIGHT is one
@@ -186,10 +170,9 @@ function updateGarbagePacks(g,dt){
 
     // Continue one bounded contact event whenever the previous visible event
     // has finished. This lets early garbage balls keep cascading while the
-    // next half-second packet is still bubbling. Every event is analytic
-    // pileFlow, so the receiving board remains one visual scan per fixed step.
+    // next half-second packet is still bubbling.
     if(pendingFallPathCount(g)===0&&hasLegalGravityMove(g.board)){
-        runGarbageGravityEvent(g,"garbage_cascade");
+        if(settlePass(g.board))g.ver++;
     }
 
     const shapesDone=g.garbagePlans.every(p=>p.landed);
@@ -202,7 +185,7 @@ function updateGarbagePacks(g,dt){
         }else if(placed>0){
             g.garbLeft--;
             g.garbageNextBallAt=g.garbageClock+HEX_GARBAGE_SHAPE_INTERVAL;
-            runGarbageGravityEvent(g,"garbage_numeric");
+            if(settlePass(g.board))g.ver++;
         }
     }
 }
