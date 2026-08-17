@@ -21,7 +21,11 @@ for(let step=0;step<=1450&&g.alive;step++){
  if(q.min<.999999)throw new Error("queued garbage paths still overlap: "+JSON.stringify(worstFrame));
  for(const z of balls(g))if(z.b.isGarbage&&Array.isArray(z.b.fallPath)&&z.b.fallPath.length){
   const first=z.b.fallPath[0];
-  if(Array.isArray(first?.from)&&first.from[1]<z.v.y-1.000001){
+  // A rendered centre may legitimately be between FREE_FALL.from and .to.
+  // A stale path exists only when the whole segment, including its destination,
+  // is already above the rendered centre. Checking only `from` falsely rejected
+  // normal interpolation such as 7 -> 9 while the visual centre is at 8.06.
+  if(Array.isArray(first?.to)&&first.to[1]<z.v.y-1.000001){
    throw new Error("gridified garbage retained a path wholly above its rendered centre: "+JSON.stringify({step,id:z.b.id,logical:[z.x,z.y],visual:[z.v.x,z.v.y],path:z.b.fallPath}));
   }
  }
