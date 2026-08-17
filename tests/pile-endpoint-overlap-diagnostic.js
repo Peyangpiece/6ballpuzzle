@@ -8,7 +8,12 @@ const runtime=[
 
 const assertions=String.raw`
 function findBall(g,id){for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b?.id===id)return{b,x,y};}return null;}
-function neighborsAt(g,self,ep){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b||b===self)continue;const v=g.vis.get(b.id),p=v&&Number.isFinite(v.x)&&Number.isFinite(v.y)?[v.x,v.y]:[x,y],d=pileFlowPhysicalDist(ep,p);if(d<1.15)out.push({id:b.id,logical:[x,y],visual:v?{x:v.x,y:v.y}:null,d});}return out.sort((a,b)=>a.d-b.d);}
+function describeBall(g,b,x,y){
+ const v=g.vis.get(b.id),path=Array.isArray(b.fallPath)?b.fallPath:[],seg=path[0]||null;
+ return {id:b.id,logical:[x,y],visual:v?{x:v.x,y:v.y,vy:v.vy,motionSpeed:v.motionSpeed}:null,path0:seg?{from:seg.from,to:seg.to,pivot:seg.pivot,pileFlow:!!seg.pileFlow,pileFlowStart:seg.pileFlowStart,pileFlowEnd:seg.pileFlowEnd}:null,target:v?hexQuiescentPileTarget(g,b,x,y,v):null};
+}
+function neighborsAt(g,self,ep){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b||b===self)continue;const v=g.vis.get(b.id),p=v&&Number.isFinite(v.x)&&Number.isFinite(v.y)?[v.x,v.y]:[x,y],d=pileFlowPhysicalDist(ep,p);if(d<1.15)out.push({...describeBall(g,b,x,y),d});}return out.sort((a,b)=>a.d-b.d);}
+function allCandidates(g){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b)continue;const v=g.vis.get(b.id);if(!v)continue;const target=hexQuiescentPileTarget(g,b,x,y,v);if(target)out.push({...describeBall(g,b,x,y),target});}return out;}
 const seed=19,g=createEngine(seed);g.ai={level:1+seed%5,target:null,thinkT:0,actT:0};
 let report=null;
 for(let step=0;step<=6840&&g.alive;step++){
@@ -17,12 +22,11 @@ for(let step=0;step<=6840&&g.alive;step++){
  if(step===120*23)g.incomingShapes.push('STRAIGHT');
  if(step===120*31)g.incoming+=8;
  stepEngine(g,PHYSICS_FRAME);
- if(step>=6835){
-   const f=findBall(g,22);if(!f)continue;const v=g.vis.get(22),seg=Array.isArray(f.b.fallPath)&&f.b.fallPath[0];
-   if(!v||!seg?.pileFlow)continue;
+ if(step===6837){
+   const f=findBall(g,22);if(!f)throw new Error('ball22 missing');const v=g.vis.get(22),seg=Array.isArray(f.b.fallPath)&&f.b.fallPath[0];if(!v||!seg?.pileFlow)throw new Error('ball22 pileFlow missing');
    const from=seg.from,to=seg.to;
-   const df=from?pileFlowPhysicalDist([v.x,v.y],from):null,dt=to?pileFlowPhysicalDist([v.x,v.y],to):null;
-   if(step===6837||df<5e-5){report={step,state:g.state,phase:g.phase,logical:[f.x,f.y],visual:{...v},clock:g.pileFlowClock,seg:{...seg},fromSafe:from?hexPileEndpointSafeNow(g,f.b,from):null,toSafe:to?hexPileEndpointSafeNow(g,f.b,to):null,fromNeighbors:from?neighborsAt(g,f.b,from):[],toNeighbors:to?neighborsAt(g,f.b,to):[],df,dt};if(step===6837)break;}
+   report={step,state:g.state,phase:g.phase,clock:g.pileFlowClock,ball22:describeBall(g,f.b,f.x,f.y),fromSafe:hexPileEndpointSafeNow(g,f.b,from),fromNeighbors:neighborsAt(g,f.b,from),toNeighbors:neighborsAt(g,f.b,to),allCandidates:allCandidates(g)};
+   break;
  }
 }
 if(!report)throw new Error('pile endpoint diagnostic did not reproduce');
