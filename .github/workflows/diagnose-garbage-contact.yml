@@ -17,3 +17,5 @@ jobs:
         run: node tests/garbage-straight-contact-diagnostic.js
       - name: Diagnose settled-garbage pivot priority
         run: node tests/settle-garbage-pivot-diagnostic.js
+      - name: Diagnose garbage contact monotonicity
+        run: node tests/garbage-contact-monotone-diagnostic.js
