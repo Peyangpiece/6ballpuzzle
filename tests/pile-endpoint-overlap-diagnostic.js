@@ -14,6 +14,21 @@ function describeBall(g,b,x,y){
 }
 function neighborsAt(g,self,ep){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b||b===self)continue;const v=g.vis.get(b.id),p=v&&Number.isFinite(v.x)&&Number.isFinite(v.y)?[v.x,v.y]:[x,y],d=pileFlowPhysicalDist(ep,p);if(d<1.15)out.push({...describeBall(g,b,x,y),d});}return out.sort((a,b)=>a.d-b.d);}
 function allCandidates(g){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b)continue;const v=g.vis.get(b.id);if(!v)continue;const target=hexQuiescentPileTarget(g,b,x,y,v);if(target)out.push({...describeBall(g,b,x,y),target});}return out;}
+function normalizationTrace(g){
+ const entries=hexRenderedBoardEntries(g),byId=new Map(entries.map(e=>[e.cell.id,e])),targets=new Map();
+ for(const e of entries){const t=hexQuiescentPileTarget(g,e.cell,e.x,e.y,e.v);if(t)targets.set(e.cell.id,t);}
+ const active=new Set(targets.keys()),rounds=[];
+ let changed=true,round=0;
+ while(changed&&active.size&&round++<20){
+  changed=false;const remove=[];
+  for(const id of active){
+   const a=byId.get(id),ap=targets.get(id);if(!a||!ap){remove.push({id,reason:'missing'});continue;}
+   for(const b of entries){if(b.cell.id===id)continue;const bp=active.has(b.cell.id)?targets.get(b.cell.id):b.current;if(!bp)continue;const d=pileFlowPhysicalDist(ap,bp);if(d<HEX_QUIESCENT_SAFE_DIST){remove.push({id,against:b.cell.id,d,ap,bp,againstActive:active.has(b.cell.id)});break;}}
+  }
+  if(remove.length){changed=true;rounds.push(remove);for(const r of remove)active.delete(r.id);}
+ }
+ return{rounds,finalActive:[...active],targets:[...targets.entries()]};
+}
 const seed=19,g=createEngine(seed);g.ai={level:1+seed%5,target:null,thinkT:0,actT:0};
 let report=null;
 for(let step=0;step<=6840&&g.alive;step++){
@@ -25,7 +40,7 @@ for(let step=0;step<=6840&&g.alive;step++){
  if(step===6837){
    const f=findBall(g,22);if(!f)throw new Error('ball22 missing');const v=g.vis.get(22),seg=Array.isArray(f.b.fallPath)&&f.b.fallPath[0];if(!v||!seg?.pileFlow)throw new Error('ball22 pileFlow missing');
    const from=seg.from,to=seg.to;
-   report={step,state:g.state,phase:g.phase,clock:g.pileFlowClock,ball22:describeBall(g,f.b,f.x,f.y),fromSafe:hexPileEndpointSafeNow(g,f.b,from),fromNeighbors:neighborsAt(g,f.b,from),toNeighbors:neighborsAt(g,f.b,to),allCandidates:allCandidates(g)};
+   report={step,state:g.state,phase:g.phase,clock:g.pileFlowClock,ball22:describeBall(g,f.b,f.x,f.y),fromSafe:hexPileEndpointSafeNow(g,f.b,from),fromNeighbors:neighborsAt(g,f.b,from),toNeighbors:neighborsAt(g,f.b,to),allCandidates:allCandidates(g),trace:normalizationTrace(g)};
    break;
  }
 }
