@@ -1,7 +1,7 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-17.js"]
+const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js"]
   .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const assertions=String.raw`
@@ -65,8 +65,6 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
  expect(gridified[0].b.motionGroupId===0&&!gridified[0].b.rigid,"contacted garbage ball retained packet rigidity");
  expect(pack.pat[0][0]===2&&pack.pat[0][1]===0,"wrong sibling remained airborne");
 
- // Advance the first lattice ball before testing the sibling's later contact,
- // matching the production frame order.
  for(let i=0;i<120;i++){updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);if(pendingFallPathCount(g)===0)break;}
  const remainingContact=hexGarbageBallContactY(g,pack,0);
  let made2=0;
