@@ -32,10 +32,13 @@ jobs:
           garbage=$?
           node tests/touch-control-regression.js >> audit-results/quick.log 2>&1
           touch=$?
-          printf '{"sha":"%s","knownBugs":%s,"garbageInterval":%s,"touch":%s}\n' "$GITHUB_SHA" "$known" "$garbage" "$touch" > audit-results/quick.json
+          node tests/audit-attack-conservation.js >> audit-results/quick.log 2>&1
+          attack=$?
+          printf '{"sha":"%s","knownBugs":%s,"garbageInterval":%s,"touch":%s,"attackConservation":%s}\n' "$GITHUB_SHA" "$known" "$garbage" "$touch" "$attack" > audit-results/quick.json
           echo "known=$known" >> "$GITHUB_OUTPUT"
           echo "garbage=$garbage" >> "$GITHUB_OUTPUT"
           echo "touch=$touch" >> "$GITHUB_OUTPUT"
+          echo "attack=$attack" >> "$GITHUB_OUTPUT"
           exit 0
       - name: Commit quick report
         shell: bash
@@ -52,3 +55,4 @@ jobs:
           test "${{ steps.gate.outputs.known }}" = "0"
           test "${{ steps.gate.outputs.garbage }}" = "0"
           test "${{ steps.gate.outputs.touch }}" = "0"
+          test "${{ steps.gate.outputs.attack }}" = "0"
