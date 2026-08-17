@@ -65,32 +65,28 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(close(end[0],5)&&close(end[1],4),'free fall missed the final lattice point');
 }
 
-// If a garbage support settles only after a normal pile-flow segment was
-// scheduled, render-time repair must still convert the diagonal chord into a
-// tangent circle. Reproduce the stale inferred-support metadata that previously
-// made the late repair bail out and cut through the garbage ball.
+// Reproduce the long-run SETTLE failure exactly: the segment was compiled with
+// a topPivot below it before the garbage ball at [15,8] became a fixed obstacle.
+// Once that garbage settles, its unit circle must override the stale topPivot.
 {
-  const g=createEngine(11002),support=mkBall(g,1),mover=mkBall(g,2),stale=mkBall(g,3);
+  const g=createEngine(11002),support=mkBall(g,1),mover=mkBall(g,2);
   support.isGarbage=true;support.garbageType='PYRAMID';support.fallPath=[];
   g.board[8][15]=support;setVis(g,support,15,8,0);
-  // An old inferred support relation remains on the segment, but it is no
-  // longer the hard geometry once the garbage ball at [15,8] has settled.
-  stale.fallPath=[];g.board[10][11]=stale;setVis(g,stale,11,10,0);
   const seg={
     from:[13,8],to:[14,9],kind:'ROLL_RIGHT',motionSeq:0,pileFlow:true,
     pileFlowStart:0,pileFlowDuration:1,pileFlowEnd:1,pileFlowEntry:true,
-    followSupportIds:[stale.id],movingSupportId:stale.id,pileFlowInferredSupport:true,
-    pivot:null,topPivot:null,
-    _hexGravityLinear:true,_hexGravityDuration:1,_hexGravityDistance:1,
-    _hexGravityV0:.35,_hexGravityAccel:1,_hexGravityEntrySpeed:.35
+    followSupportIds:[],movingSupportId:0,
+    pivot:null,topPivot:[13,10],
+    _hexGravityEntrySpeed:.35
   };
   mover.fallPath=[seg];g.board[9][14]=mover;setVis(g,mover,13,8,0);
   g.state='RESOLVING';g.phase='SETTLE';g.pileFlowClock=.5;
   const v=g.vis.get(mover.id);
   updateScheduledPileFlowVisual(g,mover,v,PHYSICS_FRAME);
-  expect(seg.pileFlowSettledGarbagePriority===true,'settled garbage did not override stale support metadata');
+  expect(seg.pileFlowSettledGarbagePriority===true,'settled garbage did not override stale topPivot');
   expect(seg.pivot&&seg.pivot[0]===15&&seg.pivot[1]===8,'late pivot selected the wrong garbage support');
-  expect((seg.followSupportIds||[]).length===0&&!seg.movingSupportId,'stale inferred support metadata survived fixed garbage priority');
+  expect(!seg.topPivot,'stale topPivot survived fixed garbage priority');
+  expect((seg.followSupportIds||[]).length===0&&!seg.movingSupportId,'stale support metadata survived fixed garbage priority');
   expect(Math.abs(pileFlowPhysicalDist([v.x,v.y],[15,8])-1)<1e-6,'late repaired motion cut through settled garbage');
 }
 
