@@ -45,13 +45,12 @@ function hex65ExpandPlansToBalls(plans){
     for(const pack of plans||[]){
         if(!pack?.pat?.length)continue;
         const slots=pack.pat.map((slot,index)=>({slot:[slot[0],slot[1]],index,color:pack.colors?.[index]}));
-        // Lower members must enter first so later upper members never wait for a
-        // support that only exists in the future.  Within one row, preserve the
-        // original pattern order for deterministic reproduction.
+        // Lower members enter first so a later upper member never waits for a
+        // support which exists only in the future. Preserve source order inside
+        // the same row for deterministic reproduction.
         slots.sort((a,b)=>b.slot[1]-a.slot[1]||a.index-b.index);
         for(const s of slots){
             const clone={...pack,colors:Array.isArray(pack.colors)?pack.colors.slice():[]};
-            // Preserve the slot's original colour after sorting.
             clone.colors[s.index]=s.color;
             out.push(hex65SingleBallPlanFromSlot(clone,s.slot,s.index,out.length));
         }
@@ -81,18 +80,18 @@ const __hex65UpdateGarbagePacksBeforeNoCatchup=updateGarbagePacks;
 updateGarbagePacks=function(g,dt){
     const h=Math.max(0,Number(dt)||0);
     const next=(g.garbagePlans||[]).find(p=>!p._started);
-    // If a browser pause made the due time stale, schedule this ONE ball for
-    // the end of the current physics update.  Never backdate its start.
+    const now=Number(g.garbageClock)||0;
+    // A start which would fall anywhere inside a delayed update is moved to the
+    // update boundary. This prevents app-06 from backdating the new ball and
+    // advancing it through its bubble/flight in the very frame it was created.
     if(next&&Number.isFinite(g.garbageNextBallAt)&&
-       g.garbageNextBallAt<(Number(g.garbageClock)||0)-1e-9){
-        g.garbageNextBallAt=(Number(g.garbageClock)||0)+h;
+       g.garbageNextBallAt<now+h-1e-9){
+        g.garbageNextBallAt=now+h;
     }
     const beforeStarted=new Set((g.garbagePlans||[]).filter(p=>p._started).map(p=>p));
     const result=__hex65UpdateGarbagePacksBeforeNoCatchup(g,h);
     const started=(g.garbagePlans||[]).find(p=>p._started&&!beforeStarted.has(p));
     if(started){
-        // app-06 bases the next deadline on its scheduled time.  Make the
-        // rendered/physical start that actually occurred the sole authority.
         const actual=Number(g.garbageClock)||0;
         started.actualStartTime=actual;
         started._hexActualStartTime=actual;
@@ -106,8 +105,8 @@ updateGarbagePacks=function(g,dt){
 };
 
 /* The CHECK phase still chunks incomingShapes to eight for an old performance
- * guard.  Keep that internal chunking harmless by chaining the next chunk in
- * the same GARBAGE phase before normal play can resume. */
+ * guard. Keep that internal chunking harmless by chaining every remaining
+ * attack in the same GARBAGE phase before normal play can resume. */
 const __hex65GarbageBatchDoneBeforeContinuousQueue=garbageBatchDone;
 garbageBatchDone=function(g){
     const done=__hex65GarbageBatchDoneBeforeContinuousQueue(g);
@@ -119,7 +118,6 @@ garbageBatchDone=function(g){
         g.garbageBatchPrepared=false;
         g.garbageSeq=0;
         g.garbageMaterializeIndex=0;
-        // Keep the full 0.5 s gap across the old batch boundary too.
         g.garbageNextBallAt=(Number(g.garbageClock)||0)+HEX65_GARBAGE_BALL_INTERVAL;
         g.stateT=0;
         return false;
