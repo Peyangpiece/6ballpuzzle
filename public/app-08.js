@@ -68,7 +68,6 @@ break;
 if (bothReady) g._visualSyncSplitRelease.add(gid);
 }
 
-
 for (let y = ROWS - 1; y >= scanMin; y--) {
 for (let x = 0; x < W2; x++) {
 const cell = valid(x, y) ? g.board[y][x] : null;
@@ -136,7 +135,7 @@ v.vy=Math.max(0,motionState?.endState?.vy||0);
 
 if(t>=1-1e-9){
 v.x=seg.to[0];
-v.y=seg.to[1];
+v.y=cell.isGarbage?Math.max(visualOldY,seg.to[1]):seg.to[1];
 }
 
 } else if (seg) {
@@ -190,7 +189,6 @@ while(logicalDa<-Math.PI)logicalDa+=Math.PI*2;
 
 const dir=Math.sign(logicalDa||1);
 const arcTotal=Math.abs(logicalDa);
-
 const arcStateValid=
 v._segKey===key &&
 Number.isFinite(v._segProgress) &&
@@ -203,13 +201,11 @@ v._segKey=key;
 v._segStartAngle=logicalA0;
 v._segArcTotal=arcTotal;
 v._segDir=dir;
-
 const curA=Math.atan2((v.y-py)*H,(v.x-px)*0.5);
 let rel=curA-logicalA0;
 while(rel>Math.PI)rel-=Math.PI*2;
 while(rel<-Math.PI)rel+=Math.PI*2;
 v._segProgress=Math.max(0,Math.min(arcTotal,dir*rel));
-
 v.vy=Math.max(0,Number.isFinite(v.vy)?v.vy:0);
 v.motionSpeed=SLIDE_SPEED;
 }
@@ -217,30 +213,18 @@ v.motionSpeed=SLIDE_SPEED;
 const remain=Math.max(0,v._segArcTotal-v._segProgress);
 const stepA=Math.min(remain,SLIDE_SPEED*dt);
 v._segProgress+=stepA;
-
 const a=v._segStartAngle+v._segDir*v._segProgress;
 const nextX=px+Math.cos(a)/0.5;
 const nextY=py+Math.sin(a)/H;
-
 v.x=nextX;
 v.y=Math.max(visualOldY,nextY);
-
-const tangentDown=Math.max(
-0,
-v._segDir*SLIDE_SPEED*Math.cos(a)/H
-);
+const tangentDown=Math.max(0,v._segDir*SLIDE_SPEED*Math.cos(a)/H);
 v.vy=Math.max(v.vy||0,tangentDown);
 v.motionSpeed=SLIDE_SPEED;
-
 if(remain<=SLIDE_SPEED*dt+1e-9){
 v.x=tx;
 v.y=Math.max(visualOldY,ty);
-v._pendingPathComplete={
-tx,ty,
-endAngle:a,
-endDir:v._segDir,
-type:"arc"
-};
+v._pendingPathComplete={tx,ty,endAngle:a,endDir:v._segDir,type:"arc"};
 }
 } else {
 if (v._segKey !== segKey) { v._segKey = segKey; v._segP = 0; }
@@ -306,48 +290,33 @@ const done=v._pendingPathComplete;
 const reached=visualMoveAccepted &&
 Math.abs(v.x-done.tx)<=0.004 &&
 Math.abs(v.y-done.ty)<=0.004;
-
 const syncBoundaryBlocked =
 !!cell.visualSyncSplitGroup &&
 cell.visualSyncSplitStage === 0 &&
 !g._visualSyncSplitRelease.has(cell.visualSyncSplitGroup);
-
 if (liveBatchMember) {
 } else if (reached && Array.isArray(cell.fallPath) && cell.fallPath.length && !syncBoundaryBlocked) {
 cell.fallPath.shift();
-if (cell.visualSyncSplitGroup && cell.visualSyncSplitStage === 0) {
-cell.visualSyncSplitStage = 1;
-}
+if (cell.visualSyncSplitGroup && cell.visualSyncSplitStage === 0) cell.visualSyncSplitStage = 1;
 const nextSeg=cell.fallPath.length
-? (cell.fallPath[0].to ? cell.fallPath[0] : {
-from:[done.tx,done.ty],to:cell.fallPath[0],pivot:null
-})
+? (cell.fallPath[0].to ? cell.fallPath[0] : {from:[done.tx,done.ty],to:cell.fallPath[0],pivot:null})
 : null;
-
 if (done.type==="arc" && nextSeg && !nextSeg.pivot) {
-const tangentDown=Math.max(
-0,done.endDir*SLIDE_SPEED*Math.cos(done.endAngle));
+const tangentDown=Math.max(0,done.endDir*SLIDE_SPEED*Math.cos(done.endAngle));
 v.vy=Math.max(v.vy||0,tangentDown/H,0.0001);
 v.motionSpeed=Math.max(SLIDE_SPEED,v.motionSpeed||0);
 } else if (nextSeg) {
 v.vy=Math.max(v.vy||0,0.0001);
-v.motionSpeed=Math.max(
-v.motionSpeed||0,
-nextSeg.pivot?SLIDE_SPEED:(v.vy||0));
+v.motionSpeed=Math.max(v.motionSpeed||0,nextSeg.pivot?SLIDE_SPEED:(v.vy||0));
 } else {
 v.vy=0; v.motionSpeed=0;
 }
-
 delete v._segKey; delete v._segP; delete v._segStartVisualY;
 delete v._segAngle; delete v._segProgress; delete v._segArcTotal; delete v._segStartAngle; delete v._segTargetAngle; delete v._segDir;
 if (!cell.fallPath.length) {
 delete cell.fallPath;
 cell.visualPreReleaseRemaining=0;
-if(v.pileFlow){
-v.pileFlow=false;
-v.vy=0;
-v.motionSpeed=0;
-}
+if(v.pileFlow){v.pileFlow=false;v.vy=0;v.motionSpeed=0;}
 }
 } else if (!reached && done.type==="arc") {
 delete v._segKey;
@@ -378,28 +347,21 @@ v.sq -= v.sq * Math.min(1,16*dt);
 }
 }
 
-
 if(liveBatch &&
 g._liveBatchClock.seq===liveBatch.seq &&
 g._liveBatchClock.elapsed>=g._liveBatchClock.duration-1e-9){
-
 for(const m of liveBatch.members){
 m.v.x=m.seg.to[0];
-m.v.y=m.seg.to[1];
+m.v.y=m.cell.isGarbage?Math.max(m.v.y,m.seg.to[1]):m.seg.to[1];
 }
-
 for(const m of liveBatch.members){
 const {cell,v,seg}=m;
 const completedState=g._liveBatchClock.states?.get(cell.id)?.endState;
 if(!Array.isArray(cell.fallPath)||!cell.fallPath.length)continue;
 const cur=cell.fallPath[0];
 if(!cur?.to || cur.motionSeq!==liveBatch.seq)continue;
-
 cell.fallPath.shift();
-
-if(cell.visualSyncSplitGroup && cell.visualSyncSplitStage===0)
-cell.visualSyncSplitStage=1;
-
+if(cell.visualSyncSplitGroup && cell.visualSyncSplitStage===0) cell.visualSyncSplitStage=1;
 delete v._segKey;
 delete v._segP;
 delete v._segStartVisualY;
@@ -410,33 +372,19 @@ delete v._segStartAngle;
 delete v._segTargetAngle;
 delete v._segDir;
 delete v._pendingPathComplete;
-
 if(!cell.fallPath.length){
 delete cell.fallPath;
-// Keep exit velocity until the canonical solver decides whether another
-// segment follows. This removes the one-frame stop/restart at every lattice
-// boundary while a ball is still in uninterrupted free fall.
 v.vy=Math.max(0,completedState?.vy||v.vy||0);
 v.motionSpeed=Math.max(0,completedState?.speed||v.motionSpeed||0);
 }
 }
-
 g._liveBatchClock={seq:0,elapsed:0,duration:1/120};
-
 const canChainSettle =
 g.state==="RESOLVING" &&
-(
-g.phase==="SETTLE" ||
-(g.phase==="CLEAR" && g.clearing?.committed)
-);
-
-if(canChainSettle &&
-pendingFallPathCount(g)===0 &&
-hasLegalGravityMove(g.board)){
-
+(g.phase==="SETTLE" || (g.phase==="CLEAR" && g.clearing?.committed));
+if(canChainSettle && pendingFallPathCount(g)===0 && hasLegalGravityMove(g.board)){
 releaseSettledConstraints(g,"VISUAL_BATCH_CHAIN");
 const chained=settlePass(g.board);
-
 if(chained)g.ver++;
 }
 }
@@ -462,58 +410,35 @@ function legacyPreventVisualOverlap(g) {
         const v=g.vis.get(c.id);
         if(v)items.push({id:c.id,tx:x,ty:y,v});
     }
-
     const MIN=1.0005;
     const H=HEX_ROW_H;
     const floorMax=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H;
-
-    // Position-based collision constraints.
-    // Horizontal separation is preferred because it never creates a visual "hop".
-    // Gaps are allowed; penetration is not.
     for(let pass=0;pass<32;pass++){
         let changed=false;
-
         for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
             const a=items[i],b=items[j];
             let dx=(a.v.x-b.v.x)*0.5;
             let dy=(a.v.y-b.v.y)*H;
             let d=Math.hypot(dx,dy);
             if(d>=MIN-1e-7)continue;
-
             changed=true;
             const overlap=MIN-d;
-
-            // If horizontal component exists, separate along horizontal component only.
-            // This preserves gravity direction and cannot lift either ball.
             if(Math.abs(dx)>1e-5){
                 const dir=Math.sign(dx);
-                // Each visual moves half the missing real distance.
-                const gridShift=overlap; // normalized half-shift / 0.5 => overlap
+                const gridShift=overlap;
                 a.v.x+=dir*gridShift;
                 b.v.x-=dir*gridShift;
             }else{
-                // Same X: deterministic left/right split by id.
                 const dir=(a.id<b.id)?-1:1;
                 const gridShift=overlap+0.0005;
                 a.v.x+=dir*gridShift;
                 b.v.x-=dir*gridShift;
             }
-
-            // Position projection is a collision correction, not a stop event.
-            // Keep both balls' incoming momentum while either is still in motion.
-            if (!(g._visualMovingIds && g._visualMovingIds.has(a.id))) {
-                a.v.vy=0; a.v.motionSpeed=0;
-            }
-            if (!(g._visualMovingIds && g._visualMovingIds.has(b.id))) {
-                b.v.vy=0; b.v.motionSpeed=0;
-            }
+            if (!(g._visualMovingIds && g._visualMovingIds.has(a.id))) {a.v.vy=0; a.v.motionSpeed=0;}
+            if (!(g._visualMovingIds && g._visualMovingIds.has(b.id))) {b.v.vy=0; b.v.motionSpeed=0;}
         }
-
         if(!changed)break;
     }
-
-    // Second phase: if a pair remains too close because several constraints compete,
-    // move the visually lower ball downward when floor permits; otherwise widen horizontally.
     for(let pass=0;pass<16;pass++){
         let changed=false;
         for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
@@ -523,14 +448,12 @@ function legacyPreventVisualOverlap(g) {
             const d=Math.hypot(dx,dy);
             if(d>=MIN-1e-7)continue;
             changed=true;
-
             const lower=a.v.y>=b.v.y?a:b;
             const other=lower===a?b:a;
             const realDx=Math.abs((lower.v.x-other.v.x)*0.5);
             const needY=Math.sqrt(Math.max(0,MIN*MIN-realDx*realDx));
             const otherY=other.v.y*H;
             const targetY=(otherY+needY)/H;
-
             if(targetY<=floorMax+1e-7 && targetY>=lower.v.y){
                 lower.v.y=targetY;
             }else{
@@ -540,16 +463,10 @@ function legacyPreventVisualOverlap(g) {
                 const extra=Math.max(0,needX-currentX);
                 lower.v.x+=dir*(extra/0.5+0.0005);
             }
-            if (!(g._visualMovingIds && g._visualMovingIds.has(lower.id))) {
-                lower.v.vy=0;
-                lower.v.motionSpeed=0;
-            }
+            if (!(g._visualMovingIds && g._visualMovingIds.has(lower.id))) {lower.v.vy=0;lower.v.motionSpeed=0;}
         }
         if(!changed)break;
     }
-    // Emergency invariant recovery without animation skipping.
-    // If numerical competition leaves a tiny overlap, project the pair apart in-place.
-    // Never teleport a moving ball to its logical destination and never delete its path.
     for(let emergency=0;emergency<12;emergency++){
         let fixedAny=false;
         for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
@@ -558,7 +475,6 @@ function legacyPreventVisualOverlap(g) {
             let dy=(a.v.y-b.v.y)*H;
             let d=Math.hypot(dx,dy);
             if(d>=0.9999)continue;
-
             fixedAny=true;
             if(d<1e-8){
                 const dir=(a.id<b.id)?-1:1;
@@ -566,17 +482,12 @@ function legacyPreventVisualOverlap(g) {
                 b.v.x-=dir*0.50005;
                 continue;
             }
-
             const missing=1.00005-d;
             const nx=dx/d, ny=dy/d;
-            // Convert normalized real displacement back to doubled-x / lattice-y.
             const sx=(missing*0.5*nx)/0.5;
             const sy=(missing*0.5*ny)/H;
-
             a.v.x+=sx; a.v.y+=sy;
             b.v.x-=sx; b.v.y-=sy;
-
-            // Respect the common floor without killing tangential/remaining motion.
             a.v.y=Math.min(a.v.y,floorMax);
             b.v.y=Math.min(b.v.y,floorMax);
         }
@@ -584,11 +495,6 @@ function legacyPreventVisualOverlap(g) {
     }
 }
 
-// Final render-space contact constraint. Logical cells are always unique, but
-// their continuous trajectories can meet between cells (for example a diagonal
-// follower cutting the chord around a stationary support). Correct only the
-// penetration; keep fallPath and velocity intact so the intended motion resumes
-// on the next frame instead of freezing or teleporting.
 function resolveVisualContacts(g){
     const items=[];
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -598,10 +504,6 @@ function resolveVisualContacts(g){
     if(items.length<2)return;
     const H=HEX_ROW_H,MIN=1,floorMax=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H;
     const shift=(q,px,py)=>{
-        // Once an individual garbage ball has gridified it may slide/fall, but
-        // collision correction itself must never lift it. Convert an attempted
-        // upward correction into an equal horizontal escape so y remains
-        // monotone. Repeated contact passes distribute any residual safely.
         if(q.ball?.isGarbage&&py<0){
             const mag=Math.hypot(px,py);
             let dir=Math.sign(px);
@@ -611,7 +513,12 @@ function resolveVisualContacts(g){
         }
         const ox=q.v.x,oy=q.v.y;
         q.v.x=Math.max(0,Math.min(W2-1,q.v.x+px/.5));
-        q.v.y=Math.min(floorMax,q.v.y+py/H);
+        if(q.ball?.isGarbage){
+            const proposed=q.v.y+py/H;
+            q.v.y=Math.min(floorMax,Math.max(q.v.y,Math.min(q.y,proposed)));
+        }else{
+            q.v.y=Math.min(floorMax,q.v.y+py/H);
+        }
         return[(q.v.x-ox)*.5,(q.v.y-oy)*H];
     };
     const solvePair=(a,b)=>{
@@ -626,8 +533,6 @@ function resolveVisualContacts(g){
         let wa=a.moving&&!b.moving?1:(!a.moving&&b.moving?0:.5),wb=1-wa;
         shift(a,dx*missing*wa,dy*missing*wa);
         shift(b,-dx*missing*wb,-dy*missing*wb);
-        // A wall or the floor can absorb one side's requested displacement.
-        // Give any residual to the other ball, then the first, until contact is exact.
         for(let retry=0;retry<3;retry++){
             const rx=(a.v.x-b.v.x)*.5,ry=(a.v.y-b.v.y)*H,rd=Math.hypot(rx,ry);
             if(rd>=MIN-1e-9)break;
@@ -639,9 +544,6 @@ function resolveVisualContacts(g){
         }
         return true;
     };
-    // Unit-size spatial buckets make the constraint proportional to nearby
-    // contacts instead of every pair on the board. Rebuild after each changed
-    // pass because a dense projection can create a new neighbour.
     const nearbyPairs=()=>{
         const buckets=new Map(),pairs=[];
         for(let i=0;i<items.length;i++){
@@ -661,10 +563,6 @@ function resolveVisualContacts(g){
     }
 }
 
-// Visual-path deadlock recovery shared by player and CPU.
-// The logical board is already a legal, non-overlapping lattice state; if rendering cannot
-// consume its path, discard only the stale visual route and snap visuals to that exact state.
-// This prevents one side from freezing forever without changing game physics or board results.
 function pendingFallPathCount(g) {
     let n = 0;
     for (let y=boardScanMin(g.board);y<ROWS;y++) for (let x=0;x<W2;x++) {
@@ -675,9 +573,6 @@ function pendingFallPathCount(g) {
 }
 
 function forceSyncVisualsToLogical(g, reason = "SETTLE_WATCHDOG") {
-    // 最終安全弁でも瞬間ワープさせない。
-    // staleなfallPathだけ捨て、現在の表示位置は保持する。
-    // 次のupdateVisualsで合法な論理セルへ重力/一定速横補正で自然に追いつかせる。
     for (let y = boardScanMin(g.board); y < ROWS; y++) for (let x = 0; x < W2; x++) {
         const cell = valid(x, y) ? g.board[y][x] : null;
         if (!cell) continue;
@@ -690,7 +585,6 @@ function forceSyncVisualsToLogical(g, reason = "SETTLE_WATCHDOG") {
         delete v._segKey;
         delete v._segP;
         delete v.garbAnim;
-        // x/yは変更しない。重力に逆らう上方向snapは禁止。
     }
     g.activeCluster = null;
     g.landingSpecial = null;
@@ -702,13 +596,11 @@ function forceSyncVisualsToLogical(g, reason = "SETTLE_WATCHDOG") {
     g.ver++;
 }
 
-/* tol = 0 で完全一致、0.4 程度なら「だいたい追いついた」判定 */
 function nearlySettled(g, tol) {
     for (let y = boardScanMin(g.board); y < ROWS; y++)
         for (let x = 0; x < W2; x++) {
             const cell = valid(x, y) ? g.board[y][x] : null;
-            if (!cell)
-                continue;
+            if (!cell) continue;
             const v = g.vis.get(cell.id);
             if (Array.isArray(cell.fallPath) && cell.fallPath.length) return false;
             if (v && (Math.abs(v.y - y) > tol || Math.abs(v.x - x) > tol)) return false;
