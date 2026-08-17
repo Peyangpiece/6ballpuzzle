@@ -45,6 +45,42 @@ visualSubstepCount=function(g){
     return __hexdropVisualSubstepCount(g);
 };
 
+// A newly gridified garbage ball must not claim a lattice cell that another
+// already-gridified ball is still scheduled to traverse. Logical gravity may
+// have moved that older ball several cells ahead while its visual fallPath is
+// still replaying; without reserving that future corridor a later airborne
+// sibling could materialize on an intermediate path node and the two rendered
+// centres would become identical. Reserve only the not-yet-traversed portion
+// of the first segment, plus every later segment, so passed space can be reused
+// without adding a visible delay.
+function __hexdropGarbageCellCrossesActivePath(g,cx,cy){
+    if(!g)return false;
+    const SAMPLES=32;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        const path=ball&&Array.isArray(ball.fallPath)?ball.fallPath:null;
+        if(!ball||!path||!path.length)continue;
+        const v=g.vis.get(ball.id);
+        for(let si=0;si<path.length;si++){
+            const seg=path[si];if(!seg?.from||!seg?.to)continue;
+            let first=0;
+            if(si===0&&v&&Number.isFinite(v.x)&&Number.isFinite(v.y)){
+                let nearest=0,best=Infinity;
+                for(let i=0;i<=SAMPLES;i++){
+                    const q=i/SAMPLES,p=liveSegPoint(seg,q),d=hexPhysDist(p[0],p[1],v.x,v.y);
+                    if(d<best){best=d;nearest=i;}
+                }
+                first=Math.max(0,nearest-1);
+            }
+            for(let i=first;i<=SAMPLES;i++){
+                const p=liveSegPoint(seg,i/SAMPLES);
+                if(hexPhysDist(p[0],p[1],cx,cy)<HEX_MIN_DIST-1e-7)return true;
+            }
+        }
+    }
+    return false;
+}
+
 // Individual garbage hand-off invariant: a falling centre may only enter a
 // logical lattice cell at the same physical height or BELOW its continuous
 // contact point. The old same-column search walked upward through occupied
@@ -68,6 +104,7 @@ hexGarbageSingleLogicalCell=function(g,x,visualY){
             const realDist=Math.hypot((cx-x)*.5,(y-visualY)*HEX_ROW_H);
             if(realDist>1.000001)continue;
             if(!visualPointSafe(g,-1,cx,y,HEX_MIN_DIST))continue;
+            if(__hexdropGarbageCellCrossesActivePath(g,cx,y))continue;
             const score=realDist+Math.abs(dx)*1e-5+(y-visualY)*1e-6;
             if(!best||score<best.score-1e-12||(Math.abs(score-best.score)<=1e-12&&cx<best.x))best={x:cx,y,score};
         }
