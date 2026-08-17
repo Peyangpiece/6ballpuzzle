@@ -147,10 +147,18 @@ function hexGarbageContactPointReserved(g,x,y){
     // visual path as well. If a prior moving ball will pass within one diameter,
     // keep this member airborne and retry after the corridor clears.
     if(typeof __hexdropGarbageCellCrossesActivePath==="function"&&__hexdropGarbageCellCrossesActivePath(g,x,y))return true;
+
+    // The one-frame obstacle cache is intentionally not rebuilt after every
+    // member materializes. Therefore another member can become settled during
+    // this same update even though it was absent from the cached contact-height
+    // calculation. Guard the exact continuous handoff centre against ALL board
+    // balls using live visual centres. Tangent contact at one diameter is legal;
+    // only penetration/centre coincidence delays this member to the next frame.
     for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){
         const b=valid(bx,by)?g.board[by][bx]:null;
-        if(!b||!hexGarbageBallStillMoving(b))continue;
-        const v=g.vis.get(b.id);if(!v)continue;
+        if(!b)continue;
+        const v=g.vis.get(b.id);
+        if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
         if(hexPhysDist(v.x,v.y,x,y)<HEX_MIN_DIST-1e-7)return true;
     }
     return false;
