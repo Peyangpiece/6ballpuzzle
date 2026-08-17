@@ -1,4 +1,4 @@
-name: Diagnose Settle Blockers
+name: Exhaustive HEXDROP Bug Audit
 
 on:
   push:
@@ -6,13 +6,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  diagnose:
+  audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Track seed19 continuous legality
-        run: node tests/seed19-continuous-legality-diagnostic.js
+      - name: Exhaustive architecture and physics audit
+        run: node tests/exhaustive-bug-audit.js
