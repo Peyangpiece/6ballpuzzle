@@ -33,4 +33,22 @@ function Matching({ onMatched, onCancel, onError }) {
                 React.createElement("div", { className: "text-4xl font-extrabold text-white/20 my-4" }, "VS"))),
             React.createElement("button", { onClick: onCancel, className: "mt-4 text-xs text-white/40 underline" }, "キャンセル"))));
 }
+
+// Both local engines share the same requestAnimationFrame thread. During a
+// received garbage sequence the target board previously ran the legacy visual
+// integrator four times for every 120 Hz physics tick. A PYRAMID/HEXAGON chain
+// therefore consumed enough main-thread time to make the *other* player's
+// ordinary active triplet look frozen even though its logical engine was fine.
+//
+// The collision guard already sweeps each 1/120 s segment continuously with
+// 12-48 samples, so repeating the complete board scan four times is redundant
+// specifically during GARBAGE. Keep the exact garbage physics/cadence and run
+// one visual integration at the fixed 120 Hz step. All non-garbage phases keep
+// the validated adaptive substep policy unchanged.
+const __hexdropVisualSubstepCount=visualSubstepCount;
+visualSubstepCount=function(g){
+    if(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE")return 1;
+    return __hexdropVisualSubstepCount(g);
+};
+
 window.__mountHexdrop = function () { ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App)); };
