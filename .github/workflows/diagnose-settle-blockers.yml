@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Summarize seed1 STRAIGHT solver stages
-        run: node tests/seed1-stage-summary.js
+      - name: Diagnose fixed seed1 step1894 overlap
+        run: node tests/seed1-step1894-overlap.js
