@@ -1,0 +1,91 @@
+name: Patch Friend And Online Wiring
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/patch-friend-online-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Patch production App wiring
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/app-16.js')
+          s=p.read_text()
+          def once(old,new,label,required=True):
+              global s
+              n=s.count(old)
+              if n==0:
+                  if required: raise SystemExit(f'{label}: expected text missing')
+                  return False
+              if n!=1: raise SystemExit(f'{label}: expected once, found {n}')
+              s=s.replace(old,new,1);return True
+
+          if 'friendRoomRef' not in s:
+              once('const matchRef = useRef(null), reportedRef = useRef(false);','const matchRef = useRef(null), reportedRef = useRef(false), friendRoomRef = useRef(null);','friend ref')
+
+          # Rating wiring is idempotent with the earlier dedicated patch.
+          lines=s.splitlines()
+          fi=[i for i,l in enumerate(lines) if l.startswith('const finish = useCallback((win) =>')]
+          if len(fi)!=1: raise SystemExit(f'finish: expected one line, found {len(fi)}')
+          if 'Net.applyRating' not in lines[fi[0]]:
+              lines[fi[0]]='''const finish = useCallback((win) => {const me=meRef.current,foe=foeRef.current;if(win&&me)me.matchFrozen=true;if(!win&&foe)foe.matchFrozen=true;Sfx.play({ t: win ? "win" : "lose" }, 1);const { mode: m, opp: o, rating: r } = stateRef.current;const match = matchRef.current;setTimeout(async () => {let delta=0;if (m === "ONLINE" && match) {try {const foeRating=Number(match.opponent?.rating ?? o?.rating ?? r) || 1000;delta=await Net.applyRating(win,foeRating,match.ranked !== false);setRating(Net.profile.rating);setRecord({w:Net.profile.wins,l:Net.profile.losses});} catch (e) {console.warn("rating update failed",e);}setResult({ win, delta });match.leave();matchRef.current = null;} else {setResult({ win, delta: 0 });if(match){match.leave();matchRef.current=null;}}setScreen("RESULT");}, RESULT_REVEAL_DELAY_MS);}, []);'''
+              s='\n'.join(lines)+'\n'
+
+          if 'const beginOnline = useCallback((match, networkMode="ONLINE") =>' not in s:
+              once('const beginOnline = useCallback((match) => {','const beginOnline = useCallback((match, networkMode="ONLINE") => {','begin signature')
+              once('setMode("ONLINE");setAiLevel(0);','setMode(networkMode);setAiLevel(0);','begin mode')
+          s=s.replace('onMatched: beginOnline,','onMatched: (match) => beginOnline(match, "ONLINE"),')
+
+          old_create='onClick: () => { setRoom(String(Math.floor(100000 + Math.random() * 900000))); setScreen("ROOM"); }'
+          new_create='onClick: async () => { Sfx.init(); try { setNetErr(null); const host=await Net.createRoom(); friendRoomRef.current=host; setRoom(host.code); setScreen("ROOM"); const match=await host.wait(); if(friendRoomRef.current!==host){match.leave();return;} friendRoomRef.current=null; beginOnline(match,"FRIEND"); } catch(e) { setNetErr((e&&e.message)||String(e)); setScreen("HOME"); } }'
+          if old_create in s: once(old_create,new_create,'friend create')
+
+          old_join='onClick: () => startMatch("FRIEND", 3, { name: "フレンド", rating })'
+          new_join='onClick: async () => { try { setNetErr(null); const match=await Net.joinRoom(room); beginOnline(match,"FRIEND"); } catch(e) { setNetErr((e&&e.message)||String(e)); setScreen("HOME"); } }'
+          # There were two fake startMatch calls; first is join, second is room mock.
+          if old_join in s: s=s.replace(old_join,new_join,1)
+
+          old_room_back='screen === "ROOM" && React.createElement(Screen, { title: "部屋をつくった", back: () => setScreen("FRIEND") }'
+          new_room_back='screen === "ROOM" && React.createElement(Screen, { title: "部屋をつくった", back: () => {const host=friendRoomRef.current;friendRoomRef.current=null;if(host)host.cancel().catch(()=>{});setScreen("FRIEND");} }'
+          if old_room_back in s: once(old_room_back,new_room_back,'room back')
+
+          old_mock='React.createElement(Neon, { onClick: () => startMatch("FRIEND", 3, { name: "フレンド", rating }) }, "相手が入室した（模擬）")'
+          new_wait='React.createElement("div", { className: "mt-4 text-center text-sm text-white/50" }, "相手の参加を待っています…")'
+          if old_mock in s: once(old_mock,new_wait,'room mock')
+
+          old_next='onNext:()=>{if(mode==="ONLINE")setScreen("MATCHING");else startMatch(mode,aiLevel,opp);}'
+          new_next='onNext:()=>{if(mode==="ONLINE")setScreen("MATCHING");else if(mode==="FRIEND")setScreen("FRIEND");else startMatch(mode,aiLevel,opp);}'
+          if old_next in s: once(old_next,new_next,'result next')
+
+          # Production invariants: no shipped mock label / no local FRIEND route.
+          if '相手が入室した（模擬）' in s: raise SystemExit('mock friend UI remains')
+          if 'startMatch("FRIEND"' in s: raise SystemExit('local fake FRIEND route remains')
+          if 'Net.createRoom()' not in s or 'Net.joinRoom(room)' not in s: raise SystemExit('real room calls missing')
+          p.write_text(s)
+          PY
+          node --check public/app-16.js
+          node tests/audit-friend-room.js
+          node tests/audit-online-rating.js
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git pull --rebase origin main
+          git add public/app-16.js
+          git diff --cached --quiet || git commit -m "Wire real friend rooms and online rating"
+          git push
