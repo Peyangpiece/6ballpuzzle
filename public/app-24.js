@@ -1,17 +1,14 @@
 /* Late settled-garbage tangent priority.
  *
- * app-23 can discover a newly-settled garbage pivot at render time. Some long
- * clear/settle chains still carry an older inferred followSupportIds relation,
- * which caused that repair to be skipped even though the segment's two lattice
- * endpoints are both exactly tangent to the now-settled garbage ball.
- *
- * A fixed ball occupying that equilateral-corner position is a hard geometric
- * constraint: the moving centre must travel on its unit circle and may not cut
- * the chord through the ball. Prefer that exact fixed constraint and discard
- * only the stale inferred support relation for this segment.
+ * A pile-flow segment may have been planned before a garbage ball reached its
+ * final lattice cell. Once that garbage is settled, if the segment's start and
+ * end are both exactly tangent to it, the fixed garbage circle is a hard
+ * geometric constraint. It must outrank stale inferred supports AND a stale
+ * topPivot/free-fall plan; otherwise the rendered centre can cut through the
+ * settled garbage while the logical destination remains valid.
  */
 hexGarbageAttachLateSettledPivot=function(g,cell,seg){
-    if(!g||!cell||!seg?.pileFlow||seg.pivot||seg.topPivot)return false;
+    if(!g||!cell||!seg?.pileFlow)return false;
     if(!seg.from||!seg.to)return false;
     const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];
     if(dy!==1||Math.abs(dx)!==1)return false;
@@ -28,18 +25,25 @@ hexGarbageAttachLateSettledPivot=function(g,cell,seg){
         const d1=hexGarbageContinuousDist(seg.to,[px,py]);
         if(Math.abs(d0-1)>1e-6||Math.abs(d1-1)>1e-6)continue;
 
-        // This fixed tangent obstacle is physically authoritative. Old inferred
-        // moving-support metadata can otherwise make pileFlowPointForBall ignore
-        // seg.pivot and drive the centre through the settled garbage ball.
+        const alreadyExact=
+            Array.isArray(seg.pivot)&&seg.pivot[0]===px&&seg.pivot[1]===py&&
+            !seg.topPivot&&pileFlowSupportIds(seg).length===0;
+        if(alreadyExact)return false;
+
+        // The settled garbage ball is physically present for the whole move.
+        // A previously compiled topPivot path can describe free fall through
+        // this circle, so replace it rather than merely adding another hint.
         seg.followSupportIds=[];
         seg.movingSupportId=0;
         delete seg.pileFlowInferredSupport;
         delete seg.pileFlowStaticContact;
+        seg.topPivot=null;
         seg.pivot=[px,py];
         seg.pileFlowLateGarbagePivot=true;
         seg.pileFlowSettledGarbagePriority=true;
 
         delete seg._hexGravityLinear;
+        delete seg._hexGravityProfile;
         if(typeof hexBuildPileGravityArcProfile==="function"){
             const v0=Math.max(
                 typeof HEX_PILE_GRAVITY_MIN_SPEED==="number"?HEX_PILE_GRAVITY_MIN_SPEED:0.35,
