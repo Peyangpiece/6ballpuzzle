@@ -10,10 +10,13 @@ const assertions=String.raw`
 function expect(v,m){if(!v)throw new Error(m);}
 function put(g,x,y,id,c){const b={id,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};g.board[y][x]=b;setVis(g,b,x,y,0);return b;}
 function renderedMin(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,v});}let min=Infinity;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++)min=Math.min(min,hexPhysDist(a[i].v.x,a[i].v.y,a[j].v.x,a[j].v.y));return min;}
+function nearestVisual(g,x,y){let best={d:Infinity,id:null,garbage:false,p:null};for(const[id,v]of g.vis.entries()){if(!v)continue;const d=hexPhysDist(x,y,v.x,v.y);if(d<best.d){const b=hexGarbageBoardBallById(g,id);best={d,id,garbage:!!b?.isGarbage,p:[v.x,v.y]};}}return best;}
 function diagnose(g){
  const packs=(g.activeGarbagePacks||[]).map(p=>({seq:p.seq,landed:p.landed,pat:p.pat?.length,y:p.y,vy:p.vy,bubbleT:p.bubbleT,landedCount:p.landedCount,totalBalls:p.totalBalls,entryBalls:p.entryBalls?.length}));
  const balls=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b?.isGarbage)continue;const v=g.vis.get(b.id);balls.push({id:b.id,logical:[x,y],visual:v?[v.x,v.y]:null,path:b.fallPath?.map(s=>({from:s.from,to:s.to,kind:s.kind,pileFlow:s.pileFlow,start:s.pileFlowStart,end:s.pileFlowEnd}))||[]});}
- return{state:g.state,phase:g.phase,stateT:g.stateT,garbageClock:g.garbageClock,batchDone:garbageBatchDone(g),visualDone:garbageVisualsDone(g),pending:pendingFallPathCount(g),legal:hasLegalGravityMove(g.board),packs,balls,perf:g._hexGarbagePerf};
+ const p=g.activeGarbagePacks?.find(q=>!q.landed&&q.pat?.length);
+ const remaining=p?p.pat.map(([dx,dy],i)=>{const cy=hexGarbageBallContactY(g,p,i),x=p.ax+dx,visualY=cy+dy,cell=hexGarbageSingleLogicalCell(g,x,visualY);return{slot:[dx,dy],x,cy,visualY,cell,contactSafe:cell?visualPointSafe(g,-1,cell.x,visualY,HEX_MIN_DIST):false,centerSafe:cell?visualPointSafe(g,-1,cell.x,cell.y,HEX_MIN_DIST):false,nearestContact:nearestVisual(g,x,visualY),nearestCenter:cell?nearestVisual(g,cell.x,cell.y):null};}):[];
+ return{state:g.state,phase:g.phase,stateT:g.stateT,garbageClock:g.garbageClock,batchDone:garbageBatchDone(g),visualDone:garbageVisualsDone(g),pending:pendingFallPathCount(g),legal:hasLegalGravityMove(g.board),packs,remaining,balls,perf:g._hexGarbagePerf};
 }
 
 const g=createEngine(910221);
