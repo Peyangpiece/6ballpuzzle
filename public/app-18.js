@@ -129,10 +129,14 @@ rotate=function(g,dir){
  * lattice points and do not touch real overlaps. Only pairs already within
  * 0.9999..1.0 are projected apart by the missing numerical epsilon, and only
  * quiescent normal balls are allowed to absorb that correction.
+ *
+ * Keep this pass cheap: precompute which balls are eligible, reject pairs by
+ * axis distance before sqrt, and cap Gauss-Seidel propagation at 12 passes.
  */
 const HEX_RESIDUAL_CONTACT_MIN=1.00000005;
 const HEX_RESIDUAL_CONTACT_FLOOR=0.9999;
 const HEX_RESIDUAL_CONTACT_MAX_CORRECTION=2e-4;
+const HEX_RESIDUAL_CONTACT_PASSES=12;
 
 function hexResidualContactMovable(item){
     if(!item?.cell||item.cell.isGarbage||!item.v)return false;
@@ -145,43 +149,56 @@ function hexResolveResidualPrecisionOverlaps(g){
     const H=HEX_ROW_H;
     const floorMax=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H;
     const items=[];
+    let movableCount=0;
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const cell=valid(x,y)?g.board[y][x]:null;
         if(!cell)continue;
         const v=g.vis.get(cell.id);
         if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
-        items.push({cell,v,x,y});
+        const item={cell,v,x,y,movable:false};
+        item.movable=hexResidualContactMovable(item);
+        if(item.movable)movableCount++;
+        items.push(item);
     }
-    if(items.length<2)return;
+    if(items.length<2||!movableCount)return;
 
-    for(let pass=0;pass<48;pass++){
+    for(let pass=0;pass<HEX_RESIDUAL_CONTACT_PASSES;pass++){
         let changed=false;
-        for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
-            const a=items[i],b=items[j];
-            let dx=(a.v.x-b.v.x)*.5;
-            let dy=(a.v.y-b.v.y)*H;
-            let d=Math.hypot(dx,dy);
-            if(d>=HEX_RESIDUAL_CONTACT_MIN-1e-12||d<HEX_RESIDUAL_CONTACT_FLOOR)continue;
+        for(let i=0;i<items.length;i++){
+            const a=items[i];
+            for(let j=i+1;j<items.length;j++){
+                const b=items[j];
+                if(!a.movable&&!b.movable)continue;
 
-            const ma=hexResidualContactMovable(a),mb=hexResidualContactMovable(b);
-            if(!ma&&!mb)continue;
-            if(d<1e-12)continue;
+                const gridDx=a.v.x-b.v.x;
+                if(Math.abs(gridDx)>2.0005)continue;
+                const gridDy=a.v.y-b.v.y;
+                if(Math.abs(gridDy)>1.1555)continue;
 
-            const missing=HEX_RESIDUAL_CONTACT_MIN-d;
-            if(missing>HEX_RESIDUAL_CONTACT_MAX_CORRECTION)continue;
-            const nx=dx/d,ny=dy/d;
-            const wa=ma?(mb?.5:1):0;
-            const wb=mb?(ma?.5:1):0;
+                const dx=gridDx*.5;
+                const dy=gridDy*H;
+                const d2=dx*dx+dy*dy;
+                if(d2>=(HEX_RESIDUAL_CONTACT_MIN-1e-12)**2||d2<HEX_RESIDUAL_CONTACT_FLOOR**2)continue;
+                const d=Math.sqrt(d2);
+                if(d<1e-12)continue;
 
-            if(wa){
-                a.v.x=Math.max(0,Math.min(W2-1,a.v.x+(nx*missing*wa)/.5));
-                a.v.y=Math.min(floorMax,a.v.y+(ny*missing*wa)/H);
+                const missing=HEX_RESIDUAL_CONTACT_MIN-d;
+                if(missing>HEX_RESIDUAL_CONTACT_MAX_CORRECTION)continue;
+                const nx=dx/d,ny=dy/d;
+                const ma=a.movable,mb=b.movable;
+                const wa=ma?(mb?.5:1):0;
+                const wb=mb?(ma?.5:1):0;
+
+                if(wa){
+                    a.v.x=Math.max(0,Math.min(W2-1,a.v.x+(nx*missing*wa)/.5));
+                    a.v.y=Math.min(floorMax,a.v.y+(ny*missing*wa)/H);
+                }
+                if(wb){
+                    b.v.x=Math.max(0,Math.min(W2-1,b.v.x-(nx*missing*wb)/.5));
+                    b.v.y=Math.min(floorMax,b.v.y-(ny*missing*wb)/H);
+                }
+                changed=true;
             }
-            if(wb){
-                b.v.x=Math.max(0,Math.min(W2-1,b.v.x-(nx*missing*wb)/.5));
-                b.v.y=Math.min(floorMax,b.v.y-(ny*missing*wb)/H);
-            }
-            changed=true;
         }
         if(!changed)break;
     }
