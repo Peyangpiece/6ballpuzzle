@@ -8,10 +8,11 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
+    timeout-minutes: 7
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Diagnose movement check 87
-        run: node tests/garbage-87-diagnostic.js
+      - name: Diagnose seed 7 long-run slowdown
+        run: node tests/overlap-seed7-progress.js
