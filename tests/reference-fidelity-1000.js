@@ -4,7 +4,7 @@ const vm=require("vm");
 const read=name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8");
 const runtimeNames=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js",
-  "app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js"
+  "app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js"
 ];
 const runtime=runtimeNames.map(read).join("\n");
 
@@ -96,7 +96,12 @@ for(let i=0;i<180;i++)pass("garbage",i,()=>{
  expect(a.p&&b.p&&a.p.actualStartTime===0&&b.p.actualStartTime===0,"garbage "+i+": packet start drifted");
  expect(a.mono&&b.mono&&close(a.p.y,b.p.y)&&close(a.p.vy,b.p.vy),"garbage "+i+": fall differs by frame rate");
  if(total<=HEX_GARBAGE_BUBBLE_DURATION)expect(a.p.y===GARBAGE_START_Y,"garbage "+i+": packet moved inside bubble");
- const remote=createEngine(seed+9000);remote.state="NET",fx=remoteFxSnapshotOf(b.g);applySnapshot(remote,snapshotOf(b.g),fx);applyRemoteVisualState(remote,{piece:null,fx});let rb=null;for(let y=boardScanMin(remote.board);y<ROWS&&!rb;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?remote.board[y][x]:null;if(q?.isGarbage){rb=q;break;}}const ry=rb?remote.vis.get(rb.id)?.y:null;updateVisuals(remote,1/60);expect(rb&&Number.isFinite(ry)&&remote.vis.get(rb.id).y>=ry,"garbage "+i+": opponent packet moved upward");
+ const remote=createEngine(seed+9000);remote.state="NET";const fx=remoteFxSnapshotOf(b.g);applySnapshot(remote,snapshotOf(b.g),fx);applyRemoteVisualState(remote,{piece:null,fx});
+ if(fx.g.length){
+  const rp=remote.activeGarbagePacks[0];expect(rp,"garbage "+i+": opponent airborne packet disappeared");const ry=rp.y;stepNetGarbageMotion(remote,1/60);expect(rp.y+1e-10>=ry,"garbage "+i+": opponent packet moved upward");
+ }else{
+  let rb=null;for(let y=boardScanMin(remote.board);y<ROWS&&!rb;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?remote.board[y][x]:null;if(q?.isGarbage){rb=q;break;}}const ry=rb?remote.vis.get(rb.id)?.y:null;updateVisuals(remote,1/60);expect(rb&&Number.isFinite(ry)&&remote.vis.get(rb.id).y+1e-10>=ry,"garbage "+i+": contacted opponent garbage moved upward or disappeared");
+ }
  const done=finishGarbage(seed,type,height);expect(done.p?.landed&&done.t<2.1,"garbage "+i+": packet missed the reference contact envelope");
  expect(done.added.length===GARBAGE_SHAPES[type].length&&done.added.every(v=>valid(v.x,v.y)&&!v.b.rigid&&!v.b.motionGroupId),"garbage "+i+": contact count, overlap or rigidity differs");
 });
@@ -138,6 +143,7 @@ globalThis.reference1000={results,counts};
 
 const context={
  React:{useRef(){},useEffect(){},useState(){},useCallback(){},createElement(){}},
+ ReactDOM:{createRoot(){return{render(){}}}},
  window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date
 };
 vm.runInNewContext(runtime+suite,context,{timeout:120000});
