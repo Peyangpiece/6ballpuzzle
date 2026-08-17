@@ -1,6 +1,6 @@
 const fs=require("fs");
 const vm=require("vm");
-const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js"]
+const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js","app-18.js","app-19.js","app-20.js","app-21.js"]
  .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 const code=String.raw`
 function balls(g){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)out.push({b,v,x,y});}return out;}
@@ -23,8 +23,8 @@ for(let step=0;step<=1450&&g.alive;step++){
   const first=z.b.fallPath[0];
   // A rendered centre may legitimately be between FREE_FALL.from and .to.
   // A stale path exists only when the whole segment, including its destination,
-  // is already above the rendered centre. Checking only `from` falsely rejected
-  // normal interpolation such as 7 -> 9 while the visual centre is at 8.06.
+  // is already above the rendered centre. Checking only the segment start falsely
+  // rejected normal interpolation such as 7 -> 9 while the visual centre is 8.06.
   if(Array.isArray(first?.to)&&first.to[1]<z.v.y-1.000001){
    throw new Error("gridified garbage retained a path wholly above its rendered centre: "+JSON.stringify({step,id:z.b.id,logical:[z.x,z.y],visual:[z.v.x,z.v.y],path:z.b.fallPath}));
   }
