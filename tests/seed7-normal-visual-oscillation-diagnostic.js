@@ -3,23 +3,13 @@ const html=fs.readFileSync(__dirname+'/../public/index.html','utf8');
 const names=[...html.matchAll(/"(app-\d+\.js)"/g)].map(m=>m[1]);
 const runtime=names.map(n=>fs.readFileSync(__dirname+'/../public/'+n,'utf8')).join('\n');
 const probe=String.raw`
-function balls(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({id:b.id,b,v,x,y});}return a;}
-function snap(q,g){const m={ball:q.b,v:q.v,x:q.x,y:q.y};return{id:q.id,isGarbage:!!q.b.isGarbage,logical:[q.x,q.y],visual:[q.v.x,q.v.y],vy:q.v.vy||0,speed:q.v.motionSpeed||0,path:q.b.fallPath?.length||0,rest:!!q.b._hexGarbageContinuousRest,mobility:typeof hexRenderMobility==='function'?hexRenderMobility(g,m):null,wall:q.v.x<=1e-9||q.v.x>=W2-1-1e-9,floor:q.v.y>=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H-1e-9};}
-function minPair(g){const a=balls(g);let min=Infinity,pair=null;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const d=hexPhysDist(a[i].v.x,a[i].v.y,a[j].v.x,a[j].v.y);if(d<min){min=d;pair=[snap(a[i],g),snap(a[j],g)];}}return{min,pair};}
+function items(g){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null,v=ball&&g.vis.get(ball.id);if(!ball||!v)continue;const q={ball,v,x,y};out.push({id:ball.id,x:v.x,y:v.y,lx:x,ly:y,rest:!!ball._hexGarbageContinuousRest,mob:hexRenderMobility(g,q),path:ball.fallPath?.length||0,garbage:!!ball.isGarbage});}return out;}
+function dist(a,b){return Math.hypot((a.x-b.x)*.5,(a.y-b.y)*HEX_ROW_H);}
+function minimum(a){let min=Infinity,pair=null;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const d=dist(a[i],a[j]);if(d<min){min=d;pair=[a[i],a[j]];}}return{min,pair};}
+function contacts(a,limit=1.00005){const out=[];for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const d=dist(a[i],a[j]);if(d<limit)out.push({d,a:a[i],b:a[j]});}return out.sort((p,q)=>p.d-q.d);}
+function solve(source,mode){const a=source.map(q=>({...q})),floor=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H;let corrections=0;for(let pass=0;pass<512;pass++){let changed=false;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const A=a[i],B=a[j],dx=(B.x-A.x)*.5,dy=(B.y-A.y)*HEX_ROW_H,d=Math.hypot(dx,dy);if(d>=1-1e-12)continue;let nx,ny;if(d>1e-12){nx=dx/d;ny=dy/d;}else{const ldx=(B.lx-A.lx)*.5,ldy=(B.ly-A.ly)*HEX_ROW_H,ld=Math.hypot(ldx,ldy)||1;nx=ldx/ld;ny=ldy/ld;}let ma=A.mob,mb=B.mob;if(mode==='restFlex'){if(A.rest)ma=1;if(B.rest)mb=1;}else if(mode==='allFlex'){ma=1;mb=1;}if(ma<=0&&mb<=0)continue;const push=1-d,total=ma+mb;A.x-=nx*push*(ma/total)/.5;A.y-=ny*push*(ma/total)/HEX_ROW_H;B.x+=nx*push*(mb/total)/.5;B.y+=ny*push*(mb/total)/HEX_ROW_H;A.x=Math.max(0,Math.min(W2-1,A.x));B.x=Math.max(0,Math.min(W2-1,B.x));A.y=Math.min(floor,A.y);B.y=Math.min(floor,B.y);corrections++;changed=true;}if(!changed)break;}return{mode,corrections,...minimum(a),contacts:contacts(a,1.000001).slice(0,12)};}
 const g=createEngine(7);g.ai={level:3,target:null,thinkT:0,actT:0};let found=false;
-for(let step=0;step<2160&&g.alive;step++){
- if(step===840)g.incomingShapes.push('PYRAMID');if(step===1680)g.incomingShapes.push('HEXAGON');
- const before=minPair(g);stepEngine(g,PHYSICS_FRAME);const after=minPair(g);
- if(after.min<0.999998&&before.min>=0.999998){
-   const convergence=[];
-   for(let i=0;i<16;i++){
-     const pre=minPair(g),corrections=hexEnforceFinalVisualNonOverlap(g),post=minPair(g);
-     convergence.push({call:i+1,corrections,pre:pre.min,post:post.min,pair:post.pair});
-     if(post.min>=1-1e-10)break;
-   }
-   console.log('CONTACT_CONVERGENCE '+JSON.stringify({step,sec:step/120,before,after,state:g.state,phase:g.phase,convergence}));found=true;break;
- }
-}
-if(!found)console.log('CONTACT_CONVERGENCE none '+JSON.stringify(minPair(g)));
+for(let step=0;step<2160&&g.alive;step++){if(step===840)g.incomingShapes.push('PYRAMID');if(step===1680)g.incomingShapes.push('HEXAGON');const pre=minimum(items(g));stepEngine(g,PHYSICS_FRAME);const now=items(g),post=minimum(now);if(post.min<.999998&&pre.min>=.999998){console.log('CONTACT_CLUSTER '+JSON.stringify({step,sec:step/120,post,contacts:contacts(now).slice(0,20),variants:[solve(now,'current'),solve(now,'restFlex'),solve(now,'allFlex')]}));found=true;break;}}
+if(!found)console.log('CONTACT_CLUSTER none');
 `;
 vm.runInNewContext(runtime+probe,{React:{useRef(){},useEffect(){},useState(){},useCallback(){},createElement(){}},ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date},{timeout:60000});
