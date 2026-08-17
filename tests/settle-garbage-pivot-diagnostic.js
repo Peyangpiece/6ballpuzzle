@@ -10,37 +10,46 @@ const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,'
 
 const probe=String.raw`
 const g=createEngine(19);g.ai={level:5,target:null,thinkT:0,actT:0};
-function ballById(id){for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b?.id===id)return {b,x,y,v:g.vis.get(id)};}return null;}
-function segInfo(b){const s=b?.fallPath?.[0];if(!s)return null;return {from:s.from,to:s.to,kind:s.kind,pivot:s.pivot,topPivot:s.topPivot,followSupportIds:s.followSupportIds,movingSupportId:s.movingSupportId,pileFlow:s.pileFlow,pileFlowLateGarbagePivot:s.pileFlowLateGarbagePivot,pileFlowSettledGarbagePriority:s.pileFlowSettledGarbagePriority,pileFlowInferredSupport:s.pileFlowInferredSupport,pileFlowStaticContact:s.pileFlowStaticContact,start:s.pileFlowStart,end:s.pileFlowEnd};}
-function nearby(px,py,excludeId){
-  const out=[];
-  for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-    const b=valid(x,y)?g.board[y][x]:null;if(!b||b.id===excludeId)continue;
-    const v=g.vis.get(b.id);if(!v)continue;
-    const d=hexPhysDist(px,py,v.x,v.y);
-    if(d<1.35)out.push({id:b.id,logical:[x,y],visual:[v.x,v.y],d,garbage:!!b.isGarbage,moving:hexGarbageBallStillMoving(b),seg:segInfo(b)});
-  }
-  out.sort((a,b)=>a.d-b.d);return out;
+function entries(useAuthoritative=false){
+ const out=[];
+ for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+  const b=valid(x,y)?g.board[y][x]:null;if(!b)continue;const v=g.vis.get(b.id);if(!v)continue;
+  const seg=b.fallPath?.[0];let p=[v.x,v.y];
+  if(useAuthoritative&&seg?.pileFlow)p=pileFlowPositionAt(g,b,g.pileFlowClock);
+  out.push({b,v,x,y,p,seg});
+ }
+ return out;
 }
-for(let step=0;step<=5110&&g.alive;step++){
-  if(step===120*7)g.incomingShapes.push('PYRAMID');
-  if(step===120*14)g.incomingShapes.push('HEXAGON');
-  if(step===120*23)g.incomingShapes.push('STRAIGHT');
-  if(step===120*31)g.incoming+=8;
-  if(step>=5106&&step<=5110){
-    const a=ballById(55),s=ballById(65);
-    console.log('BEFORE',step,'phase',g.phase,'pileFlowClock',g.pileFlowClock,'mover',a&&{x:a.x,y:a.y,v:a.v&&[a.v.x,a.v.y],seg:segInfo(a.b)},'support',s&&{x:s.x,y:s.y,v:s.v&&[s.v.x,s.v.y],moving:hexGarbageBallStillMoving(s.b),path:s.b.fallPath});
-    if(a){console.log('NEAR_CURRENT',step,nearby(a.v.x,a.v.y,a.b.id));const sg=a.b.fallPath?.[0];if(sg?.from)console.log('NEAR_FROM',step,sg.from,nearby(sg.from[0],sg.from[1],a.b.id));}
-    if(a?.b?.fallPath?.[0]){
-      const seg=a.b.fallPath[0];
-      console.log('ATTACH_RESULT',step,hexGarbageAttachLateSettledPivot(g,a.b,seg),'after',segInfo(a.b));
-    }
+function minPair(useAuthoritative=false){
+ const a=entries(useAuthoritative);let min=Infinity,pair=null;
+ for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){
+  const d=hexPhysDist(a[i].p[0],a[i].p[1],a[j].p[0],a[j].p[1]);
+  if(d<min){min=d;pair=[a[i],a[j]];}
+ }
+ const slim=q=>({id:q.b.id,logical:[q.x,q.y],p:q.p,garbage:!!q.b.isGarbage,seg:q.seg&&{from:q.seg.from,to:q.seg.to,start:q.seg.pileFlowStart,end:q.seg.pileFlowEnd,pivot:q.seg.pivot,topPivot:q.seg.topPivot}});
+ return{min,pair:pair&&pair.map(slim)};
+}
+for(let step=0;step<=5106&&g.alive;step++){
+ if(step===120*7)g.incomingShapes.push('PYRAMID');
+ if(step===120*14)g.incomingShapes.push('HEXAGON');
+ if(step===120*23)g.incomingShapes.push('STRAIGHT');
+ if(step===120*31)g.incoming+=8;
+ if(step===5106){
+  console.log('CLOCK',g.pileFlowClock,'CURRENT_MIN',JSON.stringify(minPair(false)),'AUTH_MIN',JSON.stringify(minPair(true)));
+  const before=new Map();
+  for(const q of entries(false))before.set(q.b.id,[q.v.x,q.v.y]);
+  for(const q of entries(true))if(q.seg?.pileFlow){q.v.x=q.p[0];q.v.y=q.p[1];}
+  console.log('RESET_MIN',JSON.stringify(minPair(false)));
+  const authBefore=new Map(entries(false).map(q=>[q.b.id,[q.v.x,q.v.y]]));
+  resolveVisualContacts(g);
+  let maxShift=0,worst=null;
+  for(const q of entries(false)){
+   const p=authBefore.get(q.b.id);if(!p)continue;const d=hexPhysDist(q.v.x,q.v.y,p[0],p[1]);if(d>maxShift){maxShift=d;worst={id:q.b.id,from:p,to:[q.v.x,q.v.y],seg:q.seg&&{from:q.seg.from,to:q.seg.to,start:q.seg.pileFlowStart,end:q.seg.pileFlowEnd}};}
   }
-  stepEngine(g,PHYSICS_FRAME);
-  if(step>=5106&&step<=5110){
-    const a=ballById(55),s=ballById(65);
-    console.log('AFTER',step,'phase',g.phase,'pileFlowClock',g.pileFlowClock,'mover',a&&{x:a.x,y:a.y,v:a.v&&[a.v.x,a.v.y],seg:segInfo(a.b)},'support',s&&{x:s.x,y:s.y,v:s.v&&[s.v.x,s.v.y],moving:hexGarbageBallStillMoving(s.b),path:s.b.fallPath},'dist',a&&s?hexPhysDist(a.v.x,a.v.y,s.v.x,s.v.y):null);
-  }
+  console.log('AFTER_RESOLVE_MIN',JSON.stringify(minPair(false)),'MAX_SHIFT',maxShift,JSON.stringify(worst));
+  break;
+ }
+ stepEngine(g,PHYSICS_FRAME);
 }
 `;
 const context={React:{useRef(){},useEffect(){},useState(){},useCallback(){}},window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date};
