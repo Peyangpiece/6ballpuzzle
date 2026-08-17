@@ -45,6 +45,36 @@ visualSubstepCount=function(g){
     return __hexdropVisualSubstepCount(g);
 };
 
+// Individual garbage hand-off invariant: a falling centre may only enter a
+// logical lattice cell at the same physical height or BELOW its continuous
+// contact point. The old same-column search walked upward through occupied
+// cells, so a ball already rendered around y=10 could be registered at y=8;
+// because garbage is never allowed to move upward, that mismatch could never
+// heal and eventually produced exact visual overlap with another gridified
+// ball. Search only the one-diameter neighbourhood below the contact point.
+// If no safe cell exists yet, return null and leave this one ball airborne for
+// the next 120 Hz frame. No sibling is affected.
+const __hexdropLegacyGarbageSingleLogicalCell=hexGarbageSingleLogicalCell;
+hexGarbageSingleLogicalCell=function(g,x,visualY){
+    if(!g||!Number.isFinite(x)||!Number.isFinite(visualY))return null;
+    const firstY=Math.max(BOARD_MIN_ROW,Math.ceil(visualY-1e-7));
+    const lastY=Math.min(ROWS-1,firstY+2);
+    let best=null;
+    for(let y=firstY;y<=lastY;y++){
+        if(y+1e-7<visualY)continue;
+        for(let dx=-2;dx<=2;dx++){
+            const cx=x+dx;
+            if(!valid(cx,y)||g.board[y][cx])continue;
+            const realDist=Math.hypot((cx-x)*.5,(y-visualY)*HEX_ROW_H);
+            if(realDist>1.000001)continue;
+            if(!visualPointSafe(g,-1,cx,y,HEX_MIN_DIST))continue;
+            const score=realDist+Math.abs(dx)*1e-5+(y-visualY)*1e-6;
+            if(!best||score<best.score-1e-12||(Math.abs(score-best.score)<=1e-12&&cx<best.x))best={x:cx,y,score};
+        }
+    }
+    return best?{x:best.x,y:best.y}:null;
+};
+
 // Compute the active garbage lattice sequence in a single board scan. This is
 // called several times in a GARBAGE frame, so avoid the previous double scan.
 function __hexdropGarbageMotionQueue(g){
@@ -120,9 +150,6 @@ resolveVisualContacts=function(g){
             if(!ball?.isGarbage||Array.isArray(ball.fallPath)&&ball.fallPath.length)continue;
             const v=g.vis.get(ball.id);
             if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
-            // Only lock a ball that has physically reached its final lattice row.
-            // If it is still above the row, updateVisuals may continue its natural
-            // downward catch-up; if it somehow lies below, never pull it upward.
             if(Math.abs(v.y-y)<=.02){
                 v.x=x;
                 if(v.y<=y+1e-9)v.y=y;
@@ -160,8 +187,6 @@ resolveVisualContacts=function(g){
     g._visualMovingIds=forcedMoving;
     __hexdropResolveVisualContactsBeforeGarbageQueueGate(g);
 
-    // Generic stationary/stationary projection would split the correction.
-    // Restore fixed garbage exactly; all non-fixed balls keep their projection.
     for(const h of heldVisual){
         for(const k of Object.keys(h.v))delete h.v[k];
         Object.assign(h.v,h.snapshot);
