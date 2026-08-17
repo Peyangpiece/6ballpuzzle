@@ -69,19 +69,13 @@ function hexEnforceFinalVisualNonOverlap(g){
         let changed=false;
         for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
             const a=items[i],b=items[j];
-            // Cheap broad phase before sqrt. One ball diameter in physical X/Y.
             const pdx=(b.v.x-a.v.x)*0.5,pdy=(b.v.y-a.v.y)*HEX_ROW_H;
             if(Math.abs(pdx)>=HEX_RENDER_MIN_DIST||Math.abs(pdy)>=HEX_RENDER_MIN_DIST)continue;
             const n=hexRenderPairNormal(a,b);
             if(n.d>=HEX_RENDER_MIN_DIST-1e-10)continue;
             let ma=hexRenderMobility(g,a),mb=hexRenderMobility(g,b);
             if(ma<=0&&mb<=0){
-                // Two exact continuous-rest supports are intentionally fixed.
-                // Any overlap here is a real upstream invariant violation and
-                // must remain visible to regression tests rather than be hidden.
                 if(a.ball?._hexGarbageContinuousRest&&b.ball?._hexGarbageContinuousRest)continue;
-                // Exact logical lattice centres cannot overlap on a valid board;
-                // for round-off-only cases split the minimal correction.
                 ma=mb=1;
             }
             const total=ma+mb;if(total<=0)continue;
@@ -95,6 +89,8 @@ function hexEnforceFinalVisualNonOverlap(g){
     return corrections;
 }
 
+// Keep the internal app-48 rest restore safe because subsequent SETTLE logic can
+// consume these coordinates before the frame itself finishes.
 const __hexGarbageApplyContinuousRestsBeforeFinalContact=hexGarbageApplyContinuousRests;
 hexGarbageApplyContinuousRests=function(g){
     const result=__hexGarbageApplyContinuousRestsBeforeFinalContact(g);
@@ -102,20 +98,13 @@ hexGarbageApplyContinuousRests=function(g){
     return result;
 };
 
-// app-48 calls the rest authority from inside both of these functions. Wrap the
-// fully composed app-48 versions as the outermost production boundary too, so
-// the invariant continues to hold after the garbage rest markers disappear and
-// ordinary SETTLE motion resumes.
-const __hexUpdateVisualsBeforeGlobalFinalContact=updateVisuals;
-updateVisuals=function(g,dt){
-    const result=__hexUpdateVisualsBeforeGlobalFinalContact(g,dt);
-    hexEnforceFinalVisualNonOverlap(g);
-    return result;
-};
-
-const __hexResolveVisualContactsBeforeGlobalFinalContact=resolveVisualContacts;
-resolveVisualContacts=function(g){
-    const result=__hexResolveVisualContactsBeforeGlobalFinalContact(g);
+// The real externally observable boundary is the end of stepEngine. SETTLE can
+// still write visual centres after updateVisuals/resolveVisualContacts return,
+// so enforcing only inside those helpers leaves round-off penetration in the
+// final frame. Wrap the complete physics transaction once instead.
+const __hexStepEngineBeforeGlobalFinalContact=stepEngine;
+stepEngine=function(g,dt){
+    const result=__hexStepEngineBeforeGlobalFinalContact(g,dt);
     hexEnforceFinalVisualNonOverlap(g);
     return result;
 };
