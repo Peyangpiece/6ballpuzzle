@@ -154,9 +154,6 @@ updateScheduledPileFlowVisual=function(g,cell,v,dt){
     if(!seg?.pileFlow)return false;
     const oldX=v.x,oldY=v.y;
     if(g.pileFlowClock<seg.pileFlowStart){
-        // A newly scheduled segment may wait for another ball while its visual
-        // centre is already only a few floating-point units from seg.from.
-        // Hold it on the exact tangent lattice point during that wait.
         const held=hexSnapPileFlowEndpoint(seg,[v.x,v.y],oldY);
         v.x=held[0];
         v.y=Math.max(oldY,held[1]);
@@ -172,4 +169,43 @@ updateScheduledPileFlowVisual=function(g,cell,v,dt){
     v.motionSpeed=physicalSpeed;
     v.vy=Math.max(0,(v.y-oldY)/Math.max(1e-9,dt));
     return true;
+};
+
+// resolveVisualContacts can make a microscopic secondary correction after a
+// pile-flow ball has already been placed on an exact lattice tangent. Restore
+// that exact endpoint only when it is still collision-free against every other
+// rendered board ball. This is a precision cleanup, never a collision bypass.
+const __hexResolveVisualContactsBeforeEndpointStabilize=resolveVisualContacts;
+function hexPileEndpointSafeNow(g,cell,ep){
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const other=valid(x,y)?g.board[y][x]:null;
+        if(!other||other===cell)continue;
+        const ov=g.vis.get(other.id);
+        const op=ov&&Number.isFinite(ov.x)&&Number.isFinite(ov.y)?[ov.x,ov.y]:[x,y];
+        if(pileFlowPhysicalDist(ep,op)<0.9999999)return false;
+    }
+    return true;
+}
+resolveVisualContacts=function(g){
+    __hexResolveVisualContactsBeforeEndpointStabilize(g);
+    if(!g?.board||!g?.vis)return;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const cell=valid(x,y)?g.board[y][x]:null;
+        const seg=cell&&Array.isArray(cell.fallPath)&&cell.fallPath.length?cell.fallPath[0]:null;
+        if(!cell||!seg?.pileFlow)continue;
+        const v=g.vis.get(cell.id);
+        if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
+        const candidates=[seg.from,seg.to]
+            .filter(ep=>Array.isArray(ep)&&ep.length>=2&&ep[1]>=v.y-1e-8)
+            .map(ep=>({ep,d:pileFlowPhysicalDist([v.x,v.y],ep)}))
+            .filter(q=>q.d<=2e-5)
+            .sort((a,b)=>a.d-b.d);
+        for(const {ep} of candidates){
+            if(!hexPileEndpointSafeNow(g,cell,ep))continue;
+            v.x=ep[0];
+            v.y=ep[1];
+            if(g.pileFlowClock<seg.pileFlowStart){v.vy=0;v.motionSpeed=0;}
+            break;
+        }
+    }
 };
