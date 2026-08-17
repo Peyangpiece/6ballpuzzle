@@ -155,7 +155,8 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
  expect(!g.alive&&g.state==="GAMEOVER","limit timing: quiescent overflow did not cause defeat");
 }
 
-// Garbage appears inside an expanding bubble before gravity starts.
+// Reference garbage: bubble/preview first, then the complete attack shape
+// free-falls continuously.  It must not become lattice balls until first contact.
 {
  const g=createEngine(22);g.state="RESOLVING";g.phase="GARBAGE";g.garbShapes=["PYRAMID"];
  prepareGarbageBatch(g);updateGarbagePacks(g,.1);
@@ -163,8 +164,11 @@ for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[
  updateGarbagePacks(g,HEX_GARBAGE_BUBBLE_DURATION*.5);
  expect(p.y===startY&&p.bubbleT>0,"garbage bubble: pack fell before the bubble finished growing");
  updateGarbagePacks(g,HEX_GARBAGE_BUBBLE_DURATION);
- let entered=0,paths=0;for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b?.isGarbage){entered++;if(b.fallPath?.length)paths++;}}
- expect(p.landed&&entered===GARBAGE_SHAPES.PYRAMID.length&&paths>0,"garbage bubble: independent top-entry fall did not start after the pop");
+ let entered=0;for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b?.isGarbage)entered++;}
+ expect(!p.landed&&p.y>startY&&p.vy>0&&entered===0,"garbage flight: packet did not remain a continuous rigid visual shape before contact");
+ let guard=0;while(!p.landed&&guard++<360)updateGarbagePacks(g,PHYSICS_FRAME);
+ let landed=0;for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b?.isGarbage)landed++;}
+ expect(p.landed&&landed===GARBAGE_SHAPES.PYRAMID.length,"garbage contact: packet did not hand off to independent board balls");
 }
 
 // Pyramid and hexagon completion arm their shape-specific reference effects.
@@ -209,6 +213,7 @@ for(const [type,baseY] of [["PYRAMID",ROWS-3],["HEXAGON",ROWS-3]]){
  const g=createEngine(2);
  expect(!/settleAll\s*\(/.test(reserveGarbagePlan.toString()),"garbage planning contains settleAll");
  expect(!/settleAll\s*\(/.test(materializeGarbagePack.toString()),"garbage contact contains settleAll");
+ expect(!/settleAll\s*\(/.test(materializeGarbagePackAtContact.toString()),"garbage flight contact contains settleAll");
  const plan={type:"TEST",pat:[[0,0]],ax:0,targetY:ROWS-1,colors:[0],seq:0,y:GARBAGE_START_Y,vy:0,landed:false};
  const shadow=cloneBoardForGarbagePlan(g.board);
  reserveGarbagePlan(shadow,plan,-1);
