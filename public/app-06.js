@@ -1,10 +1,13 @@
 /* HEXDROP garbage entry + render collision guard.
- * Garbage shapes are spawn patterns only. After first contact/materialization,
- * every garbage ball uses the same unified pile solver as a normal ball.
+ * Reference garbage packets remain a visible rigid spawn shape only until
+ * their first physical contact.  After contact every ball immediately becomes
+ * an ordinary independent pile ball and uses the unified solver.
  */
 const HEX_GARBAGE_SHAPE_INTERVAL=0.5;
 const HEX_GARBAGE_BUBBLE_DURATION=0.34;
 const HEX_GARBAGE_BUBBLE_POP_DURATION=0.14;
+const HEX_GARBAGE_FLIGHT_V0=RELEASE_INITIAL_VY;
+const HEX_GARBAGE_CONTACT_EPS=1e-7;
 window.__hexdropGarbageInterval=HEX_GARBAGE_SHAPE_INTERVAL;
 
 function prepareGarbageBatch(g){
@@ -34,6 +37,8 @@ function prepareGarbageBatch(g){
             vy:0,
             landed:false,
             _started:false,
+            flightAge:0,
+            contactY:null,
             straightAtomic:type==="STRAIGHT"
         });
     }
@@ -79,10 +84,6 @@ function materializeGarbagePack(g,pack,atEntry=false){
     clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
     const logicalAnchor=atEntry?hexGarbageEntryAnchor(g,pack,false):hexGarbageFindAnchor(g,pack,false);
     if(!logicalAnchor){g.garbBlocked=true;return false;}
-    // A logical cell can already be empty while its previous occupant is still
-    // travelling away in render space. Spawning into that stale visual centre
-    // created two balls at exactly the same coordinates. Wait a frame (or pick
-    // another legal anchor) until every new centre is physically clear.
     const anchor=atEntry?hexGarbageEntryAnchor(g,pack,true):hexGarbageFindAnchor(g,pack,true);
     if(!anchor){pack.visualBlocked=true;return false;}
     delete pack.visualBlocked;
@@ -105,17 +106,72 @@ function materializeGarbagePack(g,pack,atEntry=false){
         made.push(ball);
     }
 
-    // Shape identity ends here. From this exact entry/contact state onward these are
-    // independent balls governed by the same support/natural-motion solver.
     for(const ball of made){
         hexPhysClearGroupBall(ball);
         ball.isGarbage=true;
         ball.garbageType=pack.type;
     }
     if(atEntry)pack.entryBalls=made.map((ball,i)=>({id:ball.id,c:ball.c,x:pack.ax+pack.pat[i][0],y:pack.entryY+pack.pat[i][1]}));
-    // Resolve at most one canonical physics event now. Any remaining motion
-    // continues incrementally while later packs enter, keeping each render
-    // frame bounded so the opponent board never disappears during garbage.
+    if(settlePass(g.board))g.ver++;
+    g.ver++;
+    return true;
+}
+
+// Lowest vertical anchor the still-rigid visual packet may occupy without
+// crossing the floor, a settled/rendered ball, or an earlier packet that is
+// still in the air.  This is continuous circle contact, not a lattice step.
+function hexGarbageFlightContactY(g,pack){
+    const H=HEX_ROW_H,maxDy=Math.max(...pack.pat.map(([,dy])=>dy));
+    let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-maxDy;
+    const consider=(px,relY,ox,oy)=>{
+        const hx=Math.abs((px-ox)*.5);
+        if(hx>=1-1e-10)return;
+        const vertical=Math.sqrt(Math.max(0,1-hx*hx))/H;
+        limit=Math.min(limit,oy-relY-vertical);
+    };
+    for(const [dx,dy] of pack.pat){
+        const px=pack.ax+dx;
+        for(const [,ov] of g.vis.entries())if(ov&&Number.isFinite(ov.x)&&Number.isFinite(ov.y))consider(px,dy,ov.x,ov.y);
+        for(const other of g.activeGarbagePacks||[]){
+            if(!other||other===pack||other.landed||!other._started)continue;
+            if((other.actualStartTime||0)>=(pack.actualStartTime||0))continue;
+            for(const [odx,ody] of other.pat)consider(px,dy,other.ax+odx,other.y+ody);
+        }
+    }
+    return limit;
+}
+
+function hexGarbageFlightLogicalAnchor(g,pack){
+    const maxDy=Math.max(...pack.pat.map(([,dy])=>dy));
+    let ay=Math.min(ROWS-1-maxDy,Math.floor(pack.y+1e-9));
+    while((((ay-pack.targetY)%2)+2)%2!==0)ay--;
+    for(;ay>=BOARD_MIN_ROW;ay-=2){
+        let ok=true;
+        for(const[dx,dy]of pack.pat){const x=pack.ax+dx,y=ay+dy;if(!valid(x,y)||g.board[y][x]){ok=false;break;}}
+        if(ok)return{ax:pack.ax,ay};
+    }
+    return null;
+}
+
+function materializeGarbagePackAtContact(g,pack){
+    clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
+    const anchor=hexGarbageFlightLogicalAnchor(g,pack);
+    if(!anchor){g.garbBlocked=true;return false;}
+    pack.ax=anchor.ax;pack.entryY=anchor.ay;
+    const made=[];
+    for(let i=0;i<pack.pat.length;i++){
+        const [dx,dy]=pack.pat[i],x=pack.ax+dx,y=pack.entryY+dy;
+        if(!valid(x,y)||g.board[y][x]){g.garbBlocked=true;return false;}
+        const ball=mkBall(g,pack.colors[i]);
+        ball.isGarbage=true;ball.garbageType=pack.type;hexPhysClearGroupBall(ball);ball.rigid=false;
+        g.board[y][x]=ball;noteBoardCell(g.board,y,ball);
+        // Seamless visual hand-off: the first board-rendered frame uses the
+        // exact contact coordinates of the airborne packet, not the logical row.
+        setVis(g,ball,x,pack.y+dy,Math.max(0,(pack.vy||0)/HEX_ROW_H));
+        const v=g.vis.get(ball.id);if(v){v.motionSpeed=Math.max(RELEASE_INITIAL_VY,pack.vy||0);v.garbageBubbleT=pack.bubbleT;}
+        made.push(ball);
+    }
+    pack.entryBalls=made.map((ball,i)=>({id:ball.id,c:ball.c,x:pack.ax+pack.pat[i][0],y:pack.entryY+pack.pat[i][1]}));
     if(settlePass(g.board))g.ver++;
     g.ver++;
     return true;
@@ -131,10 +187,8 @@ function updateGarbagePacks(g,dt){
     }
     if(releasedBubble&&settlePass(g.board))g.ver++;
 
-    // Start at most one complete shape in one update. Frame drops never create
-    // catch-up bursts. PYRAMID/HEXAGON are six-ball units; STRAIGHT is one
-    // atomic 19-ball unit. Use the scheduled timestamp so 30/60/120fps all
-    // observe the same bubble age and the half-second cadence never drifts.
+    // Reference cadence: complete PYRAMID/HEXAGON packets (or the STRAIGHT
+    // sheet) launch every 0.5 s.  A frame hitch never releases two packets at once.
     const next=g.garbagePlans.find(p=>!p._started);
     if(next&&g.garbageClock+1e-9>=g.garbageNextBallAt){
         const scheduledStart=g.garbageNextBallAt;
@@ -142,6 +196,7 @@ function updateGarbagePacks(g,dt){
         next.actualStartTime=scheduledStart;
         next.y=GARBAGE_START_Y;
         next.vy=0;
+        next.flightAge=0;
         next.bubbleT=0;
         g.activeGarbagePacks.push(next);
         g.garbageNextBallAt=scheduledStart+HEX_GARBAGE_SHAPE_INTERVAL;
@@ -150,27 +205,29 @@ function updateGarbagePacks(g,dt){
     for(const p of g.activeGarbagePacks){
         if(p.landed)continue;
         p.bubbleT=Math.max(0,g.garbageClock-(p.actualStartTime||0));
-        if(p.bubbleT+1e-9<HEX_GARBAGE_BUBBLE_DURATION)continue;
-        // The reference straight attack visibly enters as two top rows and
-        // immediately conforms to the uneven pile. Materializing only at a
-        // precomputed bottom anchor kept the whole sheet rigid in mid-air.
-        // Spawn at the top after the bubble, then give every ball to the same
-        // independent gravity/contact solver used by accumulated balls.
-        if(materializeGarbagePack(g,p,true)){
-            p.bubbleT=HEX_GARBAGE_BUBBLE_DURATION;
+        if(p.bubbleT+1e-9<HEX_GARBAGE_BUBBLE_DURATION){p.y=GARBAGE_START_Y;p.vy=0;continue;}
+
+        // Absolute-time free fall keeps the source trajectory identical at
+        // 30/60/120 fps and removes the visible per-cell stepping.
+        const flightAge=Math.max(0,p.bubbleT-HEX_GARBAGE_BUBBLE_DURATION);
+        p.flightAge=flightAge;
+        const desiredY=GARBAGE_START_Y+(HEX_GARBAGE_FLIGHT_V0*flightAge+.5*GRAV*flightAge*flightAge)/HEX_ROW_H;
+        p.vy=HEX_GARBAGE_FLIGHT_V0+GRAV*flightAge;
+        const contactY=hexGarbageFlightContactY(g,p);
+        p.contactY=contactY;
+        if(desiredY<contactY-HEX_GARBAGE_CONTACT_EPS){p.y=desiredY;continue;}
+
+        p.y=contactY;
+        if(materializeGarbagePackAtContact(g,p)){
             p.releaseTime=g.garbageClock;
             p.landed=true;
-            p.vy=0;
         }else if(g.garbBlocked){
-            // There is no logical entry at all. This is a true overflow, not a
-            // transient render-space conflict.
             p.landed=true;
         }
     }
 
-    // Continue one bounded contact event whenever the previous visible event
-    // has finished. This lets early garbage balls keep cascading while the
-    // next half-second packet is still bubbling.
+    // After first contact the shape identity is gone.  Continue the exact same
+    // bounded independent-ball solver used by ordinary accumulated balls.
     if(pendingFallPathCount(g)===0&&hasLegalGravityMove(g.board)){
         if(settlePass(g.board))g.ver++;
     }
