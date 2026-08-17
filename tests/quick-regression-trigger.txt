@@ -1,1 +1,1 @@
-fast-known + app65 + touch quick regression trigger 5
+fast-known + app65 + touch quick regression trigger 6
