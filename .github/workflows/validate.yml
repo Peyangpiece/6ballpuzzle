@@ -59,7 +59,7 @@ jobs:
       - name: Diagnose gridified garbage motion
         run: node tests/garbage-gridified-motion-diagnostic.js
       - name: Check 100-pass ball movement fidelity
-        run: node tests/movement-fidelity-100.js
+        run: node tests/run-movement-fidelity-100.js
       - name: Check 100-pass garbage motion fidelity
         run: node tests/garbage-fidelity-100.js
       - name: Check weighted 1000-pass reference fidelity
