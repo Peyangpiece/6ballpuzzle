@@ -4,7 +4,7 @@ const vm=require('vm');
 const names=[
   'app-01.js','app-02.js','app-03.js','app-04.js','app-05.js','app-06.js',
   'app-07.js','app-08.js','app-09.js','app-10.js','app-14.js','app-17.js',
-  'app-18.js','app-19.js','app-20.js','app-21.js','app-22.js','app-23.js','app-24.js','app-25.js','app-26.js','app-27.js','app-28.js','app-29.js','app-30.js','app-31.js','app-32.js','app-33.js','app-34.js'
+  'app-18.js','app-19.js','app-20.js','app-21.js','app-22.js','app-23.js','app-24.js','app-25.js','app-26.js','app-27.js','app-28.js','app-29.js','app-30.js','app-31.js','app-32.js','app-33.js','app-34.js','app-35.js'
 ];
 const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,'utf8')).join('\n');
 
@@ -44,8 +44,8 @@ for(let step=0;step<=5120&&g.alive;step++){
  if(step>=5090){const q=minPair();if(q.min<worst.min)worst={min:q.min,step,pair:q.pair};}
 }
 console.log('SETTLE_PIVOT_MIN',JSON.stringify(worst));
-if(worst.min<0.9999989)throw new Error('fixed future waiters still overlapped in seed 19: '+JSON.stringify(worst));
-console.log('settled-garbage fixed-future-waiter contact PASS');
+if(worst.min<0.9999989)throw new Error('fixed-waiter convergence still overlapped in seed 19: '+JSON.stringify(worst));
+console.log('settled-garbage fixed-waiter convergence PASS');
 `;
 const context={React:{useRef(){},useEffect(){},useState(){},useCallback(){}},window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date};
 vm.runInNewContext(runtime+probe,context,{timeout:180000});
