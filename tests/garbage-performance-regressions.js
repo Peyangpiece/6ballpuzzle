@@ -10,11 +10,14 @@ const assertions=String.raw`
 function expect(v,m){if(!v)throw new Error(m);}
 function put(g,x,y,id,c){const b={id,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};g.board[y][x]=b;setVis(g,b,x,y,0);return b;}
 function renderedMin(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,v});}let min=Infinity;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++)min=Math.min(min,hexPhysDist(a[i].v.x,a[i].v.y,a[j].v.x,a[j].v.y));return min;}
+function diagnose(g){
+ const packs=(g.activeGarbagePacks||[]).map(p=>({seq:p.seq,landed:p.landed,pat:p.pat?.length,y:p.y,vy:p.vy,bubbleT:p.bubbleT,landedCount:p.landedCount,totalBalls:p.totalBalls,entryBalls:p.entryBalls?.length}));
+ const balls=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b?.isGarbage)continue;const v=g.vis.get(b.id);balls.push({id:b.id,logical:[x,y],visual:v?[v.x,v.y]:null,path:b.fallPath?.map(s=>({from:s.from,to:s.to,kind:s.kind,pileFlow:s.pileFlow,start:s.pileFlowStart,end:s.pileFlowEnd}))||[]});}
+ return{state:g.state,phase:g.phase,stateT:g.stateT,garbageClock:g.garbageClock,batchDone:garbageBatchDone(g),visualDone:garbageVisualsDone(g),pending:pendingFallPathCount(g),legal:hasLegalGravityMove(g.board),packs,balls,perf:g._hexGarbagePerf};
+}
 
 const g=createEngine(910221);
 let id=700000;
-// Stable two-row normal pile gives a broad simultaneous contact surface for a
-// STRAIGHT packet without relying on airborne/gridified garbage as support.
 for(let y=ROWS-2;y<ROWS;y++)for(let x=0;x<W2;x++)if(valid(x,y))put(g,x,y,id++,(x+y)%COLORS.length);
 g.state="RESOLVING";g.phase="GARBAGE";g.stateT=0;g.garbDone=true;g.garbShapes=["STRAIGHT"];
 
@@ -44,6 +47,7 @@ expect((perf.contactCacheHits||0)>0,"garbage performance: per-packet contact cac
 expect(maxDeferred>=2,"garbage performance: simultaneous contact did not exercise deferred solver batching");
 expect(maxFrameResolves===1,"garbage performance: deferred solves were not collapsed to one final solve");
 expect((perf.deferredResolves||0)>(perf.frameResolves||0),"garbage performance: nested contact solves were not reduced");
+if(g.phase==="GARBAGE")console.log("GARBAGE_STALL_DIAGNOSTIC",JSON.stringify(diagnose(g)));
 expect(g.phase!=="GARBAGE","garbage performance: optimized STRAIGHT packet failed to finish");
 expect(minDist>=0.999999-1e-7,"garbage performance: optimized packet introduced visible overlap: "+minDist);
 console.log("garbage performance regressions PASS",JSON.stringify({maxObstacleBuilds,maxFrameResolves,maxDeferred,minDist,perf}));
