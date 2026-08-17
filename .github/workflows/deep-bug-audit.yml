@@ -30,13 +30,19 @@ jobs:
           node tests/audit-performance.js 30 >> audit-results/deep.log 2>&1; perf=$?
           node tests/audit-settle-random.js 2000 >> audit-results/deep.log 2>&1; settle=$?
           node tests/audit-landing-guide.js 400 >> audit-results/deep.log 2>&1; landing=$?
+          node tests/audit-rendered-guide.js 300 >> audit-results/deep.log 2>&1; rendered=$?
           node tests/audit-online-roundtrip.js >> audit-results/deep.log 2>&1; online=$?
-          printf '{"sha":"%s","ai":%s,"performance":%s,"settle":%s,"landing":%s,"online":%s}\n' "$GITHUB_SHA" "$ai" "$perf" "$settle" "$landing" "$online" > audit-results/deep.json
+          node tests/audit-online-rating.js >> audit-results/deep.log 2>&1; rating=$?
+          node tests/audit-attack-conservation.js >> audit-results/deep.log 2>&1; attack=$?
+          printf '{"sha":"%s","ai":%s,"performance":%s,"settle":%s,"landing":%s,"renderedGuide":%s,"online":%s,"rating":%s,"attack":%s}\n' "$GITHUB_SHA" "$ai" "$perf" "$settle" "$landing" "$rendered" "$online" "$rating" "$attack" > audit-results/deep.json
           echo "ai=$ai" >> "$GITHUB_OUTPUT"
           echo "perf=$perf" >> "$GITHUB_OUTPUT"
           echo "settle=$settle" >> "$GITHUB_OUTPUT"
           echo "landing=$landing" >> "$GITHUB_OUTPUT"
+          echo "rendered=$rendered" >> "$GITHUB_OUTPUT"
           echo "online=$online" >> "$GITHUB_OUTPUT"
+          echo "rating=$rating" >> "$GITHUB_OUTPUT"
+          echo "attack=$attack" >> "$GITHUB_OUTPUT"
           exit 0
       - name: Commit deep report
         shell: bash
@@ -54,4 +60,7 @@ jobs:
           test "${{ steps.audit.outputs.perf }}" = "0"
           test "${{ steps.audit.outputs.settle }}" = "0"
           test "${{ steps.audit.outputs.landing }}" = "0"
+          test "${{ steps.audit.outputs.rendered }}" = "0"
           test "${{ steps.audit.outputs.online }}" = "0"
+          test "${{ steps.audit.outputs.rating }}" = "0"
+          test "${{ steps.audit.outputs.attack }}" = "0"
