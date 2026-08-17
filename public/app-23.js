@@ -2,11 +2,11 @@
  *
  * Logical garbage cells are still reserved on the deterministic hex lattice,
  * but the rendered ball must never snap to that cell while it is still moving.
- * Keep the exact physical contact centre, then prepend a gravity/contact-arc
- * segment from that continuous point to the first logical path node. Convert
- * the rest of that ball's queued lattice path to the same absolute-time
- * pile-flow representation, so passing a grid node never creates a stop/snap.
- * Only after the complete path has finished does the rendered centre equal the
+ * Keep the exact physical contact centre and prepend only one continuous
+ * contact-to-first-node segment. The existing lattice path keeps its original
+ * motionSeq and renderer semantics unchanged, so the established garbage
+ * collision ordering remains authoritative. Passing a grid node is continuous;
+ * only after the whole path has finished does the rendered centre equal the
  * final logical lattice cell.
  */
 const HEX_GARBAGE_HANDOFF_PIVOT_TOL=0.025;
@@ -32,74 +32,53 @@ function hexGarbageContinuousPivot(g,ballId,from,to){
     return best;
 }
 
+function hexGarbageHandoffMotionSeq(oldPath){
+    for(const seg of oldPath||[]){
+        const seq=Number(seg?.pileFlowOriginalSeq??seg?.motionSeq);
+        if(Number.isFinite(seq)&&seq>0)return seq;
+    }
+    // A stable logical cell can still have a non-grid physical contact centre.
+    // Give that visual-only handoff its own normal positive event sequence so
+    // later garbage cannot begin through it before the handoff has completed.
+    return HEX_PHYS_EVENT_SEQ++;
+}
+
 function hexGarbagePrepareContinuousPath(g,ball,entry,from){
     if(!ball||!entry||!Array.isArray(from)||from.length<2)return;
     const v=g.vis.get(ball.id);if(!v)return;
     const oldPath=Array.isArray(ball.fallPath)?ball.fallPath:[];
     const firstLogical=oldPath[0]?.from?[...oldPath[0].from]:[entry.x,entry.y];
-    const path=[];
 
-    if(hexGarbageContinuousDist(from,firstLogical)>HEX_GARBAGE_HANDOFF_EPS){
-        const seg={
-            from:[...from],to:[...firstLogical],kind:"GARBAGE_CONTINUOUS_HANDOFF",
-            pileFlow:true,pileFlowEntry:true,pileFlowReason:"garbage_continuous_handoff",
-            motionSeq:0
-        };
-        const pivot=hexGarbageContinuousPivot(g,ball.id,from,firstLogical);
-        if(pivot){
-            seg.pivot=[...pivot.p];
-            if(Array.isArray(pivot.ball?.fallPath)&&pivot.ball.fallPath.length){
-                seg.followSupportIds=[pivot.id];
-                seg.movingSupportId=pivot.id;
-            }
-        }
-        path.push(seg);
-    }
-    for(const seg of oldPath)if(seg?.from&&seg?.to)path.push(seg);
-
-    if(!path.length){
-        // Exact contact already is the final canonical cell.
-        v.x=entry.x;v.y=entry.y;v.vy=0;v.motionSpeed=0;v.pileFlow=false;
-        delete ball.fallPath;
+    if(hexGarbageContinuousDist(from,firstLogical)<=HEX_GARBAGE_HANDOFF_EPS){
+        // Already exactly on the first canonical node. Leave the pre-existing
+        // motion queue untouched; it owns every later transition.
+        if(!oldPath.length){v.x=entry.x;v.y=entry.y;v.vy=0;v.motionSpeed=0;delete ball.fallPath;}
         return;
     }
 
-    let firstSeq=Infinity;
-    for(const seg of path){
-        const s=Number(seg?.pileFlowOriginalSeq??seg?.motionSeq);
-        if(Number.isFinite(s)&&s>0)firstSeq=Math.min(firstSeq,s);
-    }
-    if(!Number.isFinite(firstSeq))firstSeq=1;
-    let orderedSeq=firstSeq-1;
-    const fresh=[];
-    for(let i=0;i<path.length;i++){
-        const seg=path[i];
-        delete seg.pileFlowStart;delete seg.pileFlowDuration;delete seg.pileFlowEnd;
-        delete seg._hexGravityProfile;delete seg._hexGravityLinear;
-        if(i>0)repairPileFlowSegmentGeometry(g,ball,seg,"garbage_continuous_handoff");
-        const original=Number(seg.pileFlowOriginalSeq??seg.motionSeq);
-        if(i===0&&seg.kind==="GARBAGE_CONTINUOUS_HANDOFF"){
-            orderedSeq=firstSeq-1;
-        }else{
-            orderedSeq=Math.max(orderedSeq+1,Number.isFinite(original)&&original>0?original:orderedSeq+1);
+    const seq=hexGarbageHandoffMotionSeq(oldPath);
+    const seg={
+        from:[...from],to:[...firstLogical],kind:"GARBAGE_CONTINUOUS_HANDOFF",
+        motionSeq:seq,continuousChain:true,
+        pivot:null,topPivot:null,movingSupportId:0,followSupportIds:[],
+        groupSize:0,bundleId:0,
+        garbageContinuousHandoff:true
+    };
+    const pivot=hexGarbageContinuousPivot(g,ball.id,from,firstLogical);
+    if(pivot){
+        seg.pivot=[...pivot.p];
+        if(Array.isArray(pivot.ball?.fallPath)&&pivot.ball.fallPath.length){
+            seg.followSupportIds=[pivot.id];
+            seg.movingSupportId=pivot.id;
         }
-        seg.pileFlowOriginalSeq=orderedSeq;
-        seg.motionSeq=0;
-        seg.pileFlow=true;
-        seg.pileFlowEntry=i===0;
-        seg.pileFlowReason="garbage_continuous_handoff";
-        seg._pileFlowBall=ball;
-        fresh.push({ball,seg,seq:orderedSeq});
     }
-    ball.fallPath=path;
 
-    g._pileFlowBallById=new Map();
-    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-        const b=valid(x,y)?g.board[y][x]:null;if(b)g._pileFlowBallById.set(b.id,b);
-    }
-    scheduleFreshPileFlow(g,fresh,"garbage_continuous_handoff");
-    for(const {seg}of fresh){delete seg._pileNominalDuration;delete seg._pileFlowBall;}
-    v.pileFlow=true;
+    // Crucial: do NOT rewrite oldPath to pileFlow and do NOT zero its
+    // motionSeq. The synthetic segment participates in the same sequence as the
+    // first existing event; after it is consumed, the original path proceeds
+    // exactly as before.
+    ball.fallPath=[seg,...oldPath];
+    v.pileFlow=false;
     v.vy=Math.max(0,v.vy||0);
     v.motionSpeed=Math.max(v.motionSpeed||0,Math.max(0,v.vy||0)*HEX_ROW_H,0.0001);
 }
