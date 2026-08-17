@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Diagnose seed7 pile versus continuous garbage contact
-        run: node tests/seed7-step2271-pile-garbage-contact.js
+      - name: Diagnose rigid group versus settled garbage contact
+        run: node tests/seed19-step1539-rigid-garbage-contact.js
