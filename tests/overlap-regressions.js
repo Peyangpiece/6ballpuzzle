@@ -77,6 +77,34 @@ function makeParallelFixture(){
   expect(Math.abs(pos[i][0]-ref[i][0])<1e-9&&Math.abs(pos[i][1]-ref[i][1])<1e-9,"final placement changed at "+fps+"fps");
  }
 }
+function makeVacatedSupportFixture(){
+ const g=createEngine(9107),support=mkBall(g,0),upper=mkBall(g,2);
+ // Logical gravity resolves these as two consecutive events: the lower ball
+ // vacates [10,6], then the upper ball enters it. Reference PYRAMID/HEXAGON
+ // footage shows the upper ball moving during the support's motion, not after
+ // it reaches the next lattice cell.
+ support.fallPath=[{from:[10,6],to:[9,7],kind:"ROLL_LEFT",pivot:null,topPivot:null,motionSeq:1,followSupportIds:[]}];
+ upper.fallPath=[{from:[9,5],to:[10,6],kind:"ROLL_RIGHT",pivot:null,topPivot:null,motionSeq:2,followSupportIds:[]}];
+ g.board[7][9]=support;g.board[6][10]=upper;
+ setVis(g,support,10,6,0);setVis(g,upper,9,5,0);
+ markPileFlowPaths(g,"clear_support_loss");
+ return{g,support,upper};
+}
+{
+ const {g,support,upper}=makeVacatedSupportFixture(),sa=support.fallPath[0],sb=upper.fallPath[0];
+ expect(sb.pileFlowInferredSupport===true,"post-clear follower did not infer its moving support");
+ expect((sb.followSupportIds||[]).includes(support.id),"post-clear follower lost support id");
+ expect(sb.pileFlowStart<=sa.pileFlowStart+1e-9,"post-clear follower still waited for a lattice wave");
+ const mid=sa.pileFlowStart+Math.min(sa.pileFlowDuration,sb.pileFlowDuration)*0.5;
+ const pa=pileFlowPositionAt(g,support,mid),pb=pileFlowPositionAt(g,upper,mid);
+ expect(pileFlowPhysicalDist(pa,[10,6])>1e-3,"support did not move during collapse probe");
+ expect(pileFlowPhysicalDist(pb,[9,5])>1e-3,"upper ball remained staged while support moved");
+ let tangentMin=Infinity,tangentMax=0;
+ const start=Math.max(sa.pileFlowStart,sb.pileFlowStart),end=Math.min(sa.pileFlowEnd,sb.pileFlowEnd);
+ for(let t=start;t<=end+1e-10;t+=1/480){const d=pileFlowPhysicalDist(pileFlowPositionAt(g,support,t),pileFlowPositionAt(g,upper,t));tangentMin=Math.min(tangentMin,d);tangentMax=Math.max(tangentMax,d);}
+ expect(tangentMin>=PILE_FLOW_MIN_DIST-1e-7,"support-following overlapped: "+tangentMin);
+ expect(tangentMax<=1.00001,"support-following opened a visible gap: "+tangentMax);
+}
 let globalMin=Infinity,worst=null,samples=0;
 for(const seed of ${JSON.stringify(seeds)}){
  const g=createEngine(seed);g.ai={level:1+seed%5,target:null,thinkT:0,actT:0};
