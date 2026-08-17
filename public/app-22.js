@@ -1,10 +1,11 @@
 /* Garbage-phase performance isolation.
  *
- * Airborne packets never collide with each other because they do not live in
- * g.board/g.vis. Once one member has gridified, however, it is part of the
- * accumulated board pile and can support a later airborne member. That
- * distinction is required for two-level shapes such as STRAIGHT: the lower ten
- * members settle first, then the upper nine contact that accumulated lower row.
+ * Airborne garbage stays one rigid packet until that packet first touches the
+ * existing accumulated pile or the floor. Airborne packets never collide with
+ * each other because they do not live in g.board/g.vis. After the first real
+ * pile/floor contact, the packet is allowed to split and any already-gridified
+ * garbage from that packet becomes ordinary accumulated pile geometry that can
+ * support later members.
  *
  * This file keeps those contact semantics while removing duplicate work inside
  * one 120 Hz garbage frame. Before this override hexGarbageBallContactY()
@@ -24,6 +25,7 @@ function hexGarbagePerfState(g){
 
 function hexGarbageBuildObstacleFrame(g){
     const obstacles=[];
+    const normalObstacles=[];
     const byId=new Map();
     let hasMovingNormal=false;
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -33,13 +35,14 @@ function hexGarbageBuildObstacleFrame(g){
         const v=g.vis.get(ball.id);
         const vx=v&&Number.isFinite(v.x)?v.x:x;
         const vy=v&&Number.isFinite(v.y)?v.y:y;
-        // Airborne packets are not on the board and therefore never appear in
-        // this list. A gridified garbage ball is deliberately included: from
-        // that instant onward it is accumulated pile geometry.
-        obstacles.push({id:ball.id,x:vx,y:vy,isGarbage:!!ball.isGarbage});
-        if(!ball.isGarbage&&((Array.isArray(ball.fallPath)&&ball.fallPath.length)||Math.abs(vx-x)>.015||Math.abs(vy-y)>.015))hasMovingNormal=true;
+        const entry={id:ball.id,x:vx,y:vy,isGarbage:!!ball.isGarbage};
+        obstacles.push(entry);
+        if(!ball.isGarbage){
+            normalObstacles.push(entry);
+            if((Array.isArray(ball.fallPath)&&ball.fallPath.length)||Math.abs(vx-x)>.015||Math.abs(vy-y)>.015)hasMovingNormal=true;
+        }
     }
-    const frame={obstacles,byId,hasMovingNormal};
+    const frame={obstacles,normalObstacles,byId,hasMovingNormal};
     g._hexGarbageObstacleFrame=frame;
     hexGarbagePerfState(g).obstacleBuilds++;
     return frame;
@@ -53,18 +56,35 @@ hexGarbageBoardBallById=function(g,id){
     return __hexGarbageBoardBallByIdBeforeFrameCache(g,id);
 };
 
-const __hexGarbageBallContactYBeforeFrameCache=hexGarbageBallContactY;
+function hexGarbageExactContactY(g,pack,index,allowGridifiedGarbage){
+    if(!pack?.pat?.[index])return Infinity;
+    const [dx,dy]=pack.pat[index],px=pack.ax+dx,H=HEX_ROW_H;
+    let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-dy;
+    for(const [id,ov] of g.vis.entries()){
+        if(!ov||!Number.isFinite(ov.x)||!Number.isFinite(ov.y))continue;
+        const obstacle=hexGarbageBoardBallById(g,id);
+        if(!obstacle||(!allowGridifiedGarbage&&obstacle.isGarbage))continue;
+        const hx=Math.abs((px-ov.x)*.5);
+        if(hx>=1-1e-10)continue;
+        const vertical=Math.sqrt(Math.max(0,1-hx*hx))/H;
+        limit=Math.min(limit,ov.y-dy-vertical);
+    }
+    return limit;
+}
+
 hexGarbageBallContactY=function(g,pack,index){
     if(!pack?.pat?.[index])return Infinity;
     const frame=hexGarbageObstacleFrame(g);
-    // GARBAGE normally begins after CHECK found a quiescent normal pile. If an
-    // invariant violation leaves a normal pile ball moving, use the original
-    // exact live lookup rather than freezing a stale normal support snapshot.
-    if(frame.hasMovingNormal)return __hexGarbageBallContactYBeforeFrameCache(g,pack,index);
+    const splitTriggered=!!pack._hexSplitTriggered;
+    // Before first pile/floor contact, already-gridified garbage must NOT split
+    // the still-airborne packet. Once the packet has touched real support, those
+    // gridified members become ordinary pile obstacles for the remaining balls.
+    if(frame.hasMovingNormal)return hexGarbageExactContactY(g,pack,index,splitTriggered);
     const perf=hexGarbagePerfState(g);perf.contactQueries++;
     const [dx,dy]=pack.pat[index],px=pack.ax+dx,H=HEX_ROW_H;
     let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-dy;
-    for(const ov of frame.obstacles){
+    const source=splitTriggered?frame.obstacles:frame.normalObstacles;
+    for(const ov of source){
         const hx=Math.abs((px-ov.x)*.5);
         if(hx>=1-1e-10)continue;
         const vertical=Math.sqrt(Math.max(0,1-hx*hx))/H;
@@ -75,7 +95,7 @@ hexGarbageBallContactY=function(g,pack,index){
 
 function hexGarbageContactCacheValid(g,pack){
     const c=pack?._hexContactFrame;
-    return !!c&&c.clock===g.garbageClock&&c.length===pack.pat.length;
+    return !!c&&c.clock===g.garbageClock&&c.length===pack.pat.length&&c.splitTriggered===!!pack._hexSplitTriggered;
 }
 function hexGarbageBuildContactFrame(g,pack){
     const values=new Array(pack.pat.length);let min=Infinity;
@@ -84,7 +104,7 @@ function hexGarbageBuildContactFrame(g,pack){
         values[i]=y;
         if(y<min)min=y;
     }
-    const c={clock:g.garbageClock,length:pack.pat.length,values,min};
+    const c={clock:g.garbageClock,length:pack.pat.length,splitTriggered:!!pack._hexSplitTriggered,values,min};
     pack._hexContactFrame=c;
     return c;
 }
@@ -109,13 +129,23 @@ materializeGarbageContactsThrough=function(g,pack,desiredY){
         if(desiredY+HEX_GARBAGE_CONTACT_EPS>=cy)hits.push({index:i,contactY:cy});
     }
     if(!hits.length)return 0;
+
+    // This is the exact transition from rigid airborne packet to independent
+    // members. Until one member physically reaches the pre-existing pile/floor,
+    // no member is allowed to separate merely because another garbage ball is
+    // nearby. The current hit list was computed with normal pile/floor only.
+    if(!pack._hexSplitTriggered){
+        pack._hexSplitTriggered=true;
+        pack._hexSplitTriggeredAt=g.garbageClock;
+    }
+
     let released=0;
     hits.sort((a,b)=>b.index-a.index);
     for(const hit of hits){
         if(materializeGarbageBallAtContact(g,pack,hit.index,hit.contactY))released++;
     }
-    // Splicing changes packet indices. Never carry an index-based contact cache
-    // across a materialization pass.
+    // Splicing changes packet indices, and the split transition changes which
+    // obstacles are eligible. Never carry this contact cache forward.
     delete pack._hexContactFrame;
     return released;
 };
