@@ -8,11 +8,11 @@ on:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Diagnose seed 7 long-run slowdown
-        run: node tests/overlap-seed7-progress.js
+      - name: Diagnose seed 7 overlap performance
+        run: node tests/overlap-seed7-performance-diagnostic.js
