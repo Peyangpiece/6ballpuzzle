@@ -14,9 +14,9 @@ const HEX_RENDER_UPWARD_NOISE_EPS=1e-7;
 const __hexRenderMoveBeforeNoiseClamp=hexRenderMoveAlongNormal;
 hexRenderMoveAlongNormal=function(q,nx,ny,amount,sign){
     const oldY=q?.v?.y;
-    const settledGarbage=!!q?.ball?.isGarbage&&!(q.ball.fallPath?.length)&&Math.abs(q.v?.vy||0)<=1e-9&&Math.abs(q.v?.motionSpeed||0)<=1e-9;
+    const pathlessGarbage=!!q?.ball?.isGarbage&&!(q.ball.fallPath?.length);
     __hexRenderMoveBeforeNoiseClamp(q,nx,ny,amount,sign);
-    if(!settledGarbage||!Number.isFinite(oldY)||!Number.isFinite(q?.v?.y))return;
+    if(!pathlessGarbage||!Number.isFinite(oldY)||!Number.isFinite(q?.v?.y))return;
     const upward=oldY-q.v.y;
     if(upward>0&&upward<=HEX_RENDER_UPWARD_NOISE_EPS){
         q.v.y=oldY;
@@ -31,7 +31,6 @@ function hexSnapshotSettledGarbageY(g){
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const ball=valid(x,y)?g.board[y][x]:null,v=ball&&g.vis.get(ball.id);
         if(!ball?.isGarbage||!v||ball.fallPath?.length)continue;
-        if(Math.abs(v.vy||0)>1e-9||Math.abs(v.motionSpeed||0)>1e-9)continue;
         if(Number.isFinite(v.y))out.set(ball.id,v.y);
     }
     return out;
