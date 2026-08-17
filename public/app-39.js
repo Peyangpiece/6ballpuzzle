@@ -70,6 +70,29 @@ function hexGarbageWithSameReleaseSiblingsHidden(g,ids,fn){
     }
 }
 
+function hexGarbageWholeReleaseContext(g,pack){
+    // These sets belong to ONE first-contact event and survive retry frames.
+    // Without persistence, members released on frame N were misclassified as
+    // pre-existing pile on frame N+1 and could permanently block the remainder.
+    if(!(pack._hexWholeReleasePreExistingIds instanceof Set)){
+        pack._hexWholeReleasePreExistingIds=hexGarbageBoardIds(g);
+    }
+    if(!(pack._hexWholeReleaseSiblingIds instanceof Set)){
+        pack._hexWholeReleaseSiblingIds=new Set();
+    }
+    return{
+        preExistingIds:pack._hexWholeReleasePreExistingIds,
+        sameReleaseIds:pack._hexWholeReleaseSiblingIds
+    };
+}
+
+function hexGarbageClearWholeReleaseContext(pack){
+    delete pack._hexWholeReleasePreExistingIds;
+    delete pack._hexWholeReleaseSiblingIds;
+    delete pack._hexWholeReleaseAnchorY;
+    delete pack._hexWholeReleasePending;
+}
+
 function hexGarbageReleaseWholePacketAt(g,pack,anchorY){
     if(!g||!pack?.pat?.length||!Number.isFinite(anchorY))return 0;
 
@@ -77,11 +100,13 @@ function hexGarbageReleaseWholePacketAt(g,pack,anchorY){
         pack._hexSplitTriggered=true;
         pack._hexSplitTriggeredAt=Number(g.garbageClock)||0;
     }
-    pack._hexWholeReleaseAnchorY=anchorY;
+    if(!Number.isFinite(pack._hexWholeReleaseAnchorY))pack._hexWholeReleaseAnchorY=anchorY;
+    // Once first contact exists, its continuous anchor is immutable across retry
+    // frames. Never replace it with a later obstacle created by this release.
+    anchorY=pack._hexWholeReleaseAnchorY;
     pack._hexWholeReleasePending=true;
 
-    const preExistingIds=hexGarbageBoardIds(g);
-    const sameReleaseIds=new Set();
+    const {preExistingIds,sameReleaseIds}=hexGarbageWholeReleaseContext(g,pack);
     let released=0;
 
     // Work backwards because materializeGarbageBallAtContact() removes the
@@ -104,9 +129,9 @@ function hexGarbageReleaseWholePacketAt(g,pack,anchorY){
     if(released&&typeof resolveVisualContacts==="function")resolveVisualContacts(g);
 
     if(pack.pat.length){
-        // This fallback should only occur if a PRE-EXISTING pile/path genuinely
-        // blocks a safe logical hand-off. Never resume free fall below the first
-        // contact pose; retry the exact same release anchor next physics frame.
+        // Only a PRE-EXISTING pile/path may keep a member pending. Continue using
+        // the same first-contact context next frame; never reclassify siblings as
+        // pre-existing obstacles and never resume free fall below this pose.
         pack.y=anchorY;
         pack.contactY=anchorY;
         pack.vy=0;
@@ -115,7 +140,7 @@ function hexGarbageReleaseWholePacketAt(g,pack,anchorY){
     }else{
         pack.landed=true;
         pack.releaseTime=Number(g.garbageClock)||0;
-        delete pack._hexWholeReleasePending;
+        hexGarbageClearWholeReleaseContext(pack);
         delete pack._hexContactClamped;
         delete pack._hexContactBarrierY;
     }
