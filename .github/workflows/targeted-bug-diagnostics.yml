@@ -1,8 +1,6 @@
 name: Targeted HEXDROP Bug Diagnostics
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -28,6 +26,7 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git pull --rebase origin main
           git add diagnostics/seed7-step3414-write-trace.log diagnostics/seed7-step3414-contact-pass-trace.log
           if ! git diff --cached --quiet; then
             git commit -m "Store seed7 contact traces [skip ci]"
