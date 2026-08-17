@@ -16,17 +16,22 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           set -e
-          for f in public/app-*.js public/controls-*.js; do
+          for f in public/app-*.js public/controls-*.js tests/run-*.js; do
             node --check "$f"
           done
-      - name: Check concatenated runtime syntax
+      - name: Check exact concatenated production runtime syntax
         run: |
-          cat \
-            public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
-            public/app-05.js public/app-06.js public/app-07.js public/app-08.js \
-            public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
-            public/app-16.js public/app-17.js public/app-18.js public/app-19.js \
-            public/app-20.js public/app-21.js public/app-22.js public/controls-v7.js > /tmp/hexdrop-runtime.js
+          set -e
+          node <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('public/index.html','utf8');
+          const files=[...html.matchAll(/"(app-\d+\.js|controls-v\d+\.js)"/g)].map(m=>m[1]);
+          if(!files.length||files[0]!=='app-01.js'||!files.includes('app-35.js')||files.at(-1)!=='controls-v7.js'){
+            throw new Error('could not derive exact production runtime from public/index.html');
+          }
+          fs.writeFileSync('/tmp/hexdrop-runtime.js',files.map(f=>fs.readFileSync('public/'+f,'utf8')).join('\n'));
+          console.log('production runtime:',files.join(' -> '));
+          NODE
           node --check /tmp/hexdrop-runtime.js
       - name: Check floor parity regression
         run: |
@@ -61,21 +66,21 @@ jobs:
         run: node tests/gravity-pile-flow-regressions.js
       - name: Check garbage performance regressions
         run: node tests/garbage-performance-regressions.js
-      - name: Check 50-point reference fidelity
-        run: node tests/reference-fidelity.js
+      - name: Check 50-point reference fidelity on production stack
+        run: node tests/run-reference-fidelity-50.js
       - name: Diagnose gridified garbage motion
         run: node tests/garbage-gridified-motion-diagnostic.js
-      - name: Check 100-pass ball movement fidelity
+      - name: Check 100-pass ball movement fidelity on production stack
         run: node tests/run-movement-fidelity-100.js
-      - name: Check 100-pass garbage motion fidelity
-        run: node tests/garbage-fidelity-100.js
-      - name: Check weighted 1000-pass reference fidelity
+      - name: Check 100-pass garbage motion fidelity on production stack
+        run: node tests/run-garbage-fidelity-100.js
+      - name: Check weighted 1000-pass reference fidelity on production stack
         run: node tests/run-reference-fidelity-1000.js
-      - name: Check staged 3000-pass video convergence
+      - name: Check staged 3000-pass video convergence on production stack
         run: node tests/run-reference-convergence-3000.js
       - name: Diagnose same-frame garbage overlap
         run: node tests/garbage-overlap-frame-diagnostic.js
-      - name: Check continuous no-overlap invariant
+      - name: Check continuous no-overlap invariant on production stack
         run: node tests/run-overlap-regressions.js
       - name: Check clean touch controls v7
         run: |
@@ -127,9 +132,13 @@ jobs:
           grep -q 'hexRotationRenderedSweepSafeWall' public/app-20.js
           grep -q 'hexBuildPileGravityArcProfile' public/app-21.js
           grep -q 'hexGarbageBuildObstacleFrame' public/app-22.js
+          grep -q 'hexWithFuturePileFlowWaitersFixed' public/app-34.js
+          grep -q 'HEX_FIXED_WAITER_CONVERGENCE_CALLS=3' public/app-35.js
           grep -q 'app-20.js' public/index.html
           grep -q 'app-21.js' public/index.html
           grep -q 'app-22.js' public/index.html
+          grep -q 'app-34.js' public/index.html
+          grep -q 'app-35.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q 'loadCurrentGameBuild' public/index.html
           grep -q 'Date.now().toString(36)' public/index.html
