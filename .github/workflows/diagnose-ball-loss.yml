@@ -1,4 +1,4 @@
-name: Diagnose Ball Loss
+name: Diagnose Physics Failures
 
 on:
   push:
@@ -13,24 +13,26 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Reproduce first lost-ball event
+      - name: Run focused diagnoses
         shell: bash
         run: |
           mkdir -p audit-results
-          node tests/diagnose-ball-loss.js > audit-results/ball-loss.log 2>&1
+          node tests/diagnose-ball-loss.js > audit-results/ball-loss.log 2>&1 || true
+          node tests/diagnose-seed8-rigid-recoil.js > audit-results/rigid-recoil.log 2>&1 || true
           cat audit-results/ball-loss.log
+          cat audit-results/rigid-recoil.log
       - name: Store diagnosis
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git pull --rebase origin main
-          git add audit-results/ball-loss.log
-          git diff --cached --quiet || git commit -m "Record ball loss diagnosis [skip ci]"
+          git add audit-results/ball-loss.log audit-results/rigid-recoil.log
+          git diff --cached --quiet || git commit -m "Record focused physics diagnoses [skip ci]"
           git push
