@@ -10,7 +10,7 @@ let globalMin=Infinity,worst=null,totalUp=0,upWorst=null;
 for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
  const g=createEngine(87);g.garbShapes=[type];prepareGarbageBatch(g);const last=new Map();
  for(let i=0;i<600;i++){
-  updateGarbagePacks(g,PHYSICS_FRAME);updateVisuals(g,PHYSICS_FRAME);
+  updateGarbagePacks(g,PHYSICS_FRAME);updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);
   const balls=[];
   for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
    const q=valid(x,y)?g.board[y][x]:null,v=q&&g.vis.get(q.id);
