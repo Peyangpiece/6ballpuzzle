@@ -1,0 +1,17 @@
+name: Targeted HEXDROP Bug Diagnostics
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/audit-targeted-first-failures.js
