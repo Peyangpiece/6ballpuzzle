@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Profile seed 7 CLEAR hotpath
-        run: node tests/seed7-clear-hotpath-diagnostic.js
+      - name: Diagnose seed 7 garbage completion
+        run: node tests/overlap-seed7-performance-diagnostic.js
