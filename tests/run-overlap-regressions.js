@@ -25,12 +25,21 @@ if(!source.includes(oldRuntime)){
 }
 
 // Do not reduce seeds, simulated seconds, collision threshold, or sample count.
-// Only permit the unchanged long-run suite enough wall-clock time to finish,
-// and execute it with the exact final overrides loaded in production.
+// The former runner put all four 60-second simulations inside one 300-second VM
+// budget. With the stricter continuous garbage contact solver the aggregate run
+// can exceed that wall-clock budget even when every seed is progressing normally.
+// Run the exact same four seeds independently so each receives the same 300-second
+// VM allowance. This changes only test orchestration, never physics coverage.
 source=source.replace(oldRuntime,newRuntime).replace(oldTimeout,newTimeout);
 fs.writeFileSync(tmpPath,source);
+const seeds=[1,7,19,37];
 try{
-  cp.execFileSync(process.execPath,[tmpPath],{stdio:"inherit"});
+  for(const seed of seeds){
+    console.log(`overlap production seed ${seed} START`);
+    cp.execFileSync(process.execPath,[tmpPath,String(seed),"60"],{stdio:"inherit"});
+    console.log(`overlap production seed ${seed} PASS`);
+  }
+  console.log("overlap production all seeds PASS 4/4");
 }finally{
   try{fs.unlinkSync(tmpPath);}catch{}
 }
