@@ -75,6 +75,29 @@ hexGarbageSingleLogicalCell=function(g,x,visualY){
     return best?{x:best.x,y:best.y}:null;
 };
 
+// "Garbage does not collide with garbage while airborne" applies only while
+// both balls are still airborne packets. The instant one ball has gridified it
+// is an ordinary accumulated pile ball, so a later airborne sibling may touch
+// that settled/gridified ball and only THAT sibling may then gridify. Airborne
+// packs are not present in g.vis/g.board, so simply considering every board
+// ball here gives the intended distinction without packet-to-packet collision.
+const __hexdropLegacyGarbageBallContactY=hexGarbageBallContactY;
+hexGarbageBallContactY=function(g,pack,index){
+    if(!pack?.pat?.[index])return Infinity;
+    const [dx,dy]=pack.pat[index],px=pack.ax+dx,H=HEX_ROW_H;
+    let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-dy;
+    for(const [id,ov] of g.vis.entries()){
+        if(!ov||!Number.isFinite(ov.x)||!Number.isFinite(ov.y))continue;
+        const obstacle=hexGarbageBoardBallById(g,id);
+        if(!obstacle)continue;
+        const hx=Math.abs((px-ov.x)*.5);
+        if(hx>=1-1e-10)continue;
+        const vertical=Math.sqrt(Math.max(0,1-hx*hx))/H;
+        limit=Math.min(limit,ov.y-dy-vertical);
+    }
+    return limit;
+};
+
 // Compute the active garbage lattice sequence in a single board scan. This is
 // called several times in a GARBAGE frame, so avoid the previous double scan.
 function __hexdropGarbageMotionQueue(g){
