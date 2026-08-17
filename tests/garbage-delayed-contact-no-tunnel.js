@@ -34,17 +34,16 @@ function minPackPileDistance(g,p){
 }
 
 // Reproduce the real tunnel: pile contact is reached, but the continuous
-// hand-off is temporarily refused because its corridor is reserved. The ball
-// must remain exactly on the circle contact instead of rendering below it.
+// hand-off is temporarily refused because its corridor is reserved. Jump the
+// absolute clock beyond contact to exercise the exact one-frame tunneling risk.
 {
   const g=createEngine(98001);put(g,5,5,980010,false);const p=makePack(5);
-  g.state="RESOLVING";g.phase="GARBAGE";g.garbageClock=HEX_GARBAGE_BUBBLE_DURATION;
+  g.state="RESOLVING";g.phase="GARBAGE";g.garbageClock=HEX_GARBAGE_BUBBLE_DURATION+1.25;
   g.garbagePlans=[p];g.activeGarbagePacks=[p];g.garbageNextBallAt=999;g.garbLeft=0;
   const physicalContact=hexGarbageBallContactY(g,p,0);
   const originalReserved=hexGarbageContactPointReserved;
   hexGarbageContactPointReserved=()=>true;
-  let approach=0;
-  while(p.pat.length&&!p._hexContactClamped&&approach++<360)updateGarbagePacks(g,PHYSICS_FRAME);
+  updateGarbagePacks(g,PHYSICS_FRAME);
   hexGarbageContactPointReserved=originalReserved;
 
   expect(p.pat.length===1,"deferred-contact fixture unexpectedly materialized");
@@ -65,8 +64,8 @@ function minPackPileDistance(g,p){
   expect(!p.pat.length,"contacted garbage never resumed materialization after reservation cleared");
 }
 
-// 1000 varied delayed-contact frames. Previous regressions checked only the
-// computed contact height and therefore could not catch this rendering tunnel.
+// 1000 varied delayed-contact frames. Each case starts with absolute time
+// already beyond first contact, directly testing large one-frame overshoot.
 for(let i=0;i<1000;i++){
   const g=createEngine(98100+i);
   const y=3+(i%8);
@@ -75,14 +74,13 @@ for(let i=0;i<1000;i++){
   put(g,x,y,990000+i,i%4===0);
   g.state="RESOLVING";g.phase="GARBAGE";
   const p=makePack(x);
-  g.garbageClock=HEX_GARBAGE_BUBBLE_DURATION;
+  g.garbageClock=HEX_GARBAGE_BUBBLE_DURATION+1.1+(i%5)*.12;
   g.garbagePlans=[p];g.activeGarbagePacks=[p];g.garbageNextBallAt=999;g.garbLeft=0;
   const originalReserved=hexGarbageContactPointReserved;
   hexGarbageContactPointReserved=()=>true;
-  const dt=[1/30,1/60,1/120,.08,.16,.24][i%6];
-  for(let k=0;k<360&&p.pat.length&&!p._hexContactClamped;k++)updateGarbagePacks(g,dt);
+  updateGarbagePacks(g,[1/30,1/60,1/120,.08,.16,.24][i%6]);
   hexGarbageContactPointReserved=originalReserved;
-  expect(p._hexContactClamped===true,"case "+i+": failed to reach forced delayed contact");
+  expect(p._hexContactClamped===true,"case "+i+": delayed contact was not clamped");
   expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-6,
     "case "+i+": airborne garbage tunneled through pile: "+minPackPileDistance(g,p));
   expect(p.vy===0,"case "+i+": clamped packet could still interpolate downward");
