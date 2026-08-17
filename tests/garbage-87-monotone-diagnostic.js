@@ -8,7 +8,7 @@ const results=[];
 for(const type of ['PYRAMID','HEXAGON','STRAIGHT']){
  const g=createEngine(87);g.garbShapes=[type];prepareGarbageBatch(g);const last=new Map();let min=Infinity,worst=null,firstUp=null;
  for(let frame=0;frame<600;frame++){
-  updateGarbagePacks(g,PHYSICS_FRAME);updateVisuals(g,PHYSICS_FRAME);
+  updateGarbagePacks(g,PHYSICS_FRAME);updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);
   const balls=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?g.board[y][x]:null,v=q&&g.vis.get(q.id);if(q?.isGarbage&&v)balls.push({q,v,x,y});}
   for(const b of balls){const p=last.get(b.q.id);if(p!=null&&b.v.y<p-1e-8&&!firstUp)firstUp={frame,previousY:p,currentY:b.v.y,ball:state(g,b.q,b.x,b.y)};last.set(b.q.id,b.v.y);}
   for(let a=0;a<balls.length;a++)for(let b=a+1;b<balls.length;b++){const A=balls[a],B=balls[b],d=hexPhysDist(A.v.x,A.v.y,B.v.x,B.v.y);if(d<min){min=d;worst={frame,d,a:state(g,A.q,A.x,A.y),b:state(g,B.q,B.x,B.y)};}}
