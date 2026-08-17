@@ -24,6 +24,52 @@ function hexGarbageFirstRealContactAnchor(g,pack){
     return first;
 }
 
+function hexGarbageBoardIds(g){
+    const ids=new Set();
+    if(!g?.board)return ids;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const b=valid(x,y)?g.board[y][x]:null;
+        if(b)ids.add(b.id);
+    }
+    return ids;
+}
+
+/*
+ * During one whole-packet release, members created a few microsteps earlier are
+ * siblings from the SAME rigid airborne pose. Their exact contact circles are
+ * already non-overlapping by construction. They must not make a later sibling
+ * fail the continuous-centre/path reservation check merely because their new
+ * fallPath now crosses space that belonged to that same formation one call ago.
+ *
+ * Hide only those newly-created sibling visuals and paths while one later
+ * sibling runs the existing hand-off safety checks. Their logical lattice cells
+ * remain occupied, so two members can never claim the same cell. Every ball and
+ * path that existed before first contact stays fully visible to all safety
+ * checks. Restore everything synchronously before returning.
+ */
+function hexGarbageWithSameReleaseSiblingsHidden(g,ids,fn){
+    if(!g||!ids?.size)return fn();
+    const held=[];
+    for(const id of ids){
+        const ball=hexGarbageBoardBallById(g,id);
+        if(!ball)continue;
+        const hadVis=g.vis?.has(id),vis=hadVis?g.vis.get(id):undefined;
+        const path=ball.fallPath;
+        held.push({id,ball,hadVis,vis,path});
+        if(hadVis)g.vis.delete(id);
+        if(Array.isArray(path)&&path.length)ball.fallPath=[];
+    }
+    g._hexGarbageObstacleFrame=null;
+    try{return fn();}
+    finally{
+        for(const h of held){
+            h.ball.fallPath=h.path;
+            if(h.hadVis)g.vis.set(h.id,h.vis);
+        }
+        g._hexGarbageObstacleFrame=null;
+    }
+}
+
 function hexGarbageReleaseWholePacketAt(g,pack,anchorY){
     if(!g||!pack?.pat?.length||!Number.isFinite(anchorY))return 0;
 
@@ -34,20 +80,33 @@ function hexGarbageReleaseWholePacketAt(g,pack,anchorY){
     pack._hexWholeReleaseAnchorY=anchorY;
     pack._hexWholeReleasePending=true;
 
+    const preExistingIds=hexGarbageBoardIds(g);
+    const sameReleaseIds=new Set();
+    let released=0;
+
     // Work backwards because materializeGarbageBallAtContact() removes the
     // chosen slot from pat/colors synchronously. Every member receives the same
-    // airborne anchor, preserving the formation's exact pose at first contact;
-    // only after this synchronous release does ordinary ball physics diverge.
-    let released=0;
+    // airborne anchor, preserving the formation's exact pose at first contact.
     for(let i=pack.pat.length-1;i>=0;i--){
-        if(materializeGarbageBallAtContact(g,pack,i,anchorY))released++;
+        const beforeEntries=pack.entryBalls?.length||0;
+        const ok=hexGarbageWithSameReleaseSiblingsHidden(g,sameReleaseIds,()=>
+            materializeGarbageBallAtContact(g,pack,i,anchorY));
+        if(!ok)continue;
+        released++;
+        const entry=pack.entryBalls?.[beforeEntries]||pack.entryBalls?.[pack.entryBalls.length-1];
+        if(entry?.id&&!preExistingIds.has(entry.id))sameReleaseIds.add(entry.id);
     }
 
+    // All sibling visuals are visible again here. Resolve once with the complete
+    // released set so tangent contacts and existing pile contacts converge in
+    // one completed physics frame rather than in order-dependent intermediate
+    // states. app-22 may defer this to its normal frame-end batch solve.
+    if(released&&typeof resolveVisualContacts==="function")resolveVisualContacts(g);
+
     if(pack.pat.length){
-        // A logical/path reservation may very briefly prevent one hand-off.
-        // Keep the unreleased remainder at the already-safe first-contact pose;
-        // never resume free fall below it. The next physics update retries the
-        // same whole-release anchor, so no mixed packet can tunnel downward.
+        // This fallback should only occur if a PRE-EXISTING pile/path genuinely
+        // blocks a safe logical hand-off. Never resume free fall below the first
+        // contact pose; retry the exact same release anchor next physics frame.
         pack.y=anchorY;
         pack.contactY=anchorY;
         pack.vy=0;
