@@ -56,6 +56,8 @@ jobs:
         run: node tests/physics-regressions.js
       - name: Check 50-point reference fidelity
         run: node tests/reference-fidelity.js
+      - name: Diagnose gridified garbage motion
+        run: node tests/garbage-gridified-motion-diagnostic.js
       - name: Check 100-pass ball movement fidelity
         run: node tests/movement-fidelity-100.js
       - name: Check 100-pass garbage motion fidelity
