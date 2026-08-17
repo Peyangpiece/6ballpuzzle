@@ -13,5 +13,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Diagnose garbage contact monotonicity
-        run: node tests/garbage-contact-monotone-diagnostic.js
+      - name: Diagnose movement check 87
+        run: node tests/garbage-87-diagnostic.js
