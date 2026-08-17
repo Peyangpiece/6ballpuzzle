@@ -8,7 +8,7 @@ for(let seed=0;seed<CASES;seed++){
  const rng=mulberry32((0x51A70000+seed)>>>0),b=newBoard();let id=1000000+seed*100,startCount=0;
  const n=4+Math.floor(rng()*34);
  for(let k=0;k<n;k++){
-  const y=BOARD_MIN_ROW+Math.floor(rng()*(ROWS-BOARD_MIN_ROW)),xs=[];for(let x=0;x<W2;x++)if(valid(x,y)&&!b[y][x])xs.push(x);if(!xs.length)continue;const x=xs[Math.floor(rng()*xs.length)];b[y][x]=mk(id++,Math.floor(rng()*COLORS.length));startCount++;
+  const y=BOARD_MIN_ROW+Math.floor(rng()*(ROWS-BOARD_MIN_ROW)),xs=[];for(let x=0;x<W2;x++)if(valid(x,y)&&!b[y][x])xs.push(x);if(!xs.length)continue;const x=xs[Math.floor(rng()*xs.length)],ball=mk(id++,Math.floor(rng()*COLORS.length));b[y][x]=ball;noteBoardCell(b,y,ball);startCount++;
  }
  let guard=0,previous='',repeat=0,maxRepeat=0;
  while(guard<1000){
@@ -18,7 +18,7 @@ for(let seed=0;seed<CASES;seed++){
  if(guard>=1000)bug('settle-nontermination',{seed,startCount,maxRepeat});
  if(hasLegalGravityMove(b))bug('settle-left-legal-move',{seed,guard});
  const ids=new Set();let endCount=0,locked=0,float=0;
- for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q)continue;endCount++;if(ids.has(q.id))bug('duplicate-id',{seed,id:q.id});ids.add(q.id);if(q.equilibriumLocked)locked++;}
+ for(let y=BOARD_MIN_ROW;y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q)continue;endCount++;if(ids.has(q.id))bug('duplicate-id',{seed,id:q.id});ids.add(q.id);if(q.equilibriumLocked)locked++;}
  if(endCount!==startCount)bug('ball-conservation',{seed,startCount,endCount});
  float=unstableFrozenBalls(b).length;
  if(float)bug('unsupported-after-settle',{seed,float,locked,guard});
