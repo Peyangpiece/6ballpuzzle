@@ -26,7 +26,7 @@
 <script>
 (function loadCurrentGameBuild(){
     var cacheKey=Date.now().toString(36);
-    var files=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-15.js","app-16.js","app-17.js","app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js","app-26.js","app-27.js","app-28.js","app-29.js","app-30.js","app-31.js","app-32.js","app-33.js","controls-v7.js"];
+    var files=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-15.js","app-16.js","app-17.js","app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js","app-26.js","app-27.js","app-28.js","app-29.js","app-30.js","app-31.js","app-32.js","app-33.js","app-34.js","controls-v7.js"];
     for(var i=0;i<files.length;i++){
         document.write('<script src="'+files[i]+'?v='+cacheKey+'"><\/script>');
     }
