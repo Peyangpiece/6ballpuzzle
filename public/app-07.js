@@ -258,3 +258,23 @@ function collectLiveMotionBatch(g){
 function liveBatchPointAt(batch,member,t,states,memo=new Map(),stack=new Set()){
     if(!member)return[0,0];const id=member.cell.id;if(memo.has(id))return memo.get(id);if(member.seg.kind==="FOLLOW_SUPPORT"&&!stack.has(id)){const sid=member.seg.followSupportIds?.[0],support=batch.byId?.get(sid);if(support){stack.add(id);const sp=liveBatchPointAt(batch,support,t,states,memo,stack);stack.delete(id);const out=[member.seg.from[0]+sp[0]-support.seg.from[0],member.seg.from[1]+sp[1]-support.seg.from[1]];memo.set(id,out);return out;}}const st=states?.get(id),out=liveSegPoint(member.seg,t,st?.startState,st?.naturalDuration);memo.set(id,out);return out;
 }
+
+// Rotation legality must use the physical height at which the 0.10 s visual
+// rotation will actually be shown. The original check sampled only the logical
+// lattice row, so a piece that was already part-way through its fall could be
+// declared legal and then swing through a settled ball while the animation ran.
+rotate=function(g,dir){
+    if(g.state!=="PLAYING"||!g.piece)return false;
+    const nr=(g.piece.rot+(dir>0?1:5))%6,from={...g.piece},before=centroidOf(from);
+    const fracNow=activeDropFraction(g,0),fracEnd=activeDropFraction(g,ROTATE_VISUAL_TIME),sweepFrac=Math.max(fracNow,fracEnd);
+    for(const[kx,ky]of KICKS){
+        const q={...from,rot:nr,x:from.x+kx,y:from.y+ky};
+        if(!pieceFits(g.board,q)||!rotationSweepSafe(g.board,from,q,dir))continue;
+        if(sweepFrac>1e-9){
+            const vf={...from,y:from.y+sweepFrac},vq={...q,y:q.y+sweepFrac};
+            if(!rotationSweepSafe(g.board,vf,vq,dir))continue;
+        }
+        const after=centroidOf(q);g.piece=q;g.rotAnim={p:0,dir:dir>0?1:-1,dx:before[0]-after[0],dy:before[1]-after[1]};emit(g,{t:"rotate"});if(g.lockT>0&&g.lockResets<12){g.lockT=0;g.lockResets++;}return true;
+    }
+    return false;
+};
