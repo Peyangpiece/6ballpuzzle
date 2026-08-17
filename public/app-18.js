@@ -162,16 +162,15 @@ updateScheduledPileFlowVisual=function(g,cell,v,dt){
 /*
  * Contact-network precision normalization.
  *
- * A clear can leave several resting/waiting pile balls only a few millionths
- * away from exact hex-lattice tangency. Correcting one ball at a time fails:
- * its neighbour is also microscopically displaced, so the single correction
- * appears to overlap that neighbour. Build the entire quiescent contact target
- * set first, validate those targets together, and apply the safe set at once.
- *
- * This is deliberately tiny (5e-5 physical units), excludes garbage and any
- * visibly moving ball, and never relaxes the diameter rule.
+ * Every pile-flow ball whose first segment has not started yet is physically
+ * waiting at seg.from. The contact solver may nudge a connected chain by tiny
+ * amounts while solving neighbouring tangencies; if only one member is snapped
+ * back, that neighbour's tiny offset makes the correction look unsafe and the
+ * error cascades through the chain. Treat the waiting starts as one target
+ * network and validate/apply them together.
  */
-const HEX_QUIESCENT_SNAP_EPS=5e-5;
+const HEX_QUIESCENT_SNAP_EPS=5e-4;
+const HEX_QUIESCENT_WAIT_SANITY=1e-2;
 const HEX_QUIESCENT_SAFE_DIST=0.9999999;
 
 function hexQuiescentPileTarget(g,cell,x,y,v){
@@ -180,7 +179,13 @@ function hexQuiescentPileTarget(g,cell,x,y,v){
     const seg=path&&path.length?path[0]:null;
     const speed=Math.max(Math.abs(v.vy||0),Math.abs(v.motionSpeed||0));
     const waiting=!!seg?.pileFlow&&Number.isFinite(seg.pileFlowStart)&&g.pileFlowClock<seg.pileFlowStart-1e-10;
-    if(!waiting&&speed>1e-3)return null;
+
+    if(waiting&&Array.isArray(seg.from)&&seg.from.length>=2){
+        const d=pileFlowPhysicalDist([v.x,v.y],seg.from);
+        if(d<=HEX_QUIESCENT_WAIT_SANITY)return[seg.from[0],seg.from[1]];
+        return null;
+    }
+    if(speed>1e-3)return null;
 
     const choices=[];
     if(seg?.pileFlow){
@@ -222,8 +227,6 @@ function hexNormalizeQuiescentPileNetwork(g){
     }
     if(!targets.size)return;
 
-    // Remove unsafe candidates iteratively. Candidate-vs-candidate checks use
-    // both exact targets, which is the key difference from one-ball snapping.
     const active=new Set(targets.keys());
     let changed=true;
     while(changed&&active.size){
