@@ -52,12 +52,24 @@ expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne g
  expect(gridified[0].b.motionGroupId===0&&!gridified[0].b.rigid,"contacted garbage ball retained packet rigidity");
  expect(pack.pat[0][0]===2&&pack.pat[0][1]===0,"wrong sibling remained airborne");
 
- // When the remaining sibling later reaches its own pile/floor contact, only
- // then may it cross into lattice physics and complete the packet.
  const remainingContact=hexGarbageBallContactY(g,pack,0);
  const made2=materializeGarbageContactsThrough(g,pack,remainingContact+HEX_GARBAGE_CONTACT_EPS);
  expect(made2===1,"remaining garbage ball did not materialize at its own contact");
  expect(pack.pat.length===0&&pack.landed&&pack.landedCount===2,"packet did not finish after both individual contacts");
+}
+
+// A complete pyramid must still finish after all six individual contacts.
+{
+ const g=createEngine(22);g.state="RESOLVING";g.phase="GARBAGE";g.garbShapes=["PYRAMID"];
+ prepareGarbageBatch(g);
+ const p=g.garbagePlans[0];let guard=0;
+ while(!p.landed&&guard++<720)updateGarbagePacks(g,PHYSICS_FRAME);
+ let landed=0;
+ for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+  const b=valid(x,y)?g.board[y][x]:null;if(b?.isGarbage)landed++;
+ }
+ expect(p.landed&&p.landedCount===GARBAGE_SHAPES.PYRAMID.length&&landed===GARBAGE_SHAPES.PYRAMID.length,
+  "full pyramid did not finish individual contacts: "+JSON.stringify({guard,remaining:p.pat.length,landedCount:p.landedCount,boardGarbage:landed,y:p.y,entryBalls:p.entryBalls}));
 }
 
 console.log("garbage airborne pass-through + individual contact PASS");
