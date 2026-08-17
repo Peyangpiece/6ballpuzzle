@@ -4,7 +4,7 @@ const vm=require("vm");
 const names=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
   "app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
-  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js"
+  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js"
 ];
 const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
@@ -88,6 +88,29 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(!seg.topPivot,'stale topPivot survived fixed garbage priority');
   expect((seg.followSupportIds||[]).length===0&&!seg.movingSupportId,'stale support metadata survived fixed garbage priority');
   expect(Math.abs(pileFlowPhysicalDist([v.x,v.y],[15,8])-1)<1e-6,'late repaired motion cut through settled garbage');
+}
+
+// Future-scheduled pileFlow is absolute-time state, not a soft contact body.
+// Reproduce the accumulated drift from the seed-19 failure: while the segment
+// is still waiting, generic contact correction must not preserve an already
+// drifted visual centre. It is restored to the scheduled start before solving.
+{
+  const g=createEngine(11003),support=mkBall(g,1),mover=mkBall(g,2);
+  support.isGarbage=true;support.fallPath=[];
+  g.board[8][15]=support;setVis(g,support,15,8,0);
+  const seg={
+    from:[13,8],to:[14,9],kind:'ROLL_RIGHT',motionSeq:0,pileFlow:true,
+    pileFlowStart:1,pileFlowDuration:.25,pileFlowEnd:1.25,pileFlowEntry:true,
+    followSupportIds:[],movingSupportId:0,pivot:[15,8],topPivot:null,
+    _hexGravityEntrySpeed:.35
+  };
+  mover.fallPath=[seg];g.board[9][14]=mover;
+  setVis(g,mover,13.406485700155958,8.391988418130824,0);
+  g.state='RESOLVING';g.phase='SETTLE';g.pileFlowClock=.5;
+  resolveVisualContacts(g);
+  const v=g.vis.get(mover.id);
+  expect(pileFlowPhysicalDist([v.x,v.y],[13,8])<1e-6,'future pileFlow waiter retained accumulated contact drift');
+  expect(pileFlowPhysicalDist([v.x,v.y],[15,8])>=.999999,'future pileFlow waiter remained inside settled garbage');
 }
 
 console.log('gravity pile flow regressions PASS');
