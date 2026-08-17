@@ -22,9 +22,10 @@ const earlierAirborne={
   y:-1,vy:8,landed:false,_started:true,actualStartTime:0,
   totalBalls:1,landedCount:0,entryBalls:[]
 };
-const empty={vis:new Map(),activeGarbagePacks:[falling]};
+const empty={board:newBoard(),vis:new Map(),activeGarbagePacks:[falling],garbageClock:0};
 const floorContact=hexGarbageFlightContactY(empty,falling);
-const airborneOnly={vis:new Map(),activeGarbagePacks:[earlierAirborne,falling]};
+delete falling._hexContactFrame;
+const airborneOnly={board:newBoard(),vis:new Map(),activeGarbagePacks:[earlierAirborne,falling],garbageClock:0};
 const airborneContact=hexGarbageFlightContactY(airborneOnly,falling);
 expect(close(airborneContact,floorContact),"airborne garbage incorrectly triggered lattice contact");
 expect(!/activeGarbagePacks/.test(hexGarbageBallContactY.toString()),"airborne garbage was reintroduced into per-ball contact solver");
