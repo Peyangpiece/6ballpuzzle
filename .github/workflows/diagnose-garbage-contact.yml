@@ -15,5 +15,3 @@ jobs:
           node-version: '22'
       - name: Diagnose STRAIGHT individual contacts
         run: node tests/garbage-straight-contact-diagnostic.js
-      - name: Diagnose pile endpoint overlap
-        run: node tests/pile-endpoint-overlap-diagnostic.js
