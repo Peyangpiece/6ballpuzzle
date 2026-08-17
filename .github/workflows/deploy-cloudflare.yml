@@ -30,7 +30,7 @@ jobs:
         run: node tests/garbage-airborne-pass-through.js
 
       - name: Run 100-pass movement fidelity
-        run: node tests/movement-fidelity-100.js
+        run: node tests/run-movement-fidelity-100.js
 
       - name: Run 100-pass garbage fidelity
         run: node tests/garbage-fidelity-100.js
