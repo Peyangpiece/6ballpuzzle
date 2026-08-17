@@ -18,13 +18,22 @@ function entries(){
  }
  return out;
 }
+function slim(q){
+ const s=q.seg;
+ return{id:q.b.id,logical:[q.x,q.y],p:q.p,garbage:!!q.b.isGarbage,seg:s&&{
+  from:s.from,to:s.to,start:s.pileFlowStart,end:s.pileFlowEnd,pivot:s.pivot,topPivot:s.topPivot,
+  followSupportIds:s.followSupportIds,movingSupportId:s.movingSupportId,
+  key:typeof hexGarbageParallelWaveKey==='function'?hexGarbageParallelWaveKey(s):null,
+  rep:typeof hexGarbageParallelWaveRepresentative==='function'?(()=>{const r=hexGarbageParallelWaveRepresentative(g,q.b,s);return r&&r.ball?.id;})():null,
+  gLinear:!!s._hexGravityLinear,gV0:s._hexGravityV0,gAccel:s._hexGravityAccel,gEntry:s._hexGravityEntrySpeed
+ }};
+}
 function minPair(){
  const a=entries();let min=Infinity,pair=null;
  for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){
   const d=hexPhysDist(a[i].p[0],a[i].p[1],a[j].p[0],a[j].p[1]);
   if(d<min){min=d;pair=[a[i],a[j]];}
  }
- const slim=q=>({id:q.b.id,logical:[q.x,q.y],p:q.p,garbage:!!q.b.isGarbage,seg:q.seg&&{from:q.seg.from,to:q.seg.to,start:q.seg.pileFlowStart,end:q.seg.pileFlowEnd,pivot:q.seg.pivot,topPivot:q.seg.topPivot}});
  return{min,pair:pair&&pair.map(slim)};
 }
 let worst={min:Infinity,step:-1,pair:null};
@@ -34,6 +43,10 @@ for(let step=0;step<=5120&&g.alive;step++){
  if(step===120*23)g.incomingShapes.push('STRAIGHT');
  if(step===120*31)g.incoming+=8;
  stepEngine(g,PHYSICS_FRAME);
+ if(step===5100){
+  const pair=entries().filter(q=>q.b.id===106||q.b.id===108).map(slim);
+  console.log('PARALLEL_PAIR_5100',JSON.stringify(pair));
+ }
  if(step>=5090){const q=minPair();if(q.min<worst.min)worst={min:q.min,step,pair:q.pair};}
 }
 console.log('SETTLE_PIVOT_MIN',JSON.stringify(worst));
