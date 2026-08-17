@@ -25,6 +25,45 @@ hexRenderMoveAlongNormal=function(q,nx,ny,amount,sign){
     }
 };
 
+function hexSnapshotSettledGarbageY(g){
+    const out=new Map();
+    if(!g?.board)return out;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null,v=ball&&g.vis.get(ball.id);
+        if(!ball?.isGarbage||!v||ball.fallPath?.length)continue;
+        if(Math.abs(v.vy||0)>1e-9||Math.abs(v.motionSpeed||0)>1e-9)continue;
+        if(Number.isFinite(v.y))out.set(ball.id,v.y);
+    }
+    return out;
+}
+
+function hexClampSettledGarbageBoundaryNoise(g,before){
+    if(!before?.size)return 0;
+    let clamped=0;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        const oldY=ball?before.get(ball.id):undefined;
+        if(!ball?.isGarbage||!Number.isFinite(oldY)||ball.fallPath?.length)continue;
+        const v=g.vis.get(ball.id);if(!v||!Number.isFinite(v.y))continue;
+        const upward=oldY-v.y;
+        if(upward>0&&upward<=HEX_RENDER_UPWARD_NOISE_EPS){
+            v.y=oldY;
+            const rest=ball._hexGarbageContinuousRest;
+            if(rest)rest.py=cellCenterYNorm(v.y);
+            clamped++;
+        }
+    }
+    return clamped;
+}
+
+const __hexUpdateVisualsBeforeBoundaryNoiseClamp=updateVisuals;
+updateVisuals=function(g,dt){
+    const before=hexSnapshotSettledGarbageY(g);
+    const result=__hexUpdateVisualsBeforeBoundaryNoiseClamp(g,dt);
+    hexClampSettledGarbageBoundaryNoise(g,before);
+    return result;
+};
+
 hexEnforceFinalVisualNonOverlap=function(g){
     const items=hexRenderBoardVisuals(g);
     if(items.length<2)return 0;
