@@ -14,21 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Map moving-set stack line
-        run: |
-          node <<'NODE'
-          const fs=require('fs');
-          const html=fs.readFileSync('public/index.html','utf8');
-          const names=[...html.matchAll(/"(app-\d+\.js)"/g)].map(m=>m[1]);
-          let offset=0;
-          for(const name of names){
-            const lines=fs.readFileSync('public/'+name,'utf8').split(/\r?\n/);
-            const start=offset+1,end=offset+lines.length;
-            if(1538>=start&&1538<=end){
-              const local=1538-offset;
-              console.log('LINE1538_FILE',JSON.stringify({name,start,end,local}));
-              for(let n=Math.max(1,local-18);n<=Math.min(lines.length,local+22);n++)console.log(String(n).padStart(5,' ')+' | '+lines[n-1]);
-            }
-            offset=end;
-          }
-          NODE
+      - name: Trace first post-garbage overlap
+        run: node tests/seed7-normal-visual-oscillation-diagnostic.js
