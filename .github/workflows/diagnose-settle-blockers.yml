@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Trace first post-garbage overlap
-        run: node tests/seed7-normal-visual-oscillation-diagnostic.js
+      - name: Trace normal visual writes
+        run: node tests/seed7-normal-visual-write-origin.js
