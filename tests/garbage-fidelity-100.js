@@ -49,7 +49,14 @@ function finishFlight(seed,type,height){
  g.garbShapes=[type];prepareGarbageBatch(g);
  let elapsed=0,lastY=GARBAGE_START_Y,monotone=true;
  while(elapsed<2.5){
-  updateGarbagePacks(g,PHYSICS_FRAME);elapsed+=PHYSICS_FRAME;
+  updateGarbagePacks(g,PHYSICS_FRAME);
+  // Individual-contact garbage can leave siblings airborne while the contacted
+  // ball begins lattice motion. Advance that lattice motion exactly as the game
+  // does between subsequent contact decisions; otherwise the test would pin a
+  // rendered garbage ball in its vacated logical cell forever and falsely block
+  // the next sibling from gridifying.
+  updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);
+  elapsed+=PHYSICS_FRAME;
   const p=g.activeGarbagePacks[0];
   if(p){if(p.y+1e-10<lastY)monotone=false;lastY=p.y;if(p.landed)break;}
  }
