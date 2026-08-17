@@ -69,7 +69,7 @@ jobs:
       - name: Diagnose same-frame garbage overlap
         run: node tests/garbage-overlap-frame-diagnostic.js
       - name: Check continuous no-overlap invariant
-        run: node tests/overlap-regressions.js
+        run: node tests/run-overlap-regressions.js
       - name: Check clean touch controls v7
         run: |
           set -e
