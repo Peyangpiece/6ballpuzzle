@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Trace normal visual oscillation
-        run: node tests/seed7-normal-visual-oscillation-diagnostic.js
+      - name: Trace origin of normal moving flag
+        run: node tests/seed7-moving-set-origin-diagnostic.js
