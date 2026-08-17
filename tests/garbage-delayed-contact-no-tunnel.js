@@ -53,16 +53,13 @@ function minPackPileDistance(g,p){
   expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-7,
     "clamped airborne garbage penetrated accumulated pile: "+minPackPileDistance(g,p));
 
-  // Once the reservation clears, the existing continuous hand-off must resume.
-  let guard=0;
-  while(p.pat.length&&guard++<240){
-    updateGarbagePacks(g,PHYSICS_FRAME);
-    updateVisuals(g,PHYSICS_FRAME);
-    resolveVisualContacts(g);
-    if(p.pat.length)expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-6,
-      "retry frame tunneled through pile");
-  }
-  expect(!p.pat.length,"contacted garbage never resumed materialization after reservation cleared");
+  // Once the reservation clears, retry the same existing materializer at the
+  // exact continuous contact. It must immediately hand the ball into ordinary
+  // pile physics rather than requiring another downward airborne frame.
+  delete p._hexContactFrame;
+  const resumed=materializeGarbageContactsThrough(g,p,physicalContact+HEX_GARBAGE_CONTACT_EPS);
+  expect(resumed===1&&p.pat.length===0,
+    "contacted garbage did not resume materialization when reservation cleared");
 }
 
 // 1000 direct overshoot cases. These isolate the new invariant itself without
