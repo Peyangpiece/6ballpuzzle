@@ -132,10 +132,13 @@ function hexGarbageFlightContactY(g,pack){
 }
 
 function hexGarbageSingleLogicalCell(g,x,visualY){
-    let y=Math.min(ROWS-1,Math.floor(visualY+1e-9));
-    for(;y>=BOARD_MIN_ROW;y--){
-        if(valid(x,y)&&!g.board[y][x])return{x,y};
-    }
+    // Register the contacted ball on the nearest valid lattice row at or below
+    // its rendered contact centre whenever possible. Choosing floor(visualY)
+    // could put the logical start a full row above the already-fallen visual
+    // centre, leaving a backwards fallPath that later caused stalls/overlaps.
+    const start=Math.max(BOARD_MIN_ROW,Math.min(ROWS-1,Math.ceil(visualY-1e-9)));
+    for(let y=start;y<ROWS;y++)if(valid(x,y)&&!g.board[y][x])return{x,y};
+    for(let y=start-1;y>=BOARD_MIN_ROW;y--)if(valid(x,y)&&!g.board[y][x])return{x,y};
     return null;
 }
 
