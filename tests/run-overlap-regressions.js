@@ -4,11 +4,18 @@ const cp=require("child_process");
 
 const sourcePath=path.join(__dirname,"overlap-regressions.js");
 const tmpPath=path.join(__dirname,".overlap-regressions-full-timeout.js");
+const indexPath=path.join(__dirname,"../public/index.html");
 let source=fs.readFileSync(sourcePath,"utf8");
 const oldTimeout='vm.runInNewContext(runtime+assertions,context,{timeout:120000});';
 const newTimeout='vm.runInNewContext(runtime+assertions,context,{timeout:300000});';
+
+// Continuous non-overlap is a production invariant, so execute exactly the
+// app layers shipped by index.html rather than a separately maintained suffix.
+const productionNames=[...fs.readFileSync(indexPath,"utf8").matchAll(/"(app-\d+\.js)"/g)].map(m=>m[1]);
+const app10Index=productionNames.indexOf("app-10.js");
+if(app10Index<0||!productionNames.includes("app-01.js"))throw new Error("could not derive production app runtime from public/index.html");
 const oldRuntime='"app-10.js","app-14.js","app-17.js"';
-const newRuntime='"app-10.js","app-14.js","app-17.js","app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js","app-26.js","app-27.js","app-28.js","app-29.js","app-30.js","app-31.js","app-32.js","app-33.js","app-34.js","app-35.js"';
+const newRuntime=productionNames.slice(app10Index).map(n=>JSON.stringify(n)).join(",");
 
 if(!source.includes(oldTimeout)){
   throw new Error("overlap regression timeout declaration changed; update runner explicitly");
@@ -19,7 +26,7 @@ if(!source.includes(oldRuntime)){
 
 // Do not reduce seeds, simulated seconds, collision threshold, or sample count.
 // Only permit the unchanged long-run suite enough wall-clock time to finish,
-// and execute it with the same final overrides loaded in production.
+// and execute it with the exact final overrides loaded in production.
 source=source.replace(oldRuntime,newRuntime).replace(oldTimeout,newTimeout);
 fs.writeFileSync(tmpPath,source);
 try{
