@@ -51,44 +51,52 @@ visualSubstepCount=function(g){
     return __hexdropVisualSubstepCount(g);
 };
 
+function __hexdropGarbageMotionQueue(g){
+    let minSeq=Infinity;
+    const queued=new Set();
+    if(!g||g.state!=="RESOLVING"||g.phase!=="GARBAGE")return{minSeq,queued};
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
+        const seq=Number(seg?.motionSeq)||0;
+        if(seq>0)minSeq=Math.min(minSeq,seq);
+    }
+    if(!Number.isFinite(minSeq))return{minSeq,queued};
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        if(!ball?.isGarbage||!Array.isArray(ball.fallPath)||!ball.fallPath.length)continue;
+        const seq=Number(ball.fallPath[0]?.motionSeq)||0;
+        if(seq>minSeq)queued.add(ball.id);
+    }
+    return{minSeq,queued};
+}
+
 // Logical garbage settling assigns a strict motionSeq to every lattice move.
-// The legacy visual fallback used to animate later sequences even while an
-// earlier sequence was still crossing the same cell. That could put two
-// already-gridified garbage balls on top of one another despite their logical
-// paths being ordered correctly. During GARBAGE, freeze only later gridified
-// garbage sequences until the globally earliest board motion is active.
+// Later sequences must not start while an earlier sequence is still crossing
+// the same cells. Freeze only queued, already-gridified garbage; airborne
+// siblings are not board balls and are therefore untouched by this gate.
 const __hexdropUpdateVisualsBeforeGarbageQueueGate=updateVisuals;
 updateVisuals=function(g,dt){
-    let minSeq=Infinity;
+    const {queued}=__hexdropGarbageMotionQueue(g);
     const held=[];
-    if(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"){
+    if(queued.size){
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
             const ball=valid(x,y)?g.board[y][x]:null;
-            const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
-            const seq=Number(seg?.motionSeq)||0;
-            if(seq>0)minSeq=Math.min(minSeq,seq);
-        }
-        if(Number.isFinite(minSeq)){
-            for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-                const ball=valid(x,y)?g.board[y][x]:null;
-                if(!ball?.isGarbage||!Array.isArray(ball.fallPath)||!ball.fallPath.length)continue;
-                const seq=Number(ball.fallPath[0]?.motionSeq)||0;
-                if(seq<=0||seq<=minSeq)continue;
-                const v=g.vis.get(ball.id);
-                if(!v)continue;
-                held.push({
-                    ball,
-                    visual:{...v},
-                    path:ball.fallPath.map(seg=>({
-                        ...seg,
-                        from:Array.isArray(seg?.from)?[...seg.from]:seg?.from,
-                        to:Array.isArray(seg?.to)?[...seg.to]:seg?.to,
-                        pivot:Array.isArray(seg?.pivot)?[...seg.pivot]:seg?.pivot,
-                        topPivot:Array.isArray(seg?.topPivot)?[...seg.topPivot]:seg?.topPivot,
-                        followSupportIds:Array.isArray(seg?.followSupportIds)?[...seg.followSupportIds]:seg?.followSupportIds
-                    }))
-                });
-            }
+            if(!ball||!queued.has(ball.id))continue;
+            const v=g.vis.get(ball.id);
+            if(!v)continue;
+            held.push({
+                ball,
+                visual:{...v},
+                path:ball.fallPath.map(seg=>({
+                    ...seg,
+                    from:Array.isArray(seg?.from)?[...seg.from]:seg?.from,
+                    to:Array.isArray(seg?.to)?[...seg.to]:seg?.to,
+                    pivot:Array.isArray(seg?.pivot)?[...seg.pivot]:seg?.pivot,
+                    topPivot:Array.isArray(seg?.topPivot)?[...seg.topPivot]:seg?.topPivot,
+                    followSupportIds:Array.isArray(seg?.followSupportIds)?[...seg.followSupportIds]:seg?.followSupportIds
+                }))
+            });
         }
     }
 
@@ -104,6 +112,54 @@ updateVisuals=function(g,dt){
         }
         h.ball.fallPath=h.path;
     }
+};
+
+// A queued garbage ball is a fixed waiting obstacle, not an active mover.
+// Without this guard the final contact projection gradually pushed the waiting
+// ball away from its safe hand-off point even though updateVisuals restored it
+// every frame. Temporarily classify every non-queued board ball as movable and
+// queued balls as immovable, then restore the normal motion metadata. This
+// makes the active/earlier ball avoid the queue rather than displacing it.
+const __hexdropResolveVisualContactsBeforeGarbageQueueGate=resolveVisualContacts;
+resolveVisualContacts=function(g){
+    const {queued}=__hexdropGarbageMotionQueue(g);
+    if(!queued.size){
+        __hexdropResolveVisualContactsBeforeGarbageQueueGate(g);
+        return;
+    }
+
+    const savedMoving=g._visualMovingIds;
+    const savedPaths=[];
+    const forcedMoving=new Set();
+    const heldVisual=[];
+
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        if(!ball)continue;
+        if(queued.has(ball.id)){
+            const v=g.vis.get(ball.id);
+            if(v)heldVisual.push({v,snapshot:{...v}});
+            savedPaths.push({ball,path:ball.fallPath});
+            ball.fallPath=[];
+        }else{
+            forcedMoving.add(ball.id);
+        }
+    }
+
+    g._visualMovingIds=forcedMoving;
+    __hexdropResolveVisualContactsBeforeGarbageQueueGate(g);
+
+    // The generic solver splits stationary/stationary penetration. Restore the
+    // queued centers exactly so even a queued/queued numerical contact cannot
+    // cause queue drift; non-queued balls keep their projected correction.
+    for(const h of heldVisual){
+        for(const k of Object.keys(h.v))delete h.v[k];
+        Object.assign(h.v,h.snapshot);
+        h.v.vy=0;
+        h.v.motionSpeed=0;
+    }
+    for(const s of savedPaths)s.ball.fallPath=s.path;
+    g._visualMovingIds=savedMoving;
 };
 
 // Network packets arrive at a much lower cadence than the 120 Hz game loop.
