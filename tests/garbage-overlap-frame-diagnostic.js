@@ -7,7 +7,7 @@ function balls(g){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(le
 function worst(g){let min=Infinity,pair=null;const a=balls(g);for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const d=hexPhysDist(a[i].v.x,a[i].v.y,a[j].v.x,a[j].v.y);if(d<min){min=d;pair=[a[i],a[j]];}}return{min,pair};}
 const g=createEngine(1);g.ai={level:2,target:null,thinkT:0,actT:0};
 let globalMin=Infinity,worstFrame=null;
-for(let step=0;step<=1220&&g.alive;step++){
+for(let step=0;step<=1450&&g.alive;step++){
  if(step===120*7)g.incomingShapes.push("PYRAMID");
  if(step===120*14)g.incomingShapes.push("HEXAGON");
  if(step===120*23)g.incomingShapes.push("STRAIGHT");
@@ -19,6 +19,12 @@ for(let step=0;step<=1220&&g.alive;step++){
   worstFrame={step,state:g.state,phase:g.phase,min:q.min,pair:q.pair&&q.pair.map(z=>({id:z.b.id,logical:[z.x,z.y],visual:[z.v.x,z.v.y],garbage:!!z.b.isGarbage,path:z.b.fallPath||[]}))};
  }
  if(q.min<.999999)throw new Error("queued garbage paths still overlap: "+JSON.stringify(worstFrame));
+ for(const z of balls(g))if(z.b.isGarbage&&Array.isArray(z.b.fallPath)&&z.b.fallPath.length){
+  const first=z.b.fallPath[0];
+  if(Array.isArray(first?.from)&&first.from[1]<z.v.y-1.000001){
+   throw new Error("gridified garbage retained a path wholly above its rendered centre: "+JSON.stringify({step,id:z.b.id,logical:[z.x,z.y],visual:[z.v.x,z.v.y],path:z.b.fallPath}));
+  }
+ }
 }
 console.log("garbage queued-motion overlap diagnostic PASS",JSON.stringify({min:globalMin,worst:worstFrame}));
 `;
