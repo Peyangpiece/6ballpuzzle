@@ -25,18 +25,24 @@ function hexGarbageRenderSweepTangent(px,sx,sy){
 
 function hexGarbageRenderSweepClampUpper(upper,lower,upperPrevY){
     const tangent=hexGarbageRenderSweepTangent(upper.r.px,lower.r.px,lower.r.py);
-    if(!Number.isFinite(tangent)||tangent<upperPrevY-1e-9)return false;
-    if(upper.r.py<=tangent+1e-9)return false;
-    upper.r.py=Math.max(upperPrevY,tangent);
+    if(!Number.isFinite(tangent))return false;
+    // If horizontal support motion makes the new mathematical tangent slightly
+    // ABOVE the previous rendered Y, skipping the collision would permit the
+    // upper circle to tunnel downward.  The unilateral solution is to keep Y at
+    // the previous value and let the lateral solver restore tangent distance.
+    const barrier=Math.max(upperPrevY,tangent);
+    if(upper.r.py<=barrier+1e-9)return false;
+    upper.r.py=barrier;
     upper.r.vy=0;
     return true;
 }
 
 function hexGarbageRenderSweepClampFixed(m,s,prevY){
     const tangent=hexGarbageRenderSweepTangent(m.r.px,s.px,s.py);
-    if(!Number.isFinite(tangent)||tangent<prevY-1e-9)return false;
-    if(m.r.py<=tangent+1e-9)return false;
-    m.r.py=Math.max(prevY,tangent);m.r.vy=0;return true;
+    if(!Number.isFinite(tangent))return false;
+    const barrier=Math.max(prevY,tangent);
+    if(m.r.py<=barrier+1e-9)return false;
+    m.r.py=barrier;m.r.vy=0;return true;
 }
 
 function hexGarbageEnforceRenderSweep(g,prev){
