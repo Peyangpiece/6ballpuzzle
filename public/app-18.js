@@ -120,159 +120,75 @@ rotate=function(g,dir){
     return false;
 };
 
-/* Pile-flow endpoint precision. */
-function hexSnapPileFlowEndpoint(seg,point,oldY){
-    if(!seg||!point)return point;
-    for(const ep of [seg.from,seg.to]){
-        if(!Array.isArray(ep)||ep.length<2)continue;
-        if(ep[1]<oldY-1e-9)continue;
-        if(pileFlowPhysicalDist(point,ep)<=1e-5)return[ep[0],ep[1]];
-    }
-    return point;
-}
-
-updateScheduledPileFlowVisual=function(g,cell,v,dt){
-    const path=Array.isArray(cell.fallPath)?cell.fallPath:null;
-    if(!path||!path.length)return false;
-    while(path.length&&path[0]?.pileFlow&&Number.isFinite(path[0].pileFlowEnd)&&g.pileFlowClock>=path[0].pileFlowEnd-1e-10){
-        v.x=path[0].to[0];v.y=path[0].to[1];path.shift();
-    }
-    if(!path.length){delete cell.fallPath;v.pileFlow=false;v.vy=0;v.motionSpeed=0;return true;}
-    const seg=path[0];
-    if(!seg?.pileFlow)return false;
-    const oldX=v.x,oldY=v.y;
-    if(g.pileFlowClock<seg.pileFlowStart){
-        const held=hexSnapPileFlowEndpoint(seg,[v.x,v.y],oldY);
-        v.x=held[0];
-        v.y=Math.max(oldY,held[1]);
-        if(v.x!==oldX||v.y!==oldY){v.vy=0;v.motionSpeed=0;}
-        return true;
-    }
-    const q=(g.pileFlowClock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration);
-    let point=pileFlowPointForBall(g,cell,seg,q,g.pileFlowClock);
-    point=hexSnapPileFlowEndpoint(seg,point,oldY);
-    v.x=point[0];
-    v.y=Math.max(oldY,point[1]);
-    const physicalSpeed=Math.hypot((v.x-oldX)*0.5,(v.y-oldY)*HEX_ROW_H)/Math.max(1e-9,dt);
-    v.motionSpeed=physicalSpeed;
-    v.vy=Math.max(0,(v.y-oldY)/Math.max(1e-9,dt));
-    return true;
-};
-
 /*
- * Contact-network precision normalization.
+ * Final numerical contact cleanup for resolved pile balls.
  *
- * Every pile-flow ball whose first segment has not started yet is physically
- * waiting at seg.from. The contact solver may nudge a connected chain by tiny
- * amounts while solving neighbouring tangencies; if only one member is snapped
- * back, that neighbour's tiny offset makes the correction look unsafe and the
- * error cascades through the chain. Treat the waiting starts as one target
- * network and validate/apply them together.
+ * The main contact solver already handles real collisions. In long clear/settle
+ * chains it can leave a residual penetration of only a few 1e-6 because many
+ * tangent constraints are solved sequentially. Do not snap the chain back to
+ * lattice points and do not touch real overlaps. Only pairs already within
+ * 0.9999..1.0 are projected apart by the missing numerical epsilon, and only
+ * quiescent normal balls are allowed to absorb that correction.
  */
-const HEX_QUIESCENT_SNAP_EPS=5e-4;
-const HEX_QUIESCENT_WAIT_SANITY=1e-2;
-const HEX_QUIESCENT_SAFE_DIST=0.9999999;
+const HEX_RESIDUAL_CONTACT_MIN=1.00000005;
+const HEX_RESIDUAL_CONTACT_FLOOR=0.9999;
+const HEX_RESIDUAL_CONTACT_MAX_CORRECTION=2e-4;
 
-function hexQuiescentPileTarget(g,cell,x,y,v){
-    if(!cell||cell.isGarbage||!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))return null;
-    const path=Array.isArray(cell.fallPath)?cell.fallPath:null;
-    const seg=path&&path.length?path[0]:null;
-    const speed=Math.max(Math.abs(v.vy||0),Math.abs(v.motionSpeed||0));
-    const waiting=!!seg?.pileFlow&&Number.isFinite(seg.pileFlowStart)&&g.pileFlowClock<seg.pileFlowStart-1e-10;
-
-    if(waiting&&Array.isArray(seg.from)&&seg.from.length>=2){
-        const d=pileFlowPhysicalDist([v.x,v.y],seg.from);
-        if(d<=HEX_QUIESCENT_WAIT_SANITY)return[seg.from[0],seg.from[1]];
-        return null;
-    }
-    if(speed>1e-3)return null;
-
-    const choices=[];
-    if(seg?.pileFlow){
-        for(const ep of [seg.from,seg.to]){
-            if(!Array.isArray(ep)||ep.length<2)continue;
-            const d=pileFlowPhysicalDist([v.x,v.y],ep);
-            if(d<=HEX_QUIESCENT_SNAP_EPS)choices.push({target:[ep[0],ep[1]],d});
-        }
-    }else if(!path||!path.length){
-        const d=pileFlowPhysicalDist([v.x,v.y],[x,y]);
-        if(d<=HEX_QUIESCENT_SNAP_EPS)choices.push({target:[x,y],d});
-    }
-    if(!choices.length)return null;
-    choices.sort((a,b)=>a.d-b.d);
-    return choices[0].target;
+function hexResidualContactMovable(item){
+    if(!item?.cell||item.cell.isGarbage||!item.v)return false;
+    const speed=Math.max(Math.abs(item.v.vy||0),Math.abs(item.v.motionSpeed||0));
+    return speed<=1e-2;
 }
 
-function hexRenderedBoardEntries(g){
-    const out=[];
+function hexResolveResidualPrecisionOverlaps(g){
+    if(!g||g.state!=="RESOLVING"||!g.board||!g.vis)return;
+    const H=HEX_ROW_H;
+    const floorMax=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H;
+    const items=[];
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const cell=valid(x,y)?g.board[y][x]:null;
         if(!cell)continue;
         const v=g.vis.get(cell.id);
-        const current=v&&Number.isFinite(v.x)&&Number.isFinite(v.y)?[v.x,v.y]:[x,y];
-        out.push({cell,v,x,y,current});
+        if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
+        items.push({cell,v,x,y});
     }
-    return out;
-}
+    if(items.length<2)return;
 
-function hexNormalizeQuiescentPileNetwork(g){
-    if(!g?.board||!g?.vis)return;
-    const entries=hexRenderedBoardEntries(g);
-    const byId=new Map(entries.map(e=>[e.cell.id,e]));
-    const targets=new Map();
+    for(let pass=0;pass<48;pass++){
+        let changed=false;
+        for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
+            const a=items[i],b=items[j];
+            let dx=(a.v.x-b.v.x)*.5;
+            let dy=(a.v.y-b.v.y)*H;
+            let d=Math.hypot(dx,dy);
+            if(d>=HEX_RESIDUAL_CONTACT_MIN-1e-12||d<HEX_RESIDUAL_CONTACT_FLOOR)continue;
 
-    for(const e of entries){
-        const target=hexQuiescentPileTarget(g,e.cell,e.x,e.y,e.v);
-        if(target)targets.set(e.cell.id,target);
-    }
-    if(!targets.size)return;
+            const ma=hexResidualContactMovable(a),mb=hexResidualContactMovable(b);
+            if(!ma&&!mb)continue;
+            if(d<1e-12)continue;
 
-    const active=new Set(targets.keys());
-    let changed=true;
-    while(changed&&active.size){
-        changed=false;
-        const remove=[];
-        for(const id of active){
-            const a=byId.get(id),ap=targets.get(id);
-            if(!a||!ap){remove.push(id);continue;}
-            for(const b of entries){
-                if(b.cell.id===id)continue;
-                const bp=active.has(b.cell.id)?targets.get(b.cell.id):b.current;
-                if(!bp)continue;
-                if(pileFlowPhysicalDist(ap,bp)<HEX_QUIESCENT_SAFE_DIST){
-                    remove.push(id);
-                    break;
-                }
+            const missing=HEX_RESIDUAL_CONTACT_MIN-d;
+            if(missing>HEX_RESIDUAL_CONTACT_MAX_CORRECTION)continue;
+            const nx=dx/d,ny=dy/d;
+            const wa=ma?(mb?.5:1):0;
+            const wb=mb?(ma?.5:1):0;
+
+            if(wa){
+                a.v.x=Math.max(0,Math.min(W2-1,a.v.x+(nx*missing*wa)/.5));
+                a.v.y=Math.min(floorMax,a.v.y+(ny*missing*wa)/H);
             }
-        }
-        if(remove.length){
+            if(wb){
+                b.v.x=Math.max(0,Math.min(W2-1,b.v.x-(nx*missing*wb)/.5));
+                b.v.y=Math.min(floorMax,b.v.y-(ny*missing*wb)/H);
+            }
             changed=true;
-            for(const id of remove)active.delete(id);
         }
-    }
-
-    for(const id of active){
-        const e=byId.get(id),target=targets.get(id);
-        if(!e?.v||!target)continue;
-        e.v.x=target[0];
-        e.v.y=target[1];
-        const seg=Array.isArray(e.cell.fallPath)&&e.cell.fallPath.length?e.cell.fallPath[0]:null;
-        if(!seg||g.pileFlowClock<seg.pileFlowStart){e.v.vy=0;e.v.motionSpeed=0;}
+        if(!changed)break;
     }
 }
 
-const __hexResolveVisualContactsBeforeEndpointStabilize=resolveVisualContacts;
-function hexPileEndpointSafeNow(g,cell,ep){
-    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-        const other=valid(x,y)?g.board[y][x]:null;
-        if(!other||other===cell)continue;
-        const ov=g.vis.get(other.id);
-        const op=ov&&Number.isFinite(ov.x)&&Number.isFinite(ov.y)?[ov.x,ov.y]:[x,y];
-        if(pileFlowPhysicalDist(ep,op)<HEX_QUIESCENT_SAFE_DIST)return false;
-    }
-    return true;
-}
+const __hexResolveVisualContactsBeforeResidualPrecision=resolveVisualContacts;
 resolveVisualContacts=function(g){
-    __hexResolveVisualContactsBeforeEndpointStabilize(g);
-    hexNormalizeQuiescentPileNetwork(g);
+    __hexResolveVisualContactsBeforeResidualPrecision(g);
+    hexResolveResidualPrecisionOverlaps(g);
 };
