@@ -34,6 +34,96 @@ function hexGarbageBoardIds(g){
     return ids;
 }
 
+function hexGarbageWholeReleaseContactKey(x,y){
+    return String(x)+"|"+Number(y).toFixed(9);
+}
+function hexGarbageWholeReleaseCellKey(x,y){return x+","+y;}
+
+/* Enumerate the same local hand-off neighbourhood used by app-17, but return
+ * ALL legal cells instead of greedily taking the nearest one. Whole formations
+ * need a one-to-one assignment: choosing each member independently can consume
+ * the only valid cell of a later edge member (the 19-ball STRAIGHT exposed this
+ * at its left edge). */
+function hexGarbageWholeReleaseCandidates(g,x,visualY){
+    const firstY=Math.max(BOARD_MIN_ROW,Math.ceil(visualY-1e-7));
+    const lastY=Math.min(ROWS-1,firstY+2),out=[];
+    for(let y=firstY;y<=lastY;y++){
+        if(y+1e-7<visualY)continue;
+        for(let dx=-2;dx<=2;dx++){
+            const cx=x+dx;
+            if(!valid(cx,y)||g.board[y][cx])continue;
+            const realDist=Math.hypot((cx-x)*.5,(y-visualY)*HEX_ROW_H);
+            if(realDist>1.000001)continue;
+            if(!visualPointSafe(g,-1,cx,y,HEX_MIN_DIST))continue;
+            if(typeof __hexdropGarbageCellCrossesActivePath==="function"&&
+               __hexdropGarbageCellCrossesActivePath(g,cx,y))continue;
+            const score=realDist+Math.abs(dx)*1e-5+(y-visualY)*1e-6;
+            out.push({x:cx,y,score});
+        }
+    }
+    out.sort((a,b)=>a.score-b.score||a.x-b.x||a.y-b.y);
+    return out;
+}
+
+/* Deterministic bipartite matching from airborne members to unique logical
+ * hand-off cells. This is a placement preflight only; no ball is moved here.
+ * Existing pile/path occupancy is respected. */
+function hexGarbageBuildWholeReleaseCellPlan(g,pack,anchorY){
+    const items=pack.pat.map(([dx,dy],index)=>{
+        const x=pack.ax+dx,visualY=anchorY+dy;
+        return{
+            id:index,
+            contactKey:hexGarbageWholeReleaseContactKey(x,visualY),
+            candidates:hexGarbageWholeReleaseCandidates(g,x,visualY)
+        };
+    });
+    if(items.some(v=>!v.candidates.length))return null;
+
+    const byId=new Map(items.map(v=>[v.id,v]));
+    const cellOwner=new Map(),chosen=new Map();
+    const order=items.slice().sort((a,b)=>a.candidates.length-b.candidates.length||a.id-b.id);
+
+    const assign=(id,seenCells,seenItems)=>{
+        if(seenItems.has(id))return false;
+        const nextItems=new Set(seenItems);nextItems.add(id);
+        const item=byId.get(id);if(!item)return false;
+        for(const c of item.candidates){
+            const ck=hexGarbageWholeReleaseCellKey(c.x,c.y);
+            if(seenCells.has(ck))continue;
+            seenCells.add(ck);
+            const owner=cellOwner.get(ck);
+            if(owner===undefined||assign(owner,seenCells,nextItems)){
+                cellOwner.set(ck,id);chosen.set(id,c);return true;
+            }
+        }
+        return false;
+    };
+
+    for(const item of order)if(!assign(item.id,new Set(),new Set()))return null;
+    const plan=new Map();
+    for(const item of items){
+        const c=chosen.get(item.id);if(!c)return null;
+        plan.set(item.contactKey,{x:c.x,y:c.y});
+    }
+    return plan;
+}
+
+/* Force only preplanned contacts from THIS release to their matched cell. Other
+ * calls still use the production app-17 selector. */
+function hexGarbageWithWholeReleaseCellPlan(g,plan,fn){
+    if(!(plan instanceof Map)||!plan.size)return fn();
+    const before=hexGarbageSingleLogicalCell;
+    hexGarbageSingleLogicalCell=function(g2,x,visualY){
+        if(g2===g){
+            const c=plan.get(hexGarbageWholeReleaseContactKey(x,visualY));
+            if(c&&valid(c.x,c.y)&&!g2.board[c.y][c.x])return{x:c.x,y:c.y};
+        }
+        return before(g2,x,visualY);
+    };
+    try{return fn();}
+    finally{hexGarbageSingleLogicalCell=before;}
+}
+
 /*
  * During one whole-packet release, members created a few microsteps earlier are
  * siblings from the SAME rigid airborne pose. Their exact contact circles are
@@ -70,25 +160,28 @@ function hexGarbageWithSameReleaseSiblingsHidden(g,ids,fn){
     }
 }
 
-function hexGarbageWholeReleaseContext(g,pack){
-    // These sets belong to ONE first-contact event and survive retry frames.
-    // Without persistence, members released on frame N were misclassified as
-    // pre-existing pile on frame N+1 and could permanently block the remainder.
+function hexGarbageWholeReleaseContext(g,pack,anchorY){
+    // These values belong to ONE first-contact event and survive retry frames.
     if(!(pack._hexWholeReleasePreExistingIds instanceof Set)){
         pack._hexWholeReleasePreExistingIds=hexGarbageBoardIds(g);
     }
     if(!(pack._hexWholeReleaseSiblingIds instanceof Set)){
         pack._hexWholeReleaseSiblingIds=new Set();
     }
+    if(!(pack._hexWholeReleaseCellPlan instanceof Map)){
+        pack._hexWholeReleaseCellPlan=hexGarbageBuildWholeReleaseCellPlan(g,pack,anchorY);
+    }
     return{
         preExistingIds:pack._hexWholeReleasePreExistingIds,
-        sameReleaseIds:pack._hexWholeReleaseSiblingIds
+        sameReleaseIds:pack._hexWholeReleaseSiblingIds,
+        cellPlan:pack._hexWholeReleaseCellPlan
     };
 }
 
 function hexGarbageClearWholeReleaseContext(pack){
     delete pack._hexWholeReleasePreExistingIds;
     delete pack._hexWholeReleaseSiblingIds;
+    delete pack._hexWholeReleaseCellPlan;
     delete pack._hexWholeReleaseAnchorY;
     delete pack._hexWholeReleasePending;
 }
@@ -106,21 +199,23 @@ function hexGarbageReleaseWholePacketAt(g,pack,anchorY){
     anchorY=pack._hexWholeReleaseAnchorY;
     pack._hexWholeReleasePending=true;
 
-    const {preExistingIds,sameReleaseIds}=hexGarbageWholeReleaseContext(g,pack);
+    const {preExistingIds,sameReleaseIds,cellPlan}=hexGarbageWholeReleaseContext(g,pack,anchorY);
     let released=0;
 
     // Work backwards because materializeGarbageBallAtContact() removes the
     // chosen slot from pat/colors synchronously. Every member receives the same
     // airborne anchor, preserving the formation's exact pose at first contact.
-    for(let i=pack.pat.length-1;i>=0;i--){
-        const beforeEntries=pack.entryBalls?.length||0;
-        const ok=hexGarbageWithSameReleaseSiblingsHidden(g,sameReleaseIds,()=>
-            materializeGarbageBallAtContact(g,pack,i,anchorY));
-        if(!ok)continue;
-        released++;
-        const entry=pack.entryBalls?.[beforeEntries]||pack.entryBalls?.[pack.entryBalls.length-1];
-        if(entry?.id&&!preExistingIds.has(entry.id))sameReleaseIds.add(entry.id);
-    }
+    hexGarbageWithWholeReleaseCellPlan(g,cellPlan,()=>{
+        for(let i=pack.pat.length-1;i>=0;i--){
+            const beforeEntries=pack.entryBalls?.length||0;
+            const ok=hexGarbageWithSameReleaseSiblingsHidden(g,sameReleaseIds,()=>
+                materializeGarbageBallAtContact(g,pack,i,anchorY));
+            if(!ok)continue;
+            released++;
+            const entry=pack.entryBalls?.[beforeEntries]||pack.entryBalls?.[pack.entryBalls.length-1];
+            if(entry?.id&&!preExistingIds.has(entry.id))sameReleaseIds.add(entry.id);
+        }
+    });
 
     // All sibling visuals are visible again here. Resolve once with the complete
     // released set so tangent contacts and existing pile contacts converge in
