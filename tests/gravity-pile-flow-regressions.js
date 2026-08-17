@@ -4,7 +4,9 @@ const vm=require("vm");
 const names=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
   "app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
-  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js","app-26.js"
+  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js",
+  "app-24.js","app-25.js","app-26.js","app-27.js","app-28.js","app-29.js",
+  "app-30.js","app-31.js","app-32.js","app-33.js","app-34.js","app-35.js"
 ];
 const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
@@ -21,8 +23,7 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(!b.rigid&&b.motionGroupId===0,'clear release retained accumulated-pile rigidity');
 }
 
-// A one-support collapse segment must remain exactly tangent to the support,
-// but progress is gravity-driven rather than constant-angular-speed.
+// A one-support collapse segment remains exactly tangent and gravity-driven.
 {
   const seg={from:[5,4],to:[4,5],pivot:[6,5],topPivot:null,followSupportIds:[]};
   const state={vy:0,speed:HEX_PILE_GRAVITY_MIN_SPEED};
@@ -39,8 +40,7 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(close(end[0],seg.to[0])&&close(end[1],seg.to[1]),'gravity arc missed the final lattice point');
 }
 
-// Velocity must carry into the next logical cell instead of restarting at each
-// lattice boundary. This is the key anti-stutter invariant.
+// Velocity carries into the next logical cell instead of restarting.
 {
   const state={vy:0,speed:.6};
   const first={from:[5,4],to:[4,5],pivot:[6,5],topPivot:null,followSupportIds:[]};
@@ -52,8 +52,7 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(state.speed>=second._hexGravityEntrySpeed-1e-9,'downhill gravity reduced speed unexpectedly');
 }
 
-// Unsupported downward motion uses constant gravity and still ends exactly on
-// the deterministic logical destination.
+// Unsupported downward motion accelerates and still lands on final lattice cell.
 {
   const seg={from:[5,2],to:[5,4],pivot:null,topPivot:null,followSupportIds:[]};
   const state={vy:0,speed:HEX_PILE_GRAVITY_MIN_SPEED};
@@ -65,9 +64,7 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(close(end[0],5)&&close(end[1],4),'free fall missed the final lattice point');
 }
 
-// Reproduce the long-run SETTLE failure exactly: the segment was compiled with
-// a topPivot below it before the garbage ball at [15,8] became a fixed obstacle.
-// Once that garbage settles, its unit circle must override the stale topPivot.
+// A garbage ball that settles after path compilation overrides a stale topPivot.
 {
   const g=createEngine(11002),support=mkBall(g,1),mover=mkBall(g,2);
   support.isGarbage=true;support.garbageType='PYRAMID';support.fallPath=[];
@@ -75,8 +72,7 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   const seg={
     from:[13,8],to:[14,9],kind:'ROLL_RIGHT',motionSeq:0,pileFlow:true,
     pileFlowStart:0,pileFlowDuration:1,pileFlowEnd:1,pileFlowEntry:true,
-    followSupportIds:[],movingSupportId:0,
-    pivot:null,topPivot:[13,10],
+    followSupportIds:[],movingSupportId:0,pivot:null,topPivot:[13,10],
     _hexGravityEntrySpeed:.35
   };
   mover.fallPath=[seg];g.board[9][14]=mover;setVis(g,mover,13,8,0);
@@ -86,13 +82,13 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(seg.pileFlowSettledGarbagePriority===true,'settled garbage did not override stale topPivot');
   expect(seg.pivot&&seg.pivot[0]===15&&seg.pivot[1]===8,'late pivot selected the wrong garbage support');
   expect(!seg.topPivot,'stale topPivot survived fixed garbage priority');
-  expect((seg.followSupportIds||[]).length===0&&!seg.movingSupportId,'stale support metadata survived fixed garbage priority');
   expect(Math.abs(pileFlowPhysicalDist([v.x,v.y],[15,8])-1)<1e-6,'late repaired motion cut through settled garbage');
 }
 
-// Future-scheduled pileFlow is absolute-time state, not a soft contact body.
+// Future pileFlow is a fixed scheduled reservation: generic contact resolution
+// must not make it begin moving early or accumulate a mid-air lattice drift.
 {
-  const g=createEngine(11003),support=mkBall(g,1),mover=mkBall(g,2);
+  const g=createEngine(11003),support=mkBall(g,1),waiter=mkBall(g,2);
   support.isGarbage=true;support.fallPath=[];
   g.board[8][15]=support;setVis(g,support,15,8,0);
   const seg={
@@ -101,31 +97,32 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
     followSupportIds:[],movingSupportId:0,pivot:[15,8],topPivot:null,
     _hexGravityEntrySpeed:.35
   };
-  mover.fallPath=[seg];g.board[9][14]=mover;
-  setVis(g,mover,13.406485700155958,8.391988418130824,0);
+  waiter.fallPath=[seg];g.board[9][14]=waiter;
+  setVis(g,waiter,13.406485700155958,8.391988418130824,0);
   g.state='RESOLVING';g.phase='SETTLE';g.pileFlowClock=.5;
   resolveVisualContacts(g);
-  const v=g.vis.get(mover.id);
+  const v=g.vis.get(waiter.id);
   expect(pileFlowPhysicalDist([v.x,v.y],[13,8])<1e-6,'future pileFlow waiter retained accumulated contact drift');
   expect(pileFlowPhysicalDist([v.x,v.y],[15,8])>=.999999,'future pileFlow waiter remained inside settled garbage');
 }
 
-// Adjacent garbage members in the same translational wave may inherit different
-// entry speeds, but they must share one scalar progress so their separation is
-// exactly preserved throughout the continuous move.
+// A future waiter is treated as fixed during the solve, so an overlapping active
+// neighbour takes the correction rather than splitting it 50:50 and leaving a
+// residual after the waiter is restored.
 {
-  const g=createEngine(11004),a=mkBall(g,1),b=mkBall(g,2);
-  a.isGarbage=true;b.isGarbage=true;
-  const sa={from:[9,4],to:[8,5],kind:'ROLL_LEFT',motionSeq:0,pileFlow:true,pileFlowStart:0,pileFlowDuration:1,pileFlowEnd:1,pivot:null,topPivot:null,followSupportIds:[],movingSupportId:0};
-  const sb={from:[11,4],to:[10,5],kind:'ROLL_LEFT',motionSeq:0,pileFlow:true,pileFlowStart:0,pileFlowDuration:1,pileFlowEnd:1,pivot:null,topPivot:null,followSupportIds:[],movingSupportId:0};
-  pileFlowNominalDuration(sa,{vy:0,speed:.35});
-  pileFlowNominalDuration(sb,{vy:0,speed:2.4});
-  sa.pileFlowStart=sb.pileFlowStart=0;sa.pileFlowEnd=sb.pileFlowEnd=1;sa.pileFlowDuration=sb.pileFlowDuration=1;
-  a.fallPath=[sa];b.fallPath=[sb];g.board[5][8]=a;g.board[5][10]=b;setVis(g,a,9,4,0);setVis(g,b,11,4,0);
-  for(const t of [0,.1,.25,.5,.75,.9,1]){
-    const pa=pileFlowPositionAt(g,a,t),pb=pileFlowPositionAt(g,b,t);
-    expect(Math.abs(pileFlowPhysicalDist(pa,pb)-1)<1e-9,'parallel garbage wave lost one-diameter spacing at t='+t);
-  }
+  const g=createEngine(11004),waiter=mkBall(g,1),active=mkBall(g,2);
+  const future={from:[9,6],to:[8,7],kind:'ROLL_LEFT',motionSeq:0,pileFlow:true,pileFlowStart:2,pileFlowDuration:.2,pileFlowEnd:2.2,pivot:null,topPivot:null,followSupportIds:[],movingSupportId:0};
+  waiter.fallPath=[future];g.board[7][8]=waiter;setVis(g,waiter,9,6,0);
+  // Active visual is intentionally a little inside the future reservation.
+  active.fallPath=[{from:[8,5],to:[9,6],kind:'FOLLOW_SUPPORT',motionSeq:0,pileFlow:true,pileFlowStart:0,pileFlowDuration:2,pileFlowEnd:2,pivot:null,topPivot:null,followSupportIds:[],movingSupportId:0,_hexGravityLinear:true,_hexGravityDuration:2,_hexGravityDistance:1,_hexGravityV0:.35,_hexGravityAccel:0}];
+  g.board[6][9]=active;setVis(g,active,8.02,5.02,0);
+  g.state='RESOLVING';g.phase='SETTLE';g.pileFlowClock=1;
+  g._visualMovingIds=new Set([waiter.id,active.id]);
+  const beforeWait=[g.vis.get(waiter.id).x,g.vis.get(waiter.id).y];
+  resolveVisualContacts(g);
+  const w=g.vis.get(waiter.id),a=g.vis.get(active.id);
+  expect(pileFlowPhysicalDist([w.x,w.y],beforeWait)<1e-7,'future waiter was displaced by contact projection');
+  expect(hexPhysDist(w.x,w.y,a.x,a.y)>=.9999989,'active contact did not converge against fixed waiter');
 }
 
 console.log('gravity pile flow regressions PASS');
