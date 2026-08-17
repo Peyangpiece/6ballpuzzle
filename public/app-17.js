@@ -51,9 +51,64 @@ visualSubstepCount=function(g){
     return __hexdropVisualSubstepCount(g);
 };
 
+// Logical garbage settling assigns a strict motionSeq to every lattice move.
+// The legacy visual fallback used to animate later sequences even while an
+// earlier sequence was still crossing the same cell. That could put two
+// already-gridified garbage balls on top of one another despite their logical
+// paths being ordered correctly. During GARBAGE, freeze only later gridified
+// garbage sequences until the globally earliest board motion is active.
+const __hexdropUpdateVisualsBeforeGarbageQueueGate=updateVisuals;
+updateVisuals=function(g,dt){
+    let minSeq=Infinity;
+    const held=[];
+    if(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"){
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
+            const seq=Number(seg?.motionSeq)||0;
+            if(seq>0)minSeq=Math.min(minSeq,seq);
+        }
+        if(Number.isFinite(minSeq)){
+            for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+                const ball=valid(x,y)?g.board[y][x]:null;
+                if(!ball?.isGarbage||!Array.isArray(ball.fallPath)||!ball.fallPath.length)continue;
+                const seq=Number(ball.fallPath[0]?.motionSeq)||0;
+                if(seq<=0||seq<=minSeq)continue;
+                const v=g.vis.get(ball.id);
+                if(!v)continue;
+                held.push({
+                    ball,
+                    visual:{...v},
+                    path:ball.fallPath.map(seg=>({
+                        ...seg,
+                        from:Array.isArray(seg?.from)?[...seg.from]:seg?.from,
+                        to:Array.isArray(seg?.to)?[...seg.to]:seg?.to,
+                        pivot:Array.isArray(seg?.pivot)?[...seg.pivot]:seg?.pivot,
+                        topPivot:Array.isArray(seg?.topPivot)?[...seg.topPivot]:seg?.topPivot,
+                        followSupportIds:Array.isArray(seg?.followSupportIds)?[...seg.followSupportIds]:seg?.followSupportIds
+                    }))
+                });
+            }
+        }
+    }
+
+    __hexdropUpdateVisualsBeforeGarbageQueueGate(g,dt);
+
+    for(const h of held){
+        const v=g.vis.get(h.ball.id);
+        if(v){
+            for(const k of Object.keys(v))delete v[k];
+            Object.assign(v,h.visual);
+            v.vy=0;
+            v.motionSpeed=0;
+        }
+        h.ball.fallPath=h.path;
+    }
+};
+
 // Network packets arrive at a much lower cadence than the 120 Hz game loop.
 // Advance the opponent's airborne garbage with the same capture-derived
-// absolute free-fall law used by the authoritative engine.  Snapshot values
+// absolute free-fall law used by the authoritative engine. Snapshot values
 // remain a monotone lower bound, so packet refreshes never pull a shape upward.
 stepNetGarbageMotion=function(g,dt){
     for(const p of g.activeGarbagePacks||[]){
