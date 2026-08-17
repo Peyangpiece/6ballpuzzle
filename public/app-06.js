@@ -177,6 +177,12 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     if(settlePass(g.board))g.ver++;
     g.ver++;
 
+    // This function is also used by the GARBAGE watchdog after the normal
+    // per-frame contact solve has already run. Resolve here as part of the
+    // atomic one-ball hand-off so every caller leaves the new lattice ball in
+    // a non-overlapping render state. Airborne siblings remain outside g.vis.
+    if(typeof resolveVisualContacts==="function")resolveVisualContacts(g);
+
     if(pack.pat.length===0){
         pack.landed=true;
         pack.releaseTime=g.garbageClock;
@@ -260,12 +266,6 @@ function updateGarbagePacks(g,dt){
         }
     }
 
-    // stepEngine() performs its normal visual contact solve before the logical
-    // GARBAGE phase. A ball can gridify later in that same frame, so run the
-    // final projection once more after garbage updates. This guarantees that
-    // the newly gridified single ball can never be rendered penetrating another
-    // board ball on its hand-off frame. Airborne siblings are not in g.vis and
-    // therefore remain unaffected/free-falling.
     if(typeof resolveVisualContacts==="function")resolveVisualContacts(g);
 }
 function garbageBatchDone(g){
