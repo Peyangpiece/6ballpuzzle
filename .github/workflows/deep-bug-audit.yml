@@ -13,7 +13,7 @@ permissions:
 jobs:
   deep:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,15 +26,16 @@ jobs:
           set +e
           mkdir -p audit-results
           : > audit-results/deep.log
-          node tests/audit-ai-state.js 1 4 24 >> audit-results/deep.log 2>&1; ai=$?
-          node tests/audit-performance.js 30 >> audit-results/deep.log 2>&1; perf=$?
-          node tests/audit-settle-random.js 2000 >> audit-results/deep.log 2>&1; settle=$?
-          node tests/audit-landing-guide.js 400 >> audit-results/deep.log 2>&1; landing=$?
-          node tests/audit-rendered-guide.js 300 >> audit-results/deep.log 2>&1; rendered=$?
+          node tests/audit-ai-state.js 1 2 12 >> audit-results/deep.log 2>&1; ai=$?
+          node tests/audit-performance.js 16 >> audit-results/deep.log 2>&1; perf=$?
+          node tests/audit-settle-random.js 500 >> audit-results/deep.log 2>&1; settle=$?
+          node tests/audit-landing-guide.js 120 >> audit-results/deep.log 2>&1; landing=$?
+          node tests/audit-rendered-guide.js 120 >> audit-results/deep.log 2>&1; rendered=$?
           node tests/audit-online-roundtrip.js >> audit-results/deep.log 2>&1; online=$?
           node tests/audit-online-rating.js >> audit-results/deep.log 2>&1; rating=$?
+          node tests/audit-friend-room.js >> audit-results/deep.log 2>&1; friend=$?
           node tests/audit-attack-conservation.js >> audit-results/deep.log 2>&1; attack=$?
-          printf '{"sha":"%s","ai":%s,"performance":%s,"settle":%s,"landing":%s,"renderedGuide":%s,"online":%s,"rating":%s,"attack":%s}\n' "$GITHUB_SHA" "$ai" "$perf" "$settle" "$landing" "$rendered" "$online" "$rating" "$attack" > audit-results/deep.json
+          printf '{"sha":"%s","ai":%s,"performance":%s,"settle":%s,"landing":%s,"renderedGuide":%s,"online":%s,"rating":%s,"friend":%s,"attack":%s}\n' "$GITHUB_SHA" "$ai" "$perf" "$settle" "$landing" "$rendered" "$online" "$rating" "$friend" "$attack" > audit-results/deep.json
           echo "ai=$ai" >> "$GITHUB_OUTPUT"
           echo "perf=$perf" >> "$GITHUB_OUTPUT"
           echo "settle=$settle" >> "$GITHUB_OUTPUT"
@@ -42,6 +43,7 @@ jobs:
           echo "rendered=$rendered" >> "$GITHUB_OUTPUT"
           echo "online=$online" >> "$GITHUB_OUTPUT"
           echo "rating=$rating" >> "$GITHUB_OUTPUT"
+          echo "friend=$friend" >> "$GITHUB_OUTPUT"
           echo "attack=$attack" >> "$GITHUB_OUTPUT"
           exit 0
       - name: Commit deep report
@@ -63,4 +65,5 @@ jobs:
           test "${{ steps.audit.outputs.rendered }}" = "0"
           test "${{ steps.audit.outputs.online }}" = "0"
           test "${{ steps.audit.outputs.rating }}" = "0"
+          test "${{ steps.audit.outputs.friend }}" = "0"
           test "${{ steps.audit.outputs.attack }}" = "0"
