@@ -1,0 +1,13 @@
+const fs=require('fs'),path=require('path');
+const src=fs.readFileSync(path.join(__dirname,'../public/app-16.js'),'utf8');
+const issues=[];
+const createCalls=(src.match(/\bNet\.createRoom\s*\(/g)||[]).length;
+const joinCalls=(src.match(/\bNet\.joinRoom\s*\(/g)||[]).length;
+const mockLabel=src.includes('相手が入室した（模擬）');
+const fakeStart=/startMatch\("FRIEND"/.test(src);
+if(!createCalls)issues.push({type:'friend-create-room-not-wired'});
+if(!joinCalls)issues.push({type:'friend-join-room-not-wired'});
+if(mockLabel)issues.push({type:'friend-room-mock-ui-shipped'});
+if(fakeStart)issues.push({type:'friend-mode-routed-to-local-engine'});
+console.log('FRIEND_ROOM_AUDIT',JSON.stringify({createCalls,joinCalls,mockLabel,fakeStart,issues},null,2));
+if(issues.length)process.exitCode=1;
