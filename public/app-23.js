@@ -18,11 +18,19 @@ function hexGarbageContinuousDist(a,b){
     return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);
 }
 
+function hexGarbageBallStillMoving(ball){
+    return !!(ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length);
+}
+
 function hexGarbageContinuousPivot(g,ballId,from,to){
     let best=null;
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const b=valid(x,y)?g.board[y][x]:null;
         if(!b||b.id===ballId)continue;
+        // A garbage ball is not pile geometry until its own motion is finished.
+        // Moving garbage may geometrically cross/touch another garbage ball but
+        // must never become a pivot that makes the latter gridify or roll.
+        if(b.isGarbage&&hexGarbageBallStillMoving(b))continue;
         const v=g.vis.get(b.id);
         if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
         const p=[v.x,v.y];
@@ -33,6 +41,53 @@ function hexGarbageContinuousPivot(g,ballId,from,to){
     }
     return best;
 }
+
+/*
+ * app-22 lets gridified garbage join the obstacle list after a packet's first
+ * real pile/floor contact. Refine that rule here: a gridified garbage member is
+ * still moving while it has fallPath, so it is NOT a support yet. This keeps
+ * the earlier invariant intact: garbage-to-garbage contact during motion does
+ * not cause a stop or split. Only a garbage ball whose complete path has ended
+ * is accumulated pile geometry for later airborne members.
+ */
+function hexGarbageObstacleStopsAirborne(frame,entry,splitTriggered){
+    if(!entry?.isGarbage)return true;
+    if(!splitTriggered)return false;
+    const ball=frame?.byId?.get(entry.id);
+    return !!ball&&!hexGarbageBallStillMoving(ball);
+}
+
+hexGarbageBallContactY=function(g,pack,index){
+    if(!pack?.pat?.[index])return Infinity;
+    const frame=hexGarbageObstacleFrame(g);
+    const splitTriggered=!!pack._hexSplitTriggered;
+    const perf=hexGarbagePerfState(g);perf.contactQueries++;
+    const [dx,dy]=pack.pat[index],px=pack.ax+dx,H=HEX_ROW_H;
+    let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-dy;
+
+    // Use live visuals when a normal pile member is genuinely moving; otherwise
+    // the one-frame cache is equivalent and avoids repeated board scans.
+    if(frame.hasMovingNormal){
+        for(const [id,ov]of g.vis.entries()){
+            if(!ov||!Number.isFinite(ov.x)||!Number.isFinite(ov.y))continue;
+            const obstacle=hexGarbageBoardBallById(g,id);if(!obstacle)continue;
+            const entry={id,x:ov.x,y:ov.y,isGarbage:!!obstacle.isGarbage};
+            if(!hexGarbageObstacleStopsAirborne(frame,entry,splitTriggered))continue;
+            const hx=Math.abs((px-ov.x)*.5);if(hx>=1-1e-10)continue;
+            const vertical=Math.sqrt(Math.max(0,1-hx*hx))/H;
+            limit=Math.min(limit,ov.y-dy-vertical);
+        }
+        return limit;
+    }
+
+    for(const ov of frame.obstacles){
+        if(!hexGarbageObstacleStopsAirborne(frame,ov,splitTriggered))continue;
+        const hx=Math.abs((px-ov.x)*.5);if(hx>=1-1e-10)continue;
+        const vertical=Math.sqrt(Math.max(0,1-hx*hx))/H;
+        limit=Math.min(limit,ov.y-dy-vertical);
+    }
+    return limit;
+};
 
 function hexGarbageHandoffMotionSeq(oldPath){
     for(const seg of oldPath||[]){
@@ -145,7 +200,7 @@ function hexGarbageProjectMovingFromFixedPile(g,fixed){
         if(!ball?.isGarbage)continue;
         const v=g.vis.get(ball.id);
         if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
-        if(!(Array.isArray(ball.fallPath)&&ball.fallPath.length))continue;
+        if(!hexGarbageBallStillMoving(ball))continue;
         moving.push({ball,v});
     }
     if(!moving.length)return;
