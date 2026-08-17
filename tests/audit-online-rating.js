@@ -1,0 +1,14 @@
+const fs=require('fs');
+const path=require('path');
+const root=path.join(__dirname,'..');
+const html=fs.readFileSync(path.join(root,'public/index.html'),'utf8');
+const names=[...html.matchAll(/"(app-\d+\.js)"/g)].map(m=>m[1]);
+const src=names.map(n=>fs.readFileSync(path.join(root,'public',n),'utf8')).join('\n');
+const issues=[];
+const calls=[...src.matchAll(/\bNet\.applyRating\s*\(/g)].length;
+const definitions=[...src.matchAll(/\b(?:async\s+)?applyRating\s*\(/g)].length;
+const zeroDeltaFinish=/setResult\s*\(\s*\{\s*win\s*,\s*delta\s*:\s*0\s*\}/.test(src);
+if(definitions&&!calls)issues.push({type:'rating-function-never-called',definitions,calls});
+if(zeroDeltaFinish)issues.push({type:'online-result-delta-hardcoded-zero'});
+console.log('ONLINE_RATING_AUDIT',JSON.stringify({definitions,calls,zeroDeltaFinish,issues},null,2));
+if(issues.length)process.exitCode=1;
