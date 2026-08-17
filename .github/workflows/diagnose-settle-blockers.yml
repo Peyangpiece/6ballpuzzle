@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  audit:
+  settle-random:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -14,5 +14,56 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Exhaustive architecture and physics audit
-        run: node tests/exhaustive-bug-audit.js
+      - run: node tests/audit-settle-random.js 5000
+
+  landing-guide:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/audit-landing-guide.js 500
+
+  lock-rigidity:
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [1, 21]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/audit-lock-rigidity.js ${{ matrix.start }} 20 30
+
+  garbage-scheduling:
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [1, 13, 25]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/audit-garbage-scheduling.js ${{ matrix.start }} 12 28
+
+  live-fuzz:
+    strategy:
+      fail-fast: false
+      matrix:
+        start: [1, 7, 13, 19, 25, 31, 37]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/audit-live-shard.js ${{ matrix.start }} 6 30
