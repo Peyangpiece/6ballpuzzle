@@ -1,199 +1,101 @@
-/* 2026-08-16: ▲ convex-contact partial rigidity override.
-   When an upward triangle actually tears on one protruding pile ball,
-   preserve a 2-ball rigid pair on the opposite side instead of releasing all 3. */
+/* Exact rendered rotation collision validation.
+ *
+ * app-07 used a fixed maximum future fall offset for the whole 0.10 s turn.
+ * That made legal rotations look as if they were already at their lowest
+ * future Y on frame zero, so ordinary turns near the pile were rejected.
+ *
+ * Sample the same time-varying pose that the renderer displays instead:
+ * continuous X, current fall phase, landing alignment, and the 60-degree turn.
+ */
+function hexRotationRenderedSweepSafe(g,fromPiece,toPiece,dir){
+    if(!g||!fromPiece||!toPiece)return false;
+    if(centroidOf(toPiece)[1]<centroidOf(fromPiece)[1]-1e-9)return false;
 
-function upTriangleConvexSplitInfo(b,members,continuation){
-    if(!Array.isArray(members)||members.length!==3||!continuation?.breakRequired)
-        return null;
+    const H=HEX_ROW_H;
+    const right=latticeRealX(W2-1);
+    const before=centroidOf(fromPiece),after=centroidOf(toPiece);
+    const basePieceVX=Number.isFinite(g.pieceVX)?g.pieceVX:fromPiece.x;
+    const boardBalls=[];
 
-    const orientation=
-        members[0]?.orientation ||
-        members[0]?.ball?.slopeRigidOrientation ||
-        "";
-    if(orientation!=="up"||continuation.floorContact)
-        return null;
-
-    const ballContacts=Array.isArray(continuation.ballContacts)
-        ? continuation.ballContacts
-        : (continuation.contacts||[]).filter(c=>c.kind==="ball");
-
-    const supports=new Map();
-    for(const c of ballContacts){
-        if(c.kind!=="ball")continue;
-        const supportId=c.supportId || b?.[c.y]?.[c.x]?.id || 0;
-        const key=supportId || (c.x+","+c.y);
-        if(!supports.has(key))
-            supports.set(key,{id:supportId,x:c.x,y:c.y});
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null;
+        if(!ball)continue;
+        const v=g.vis?.get?.(ball.id);
+        boardBalls.push(
+            v&&Number.isFinite(v.x)&&Number.isFinite(v.y)
+                ? [latticeRealX(v.x),cellCenterYNorm(v.y)]
+                : normPoint(x,y)
+        );
     }
 
-    // One physical protruding support only. Shelves/valleys keep the generic solver.
-    if(supports.size!==1)return null;
+    for(let i=0;i<=64;i++){
+        const p=i/64;
+        const elapsed=p*ROTATE_VISUAL_TIME;
 
-    const support=[...supports.values()][0];
-    const centerX=members.reduce((n,m)=>n+m.x,0)/members.length;
-    const delta=support.x-centerX;
-    if(Math.abs(delta)<1e-9)return null;
+        let pieceVX;
+        if(g.freeX!=null){
+            pieceVX=g.freeX;
+        }else{
+            const delta=toPiece.x-basePieceVX;
+            pieceVX=basePieceVX+Math.sign(delta||0)*Math.min(Math.abs(delta),PIECE_SNAP_SPEED*elapsed);
+        }
 
-    const side=delta>0?"right":"left";
-    // ▲ roles: 0=top, 1=right lower, 2=left lower.
-    return {
-        side,
-        support,
-        centerX,
-        pairRoles:side==="right"?[0,2]:[0,1],
-        soloRole:side==="right"?1:2,
-        pairDir:side==="right"?-1:1,
-        soloDir:side==="right"?1:-1
-    };
-}
+        const dxGrid=pieceVX-toPiece.x;
+        const cells=pieceCells(toPiece);
+        const blocked=!pieceFits(g.board,{...toPiece,y:toPiece.y+2});
+        // rotate() resets lockT when a legal rotation is accepted, so the
+        // post-turn landing alignment starts from zero and advances with time.
+        const predictedLock=blocked?elapsed:0;
+        const align=blocked?Math.max(0,1-Math.min(1,predictedLock/LANDING_ALIGN_DURATION)):1;
+        const dOff=dispOff(toPiece.rot)*align;
+        const scale=g.fastForward?FAST_DROP_MULTIPLIER:1;
+        const predDropT=(g.dropT||0)+elapsed*scale;
+        const desiredFrac=Math.max(0,Math.min(.999999,predDropT/g.dropInterval)*2);
+        const frac=safeActiveFallOffset(g,cells,dxGrid,dOff,desiredFrac);
 
-function applyUpTriangleConvexPartialSplit(members,info,heldIds,preview=false){
-    if(!info)return false;
-    const pair=members.filter(m=>info.pairRoles.includes(m.role));
-    const solo=members.find(m=>m.role===info.soloRole);
-    if(pair.length!==2||!solo)return false;
+        const pts=cells.map(([x,y])=>[
+            latticeRealX(x+dxGrid),
+            cellCenterYNorm(y+frac+dOff)
+        ]);
+        const gx=(pts[0][0]+pts[1][0]+pts[2][0])/3;
+        const gy=(pts[0][1]+pts[1][1]+pts[2][1])/3;
+        const k=1-smoothRotationT(p);
+        const ang=-k*(dir>0?1:-1)*(TAU/6);
+        const ca=Math.cos(ang),sa=Math.sin(ang);
+        const ox=k*(before[0]-after[0])*.5;
+        const oy=k*(before[1]-after[1])*H;
 
-    for(const m of members)heldIds.delete(m.ball.id);
-    for(const m of pair)heldIds.add(m.ball.id);
-    if(preview)return true;
-
-    const gid=pair[0]?.ball?.slopeRigidGroupId || pair[0]?.ball?.id || 0;
-    const breakSeq=LIVE_MOTION_SEQ;
-
-    solo.ball.rigidityBreakReason="up_convex_split_single_"+info.side;
-    solo.ball.rigidityBreakSeq=breakSeq;
-    normalizePileBallPhysics(solo.ball);
-    solo.ball.rollDir=info.soloDir;
-    solo.ball.momentumX=info.soloDir;
-    solo.ball.subCellBias=info.soloDir;
-
-    for(const m of pair){
-        m.ball.slopeRigidGroupId=gid;
-        m.ball.slopeRigidOrientation="up";
-        m.ball.slopeRigidActive=true;
-        m.ball.slopeRigidPartialPair=true;
-        m.ball.slopeRigidSplitDir=info.pairDir;
-        m.ball.rigid=true;
-        m.ball.rollDir=info.pairDir;
-        m.ball.momentumX=info.pairDir;
-        m.ball.subCellBias=info.pairDir;
-        m.ball.rigidityBreakReason="up_convex_partial_pair_"+info.side;
-        m.ball.rigidityBreakSeq=breakSeq;
+        for(const [px0,py0] of pts){
+            const ax=px0-gx,ay=py0-gy;
+            const px=gx+ax*ca-ay*sa+ox;
+            const py=gy+ax*sa+ay*ca+oy;
+            if(px<-1e-8||px>right+1e-8||py>FLOOR_CENTER_N+1e-8)return false;
+            for(const [bx,by] of boardBalls){
+                if(Math.hypot(px-bx,py-by)<0.999999-1e-8)return false;
+            }
+        }
     }
     return true;
 }
 
-// Override the original group driver so an explicit 2-ball partial pair is legal.
-function advanceSlopeRigidGroups(b,preview=false){
-    const groups=slopeRigidGroups(b);
-    if(!groups.size)
-        return {moved:false,heldIds:new Set(),released:false};
+rotate=function(g,dir){
+    if(g.state!=="PLAYING"||!g.piece)return false;
+    const nr=(g.piece.rot+(dir>0?1:5))%6;
+    const from={...g.piece};
+    const before=centroidOf(from);
 
-    const heldIds=new Set();
-    let released=false;
+    for(const[kx,ky]of KICKS){
+        const q={...from,rot:nr,x:from.x+kx,y:from.y+ky};
+        if(!pieceFits(g.board,q))continue;
+        if(!rotationSweepSafe(g.board,from,q,dir))continue;
+        if(!hexRotationRenderedSweepSafe(g,from,q,dir))continue;
 
-    const releaseGroup=(members,reason)=>{
-        released=true;
-        for(const m of members)heldIds.delete(m.ball.id);
-        if(!preview){
-            for(const m of members){
-                m.ball.rigidityBreakReason=reason||"blocked";
-                m.ball.rigidityBreakSeq=LIVE_MOTION_SEQ;
-                normalizePileBallPhysics(m.ball);
-            }
-        }
-    };
-
-    for(const members of groups.values()){
-        const expectedCount=slopeRigidExpectedMemberCount(members);
-        if(members.length!==expectedCount){
-            releaseGroup(members,"member_missing");
-            continue;
-        }
-
-        for(const m of members){
-            heldIds.add(m.ball.id);
-            if(!preview){
-                m.ball.rigid=true;
-                m.ball.slopeRigidActive=true;
-            }
-        }
-
-        const continuation=rigidBodyContinuation(b,members);
-        if(continuation.move){
-            if(preview)return {moved:true,heldIds,released};
-            applySlopeRigidTranslation(b,members,continuation.dx,continuation.dy);
-            return {moved:true,heldIds,released};
-        }
-
-        if(members.length===3 && continuation.breakRequired){
-            const splitInfo=upTriangleConvexSplitInfo(b,members,continuation);
-            if(splitInfo && applyUpTriangleConvexPartialSplit(
-                members,splitInfo,heldIds,preview
-            )){
-                released=true;
-                continue;
-            }
-        }
-
-        releaseGroup(
-            members,
-            continuation.breakRequired
-                ? (continuation.breakReason||"differential_constraint")
-                : "pile_settled"
-        );
+        const after=centroidOf(q);
+        g.piece=q;
+        g.rotAnim={p:0,dir:dir>0?1:-1,dx:before[0]-after[0],dy:before[1]-after[1]};
+        emit(g,{t:"rotate"});
+        if(g.lockT>0&&g.lockResets<12){g.lockT=0;g.lockResets++;}
+        return true;
     }
-
-    return {moved:false,heldIds,released};
-}
-
-// Override normalization so partial-pair metadata cannot leak after the pair settles/breaks.
-function normalizePileBallPhysics(ball){
-    if(!ball||typeof ball!=="object")return;
-    ball.rigid=false;
-    ball.fixedGarbage=false;
-    ball.shapeHeld=false;
-    ball.shapeGroupId=0;
-    ball.shapeOrientation="";
-    ball.shapeRole=-1;
-    ball.slopeRigidGroupId=0;
-    ball.slopeRigidRole=-1;
-    ball.slopeRigidOrientation="";
-    ball.slopeRigidActive=false;
-    ball.slopeRigidPartialPair=false;
-    ball.slopeRigidSplitDir=0;
-    ball.forceSplit=false;
-    ball.fallBias=0;
-    ball.fallBiasTTL=0;
-    ball.visualTripletId=0;
-    ball.visualTripletOrientation="";
-    ball.visualTripletRole=-1;
-    ball.visualReleaseGroupId=0;
-    ball.visualReleaseOrientation="";
-    ball.visualReleaseGateRoles=[];
-    ball.visualPreReleaseRemaining=0;
-    ball.visualSyncSplitGroup=0;
-    ball.visualSyncSplitStage=0;
-}
-
-// Override pile cleanup: explicit 2-ball partial pairs are still active rigid bodies.
-function stripFinishedTripletRigidity(g){
-    const groups=slopeRigidGroups(g.board);
-    for(const members of groups.values()){
-        const expectedCount=slopeRigidExpectedMemberCount(members);
-        if(members.length!==expectedCount){
-            for(const m of members)normalizePileBallPhysics(m.ball);
-            continue;
-        }
-
-        const visuallyInFlight=members.some(m=>
-            Array.isArray(m.ball.fallPath) && m.ball.fallPath.length>0
-        );
-        if(visuallyInFlight)continue;
-
-        const c=rigidBodyContinuation(g.board,members);
-        if(c.move)continue;
-
-        for(const m of members)normalizePileBallPhysics(m.ball);
-    }
-}
+    return false;
+};
