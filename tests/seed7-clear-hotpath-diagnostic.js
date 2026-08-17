@@ -21,8 +21,6 @@ const origRestore=hexRestorePileFlowFrame;
 hexRestorePileFlowFrame=function(){const t=Date.now();try{return origRestore.apply(this,arguments);}finally{add('hexRestorePileFlowFrame',Date.now()-t);}};
 const origPrepare=prepareContinuousPileFlow;
 prepareContinuousPileFlow=function(){const t=Date.now();try{return origPrepare.apply(this,arguments);}finally{add('prepareContinuousPileFlow',Date.now()-t);}};
-const origSettleAll=settleAll;
-settleAll=function(){const t=Date.now();try{return origSettleAll.apply(this,arguments);}finally{add('settleAll',Date.now()-t);}};
 const origPosition=pileFlowPositionAt;
 pileFlowPositionAt=function(){const p=perf.pileFlowPositionAt||(perf.pileFlowPositionAt={calls:0});p.calls++;return origPosition.apply(this,arguments);};
 const origPointFor=pileFlowPointForBall;
