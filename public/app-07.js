@@ -136,9 +136,6 @@ function scheduleFreshPileFlowPerBall(g,fresh){
             pileFlowAttachCausalSupports(g,ball,seg,earliest,duration);
             const priorEnds=pileFlowPriorEnds(g,seg),fallback=Math.max(earliest,...priorEnds,earliest);let start=earliest,safe=false;
             while(start<=fallback+PILE_FLOW_SCHEDULE_STEP+1e-9){if(pileFlowWaveSafe(g,[seg],start,duration)){safe=true;break;}start+=PILE_FLOW_SCHEDULE_STEP;}
-            // If the first contact inference was made before the support began
-            // moving, retry once at the first collision-free candidate. This is
-            // still causal motion, not a fixed wave delay.
             if(!safe&&!pileFlowSupportIds(seg).length){
                 const ids=pileFlowInferMovingSupportIds(g,ball,seg,start,duration);
                 if(ids.length){seg.followSupportIds=ids;seg.movingSupportId=ids[0];seg.pileFlowInferredSupport=true;if(pileFlowWaveSafe(g,[seg],earliest,duration)){start=earliest;safe=true;}}
@@ -155,12 +152,30 @@ function scheduleFreshPileFlow(g,fresh,reason="pile_flow"){
     else scheduleFreshPileFlowWave(g,fresh);
 }
 
-function repairPileFlowSegmentGeometry(g,ball,seg){
+function repairPileFlowSegmentGeometry(g,ball,seg,reason="pile_flow"){
     if(!seg||seg.pivot||seg.topPivot||!seg.to||!seg.from)return;
     if(seg.movingSupportId||(Array.isArray(seg.followSupportIds)&&seg.followSupportIds.length))return;
     const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];if(dy!==1||Math.abs(dx)!==1)return;
     const candidates=[[seg.from[0]+2*dx,seg.from[1]],[seg.from[0]-dx,seg.from[1]+1]];
-    for(const [px,py] of candidates){if(!valid(px,py))continue;const support=g.board[py][px];if(!support||support===ball)continue;const sp=Array.isArray(support.fallPath)?support.fallPath:[];if(sp.length)continue;const H=HEX_ROW_H,d0=Math.hypot((seg.from[0]-px)*0.5,(seg.from[1]-py)*H),d1=Math.hypot((seg.to[0]-px)*0.5,(seg.to[1]-py)*H);if(Math.abs(d0-1)<1e-6&&Math.abs(d1-1)<1e-6){seg.pivot=[px,py];seg.pileFlowRepairedPivot=true;return;}}
+    for(const [px,py] of candidates){
+        if(!valid(px,py))continue;
+        const support=g.board[py][px];if(!support||support===ball)continue;
+        const sp=Array.isArray(support.fallPath)?support.fallPath:[];if(sp.length)continue;
+        const H=HEX_ROW_H,d0=Math.hypot((seg.from[0]-px)*0.5,(seg.from[1]-py)*H),d1=Math.hypot((seg.to[0]-px)*0.5,(seg.to[1]-py)*H);
+        if(Math.abs(d0-1)<1e-6&&Math.abs(d1-1)<1e-6){
+            seg.pivot=[px,py];seg.pileFlowRepairedPivot=true;
+            // During a clear the visual centre of an otherwise static support
+            // may still be a few thousandths away from its logical lattice
+            // centre. Follow that actual support centre so the rolling ball
+            // stays exactly tangent instead of cutting through it by ~0.4%.
+            if(reason==="clear_support_loss"){
+                seg.followSupportIds=[support.id];
+                seg.movingSupportId=support.id;
+                seg.pileFlowStaticContact=true;
+            }
+            return;
+        }
+    }
 }
 
 function markPileFlowPaths(g,reason="pile_flow"){
@@ -169,7 +184,7 @@ function markPileFlowPaths(g,reason="pile_flow"){
         const ball=valid(x,y)?g.board[y][x]:null;if(!ball||!Array.isArray(ball.fallPath)||!ball.fallPath.length)continue;if(ball.slopeRigidGroupId)continue;
         normalizePileBallPhysics(ball);if(ball.isGarbage)ball.isGarbage=true;
         const already=ball.fallPath.some(seg=>seg?.pileFlow);let isFirst=!already;
-        for(const seg of ball.fallPath){if(!seg||!seg.to||seg.pileFlow)continue;repairPileFlowSegmentGeometry(g,ball,seg);const seq=Number(seg.motionSeq)||0;seg.pileFlowOriginalSeq=seq;seg.motionSeq=0;seg.pileFlow=true;seg.pileFlowEntry=isFirst;seg.pileFlowReason=reason;seg._pileFlowBall=ball;fresh.push({ball,seg,seq});isFirst=false;}
+        for(const seg of ball.fallPath){if(!seg||!seg.to||seg.pileFlow)continue;repairPileFlowSegmentGeometry(g,ball,seg,reason);const seq=Number(seg.motionSeq)||0;seg.pileFlowOriginalSeq=seq;seg.motionSeq=0;seg.pileFlow=true;seg.pileFlowEntry=isFirst;seg.pileFlowReason=reason;seg._pileFlowBall=ball;fresh.push({ball,seg,seq});isFirst=false;}
     }
     if(!fresh.length)return{balls:0,segments:0};
     g._pileFlowBallById=new Map();for(let yy=0;yy<ROWS;yy++)for(let xx=0;xx<W2;xx++){const bb=valid(xx,yy)?g.board[yy][xx]:null;if(bb)g._pileFlowBallById.set(bb.id,bb);}
