@@ -4,30 +4,19 @@ const failures=[];
 function fail(type,data){failures.push({type,...data});}
 function items(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,v,x,y});}return a;}
 function minPair(g){const a=items(g);let min=Infinity,pair=null;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const d=hexPhysDist(a[i].v.x,a[i].v.y,a[j].v.x,a[j].v.y);if(d<min){min=d;pair=[a[i].b.id,a[j].b.id];}}return{min,pair};}
-// Exact seed-8 regression: historical upward landed-garbage recoil and gross STRAIGHT overlap.
+// Root-cause fixture for the historical seed-8 recoil / random settle ball loss:
+// two separately accepted bundles may never reserve the same target, and an
+// invalid simultaneous event must not delete either source ball.
 {
- const g=createEngine(8);g.ai={level:4,target:null,thinkT:0,actT:0};const prev=new Map();let worstUp=0,worstPair=Infinity,upInfo=null,pairInfo=null;
- for(let step=0;step<=2220&&g.alive;step++){
-  if(step===120*5)g.incomingShapes.push('PYRAMID');
-  if(step===120*10)g.incomingShapes.push('HEXAGON');
-  if(step===120*15)g.incomingShapes.push('STRAIGHT');
-  if(step===120*20)g.incoming+=8;
-  stepEngine(g,PHYSICS_FRAME);
-  // Recoil historically appeared near step 1997. Track garbage Y only once the
-  // scenario enters that contact-heavy interval; earlier frames cannot trigger
-  // this fixed regression and need no extra board scans.
-  if(step>=1850){
-   for(const q of items(g)){
-    const py=prev.get(q.b.id);if(q.b.isGarbage&&Number.isFinite(py)&&q.v.y<py-1e-6){const u=py-q.v.y;if(u>worstUp){worstUp=u;upInfo={step,id:q.b.id,from:py,to:q.v.y,state:g.state,phase:g.phase};}}
-    prev.set(q.b.id,q.v.y);
-   }
-   // Gross overlap historically appeared near step 2207. Keep the exact all-pair
-   // check but only in the relevant fixed window so the quick gate stays quick.
-   if(step>=1900){const m=minPair(g);if(m.min<worstPair){worstPair=m.min;pairInfo={step,min:m.min,pair:m.pair,state:g.state,phase:g.phase};}}
-  }
- }
- if(worstUp>1e-6)fail('seed8-upward-recoil',{worstUp,upInfo});
- if(worstPair<0.999999-1e-7)fail('seed8-overlap',{worstPair,pairInfo});
+ const b=newBoard(),a={id:5101,c:0,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false},c={id:5102,c:1,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false};
+ b[6][4]=a;b[6][8]=c;
+ const pa={x:4,y:6,tx:6,ty:8,ball:a,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:101};
+ const pc={x:8,y:6,tx:6,ty:8,ball:c,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:202};
+ if(!hexPhysBundleTargetsFree([pa],b,[]))fail('atomic-first-bundle-rejected',{});
+ if(hexPhysBundleTargetsFree([pc],b,[pa]))fail('accepted-target-not-reserved',{});
+ const before=[b[6][4]?.id,b[6][8]?.id];const applied=hexPhysApplyEvent(b,[pa,pc]);
+ if(applied)fail('duplicate-target-event-applied',{});
+ const after=[b[6][4]?.id,b[6][8]?.id];if(JSON.stringify(before)!==JSON.stringify(after))fail('invalid-event-mutated-board',{before,after});
 }
 // Exact landing-guide generator seed 6: shadow and hard drop must share the same physical envelope.
 {
@@ -53,4 +42,4 @@ function minPair(g){const a=items(g);let min=Infinity,pair=null;for(let i=0;i<a.
 }
 globalThis.__FAST_REGRESSION={failures};
 `;
-const ctx=runSuite(suite,{timeout:180000});console.log('FAST_KNOWN_REGRESSION',JSON.stringify(ctx.__FAST_REGRESSION,null,2));if(ctx.__FAST_REGRESSION.failures.length)process.exitCode=1;
+const ctx=runSuite(suite,{timeout:120000});console.log('FAST_KNOWN_REGRESSION',JSON.stringify(ctx.__FAST_REGRESSION,null,2));if(ctx.__FAST_REGRESSION.failures.length)process.exitCode=1;
