@@ -13,8 +13,8 @@
  * already-settled lattice balls fixed and removes penetration without snapping
  * continuous-rest supports back to grid cells.
  */
-const HEX_RENDER_MIN_DIST = 1.000001;
-const HEX_RENDER_CONTACT_PASSES = 32;
+const HEX_RENDER_MIN_DIST = 1.0;
+const HEX_RENDER_CONTACT_PASSES = 64;
 const HEX_RENDER_OFFGRID_EPS = 1e-7;
 
 function hexRenderBoardVisuals(g){
