@@ -4,7 +4,7 @@ const vm=require("vm");
 const names=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
   "app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
-  "app-18.js","app-19.js","app-20.js","app-21.js"
+  "app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js"
 ];
 const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
@@ -63,6 +63,29 @@ function close(a,b,e=1e-7){return Math.abs(a-b)<=e;}
   expect(mid>0&&mid<.5,'free fall is not accelerating from its initial speed');
   const end=pileFlowPoint(seg,1);
   expect(close(end[0],5)&&close(end[1],4),'free fall missed the final lattice point');
+}
+
+// If a garbage support settles only after a normal pile-flow segment was
+// scheduled, render-time repair must still convert the diagonal chord into a
+// tangent circle. This reproduces the SETTLE overlap seen after garbage entry.
+{
+  const g=createEngine(11002),support=mkBall(g,1),mover=mkBall(g,2);
+  support.isGarbage=true;support.garbageType='PYRAMID';support.fallPath=[];
+  g.board[8][15]=support;setVis(g,support,15,8,0);
+  const seg={
+    from:[13,8],to:[14,9],kind:'ROLL_RIGHT',motionSeq:0,pileFlow:true,
+    pileFlowStart:0,pileFlowDuration:1,pileFlowEnd:1,pileFlowEntry:true,
+    followSupportIds:[],movingSupportId:0,pivot:null,topPivot:null,
+    _hexGravityLinear:true,_hexGravityDuration:1,_hexGravityDistance:1,
+    _hexGravityV0:.35,_hexGravityAccel:1,_hexGravityEntrySpeed:.35
+  };
+  mover.fallPath=[seg];g.board[9][14]=mover;setVis(g,mover,13,8,0);
+  g.state='RESOLVING';g.phase='SETTLE';g.pileFlowClock=.5;
+  const v=g.vis.get(mover.id);
+  updateScheduledPileFlowVisual(g,mover,v,PHYSICS_FRAME);
+  expect(seg.pileFlowLateGarbagePivot===true,'late-settled garbage was not promoted to an arc pivot');
+  expect(seg.pivot&&seg.pivot[0]===15&&seg.pivot[1]===8,'late pivot selected the wrong garbage support');
+  expect(Math.abs(pileFlowPhysicalDist([v.x,v.y],[15,8])-1)<1e-6,'late repaired motion cut through settled garbage');
 }
 
 console.log('gravity pile flow regressions PASS');
