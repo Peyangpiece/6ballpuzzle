@@ -199,13 +199,24 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
 
 function materializeGarbageContactsThrough(g,pack,desiredY){
     if(!pack?.pat?.length)return 0;
-    let hitIndex=-1,hitY=Infinity;
+
+    // Contact is a per-ball event, not a packet event. Snapshot every member
+    // whose own floor/non-garbage-pile contact has been reached in this frame.
+    // Process from the highest original index downward so splicing one member
+    // never changes the identity/color of the remaining candidates.
+    const hits=[];
     for(let i=0;i<pack.pat.length;i++){
         const cy=hexGarbageBallContactY(g,pack,i);
-        if(desiredY+HEX_GARBAGE_CONTACT_EPS>=cy&&cy<hitY){hitY=cy;hitIndex=i;}
+        if(desiredY+HEX_GARBAGE_CONTACT_EPS>=cy)hits.push({index:i,contactY:cy});
     }
-    if(hitIndex<0)return 0;
-    return materializeGarbageBallAtContact(g,pack,hitIndex,hitY)?1:0;
+    if(!hits.length)return 0;
+
+    let released=0;
+    hits.sort((a,b)=>b.index-a.index);
+    for(const hit of hits){
+        if(materializeGarbageBallAtContact(g,pack,hit.index,hit.contactY))released++;
+    }
+    return released;
 }
 
 function materializeGarbagePackAtContact(g,pack){
