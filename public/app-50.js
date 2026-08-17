@@ -68,7 +68,11 @@ function hexEnforceFinalVisualNonOverlap(g){
     for(let pass=0;pass<HEX_RENDER_CONTACT_PASSES;pass++){
         let changed=false;
         for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
-            const a=items[i],b=items[j],n=hexRenderPairNormal(a,b);
+            const a=items[i],b=items[j];
+            // Cheap broad phase before sqrt. One ball diameter in physical X/Y.
+            const pdx=(b.v.x-a.v.x)*0.5,pdy=(b.v.y-a.v.y)*HEX_ROW_H;
+            if(Math.abs(pdx)>=HEX_RENDER_MIN_DIST||Math.abs(pdy)>=HEX_RENDER_MIN_DIST)continue;
+            const n=hexRenderPairNormal(a,b);
             if(n.d>=HEX_RENDER_MIN_DIST-1e-10)continue;
             let ma=hexRenderMobility(g,a),mb=hexRenderMobility(g,b);
             if(ma<=0&&mb<=0){
@@ -94,6 +98,24 @@ function hexEnforceFinalVisualNonOverlap(g){
 const __hexGarbageApplyContinuousRestsBeforeFinalContact=hexGarbageApplyContinuousRests;
 hexGarbageApplyContinuousRests=function(g){
     const result=__hexGarbageApplyContinuousRestsBeforeFinalContact(g);
+    hexEnforceFinalVisualNonOverlap(g);
+    return result;
+};
+
+// app-48 calls the rest authority from inside both of these functions. Wrap the
+// fully composed app-48 versions as the outermost production boundary too, so
+// the invariant continues to hold after the garbage rest markers disappear and
+// ordinary SETTLE motion resumes.
+const __hexUpdateVisualsBeforeGlobalFinalContact=updateVisuals;
+updateVisuals=function(g,dt){
+    const result=__hexUpdateVisualsBeforeGlobalFinalContact(g,dt);
+    hexEnforceFinalVisualNonOverlap(g);
+    return result;
+};
+
+const __hexResolveVisualContactsBeforeGlobalFinalContact=resolveVisualContacts;
+resolveVisualContacts=function(g){
+    const result=__hexResolveVisualContactsBeforeGlobalFinalContact(g);
     hexEnforceFinalVisualNonOverlap(g);
     return result;
 };
