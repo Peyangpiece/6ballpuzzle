@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Diagnose rigid group versus settled garbage contact
-        run: node tests/seed19-step1539-rigid-garbage-contact.js
+      - name: Track seed19 continuous legality
+        run: node tests/seed19-continuous-legality-diagnostic.js
