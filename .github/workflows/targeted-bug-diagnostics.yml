@@ -15,3 +15,4 @@ jobs:
         with:
           node-version: '22'
       - run: node tests/audit-targeted-first-failures.js
+      - run: node tests/seed7-step3414-parallel-pile-contact.js
