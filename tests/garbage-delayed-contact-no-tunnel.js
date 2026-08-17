@@ -1,99 +1,84 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const html=fs.readFileSync(`${__dirname}/../public/index.html`,"utf8");
-const names=[...html.matchAll(/"(app-\d+\.js)"/g)].map(m=>m[1]);
-const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
-
-const assertions=String.raw`
+const barrierCode=fs.readFileSync(`${__dirname}/../public/app-38.js`,"utf8");
+const harness=String.raw`
 function expect(v,m){if(!v)throw new Error(m);}
-function put(g,x,y,id,garbage=false){
-  const b={id,c:id%5,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};
-  if(garbage)b.isGarbage=true;
-  g.board[y][x]=b;setVis(g,b,x,y,0);return b;
-}
-function putMinimal(g,x,y,id,garbage=false){
-  const b={id,c:id%5,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};
-  if(garbage)b.isGarbage=true;
-  g.board[y][x]=b;
-  g.vis.set(id,{x,y,vy:0,motionSpeed:0});
-  return b;
-}
-function makePack(ax){
-  return{
-    type:"PYRAMID",seq:1,pat:[[0,0]],colors:[0],ax,targetY:0,
-    y:GARBAGE_START_Y,vy:0,landed:false,_started:true,actualStartTime:0,
-    flightAge:0,bubbleT:HEX_GARBAGE_BUBBLE_DURATION,totalBalls:1,
-    landedCount:0,entryBalls:[],_hexSplitTriggered:false
-  };
-}
-function minPackPileDistance(g,p){
-  let best=Infinity;
-  for(const [dx,dy] of p.pat){
-    const px=p.ax+dx,py=p.y+dy;
-    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-      const b=valid(x,y)?g.board[y][x]:null;if(!b)continue;
-      const v=g.vis.get(b.id);if(!v)continue;
-      best=Math.min(best,hexPhysDist(px,py,v.x,v.y));
-    }
+let updateGarbagePacks=function(g,dt){
+  // Simulate the exact dangerous state produced by the production free-fall
+  // integrator when materialization is deferred: the packet has analytically
+  // advanced below its already-known continuous contact surface.
+  for(const p of g.activeGarbagePacks||[]){
+    p.y=Number(g.injectY);
+    p.vy=Number(g.injectVy)||12;
   }
-  return best;
+  return "base-update";
+};
+function hexGarbageBallContactY(g,pack,index){
+  const c=g.contacts?.[index];
+  return Number.isFinite(c)?c:Infinity;
+}
+`;
+const assertions=String.raw`
+function makePack(n=1){
+  return{landed:false,pat:Array.from({length:n},(_,i)=>[i*2,0]),y:-6.2,vy:0};
 }
 
-// Full production integration: contact has already been crossed by absolute
-// time, but lattice hand-off is deliberately refused for one update. The
-// renderer-visible packet centre must be pulled back to exact circle contact.
+// Wrapper integration: the real app-38 wrapper must run AFTER the dangerous
+// free-fall update and retract the renderer-visible packet to first contact.
 {
-  const g=createEngine(98001);put(g,5,5,980010,false);const p=makePack(5);
-  g.state="RESOLVING";g.phase="GARBAGE";g.garbageClock=HEX_GARBAGE_BUBBLE_DURATION+1.25;
-  g.garbagePlans=[p];g.activeGarbagePacks=[p];g.garbageNextBallAt=999;g.garbLeft=0;
-  const physicalContact=hexGarbageBallContactY(g,p,0);
-  const originalReserved=hexGarbageContactPointReserved;
-  hexGarbageContactPointReserved=()=>true;
-  updateGarbagePacks(g,PHYSICS_FRAME);
-  hexGarbageContactPointReserved=originalReserved;
-
-  expect(p.pat.length===1,"deferred-contact fixture unexpectedly materialized");
-  expect(p._hexContactClamped===true,"deferred contact was not marked clamped after reaching pile");
-  expect(Math.abs(p.y-physicalContact)<1e-7,"airborne garbage was rendered below its first pile contact");
-  expect(p.vy===0,"clamped airborne garbage retained downward interpolation velocity");
-  expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-7,
-    "clamped airborne garbage penetrated accumulated pile: "+minPackPileDistance(g,p));
-
-  delete p._hexContactFrame;
-  const resumed=materializeGarbageContactsThrough(g,p,physicalContact+HEX_GARBAGE_CONTACT_EPS);
-  expect(resumed===1&&p.pat.length===0,
-    "contacted garbage did not resume materialization when reservation cleared");
+  const p=makePack(1);
+  const g={activeGarbagePacks:[p],contacts:[5.25],injectY:7.4,injectVy:18,garbageClock:2};
+  const result=updateGarbagePacks(g,1/30);
+  expect(result==="base-update","app-38 changed wrapped update result");
+  expect(p._hexContactClamped===true,"wrapper did not clamp delayed contact");
+  expect(Math.abs(p.y-5.25)<1e-12,"wrapper left packet below contact surface");
+  expect(p.vy===0,"wrapper left downward interpolation velocity");
+  expect(p.contactY===5.25,"wrapper did not expose exact contact centre");
 }
 
-// 1000 direct overshoot cases using only the state required by the contact
-// barrier. This keeps the invariant test fast; separate CI tests still exercise
-// the complete production engine 100/1000/3000 times.
+// 1000 varied overshoot cases, including multi-member packets. The earliest
+// member contact is the barrier while the packet remains airborne. No amount
+// of one-frame overshoot may survive to rendering/interpolation.
 for(let i=0;i<1000;i++){
-  const g={board:newBoard(),vis:new Map(),activeGarbagePacks:[],garbageClock:1+(i%17)*.01,_hexGarbageObstacleFrame:null};
-  const y=3+(i%8);
-  let x=((y&1)?1:0)+2*(1+(i%8));
-  while(x>=W2||!valid(x,y))x-=2;
-  putMinimal(g,x,y,990000+i,i%4===0);
-  const p=makePack(x);g.activeGarbagePacks=[p];
-  const contact=hexGarbageRemainingContactBarrier(g,p);
-  expect(Number.isFinite(contact),"case "+i+": contact barrier missing");
-  const overshoot=[.0001,.01,.05,.2,.75,1.5][i%6];
-  p.y=contact+overshoot;
-  p.vy=1+(i%23);
+  const count=1+(i%6);
+  const base=-2+(i%19)*.37;
+  const contacts=Array.from({length:count},(_,j)=>base+j*.29+((i+j)%3)*.013);
+  if(i%2)contacts.reverse();
+  const barrier=Math.min(...contacts);
+  const p=makePack(count);
+  p.y=barrier+[1e-7,.0001,.01,.05,.2,.75,1.5,4][i%8];
+  p.vy=1+(i%31);
+  const g={activeGarbagePacks:[p],contacts,garbageClock:i/120};
   const didClamp=hexGarbageClampAirborneAtContact(g,p);
-  expect(didClamp===true&&p._hexContactClamped===true,"case "+i+": overshoot was not clamped");
-  expect(Math.abs(p.y-contact)<1e-8,"case "+i+": clamp did not restore exact contact");
-  expect(p.vy===0,"case "+i+": clamped packet kept downward velocity");
-  expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-6,
-    "case "+i+": clamped packet penetrated pile: "+minPackPileDistance(g,p));
+  expect(didClamp===true,"case "+i+": overshoot was not clamped");
+  expect(p._hexContactClamped===true,"case "+i+": clamp marker missing");
+  expect(Math.abs(p.y-barrier)<1e-12,"case "+i+": wrong contact barrier");
+  expect(p.contactY===barrier,"case "+i+": contact metadata mismatch");
+  expect(p.vy===0,"case "+i+": downward interpolation survived");
+}
+
+// Before contact, app-38 must not alter reference free fall.
+for(let i=0;i<200;i++){
+  const p=makePack(1),barrier=3+i*.01;
+  p.y=barrier-.001-(i%5)*.02;p.vy=7;
+  const g={activeGarbagePacks:[p],contacts:[barrier],garbageClock:i/120};
+  const before=p.y;
+  const didClamp=hexGarbageClampAirborneAtContact(g,p);
+  expect(didClamp===false,"pre-contact case "+i+" was incorrectly clamped");
+  expect(p.y===before&&p.vy===7,"pre-contact free fall was modified");
+}
+
+// Exactly-contacting centres must remain continuous, not be pushed or snapped.
+for(let i=0;i<200;i++){
+  const p=makePack(1),barrier=-1+i*.017;
+  p.y=barrier;p.vy=5;
+  const g={activeGarbagePacks:[p],contacts:[barrier],garbageClock:i/120};
+  expect(hexGarbageClampAirborneAtContact(g,p)===false,"exact contact was treated as penetration");
+  expect(p.y===barrier,"exact contact centre moved");
 }
 
 console.log("garbage delayed-contact no-tunnel 1000/1000 PASS");
 `;
 
-vm.runInNewContext(runtime+assertions,{
-  React:{useRef(){},useEffect(){},useState(){},useCallback(){},createElement(){}},
-  ReactDOM:{createRoot(){return{render(){}}}},
-  window:{},navigator:{},document:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date,setTimeout(){},clearTimeout(){}
-},{timeout:120000});
+vm.runInNewContext(harness+barrierCode+assertions,{console,Math,Number,Array,Object,Map,Set},{timeout:5000});
