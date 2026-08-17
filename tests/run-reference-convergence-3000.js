@@ -4,10 +4,16 @@ const cp=require("child_process");
 
 const sourcePath=path.join(__dirname,"reference-convergence-3000.js");
 const tmpPath=path.join(__dirname,".reference-convergence-3000-production-frame.js");
+const indexPath=path.join(__dirname,"../public/index.html");
 let source=fs.readFileSync(sourcePath,"utf8");
 
+// Always execute the exact production app stack from index.html. Keeping a
+// separate hard-coded test list let later correction layers be deployed without
+// taking part in the convergence suite.
+const productionNames=[...fs.readFileSync(indexPath,"utf8").matchAll(/"(app-\d+\.js)"/g)].map(m=>m[1]);
+if(!productionNames.length||!productionNames.includes("app-01.js"))throw new Error("could not derive production app runtime from public/index.html");
 const oldNames='const names=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js"];';
-const newNames='const names=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js","app-18.js","app-19.js","app-20.js","app-21.js","app-22.js","app-23.js","app-24.js","app-25.js","app-26.js","app-27.js","app-28.js","app-29.js","app-30.js","app-31.js","app-32.js","app-33.js","app-34.js","app-35.js"];';
+const newNames=`const names=[${productionNames.map(n=>JSON.stringify(n)).join(",")}];`;
 const oldRound3='while(t<2.5&&!g.activeGarbagePacks[0]?.landed){updateGarbagePacks(g,PHYSICS_FRAME);t+=PHYSICS_FRAME;}';
 const newRound3='while(t<2.5&&!g.activeGarbagePacks[0]?.landed){updateGarbagePacks(g,PHYSICS_FRAME);updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);t+=PHYSICS_FRAME;}';
 
