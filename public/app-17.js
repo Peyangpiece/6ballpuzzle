@@ -39,42 +39,31 @@ function Matching({ onMatched, onCancel, onError }) {
 // integrator four times for every 120 Hz physics tick. A PYRAMID/HEXAGON chain
 // therefore consumed enough main-thread time to make the *other* player's
 // ordinary active triplet look frozen even though its logical engine was fine.
-//
-// The collision guard already sweeps each 1/120 s segment continuously with
-// 12-48 samples, so repeating the complete board scan four times is redundant
-// specifically during GARBAGE. Keep the exact garbage physics/cadence and run
-// one visual integration at the fixed 120 Hz step. All non-garbage phases keep
-// the validated adaptive substep policy unchanged.
 const __hexdropVisualSubstepCount=visualSubstepCount;
 visualSubstepCount=function(g){
     if(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE")return 1;
     return __hexdropVisualSubstepCount(g);
 };
 
+// Compute the active garbage lattice sequence in a single board scan. This is
+// called several times in a GARBAGE frame, so avoid the previous double scan.
 function __hexdropGarbageMotionQueue(g){
     let minSeq=Infinity;
-    const queued=new Set();
+    const queued=new Set(),entries=[];
     if(!g||g.state!=="RESOLVING"||g.phase!=="GARBAGE")return{minSeq,queued};
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const ball=valid(x,y)?g.board[y][x]:null;
         const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
         const seq=Number(seg?.motionSeq)||0;
-        if(seq>0)minSeq=Math.min(minSeq,seq);
+        if(seq>0){entries.push({id:ball.id,isGarbage:!!ball.isGarbage,seq});minSeq=Math.min(minSeq,seq);}
     }
-    if(!Number.isFinite(minSeq))return{minSeq,queued};
-    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-        const ball=valid(x,y)?g.board[y][x]:null;
-        if(!ball?.isGarbage||!Array.isArray(ball.fallPath)||!ball.fallPath.length)continue;
-        const seq=Number(ball.fallPath[0]?.motionSeq)||0;
-        if(seq>minSeq)queued.add(ball.id);
-    }
+    if(Number.isFinite(minSeq))for(const e of entries)if(e.isGarbage&&e.seq>minSeq)queued.add(e.id);
     return{minSeq,queued};
 }
 
-// Logical garbage settling assigns a strict motionSeq to every lattice move.
-// Later sequences must not start while an earlier sequence is still crossing
-// the same cells. Freeze only queued, already-gridified garbage; airborne
-// siblings are not board balls and are therefore untouched by this gate.
+// Later logical sequences remain visually stationary until the currently
+// earliest lattice move has completed. Only already-gridified garbage is held;
+// airborne siblings are not board balls and continue their free fall.
 const __hexdropUpdateVisualsBeforeGarbageQueueGate=updateVisuals;
 updateVisuals=function(g,dt){
     const {queued}=__hexdropGarbageMotionQueue(g);
@@ -114,16 +103,38 @@ updateVisuals=function(g,dt){
     }
 };
 
-// A queued garbage ball is a fixed waiting obstacle, not an active mover.
-// Without this guard the final contact projection gradually pushed the waiting
-// ball away from its safe hand-off point even though updateVisuals restored it
-// every frame. Temporarily classify every non-queued board ball as movable and
-// queued balls as immovable, then restore the normal motion metadata. This
-// makes the active/earlier ball avoid the queue rather than displacing it.
+// Queued garbage is a fixed waiting obstacle. A garbage ball whose lattice path
+// has fully completed is also fixed once its rendered Y has reached the logical
+// row: its X is restored to the exact lattice centre and may no longer accumulate
+// horizontal drift from later contact projections. Active/earlier balls absorb
+// the correction instead. This preserves the rule that gridified balls never
+// overlap while avoiding any upward Y correction.
 const __hexdropResolveVisualContactsBeforeGarbageQueueGate=resolveVisualContacts;
 resolveVisualContacts=function(g){
     const {queued}=__hexdropGarbageMotionQueue(g);
-    if(!queued.size){
+    const settled=new Set();
+
+    if(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"){
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            if(!ball?.isGarbage||Array.isArray(ball.fallPath)&&ball.fallPath.length)continue;
+            const v=g.vis.get(ball.id);
+            if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
+            // Only lock a ball that has physically reached its final lattice row.
+            // If it is still above the row, updateVisuals may continue its natural
+            // downward catch-up; if it somehow lies below, never pull it upward.
+            if(Math.abs(v.y-y)<=.02){
+                v.x=x;
+                if(v.y<=y+1e-9)v.y=y;
+                v.vy=0;
+                v.motionSpeed=0;
+                settled.add(ball.id);
+            }
+        }
+    }
+
+    const fixed=new Set([...queued,...settled]);
+    if(!fixed.size){
         __hexdropResolveVisualContactsBeforeGarbageQueueGate(g);
         return;
     }
@@ -136,7 +147,7 @@ resolveVisualContacts=function(g){
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const ball=valid(x,y)?g.board[y][x]:null;
         if(!ball)continue;
-        if(queued.has(ball.id)){
+        if(fixed.has(ball.id)){
             const v=g.vis.get(ball.id);
             if(v)heldVisual.push({v,snapshot:{...v}});
             savedPaths.push({ball,path:ball.fallPath});
@@ -149,9 +160,8 @@ resolveVisualContacts=function(g){
     g._visualMovingIds=forcedMoving;
     __hexdropResolveVisualContactsBeforeGarbageQueueGate(g);
 
-    // The generic solver splits stationary/stationary penetration. Restore the
-    // queued centers exactly so even a queued/queued numerical contact cannot
-    // cause queue drift; non-queued balls keep their projected correction.
+    // Generic stationary/stationary projection would split the correction.
+    // Restore fixed garbage exactly; all non-fixed balls keep their projection.
     for(const h of heldVisual){
         for(const k of Object.keys(h.v))delete h.v[k];
         Object.assign(h.v,h.snapshot);
