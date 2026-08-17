@@ -1,0 +1,59 @@
+name: Physics Regression Report
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'tests/**'
+      - '!audit-results/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run regression gates
+        id: tests
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          : > audit-results/latest.log
+          node tests/verify-known-bugs.js >> audit-results/latest.log 2>&1
+          targeted=$?
+          node tests/audit-lock-rigidity.js 1 12 20 >> audit-results/latest.log 2>&1
+          rigidity=$?
+          node tests/audit-garbage-scheduling.js 1 8 20 >> audit-results/latest.log 2>&1
+          scheduling=$?
+          node tests/audit-live-shard.js 7 2 22 >> audit-results/latest.log 2>&1
+          live=$?
+          printf '{"sha":"%s","targeted":%s,"rigidity":%s,"scheduling":%s,"live":%s}\n' "$GITHUB_SHA" "$targeted" "$rigidity" "$scheduling" "$live" > audit-results/latest.json
+          echo "targeted=$targeted" >> "$GITHUB_OUTPUT"
+          echo "rigidity=$rigidity" >> "$GITHUB_OUTPUT"
+          echo "scheduling=$scheduling" >> "$GITHUB_OUTPUT"
+          echo "live=$live" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Commit report
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add audit-results/latest.json audit-results/latest.log
+          git diff --cached --quiet || git commit -m "Record physics regression report [skip ci]"
+          git push
+      - name: Enforce gates
+        shell: bash
+        run: |
+          test "${{ steps.tests.outputs.targeted }}" = "0"
+          test "${{ steps.tests.outputs.rigidity }}" = "0"
+          test "${{ steps.tests.outputs.scheduling }}" = "0"
+          test "${{ steps.tests.outputs.live }}" = "0"
