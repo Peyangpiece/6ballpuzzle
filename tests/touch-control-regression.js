@@ -80,4 +80,27 @@ function fresh(){
   assert(g.fastForward===false,'second pointer incorrectly triggered fast fall');
 }
 
+// Browser/OS pointer cancellation is not a gameplay command.
+{
+  const g=fresh(),cv=canvas();
+  dispatch('pointerdown',ev(6,cv,(ctx.VW||1280)*.5,(ctx.VH||720)*.9));
+  dispatch('pointercancel',ev(6,cv,(ctx.VW||1280)*.5,(ctx.VH||720)*.9));
+  assert(g.state==='PLAYING'&&!!g.piece,'pointercancel incorrectly instant-dropped');
+  assert(g.fastForward===false,'pointercancel left fast fall active');
+}
+
+// During the NEW match READY phase, an older PLAYING engine must never receive
+// input. The newest local human engine owns the canvas even before it becomes
+// PLAYING. Remote NET engines and CPU engines do not own local touch input.
+{
+  const old=fresh(),oldPiece={...old.piece};
+  const current=ctx.createEngine(778); // READY, newest local human engine
+  const cv=canvas();
+  dispatch('pointerdown',ev(7,cv,(ctx.VW||1280)*.5,(ctx.VH||720)*.9));
+  dispatch('pointerup',ev(7,cv,(ctx.VW||1280)*.5,(ctx.VH||720)*.9));
+  assert(old.state==='PLAYING'&&!!old.piece,'READY input leaked into stale previous engine');
+  assert(old.piece.x===oldPiece.x&&old.piece.y===oldPiece.y&&old.piece.rot===oldPiece.rot,'stale previous engine changed during new READY');
+  assert(current.state==='READY','test current engine unexpectedly changed state');
+}
+
 console.log('TOUCH_CONTROL_REGRESSION PASS');
