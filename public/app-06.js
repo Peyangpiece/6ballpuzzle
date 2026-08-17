@@ -31,9 +31,6 @@ function prepareGarbageBatch(g){
             g.incomingShapes.unshift(...pending.slice(i));
             break;
         }
-        // Never splice the canonical GARBAGE_SHAPES array. Each launched packet
-        // owns its own mutable slot/color arrays because contacted balls are
-        // removed one at a time while their siblings remain airborne.
         const packet={
             ...plan,
             pat:plan.pat.map(([dx,dy])=>[dx,dy]),
@@ -93,10 +90,6 @@ function hexGarbageEntryAnchor(g,pack,requireVisual=true){
     return null;
 }
 
-// Emergency compatibility path used only by the watchdog. It intentionally
-// releases at most one still-airborne ball per call. Returning true means the
-// packet has become completely materialized; partial release returns false so
-// the watchdog can never mark the whole packet landed after one contact.
 function materializeGarbagePack(g,pack,atEntry=false){
     if(!pack?.pat?.length){pack.landed=true;return true;}
     const index=0,[dx,dy]=pack.pat[index];
@@ -115,9 +108,6 @@ function hexGarbageBoardBallById(g,id){
     return null;
 }
 
-// Continuous contact limit for one airborne ball, expressed as the packet's
-// anchor Y. Only a real non-garbage board pile and the floor can trigger the
-// airborne->lattice hand-off. Garbage touching garbage remains pure free fall.
 function hexGarbageBallContactY(g,pack,index){
     if(!pack?.pat?.[index])return Infinity;
     const [dx,dy]=pack.pat[index],px=pack.ax+dx,H=HEX_ROW_H;
@@ -134,7 +124,6 @@ function hexGarbageBallContactY(g,pack,index){
     return limit;
 }
 
-// Compatibility helper: earliest qualifying contact among still-airborne balls.
 function hexGarbageFlightContactY(g,pack){
     if(!pack?.pat?.length)return Infinity;
     let limit=Infinity;
@@ -167,10 +156,13 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     ball.rigid=false;
     g.board[cell.y][cell.x]=ball;noteBoardCell(g.board,cell.y,ball);
 
-    // Preserve the exact continuous collision point and downward velocity.
-    // The logical cell only selects the lattice lane; ordinary pile physics
-    // takes over from this visual contact coordinate on the same frame.
-    setVis(g,ball,cell.x,visualY,Math.max(0,(pack.vy||0)/HEX_ROW_H));
+    // Airborne garbage is allowed to pass through garbage, but the instant a
+    // ball becomes a lattice ball it re-enters the strict no-overlap world.
+    // Keep the exact physical contact coordinate when it is already safe;
+    // otherwise hand that one ball off at its legal lattice centre. Siblings
+    // remain airborne and are not moved or gridified by this correction.
+    const handoffY=visualPointSafe(g,-1,cell.x,visualY,HEX_MIN_DIST)?visualY:cell.y;
+    setVis(g,ball,cell.x,handoffY,Math.max(0,(pack.vy||0)/HEX_ROW_H));
     const v=g.vis.get(ball.id);
     if(v){
         v.motionSpeed=Math.max(RELEASE_INITIAL_VY,pack.vy||0);
@@ -179,13 +171,11 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     }
 
     if(!Array.isArray(pack.entryBalls))pack.entryBalls=[];
-    pack.entryBalls.push({id:ball.id,c:ball.c,x:cell.x,y:cell.y,contactY:visualY});
+    pack.entryBalls.push({id:ball.id,c:ball.c,x:cell.x,y:cell.y,contactY:visualY,handoffY});
     pack.entryY=cell.y;
     pack.lastReleaseTime=g.garbageClock;
     pack.landedCount=(pack.landedCount||0)+1;
 
-    // Remove only this physical ball from the airborne packet. The remaining
-    // slots retain their own offsets and keep falling independently.
     pack.pat.splice(index,1);
     pack.colors.splice(index,1);
 
@@ -199,9 +189,6 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     return true;
 }
 
-// At most ONE ball from a packet may cross into lattice physics in a single
-// 120 Hz physics frame. This is the key invariant: a contacted ball can never
-// cause a same-frame cascade that gridifies untouched siblings.
 function materializeGarbageContactsThrough(g,pack,desiredY){
     if(!pack?.pat?.length)return 0;
     let hitIndex=-1,hitY=Infinity;
@@ -213,8 +200,6 @@ function materializeGarbageContactsThrough(g,pack,desiredY){
     return materializeGarbageBallAtContact(g,pack,hitIndex,hitY)?1:0;
 }
 
-// Compatibility name retained for tests/older callers. It no longer releases
-// a whole packet: at most one qualifying ball is materialized per call.
 function materializeGarbagePackAtContact(g,pack){
     const before=pack?.pat?.length||0;
     materializeGarbageContactsThrough(g,pack,pack?.y??GARBAGE_START_Y);
@@ -231,8 +216,6 @@ function updateGarbagePacks(g,dt){
     }
     if(releasedBubble&&settlePass(g.board))g.ver++;
 
-    // Reference cadence: complete PYRAMID/HEXAGON packets (or the STRAIGHT
-    // sheet) launch every 0.5 s. A frame hitch never releases two packets at once.
     const next=g.garbagePlans.find(p=>!p._started);
     if(next&&g.garbageClock+1e-9>=g.garbageNextBallAt){
         const scheduledStart=g.garbageNextBallAt;
@@ -254,9 +237,6 @@ function updateGarbagePacks(g,dt){
         p.bubbleT=Math.max(0,g.garbageClock-(p.actualStartTime||0));
         if(p.bubbleT+1e-9<HEX_GARBAGE_BUBBLE_DURATION){p.y=GARBAGE_START_Y;p.vy=0;continue;}
 
-        // Every still-airborne ball shares the source packet's absolute-time
-        // free fall until its own qualifying pile/floor contact. One contacted
-        // ball never clamps the Y position of its siblings.
         const flightAge=Math.max(0,p.bubbleT-HEX_GARBAGE_BUBBLE_DURATION);
         p.flightAge=flightAge;
         const desiredY=GARBAGE_START_Y+(HEX_GARBAGE_FLIGHT_V0*flightAge+.5*GRAV*flightAge*flightAge)/HEX_ROW_H;
@@ -267,8 +247,6 @@ function updateGarbagePacks(g,dt){
         if(!p.pat.length){p.landed=true;p.releaseTime=g.garbageClock;}
     }
 
-    // Any ball that individually crossed into the lattice is now ordinary
-    // independent board physics. Airborne siblings remain non-obstacles.
     if(pendingFallPathCount(g)===0&&hasLegalGravityMove(g.board)){
         if(settlePass(g.board))g.ver++;
     }
@@ -293,9 +271,6 @@ function garbageBatchDone(g){
 }
 function finishGarbageVisuals(g){}
 
-/* Continuous render-space collision guard. There is no moving-vs-moving
- * exemption: every rendered board center must remain at least one diameter apart.
- */
 function visualPointSafe(g,id,x,y,minDist=0.999999){
     const maxVisualRowY=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H;
     if(y>maxVisualRowY+1e-7)return false;
