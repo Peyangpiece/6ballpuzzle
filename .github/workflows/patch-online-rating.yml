@@ -1,0 +1,47 @@
+name: Patch Online Rating
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/patch-online-rating-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Patch finish rating wiring
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('public/app-16.js')
+          lines=p.read_text().splitlines()
+          idx=[i for i,l in enumerate(lines) if l.startswith('const finish = useCallback((win) =>')]
+          if len(idx)!=1:
+              raise SystemExit(f'expected exactly one finish line, found {len(idx)}')
+          i=idx[0]
+          old=lines[i]
+          if 'delta: 0' not in old or 'Net.applyRating' in old:
+              raise SystemExit('finish line no longer matches expected unrated implementation')
+          lines[i]='''const finish = useCallback((win) => {const me=meRef.current,foe=foeRef.current;if(win&&me)me.matchFrozen=true;if(!win&&foe)foe.matchFrozen=true;Sfx.play({ t: win ? "win" : "lose" }, 1);const { mode: m, opp: o, rating: r } = stateRef.current;const match = matchRef.current;setTimeout(async () => {let delta=0;if (m === "ONLINE" && match) {try {const foeRating=Number(match.opponent?.rating ?? o?.rating ?? r) || 1000;delta=await Net.applyRating(win,foeRating,match.ranked !== false);setRating(Net.profile.rating);setRecord({w:Net.profile.wins,l:Net.profile.losses});} catch (e) {console.warn("rating update failed",e);}setResult({ win, delta });match.leave();matchRef.current = null;} else {setResult({ win, delta: 0 });}setScreen("RESULT");}, RESULT_REVEAL_DELAY_MS);}, []);'''
+          p.write_text('\n'.join(lines)+'\n')
+          PY
+          node --check public/app-16.js
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git pull --rebase origin main
+          git add public/app-16.js
+          git diff --cached --quiet || git commit -m "Wire online match results into rating"
+          git push
