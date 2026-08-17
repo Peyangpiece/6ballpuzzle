@@ -16,7 +16,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           set -e
-          for f in public/app-*.js public/controls-*.js tests/run-*.js; do
+          for f in public/app-*.js public/controls-*.js tests/run-*.js tests/garbage-delayed-contact-no-tunnel.js; do
             node --check "$f"
           done
       - name: Check exact concatenated production runtime syntax
@@ -26,7 +26,7 @@ jobs:
           const fs=require('fs');
           const html=fs.readFileSync('public/index.html','utf8');
           const files=[...html.matchAll(/"(app-\d+\.js|controls-v\d+\.js)"/g)].map(m=>m[1]);
-          if(!files.length||files[0]!=='app-01.js'||!files.includes('app-36.js')||files.at(-1)!=='controls-v7.js'){
+          if(!files.length||files[0]!=='app-01.js'||!files.includes('app-38.js')||files.at(-1)!=='controls-v7.js'){
             throw new Error('could not derive exact production runtime from public/index.html');
           }
           fs.writeFileSync('/tmp/hexdrop-runtime.js',files.map(f=>fs.readFileSync('public/'+f,'utf8')).join('\n'));
@@ -58,6 +58,10 @@ jobs:
           node /tmp/floor-test.js
       - name: Check airborne garbage pass-through
         run: node tests/garbage-airborne-pass-through.js
+      - name: Check garbage versus accumulated pile collision
+        run: node tests/garbage-pile-collision-regressions.js
+      - name: Check delayed garbage contact no-tunnel 1000-pass
+        run: node tests/garbage-delayed-contact-no-tunnel.js
       - name: Check rigidity and garbage regressions
         run: node tests/physics-regressions.js
       - name: Check rotation regressions
@@ -137,12 +141,16 @@ jobs:
           grep -q 'hexWithFuturePileFlowWaitersFixed' public/app-34.js
           grep -q 'HEX_FIXED_WAITER_CONVERGENCE_CALLS=3' public/app-35.js
           grep -q 'hexClearCollapsePreflightBoard' public/app-36.js
+          grep -q 'hexGarbageObstacleIsAccumulatedPile' public/app-37.js
+          grep -q 'hexGarbageClampAllAirborneAtContacts' public/app-38.js
           grep -q 'app-20.js' public/index.html
           grep -q 'app-21.js' public/index.html
           grep -q 'app-22.js' public/index.html
           grep -q 'app-34.js' public/index.html
           grep -q 'app-35.js' public/index.html
           grep -q 'app-36.js' public/index.html
+          grep -q 'app-37.js' public/index.html
+          grep -q 'app-38.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q 'loadCurrentGameBuild' public/index.html
           grep -q 'Date.now().toString(36)' public/index.html
