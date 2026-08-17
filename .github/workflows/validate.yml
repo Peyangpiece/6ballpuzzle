@@ -26,7 +26,7 @@ jobs:
           const fs=require('fs');
           const html=fs.readFileSync('public/index.html','utf8');
           const files=[...html.matchAll(/"(app-\d+\.js|controls-v\d+\.js)"/g)].map(m=>m[1]);
-          if(!files.length||files[0]!=='app-01.js'||!files.includes('app-35.js')||files.at(-1)!=='controls-v7.js'){
+          if(!files.length||files[0]!=='app-01.js'||!files.includes('app-36.js')||files.at(-1)!=='controls-v7.js'){
             throw new Error('could not derive exact production runtime from public/index.html');
           }
           fs.writeFileSync('/tmp/hexdrop-runtime.js',files.map(f=>fs.readFileSync('public/'+f,'utf8')).join('\n'));
@@ -64,6 +64,8 @@ jobs:
         run: node tests/rotation-regressions.js
       - name: Check gravity pile-flow regressions
         run: node tests/gravity-pile-flow-regressions.js
+      - name: Check post-clear cavity collapse regressions
+        run: node tests/clear-hole-collapse-regressions.js
       - name: Check garbage performance regressions
         run: node tests/garbage-performance-regressions.js
       - name: Check 50-point reference fidelity on production stack
@@ -134,11 +136,13 @@ jobs:
           grep -q 'hexGarbageBuildObstacleFrame' public/app-22.js
           grep -q 'hexWithFuturePileFlowWaitersFixed' public/app-34.js
           grep -q 'HEX_FIXED_WAITER_CONVERGENCE_CALLS=3' public/app-35.js
+          grep -q 'hexClearCollapsePreflightBoard' public/app-36.js
           grep -q 'app-20.js' public/index.html
           grep -q 'app-21.js' public/index.html
           grep -q 'app-22.js' public/index.html
           grep -q 'app-34.js' public/index.html
           grep -q 'app-35.js' public/index.html
+          grep -q 'app-36.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q 'loadCurrentGameBuild' public/index.html
           grep -q 'Date.now().toString(36)' public/index.html
