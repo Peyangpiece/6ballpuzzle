@@ -38,7 +38,12 @@
         const list=window.__hexEnginesV7||[];
         for(let i=list.length-1;i>=0;i--){
             const g=list[i];
-            if(g&&g.state==="PLAYING"&&g.piece&&!g.ai)return g;
+            // CPU boards and NET mirror boards never own local touch. The
+            // newest remaining local-human engine owns this canvas even while
+            // READY; if it is not PLAYING yet, input is disabled instead of
+            // leaking into an older match that is still left in PLAYING.
+            if(!g||g.ai||g.state==="NET")continue;
+            return g.state==="PLAYING"&&g.piece?g:null;
         }
         return null;
     };
