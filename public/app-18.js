@@ -153,7 +153,16 @@ updateScheduledPileFlowVisual=function(g,cell,v,dt){
     const seg=path[0];
     if(!seg?.pileFlow)return false;
     const oldX=v.x,oldY=v.y;
-    if(g.pileFlowClock<seg.pileFlowStart)return true;
+    if(g.pileFlowClock<seg.pileFlowStart){
+        // A newly scheduled segment may wait for another ball while its visual
+        // centre is already only a few floating-point units from seg.from.
+        // Hold it on the exact tangent lattice point during that wait.
+        const held=hexSnapPileFlowEndpoint(seg,[v.x,v.y],oldY);
+        v.x=held[0];
+        v.y=Math.max(oldY,held[1]);
+        if(v.x!==oldX||v.y!==oldY){v.vy=0;v.motionSpeed=0;}
+        return true;
+    }
     const q=(g.pileFlowClock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration);
     let point=pileFlowPointForBall(g,cell,seg,q,g.pileFlowClock);
     point=hexSnapPileFlowEndpoint(seg,point,oldY);
