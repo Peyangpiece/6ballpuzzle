@@ -1,7 +1,7 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js"]
+const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js"]
   .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const assertions=String.raw`
