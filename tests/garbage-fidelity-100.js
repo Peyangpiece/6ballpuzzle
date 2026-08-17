@@ -4,7 +4,7 @@ const vm=require("vm");
 const read=name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8");
 const runtimeNames=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js",
-  "app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js"
+  "app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js"
 ];
 const runtime=runtimeNames.map(read).join("\n");
 
@@ -23,7 +23,7 @@ function addFlatBase(g,height,seed){
 
 function sampleFlight(seed,type,height,dt,total){
  const g=createEngine(seed);addFlatBase(g,height,seed);g.garbShapes=[type];prepareGarbageBatch(g);
- let lastY=GARBAGE_START_Y,bubbleStayed=true,monotone=true;
+ let lastY=GARBAGE_START_Y,bubbleStayed=true,monotone=true,minFlight=Infinity;
  while(g.garbageClock<total-1e-10){
   const h=Math.min(dt,total-g.garbageClock);updateGarbagePacks(g,h);
   const p=g.activeGarbagePacks[0];
@@ -31,8 +31,17 @@ function sampleFlight(seed,type,height,dt,total){
   if(p.bubbleT<=HEX_GARBAGE_BUBBLE_DURATION+1e-9&&p.y!==GARBAGE_START_Y)bubbleStayed=false;
   if(p.y+1e-10<lastY)monotone=false;
   lastY=p.y;
+  if(!p.landed&&p.bubbleT>=HEX_GARBAGE_BUBBLE_DURATION){
+   for(let i=0;i<p.pat.length;i++){
+    const [dx,dy]=p.pat[i],px=p.ax+dx,py=p.y+dy;
+    for(let j=i+1;j<p.pat.length;j++){
+     const [ex,ey]=p.pat[j];minFlight=Math.min(minFlight,hexPhysDist(px,py,p.ax+ex,p.y+ey));
+    }
+    for(const [,v] of g.vis.entries())if(v)minFlight=Math.min(minFlight,hexPhysDist(px,py,v.x,v.y));
+   }
+  }
  }
- return{g,p:g.activeGarbagePacks[0],bubbleStayed,monotone};
+ return{g,p:g.activeGarbagePacks[0],bubbleStayed,monotone,minFlight};
 }
 
 function finishFlight(seed,type,height){
@@ -84,11 +93,18 @@ for(let pass=0;pass<100;pass++){
  expect(slow.monotone&&fast.monotone,"pass "+pass+": falling packet moved upward");
  expect(close(slow.p.bubbleT,fast.p.bubbleT)&&close(slow.p.y,fast.p.y)&&close(slow.p.vy,fast.p.vy),"pass "+pass+": 30fps/120fps trajectories differ");
  expect(slow.p.pat.length===GARBAGE_SHAPES[type].length,"pass "+pass+": packet shape changed during flight");
+ if(Number.isFinite(fast.minFlight))expect(fast.minFlight>=HEX_MIN_DIST-1e-7,"pass "+pass+": airborne packet crossed another ball: "+fast.minFlight);
 
  const remote=createEngine(seed+10000);remote.state="NET";const fx=remoteFxSnapshotOf(fast.g);applySnapshot(remote,snapshotOf(fast.g),fx);applyRemoteVisualState(remote,{piece:null,fx});
- const remoteBall=(()=>{for(let y=boardScanMin(remote.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?remote.board[y][x]:null;if(b?.isGarbage)return b;}return null;})();
- const remoteY=remoteBall?remote.vis.get(remoteBall.id)?.y:null;updateVisuals(remote,1/60);
- expect(remoteBall&&Number.isFinite(remoteY)&&remote.vis.get(remoteBall.id).y>=remoteY,"pass "+pass+": opponent garbage interpolation reversed or disappeared");
+ if(fx.g.length){
+  const remotePack=remote.activeGarbagePacks[0];
+  expect(remotePack,"pass "+pass+": opponent airborne garbage disappeared");
+  const remoteY=remotePack.y;stepNetGarbageMotion(remote,1/60);
+  expect(remotePack.y+1e-10>=remoteY,"pass "+pass+": opponent airborne garbage interpolation reversed");
+ }else{
+  const remoteBall=(()=>{for(let y=boardScanMin(remote.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?remote.board[y][x]:null;if(b?.isGarbage)return b;}return null;})();
+  expect(remoteBall,"pass "+pass+": contacted opponent garbage disappeared from the board");
+ }
 
  const done=finishFlight(seed,type,height);
  expect(done.p?.landed,"pass "+pass+": garbage did not reach contact within the reference envelope");
@@ -97,7 +113,7 @@ for(let pass=0;pass<100;pass++){
  expect(done.added.length===GARBAGE_SHAPES[type].length,"pass "+pass+": materialized ball count differs from preview");
  expect(done.added.every(({ball,x,y})=>valid(x,y)&&ball.motionGroupId===0&&!ball.rigid),"pass "+pass+": contacted garbage retained rigidity or left the board");
  expect(new Set(done.added.map(({x,y})=>x+","+y)).size===done.added.length,"pass "+pass+": garbage balls overlapped at contact");
- expect(!/settleAll\s*\(/.test(materializeGarbagePack.toString()),"pass "+pass+": garbage contact invoked the blocking full solver");
+ expect(!/settleAll\s*\(/.test(materializeGarbagePack.toString())&&!/settleAll\s*\(/.test(materializeGarbagePackAtContact.toString()),"pass "+pass+": garbage contact invoked the blocking full solver");
  passes.push({pass,type,height});
 }
 
@@ -106,7 +122,8 @@ globalThis.garbagePasses=passes;
 
 const context={
  React:{useRef(){},useEffect(){},useState(){},useCallback(){},createElement(){}},
- window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date
+ window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date,
+ ReactDOM:{createRoot(){return{render(){}}}}
 };
 vm.runInNewContext(runtime+checks,context,{timeout:120000});
 if(context.garbagePasses.length!==100)throw new Error(`expected 100 passes, got ${context.garbagePasses.length}`);
