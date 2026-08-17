@@ -146,6 +146,18 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     const cell=hexGarbageSingleLogicalCell(g,x,visualY);
     if(!cell)return false;
 
+    // A logically vacated lattice cell can still be occupied by the rendered
+    // center of an earlier gridified garbage ball whose lower motionSeq has not
+    // visibly completed yet. Never spawn a second board ball into that visual
+    // center. If neither the exact contact point nor the selected lattice center
+    // has one full ball diameter of clearance, keep this ball airborne and retry
+    // on a later 120 Hz frame. This does not make garbage a collision trigger;
+    // it only prevents an unsafe airborne->lattice hand-off.
+    const contactSafe=visualPointSafe(g,-1,cell.x,visualY,HEX_MIN_DIST);
+    const centerSafe=visualPointSafe(g,-1,cell.x,cell.y,HEX_MIN_DIST);
+    if(!contactSafe&&!centerSafe)return false;
+    const handoffY=contactSafe?visualY:cell.y;
+
     clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
     const color=pack.colors[index],ball=mkBall(g,color);
     ball.isGarbage=true;
@@ -156,7 +168,6 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     ball.rigid=false;
     g.board[cell.y][cell.x]=ball;noteBoardCell(g.board,cell.y,ball);
 
-    const handoffY=visualPointSafe(g,-1,cell.x,visualY,HEX_MIN_DIST)?visualY:cell.y;
     setVis(g,ball,cell.x,handoffY,Math.max(0,(pack.vy||0)/HEX_ROW_H));
     const v=g.vis.get(ball.id);
     if(v){
@@ -177,10 +188,6 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     if(settlePass(g.board))g.ver++;
     g.ver++;
 
-    // This function is also used by the GARBAGE watchdog after the normal
-    // per-frame contact solve has already run. Resolve here as part of the
-    // atomic one-ball hand-off so every caller leaves the new lattice ball in
-    // a non-overlapping render state. Airborne siblings remain outside g.vis.
     if(typeof resolveVisualContacts==="function")resolveVisualContacts(g);
 
     if(pack.pat.length===0){
