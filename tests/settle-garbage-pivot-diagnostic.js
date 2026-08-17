@@ -4,7 +4,7 @@ const vm=require('vm');
 const names=[
   'app-01.js','app-02.js','app-03.js','app-04.js','app-05.js','app-06.js',
   'app-07.js','app-08.js','app-09.js','app-10.js','app-14.js','app-17.js',
-  'app-18.js','app-19.js','app-20.js','app-21.js','app-22.js','app-23.js','app-24.js','app-25.js','app-26.js','app-27.js','app-28.js','app-29.js','app-30.js'
+  'app-18.js','app-19.js','app-20.js','app-21.js','app-22.js','app-23.js','app-24.js','app-25.js','app-26.js','app-27.js','app-28.js','app-29.js','app-30.js','app-31.js'
 ];
 const runtime=names.map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,'utf8')).join('\n');
 
@@ -23,8 +23,6 @@ function slim(q){
  return{id:q.b.id,logical:[q.x,q.y],p:q.p,garbage:!!q.b.isGarbage,seg:s&&{
   from:s.from,to:s.to,start:s.pileFlowStart,end:s.pileFlowEnd,pivot:s.pivot,topPivot:s.topPivot,
   followSupportIds:s.followSupportIds,movingSupportId:s.movingSupportId,
-  key:typeof hexGarbageParallelWaveKey==='function'?hexGarbageParallelWaveKey(s):null,
-  rep:typeof hexGarbageParallelWaveRepresentative==='function'?(()=>{const r=hexGarbageParallelWaveRepresentative(g,q.b,s);return r&&r.ball?.id;})():null,
   gLinear:!!s._hexGravityLinear,gV0:s._hexGravityV0,gAccel:s._hexGravityAccel,gEntry:s._hexGravityEntrySpeed
  }};
 }
@@ -43,15 +41,11 @@ for(let step=0;step<=5120&&g.alive;step++){
  if(step===120*23)g.incomingShapes.push('STRAIGHT');
  if(step===120*31)g.incoming+=8;
  stepEngine(g,PHYSICS_FRAME);
- if(step===5100){
-  const pair=entries().filter(q=>q.b.id===106||q.b.id===108).map(slim);
-  console.log('PARALLEL_PAIR_5100',JSON.stringify(pair));
- }
  if(step>=5090){const q=minPair();if(q.min<worst.min)worst={min:q.min,step,pair:q.pair};}
 }
 console.log('SETTLE_PIVOT_MIN',JSON.stringify(worst));
-if(worst.min<0.9999989)throw new Error('authoritative pile-flow still overlapped in seed 19: '+JSON.stringify(worst));
-console.log('settled-garbage authoritative pile-flow diagnostic PASS');
+if(worst.min<0.9999989)throw new Error('non-accumulating contact projection still overlapped in seed 19: '+JSON.stringify(worst));
+console.log('settled-garbage non-accumulating contact projection PASS');
 `;
 const context={React:{useRef(){},useEffect(){},useState(){},useCallback(){}},window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date};
 vm.runInNewContext(runtime+probe,context,{timeout:180000});
