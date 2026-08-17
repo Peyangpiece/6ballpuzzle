@@ -3,11 +3,27 @@
  * Ignore only sub-1e-7 packing noise so the solver does not chase floating-
  * point error through already packed rows. Real penetrations, including the
  * seed-7 multi-micro-unit failures, remain above this threshold and are still
- * resolved. Do not prohibit an upward component of a genuine contact response:
- * a settled garbage ball may need to ride up a neighbour's tangent when pushed.
+ * resolved. A settled garbage ball may ride up a neighbour's tangent when
+ * genuinely pushed; only an upward component no larger than the numerical
+ * tolerance is treated as zero recoil.
  */
 const HEX_RENDER_SOLVER_EPS=1e-7;
 const HEX_RENDER_FAST_PASSES=24;
+const HEX_RENDER_UPWARD_NOISE_EPS=1e-7;
+
+const __hexRenderMoveBeforeNoiseClamp=hexRenderMoveAlongNormal;
+hexRenderMoveAlongNormal=function(q,nx,ny,amount,sign){
+    const oldY=q?.v?.y;
+    const settledGarbage=!!q?.ball?.isGarbage&&!(q.ball.fallPath?.length)&&Math.abs(q.v?.vy||0)<=1e-9&&Math.abs(q.v?.motionSpeed||0)<=1e-9;
+    __hexRenderMoveBeforeNoiseClamp(q,nx,ny,amount,sign);
+    if(!settledGarbage||!Number.isFinite(oldY)||!Number.isFinite(q?.v?.y))return;
+    const upward=oldY-q.v.y;
+    if(upward>0&&upward<=HEX_RENDER_UPWARD_NOISE_EPS){
+        q.v.y=oldY;
+        const rest=q.ball._hexGarbageContinuousRest;
+        if(rest)rest.py=cellCenterYNorm(q.v.y);
+    }
+};
 
 hexEnforceFinalVisualNonOverlap=function(g){
     const items=hexRenderBoardVisuals(g);
