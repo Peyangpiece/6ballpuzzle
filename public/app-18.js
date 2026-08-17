@@ -123,3 +123,44 @@ rotate=function(g,dir){
     }
     return false;
 };
+
+/* Pile-flow endpoint precision.
+ *
+ * Contact arcs can finish a few millionths inside an exact hex tangent because
+ * a moving-support circle projection is evaluated with floating-point trig.
+ * The logical path endpoints are exact lattice contacts. When the analytic
+ * result is already indistinguishably close to one of those endpoints, snap to
+ * that exact point. This changes no visible trajectory and prevents a nominal
+ * diameter-1 contact from becoming 0.999998... in the long overlap invariant.
+ */
+function hexSnapPileFlowEndpoint(seg,point,oldY){
+    if(!seg||!point)return point;
+    for(const ep of [seg.from,seg.to]){
+        if(!Array.isArray(ep)||ep.length<2)continue;
+        if(ep[1]<oldY-1e-9)continue; // pile visuals never move upward
+        if(pileFlowPhysicalDist(point,ep)<=1e-5)return[ep[0],ep[1]];
+    }
+    return point;
+}
+
+updateScheduledPileFlowVisual=function(g,cell,v,dt){
+    const path=Array.isArray(cell.fallPath)?cell.fallPath:null;
+    if(!path||!path.length)return false;
+    while(path.length&&path[0]?.pileFlow&&Number.isFinite(path[0].pileFlowEnd)&&g.pileFlowClock>=path[0].pileFlowEnd-1e-10){
+        v.x=path[0].to[0];v.y=path[0].to[1];path.shift();
+    }
+    if(!path.length){delete cell.fallPath;v.pileFlow=false;v.vy=0;v.motionSpeed=0;return true;}
+    const seg=path[0];
+    if(!seg?.pileFlow)return false;
+    const oldX=v.x,oldY=v.y;
+    if(g.pileFlowClock<seg.pileFlowStart)return true;
+    const q=(g.pileFlowClock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration);
+    let point=pileFlowPointForBall(g,cell,seg,q,g.pileFlowClock);
+    point=hexSnapPileFlowEndpoint(seg,point,oldY);
+    v.x=point[0];
+    v.y=Math.max(oldY,point[1]);
+    const physicalSpeed=Math.hypot((v.x-oldX)*0.5,(v.y-oldY)*HEX_ROW_H)/Math.max(1e-9,dt);
+    v.motionSpeed=physicalSpeed;
+    v.vy=Math.max(0,(v.y-oldY)/Math.max(1e-9,dt));
+    return true;
+};
