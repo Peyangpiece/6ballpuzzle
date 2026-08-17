@@ -279,3 +279,48 @@ updateGarbagePacks=function(g,dt){
     hexGarbageRestoreFixedNormalPile(fixed);
     return result;
 };
+
+/*
+ * A pile-flow path can be planned while a garbage support is still moving. In
+ * that moment repairPileFlowSegmentGeometry correctly refuses to use it as a
+ * pivot. By the time the visual segment actually starts, however, the support
+ * may already have reached its final lattice cell. Re-check diagonal downhill
+ * segments at render time and promote a newly-settled garbage ball to the true
+ * circular pivot whenever both endpoints are exactly tangent to it.
+ */
+function hexGarbageAttachLateSettledPivot(g,cell,seg){
+    if(!g||!cell||!seg?.pileFlow||seg.pivot||seg.topPivot)return false;
+    if(pileFlowSupportIds(seg).length)return false;
+    if(!seg.from||!seg.to)return false;
+    const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];
+    if(dy!==1||Math.abs(dx)!==1)return false;
+    const candidates=[[seg.from[0]+2*dx,seg.from[1]],[seg.from[0]-dx,seg.from[1]+1]];
+    for(const [px,py]of candidates){
+        if(!valid(px,py))continue;
+        const support=g.board[py][px];
+        if(!support||support===cell||!support.isGarbage||hexGarbageBallStillMoving(support))continue;
+        const d0=hexGarbageContinuousDist(seg.from,[px,py]);
+        const d1=hexGarbageContinuousDist(seg.to,[px,py]);
+        if(Math.abs(d0-1)>1e-6||Math.abs(d1-1)>1e-6)continue;
+        seg.pivot=[px,py];
+        seg.pileFlowLateGarbagePivot=true;
+        // The schedule/duration remains unchanged, but replace the old linear
+        // progress map with a gravity-shaped angular profile so geometry is a
+        // true tangent arc rather than a chord through the support.
+        delete seg._hexGravityLinear;
+        if(typeof hexBuildPileGravityArcProfile==="function"){
+            const v0=Math.max(HEX_PILE_GRAVITY_MIN_SPEED||0.35,Number(seg._hexGravityEntrySpeed)||0.35);
+            const profile=hexBuildPileGravityArcProfile(seg,v0);
+            if(profile)seg._hexGravityProfile=profile;
+        }
+        return true;
+    }
+    return false;
+}
+
+const __hexGarbageUpdateScheduledPileFlowBeforeLatePivot=updateScheduledPileFlowVisual;
+updateScheduledPileFlowVisual=function(g,cell,v,dt){
+    const seg=Array.isArray(cell?.fallPath)&&cell.fallPath.length?cell.fallPath[0]:null;
+    if(seg?.pileFlow)hexGarbageAttachLateSettledPivot(g,cell,seg);
+    return __hexGarbageUpdateScheduledPileFlowBeforeLatePivot(g,cell,v,dt);
+};
