@@ -9,10 +9,19 @@ function findBall(g,id){
  }
  return null;
 }
+function safeNatural(g,q){
+ try{const m=hexPhysNaturalMotion(g.board,q.x,q.y);return m?{kind:m.kind,tx:m.tx,ty:m.ty,pivot:m.pivot||null,topPivot:m.topPivot||null}:null;}catch(e){return{error:String(e)}}
+}
+function safeSupport(g,q){
+ try{const s=hexPhysSupportInfo(g.board,q.x,q.y);return s?{count:s.count,left:!!s.left,right:!!s.right,below:!!s.below}:null;}catch(e){return{error:String(e)}}
+}
 function stateOf(g,id){
  const q=findBall(g,id);if(!q||!q.v)return null;
  const path=Array.isArray(q.b.fallPath)?q.b.fallPath:[];
- return{id,isGarbage:!!q.b.isGarbage,logical:[q.x,q.y],visual:[q.v.x,q.v.y],vy:q.v.vy||0,speed:q.v.motionSpeed||0,path:path.length,moving:!!g._visualMovingIds?.has(id),rest:!!q.b._hexGarbageContinuousRest,relax:!!q.b._hexGarbageRelax};
+ let toLogicalSafe=null,pointLogicalSafe=null;
+ try{toLogicalSafe=visualSegmentSafe(g,id,q.v.x,q.v.y,q.x,q.y);}catch(e){toLogicalSafe='ERR:'+e;}
+ try{pointLogicalSafe=visualPointSafe(g,id,q.x,q.y);}catch(e){pointLogicalSafe='ERR:'+e;}
+ return{id,isGarbage:!!q.b.isGarbage,logical:[q.x,q.y],visual:[q.v.x,q.v.y],vy:q.v.vy||0,speed:q.v.motionSpeed||0,path:path.length,moving:!!g._visualMovingIds?.has(id),rest:!!q.b._hexGarbageContinuousRest,relax:!!q.b._hexGarbageRelax,natural:safeNatural(g,q),support:safeSupport(g,q),toLogicalSafe,pointLogicalSafe};
 }
 function neighbors(g,id){
  const q=findBall(g,id);if(!q||!q.v)return[];
@@ -21,7 +30,7 @@ function neighbors(g,id){
   const b=valid(x,y)?g.board[y][x]:null;if(!b||b.id===id)continue;
   const v=g.vis.get(b.id);if(!v)continue;
   const d=hexPhysDist(q.v.x,q.v.y,v.x,v.y);
-  if(d<1.35)out.push({id:b.id,isGarbage:!!b.isGarbage,logical:[x,y],visual:[v.x,v.y],d,vy:v.vy||0,speed:v.motionSpeed||0,path:b.fallPath?.length||0,rest:!!b._hexGarbageContinuousRest,relax:!!b._hexGarbageRelax});
+  if(d<1.5)out.push({id:b.id,isGarbage:!!b.isGarbage,logical:[x,y],visual:[v.x,v.y],d,vy:v.vy||0,speed:v.motionSpeed||0,path:b.fallPath?.length||0,rest:!!b._hexGarbageContinuousRest,relax:!!b._hexGarbageRelax});
  }
  return out.sort((a,b)=>a.d-b.d);
 }
