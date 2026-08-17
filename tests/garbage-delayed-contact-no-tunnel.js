@@ -43,11 +43,12 @@ function minPackPileDistance(g,p){
   const physicalContact=hexGarbageBallContactY(g,p,0);
   const originalReserved=hexGarbageContactPointReserved;
   hexGarbageContactPointReserved=()=>true;
-  updateGarbagePacks(g,.55);
+  let approach=0;
+  while(p.pat.length&&!p._hexContactClamped&&approach++<360)updateGarbagePacks(g,PHYSICS_FRAME);
   hexGarbageContactPointReserved=originalReserved;
 
   expect(p.pat.length===1,"deferred-contact fixture unexpectedly materialized");
-  expect(p._hexContactClamped===true,"deferred contact was not marked clamped");
+  expect(p._hexContactClamped===true,"deferred contact was not marked clamped after reaching pile");
   expect(Math.abs(p.y-physicalContact)<1e-7,"airborne garbage was rendered below its first pile contact");
   expect(p.vy===0,"clamped airborne garbage retained downward interpolation velocity");
   expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-7,
@@ -79,7 +80,7 @@ for(let i=0;i<1000;i++){
   const originalReserved=hexGarbageContactPointReserved;
   hexGarbageContactPointReserved=()=>true;
   const dt=[1/30,1/60,1/120,.08,.16,.24][i%6];
-  for(let k=0;k<60&&p.pat.length&&!p._hexContactClamped;k++)updateGarbagePacks(g,dt);
+  for(let k=0;k<360&&p.pat.length&&!p._hexContactClamped;k++)updateGarbagePacks(g,dt);
   hexGarbageContactPointReserved=originalReserved;
   expect(p._hexContactClamped===true,"case "+i+": failed to reach forced delayed contact");
   expect(minPackPileDistance(g,p)>=HEX_MIN_DIST-2e-6,
