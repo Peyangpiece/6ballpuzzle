@@ -1,7 +1,10 @@
 /* HEXDROP garbage entry + render collision guard.
  * Reference garbage packets remain a visible rigid spawn shape only until
- * their first physical contact.  After contact every ball immediately becomes
- * an ordinary independent pile ball and uses the unified solver.
+ * their first physical contact with the settled pile or the floor. Airborne
+ * garbage packets never become supports for one another; they continue their
+ * straight free fall through packet-to-packet contact. After pile/floor
+ * contact every ball immediately becomes an ordinary independent pile ball
+ * and uses the unified solver.
  */
 const HEX_GARBAGE_SHAPE_INTERVAL=0.5;
 const HEX_GARBAGE_BUBBLE_DURATION=0.34;
@@ -118,8 +121,10 @@ function materializeGarbagePack(g,pack,atEntry=false){
 }
 
 // Lowest vertical anchor the still-rigid visual packet may occupy without
-// crossing the floor, a settled/rendered ball, or an earlier packet that is
-// still in the air.  This is continuous circle contact, not a lattice step.
+// crossing the floor or the settled/rendered pile. Airborne garbage packets
+// are deliberately ignored here: packet-to-packet contact must never trigger
+// lattice materialization. This remains continuous circle contact, not a
+// lattice step.
 function hexGarbageFlightContactY(g,pack){
     const H=HEX_ROW_H,maxDy=Math.max(...pack.pat.map(([,dy])=>dy));
     let limit=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H-maxDy;
@@ -132,11 +137,6 @@ function hexGarbageFlightContactY(g,pack){
     for(const [dx,dy] of pack.pat){
         const px=pack.ax+dx;
         for(const [,ov] of g.vis.entries())if(ov&&Number.isFinite(ov.x)&&Number.isFinite(ov.y))consider(px,dy,ov.x,ov.y);
-        for(const other of g.activeGarbagePacks||[]){
-            if(!other||other===pack||other.landed||!other._started)continue;
-            if((other.actualStartTime||0)>=(pack.actualStartTime||0))continue;
-            for(const [odx,ody] of other.pat)consider(px,dy,other.ax+odx,other.y+ody);
-        }
     }
     return limit;
 }
@@ -188,7 +188,7 @@ function updateGarbagePacks(g,dt){
     if(releasedBubble&&settlePass(g.board))g.ver++;
 
     // Reference cadence: complete PYRAMID/HEXAGON packets (or the STRAIGHT
-    // sheet) launch every 0.5 s.  A frame hitch never releases two packets at once.
+    // sheet) launch every 0.5 s. A frame hitch never releases two packets at once.
     const next=g.garbagePlans.find(p=>!p._started);
     if(next&&g.garbageClock+1e-9>=g.garbageNextBallAt){
         const scheduledStart=g.garbageNextBallAt;
@@ -226,8 +226,8 @@ function updateGarbagePacks(g,dt){
         }
     }
 
-    // After first contact the shape identity is gone.  Continue the exact same
-    // bounded independent-ball solver used by ordinary accumulated balls.
+    // After first pile/floor contact the shape identity is gone. Continue the
+    // exact same bounded independent-ball solver used by ordinary pile balls.
     if(pendingFallPathCount(g)===0&&hasLegalGravityMove(g.board)){
         if(settlePass(g.board))g.ver++;
     }
