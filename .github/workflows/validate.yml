@@ -25,7 +25,7 @@ jobs:
             public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
             public/app-05.js public/app-06.js public/app-07.js public/app-08.js \
             public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
-            public/app-16.js public/app-17.js public/controls-v7.js > /tmp/hexdrop-runtime.js
+            public/app-16.js public/app-17.js public/app-18.js public/controls-v7.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
       - name: Check floor parity regression
         run: |
@@ -54,6 +54,8 @@ jobs:
         run: node tests/garbage-airborne-pass-through.js
       - name: Check rigidity and garbage regressions
         run: node tests/physics-regressions.js
+      - name: Check rotation regressions
+        run: node tests/rotation-regressions.js
       - name: Check 50-point reference fidelity
         run: node tests/reference-fidelity.js
       - name: Diagnose gridified garbage motion
@@ -116,6 +118,8 @@ jobs:
           grep -q 'hexPhysResolveEvent' public/app-03.js
           grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.5' public/app-06.js
           grep -q 'prepareContinuousPileFlow' public/app-07.js
+          grep -q 'hexRotationRenderedSweepSafe' public/app-18.js
+          grep -q 'app-18.js' public/index.html
           grep -q 'manifest.webmanifest' public/index.html
           grep -q 'loadCurrentGameBuild' public/index.html
           grep -q 'Date.now().toString(36)' public/index.html
