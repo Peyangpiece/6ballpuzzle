@@ -156,11 +156,6 @@ function materializeGarbageBallAtContact(g,pack,index,contactAnchorY){
     ball.rigid=false;
     g.board[cell.y][cell.x]=ball;noteBoardCell(g.board,cell.y,ball);
 
-    // Airborne garbage is allowed to pass through garbage, but the instant a
-    // ball becomes a lattice ball it re-enters the strict no-overlap world.
-    // Keep the exact physical contact coordinate when it is already safe;
-    // otherwise hand that one ball off at its legal lattice centre. Siblings
-    // remain airborne and are not moved or gridified by this correction.
     const handoffY=visualPointSafe(g,-1,cell.x,visualY,HEX_MIN_DIST)?visualY:cell.y;
     setVis(g,ball,cell.x,handoffY,Math.max(0,(pack.vy||0)/HEX_ROW_H));
     const v=g.vis.get(ball.id);
@@ -264,6 +259,14 @@ function updateGarbagePacks(g,dt){
             if(settlePass(g.board))g.ver++;
         }
     }
+
+    // stepEngine() performs its normal visual contact solve before the logical
+    // GARBAGE phase. A ball can gridify later in that same frame, so run the
+    // final projection once more after garbage updates. This guarantees that
+    // the newly gridified single ball can never be rendered penetrating another
+    // board ball on its hand-off frame. Airborne siblings are not in g.vis and
+    // therefore remain unaffected/free-falling.
+    if(typeof resolveVisualContacts==="function")resolveVisualContacts(g);
 }
 function garbageBatchDone(g){
     let bubbleHold=false;for(let y=boardScanMin(g.board);y<=0&&!bubbleHold;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null;if(ball?.garbageBubbleHold){bubbleHold=true;break;}}
