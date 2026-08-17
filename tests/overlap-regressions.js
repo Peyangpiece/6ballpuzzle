@@ -79,14 +79,14 @@ function makeParallelFixture(){
 }
 function makeVacatedSupportFixture(){
  const g=createEngine(9107),support=mkBall(g,0),upper=mkBall(g,2);
- // Logical gravity resolves these as two consecutive events: the lower ball
- // vacates [10,6], then the upper ball enters it. Reference PYRAMID/HEXAGON
- // footage shows the upper ball moving during the support's motion, not after
- // it reaches the next lattice cell.
- support.fallPath=[{from:[10,6],to:[9,7],kind:"ROLL_LEFT",pivot:null,topPivot:null,motionSeq:1,followSupportIds:[]}];
- upper.fallPath=[{from:[9,5],to:[10,6],kind:"ROLL_RIGHT",pivot:null,topPivot:null,motionSeq:2,followSupportIds:[]}];
- g.board[7][9]=support;g.board[6][10]=upper;
- setVis(g,support,10,6,0);setVis(g,upper,9,5,0);
+ // Logical gravity resolves these as two consecutive events on valid doubled-x
+ // hex cells: the lower ball vacates [10,5], then the upper ball enters it.
+ // Reference PYRAMID/HEXAGON footage shows the upper ball moving during the
+ // support's motion, not after it reaches the next lattice cell.
+ support.fallPath=[{from:[10,5],to:[9,6],kind:"ROLL_LEFT",pivot:null,topPivot:null,motionSeq:1,followSupportIds:[]}];
+ upper.fallPath=[{from:[9,4],to:[10,5],kind:"ROLL_RIGHT",pivot:null,topPivot:null,motionSeq:2,followSupportIds:[]}];
+ g.board[6][9]=support;g.board[5][10]=upper;
+ setVis(g,support,10,5,0);setVis(g,upper,9,4,0);
  markPileFlowPaths(g,"clear_support_loss");
  return{g,support,upper};
 }
@@ -97,8 +97,8 @@ function makeVacatedSupportFixture(){
  expect(sb.pileFlowStart<=sa.pileFlowStart+1e-9,"post-clear follower still waited for a lattice wave");
  const mid=sa.pileFlowStart+Math.min(sa.pileFlowDuration,sb.pileFlowDuration)*0.5;
  const pa=pileFlowPositionAt(g,support,mid),pb=pileFlowPositionAt(g,upper,mid);
- expect(pileFlowPhysicalDist(pa,[10,6])>1e-3,"support did not move during collapse probe");
- expect(pileFlowPhysicalDist(pb,[9,5])>1e-3,"upper ball remained staged while support moved");
+ expect(pileFlowPhysicalDist(pa,[10,5])>1e-3,"support did not move during collapse probe");
+ expect(pileFlowPhysicalDist(pb,[9,4])>1e-3,"upper ball remained staged while support moved");
  let tangentMin=Infinity,tangentMax=0;
  const start=Math.max(sa.pileFlowStart,sb.pileFlowStart),end=Math.min(sa.pileFlowEnd,sb.pileFlowEnd);
  for(let t=start;t<=end+1e-10;t+=1/480){const d=pileFlowPhysicalDist(pileFlowPositionAt(g,support,t),pileFlowPositionAt(g,upper,t));tangentMin=Math.min(tangentMin,d);tangentMax=Math.max(tangentMax,d);}
