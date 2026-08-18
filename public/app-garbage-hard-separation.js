@@ -23,14 +23,18 @@
         if(!causalSupportPair(a,b)||sameEndpoint(a,b))return false;
         return physicalDist(a1,b1)>=MIN-2e-6;
     }
-    function scheduleShift(ball,delay){
+    function scheduleShift(ball,delay,blockerId){
         if(!(delay>1e-10))return;
         const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
         for(let i=0;i<path.length;i++){
             const seg=path[i];if(!seg?.pileFlow)continue;
             if(Number.isFinite(seg.pileFlowStart))seg.pileFlowStart+=delay;
             if(Number.isFinite(seg.pileFlowEnd))seg.pileFlowEnd+=delay;
-            if(i===0){seg.garbageRealCollisionDelay=true;seg.garbageRealCollisionDelayCount=(seg.garbageRealCollisionDelayCount||0)+1;}
+            if(i===0){
+                seg.garbageRealCollisionDelay=true;
+                seg.garbageRealCollisionDelayCount=(seg.garbageRealCollisionDelayCount||0)+1;
+                seg.garbageRealCollisionBlockerId=blockerId;
+            }
         }
     }
     function firstUnsafeFraction(a0,a1,b0,b1){
@@ -54,8 +58,16 @@
                 if(hardA&&hardB)continue;
                 const sa=hardA?a1:a0,sb=hardB?b1:b0,t=firstUnsafeFraction(sa,a1,sb,b1);if(t===null)continue;
                 changed=true;const lost=Math.max(0,1-t)*Math.max(0,dt||0);
-                if(!hardA){const p=pointAt(sa,a1,t);a.v.x=p[0];a.v.y=Math.max(sa[1],p[1]);a.v.vy=0;a.v.motionSpeed=0;a.v.garbageFrameContactClamped=true;a.v.garbageFrameContactClampCount=(a.v.garbageFrameContactClampCount||0)+1;scheduleShift(a.ball,lost);}
-                if(!hardB){const p=pointAt(sb,b1,t);b.v.x=p[0];b.v.y=Math.max(sb[1],p[1]);b.v.vy=0;b.v.motionSpeed=0;b.v.garbageFrameContactClamped=true;b.v.garbageFrameContactClampCount=(b.v.garbageFrameContactClampCount||0)+1;scheduleShift(b.ball,lost);}
+                if(!hardA){
+                    const p=pointAt(sa,a1,t);a.v.x=p[0];a.v.y=Math.max(sa[1],p[1]);a.v.vy=0;a.v.motionSpeed=0;
+                    a.v.garbageFrameContactClamped=true;a.v.garbageFrameContactClampCount=(a.v.garbageFrameContactClampCount||0)+1;a.v.garbageFrameContactBlockerId=b.ball.id;
+                    scheduleShift(a.ball,lost,b.ball.id);
+                }
+                if(!hardB){
+                    const p=pointAt(sb,b1,t);b.v.x=p[0];b.v.y=Math.max(sb[1],p[1]);b.v.vy=0;b.v.motionSpeed=0;
+                    b.v.garbageFrameContactClamped=true;b.v.garbageFrameContactClampCount=(b.v.garbageFrameContactClampCount||0)+1;b.v.garbageFrameContactBlockerId=a.ball.id;
+                    scheduleShift(b.ball,lost,a.ball.id);
+                }
             }
             if(!changed)break;
         }
