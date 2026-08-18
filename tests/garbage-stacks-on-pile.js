@@ -17,6 +17,10 @@ function cellOf(g,ball){
  for(let y=BOARD_MIN_ROW;y<ROWS;y++)for(let x=0;x<W2;x++)if(valid(x,y)&&g.board[y][x]===ball)return[x,y];
  return null;
 }
+function ballState(g,ball){
+ const c=cellOf(g,ball),v=g.vis.get(ball.id);
+ return {id:ball.id,cell:c,settled:ball.garbagePileSettled===true,path:(ball.fallPath||[]).map(s=>({from:s.from,to:s.to,pivot:s.pivot,kind:s.kind,pileFlow:s.pileFlow,start:s.pileFlowStart,end:s.pileFlowEnd,blocked:s.garbageSweepRerouted})),visual:v?{x:v.x,y:v.y,vy:v.vy,pileFlow:v.pileFlow,sweepBlocked:v.garbageSweepBlocked,blocks:v.garbageSweepBlockCount}:null};
+}
 function advanceToRest(g,balls,pack,contactAnchor){
  for(let frame=0;frame<2400;frame++){
    if(pack&&pack.pat.length)materializeGarbageContactsThrough(g,pack,contactAnchor+10);
@@ -33,15 +37,11 @@ function advanceToRest(g,balls,pack,contactAnchor){
  return -1;
 }
 
-// Build a stable pile that existed before the incoming garbage batch. These
-// balls are kinematic during the batch; incoming garbage must conform to them.
 const g=createEngine(99001);
 const original=[];
 for(let x=0;x<W2;x++)if(valid(x,ROWS-1))original.push(put(g,x,ROWS-1,(x/2)%5));
 const top=put(g,5,ROWS-2,2);original.push(top);
 const originalBefore=new Map(original.map(b=>{const c=cellOf(g,b),v=g.vis.get(b.id);return[b.id,{c:[...c],x:v.x,y:v.y}];}));
-
-// Capture exactly this pile as the pre-drop collision/support surface.
 prepareGarbageBatch(g);
 
 const pack={
@@ -60,9 +60,6 @@ expect(pack._pileContactStarted===true,"garbage did not enter post-contact latti
 expect(Math.abs(pack.y-first)<3e-6,"garbage packet crossed its first pile contact before lattice handoff");
 expect(released>0,"no garbage member entered the lattice at pile contact");
 
-// Continue retries only at the first-contact anchor while grid members settle.
-// Every member must ultimately be registered; none may remain an airborne pack
-// that travels through the old pile.
 const ids=()=>pack.entryBalls.map(e=>e.id);
 for(let frame=0;frame<2400&&pack.pat.length;frame++){
  materializeGarbageContactsThrough(g,pack,first+20);
@@ -77,7 +74,7 @@ expect(ids().length===6,"not all garbage members were materialized");
 const garbage=ids().map(id=>hexGarbageBoardBallById(g,id)).filter(Boolean);
 expect(garbage.length===6,"materialized garbage disappeared from the board");
 const restFrame=advanceToRest(g,garbage,null,first);
-expect(restFrame>=0,"garbage failed to finish lattice settling");
+if(restFrame<0)throw new Error("garbage failed to finish lattice settling: "+JSON.stringify({clock:g.pileFlowClock,pending:pendingFallPathCount(g),legal:hasLegalGravityMove(g.board),balls:garbage.map(b=>ballState(g,b))}));
 window.__hexRefreshGarbagePileState(g);
 
 for(const ball of garbage){
@@ -92,7 +89,6 @@ for(const ball of garbage){
  }
 }
 
-// The pile itself must still be exactly where it was before impact.
 for(const old of original){
  const snap=originalBefore.get(old.id),c=cellOf(g,old),v=g.vis.get(old.id);
  expect(c&&c[0]===snap.c[0]&&c[1]===snap.c[1],"pre-existing pile logical position changed");
