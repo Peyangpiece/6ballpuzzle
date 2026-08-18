@@ -15,11 +15,11 @@ function expect(v,m){if(!v)throw new Error(m);}
 
 Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.9843576934021326,"a":{"kind":"board","id":23,"x":18,"y":7,"logical":[16,9],"settled":true,"pathLen":2,"seq":43},"b":{"kind":"board","id":22,"x":16.045677401105337,"y":7.137190200924941,"logical":[18,9],"settled":false,"pathLen":2,"seq":41}}
     at expect (evalmachine.<anonymous>:4936:34)
-    at evalmachine.<anonymous>:4991:3
+    at evalmachine.<anonymous>:4994:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:76:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:79:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
@@ -32,11 +32,11 @@ function expect(v,m){if(!v)throw new Error(m);}
 
 Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":16,"visual":[7.001045997648304,6.8452994616207485],"logical":[9,10],"path":{"from":[7,6.8452994616207485],"to":[8,7],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":2,"pileFlowStart":1.1166666666666651,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":1.146392748396277,"garbageGridEntryHandoff":true}}
     at expect (evalmachine.<anonymous>:4936:34)
-    at evalmachine.<anonymous>:4974:7
+    at evalmachine.<anonymous>:4975:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-natural-fall.js:68:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-natural-fall.js:69:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
