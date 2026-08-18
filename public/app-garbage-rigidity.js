@@ -55,4 +55,32 @@
         // each remaining member is handled by the reference pile-contact solver.
         return baseMaterializeThrough(g,pack,desiredY);
     };
+
+    // Reference garbage never rebounds upward after it has joined the pile.
+    // Some generic visual-contact projections can request a tiny upward shift
+    // even though the pre-solve position was already physically valid. Preserve
+    // the old Y in that case; horizontal/downward corrections remain untouched.
+    const baseResolveVisualContacts=resolveVisualContacts;
+    resolveVisualContacts=function(g){
+        const before=new Map();
+        if(g?.vis&&g?.board){
+            for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+                const ball=valid(x,y)?g.board[y][x]:null;
+                const v=ball&&g.vis.get(ball.id);
+                if(ball?.isGarbage&&v&&Number.isFinite(v.y))before.set(ball.id,v.y);
+            }
+        }
+
+        baseResolveVisualContacts(g);
+
+        for(const [id,oldY] of before){
+            const v=g.vis.get(id);
+            if(!v||!Number.isFinite(v.y))continue;
+            if(v.y<oldY-1e-9){
+                v.y=oldY;
+                v.vy=Math.max(0,v.vy||0);
+                v.motionSpeed=Math.max(0,v.motionSpeed||0);
+            }
+        }
+    };
 })();
