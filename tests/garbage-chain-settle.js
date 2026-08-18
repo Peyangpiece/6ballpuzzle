@@ -19,6 +19,13 @@ function terrain(g,type){
  if(type===3){put(g,11,ROWS-2,1);put(g,9,ROWS-2,2);put(g,7,ROWS-2,3);put(g,9,ROWS-4,4);put(g,5,ROWS-2,0);}
  if(type===4){put(g,3,ROWS-2,1);put(g,7,ROWS-2,2);put(g,11,ROWS-2,3);put(g,5,ROWS-4,4);put(g,9,ROWS-4,0);}
 }
+function nearby(g,q){
+ return entries(g).filter(z=>z.b.id!==q.b.id).map(z=>({
+  id:z.b.id,garbage:!!z.b.isGarbage,frozen:!!z.b.garbagePhaseFrozen,
+  cell:[z.x,z.y],visual:[z.v.x,z.v.y],d:phys([q.v.x,q.v.y],[z.v.x,z.v.y]),
+  path:Array.isArray(z.b.fallPath)&&z.b.fallPath.length?z.b.fallPath.slice(0,2).map(s=>({from:s.from,to:s.to,kind:s.kind,pivot:s.pivot,topPivot:s.topPivot})):[]
+ })).filter(z=>z.d<1.35).sort((a,b)=>a.d-b.d).slice(0,6);
+}
 expect(window.__hexGarbageNoChainFreeze===true,"chain-free garbage settle layer missing");
 const reports=[];
 for(let type=1;type<=4;type++){
@@ -40,7 +47,7 @@ for(let type=1;type<=4;type++){
    let s=stall.get(q.b.id)||0;
    if(shouldProgress&&prev&&d<1e-6)s++;else s=0;
    stall.set(q.b.id,s);maxStall=Math.max(maxStall,s);
-   expect(s<72,"garbage chain froze despite remaining gravity: "+JSON.stringify({type,frame,id:q.b.id,cell:[q.x,q.y],visual:now,path:q.b.fallPath||[],proposal:p&&{to:[p.tx,p.ty],kind:p.kind,pivot:p.pivot,topPivot:p.topPivot}}));
+   expect(s<72,"garbage chain froze despite remaining gravity: "+JSON.stringify({type,frame,id:q.b.id,cell:[q.x,q.y],visual:now,path:q.b.fallPath||[],proposal:p&&{to:[p.tx,p.ty],kind:p.kind,pivot:p.pivot,topPivot:p.topPivot},nearby:nearby(g,q)}));
    last.set(q.b.id,now);
   }
   for(let i=0;i<gs.length;i++)for(let j=i+1;j<gs.length;j++){const d=phys([gs[i].v.x,gs[i].v.y],[gs[j].v.x,gs[j].v.y]);minDistance=Math.min(minDistance,d);expect(d>=HEX_MIN_DIST-9e-4,"garbage overlap in chain settle stress: "+JSON.stringify({type,frame,d,a:gs[i].b.id,b:gs[j].b.id}));}
