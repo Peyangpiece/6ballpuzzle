@@ -11,13 +11,13 @@ evalmachine.<anonymous>:1662
 function expect(value,message){if(!value)throw new Error(message);}
                                          ^
 
-Error: full wall cascade left the even-row movement vacancy open
+Error: secondary wall filler was not bound to the ball vacating its target
     at expect (evalmachine.<anonymous>:1662:48)
-    at evalmachine.<anonymous>:1780:3
+    at evalmachine.<anonymous>:1782:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/wall-gap-regression.js:166:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/wall-gap-regression.js:146:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
