@@ -4,14 +4,8 @@ HARD_DROP_CONVERGENCE {
       "type": "harddrop-hold-stuck",
       "seed": 1,
       "holds": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "harddrop-resolution-stuck",
-      "seed": 1,
-      "phase": "SETTLE",
-      "holds": 3
+      "state": "GAMEOVER",
+      "phase": "CHECK"
     },
     {
       "type": "tracked-upward-motion",
@@ -49,27 +43,15 @@ HARD_DROP_CONVERGENCE {
       "type": "harddrop-hold-stuck",
       "seed": 3,
       "holds": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "harddrop-resolution-stuck",
-      "seed": 3,
-      "phase": "SETTLE",
-      "holds": 3
+      "state": "GAMEOVER",
+      "phase": "CHECK"
     },
     {
       "type": "harddrop-hold-stuck",
       "seed": 5,
       "holds": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "harddrop-resolution-stuck",
-      "seed": 5,
-      "phase": "SETTLE",
-      "holds": 3
+      "state": "GAMEOVER",
+      "phase": "CHECK"
     },
     {
       "type": "tracked-upward-motion",
