@@ -74,6 +74,50 @@
         return null;
     }
 
+    function expandZeroSeqTopPivotPath(ball){
+        if(!ball||!Array.isArray(ball.fallPath)||!ball.fallPath.length)return;
+        const expanded=[];
+        for(const seg of ball.fallPath){
+            if(!seg?.topPivot||!Array.isArray(seg.from)||!Array.isArray(seg.to)){
+                expanded.push(seg);continue;
+            }
+            const [px,py]=seg.topPivot;
+            const contactRow=(cellCenterYNorm(py)-1-BOARD_TOP_CENTER_N)/HEX_ROW_H;
+            // topPivot is canonically a vertical fall to the top tangent point,
+            // followed by a circular roll around the support. The ordinary
+            // motionSeq renderer already knows this combined geometry, but the
+            // 0.600 s independent-unit renderer intentionally uses motionSeq=0.
+            // Split that same geometry into two ordinary segments so app-08 can
+            // render it without drawing the invalid straight chord through the
+            // support ball (the source of the permanent clamp/freeze).
+            if(!(contactRow>seg.from[1]+1e-7)||contactRow>seg.to[1]+1e-6){
+                expanded.push(seg);continue;
+            }
+            const contact=[px,contactRow];
+            const fall={
+                ...seg,
+                from:[...seg.from],to:contact,
+                pivot:null,topPivot:null,
+                movingSupportId:0,followSupportIds:[],
+                kind:"FREE_FALL_TO_SUPPORT",
+                motionSeq:0,bundleId:0,groupSize:0,
+                continuousChain:true,
+                garbageExpandedTopPivot:true
+            };
+            const arc={
+                ...seg,
+                from:contact,to:[...seg.to],
+                pivot:[px,py],topPivot:null,
+                kind:"ROLL_FROM_TOP_CONTACT",
+                motionSeq:0,bundleId:0,groupSize:0,
+                continuousChain:true,
+                garbageExpandedTopPivot:true
+            };
+            expanded.push(fall,arc);
+        }
+        ball.fallPath=expanded;
+    }
+
     function compileOrdinaryUnitPath(g,ids){
         // Canonical physics only. settleAll repeatedly calls settlePass, which
         // calls hexPhysNaturalMotion and appends the same pivot/topPivot paths
@@ -81,12 +125,13 @@
         settleAll(g.board);
 
         // A later 0.600 s unit must not wait behind the global motionSeq of an
-        // earlier unit. Clearing only the batch-sequence tag selects app-08's
-        // ordinary per-ball fallPath renderer; geometry, gravity, pivots and
-        // collision resolver are unchanged.
+        // earlier unit. The geometry remains canonical. topPivot segments are
+        // expanded into their exact fall-then-arc components because app-08's
+        // motionSeq=0 branch otherwise treats topPivot as a straight diagonal.
         for(const id of ids){
             const ball=findBallById(g,id);
             if(!ball||!Array.isArray(ball.fallPath))continue;
+            expandZeroSeqTopPivotPath(ball);
             for(const seg of ball.fallPath){
                 seg.motionSeq=0;
                 delete seg.pileFlow;
@@ -173,4 +218,6 @@
         }else armUnseenLooseEffects(g,g._garbagePresentationKnownIds);
         return r;
     };
+
+    window.__hexGarbageTopPivotExpandedForIndependentUnits=true;
 })();
