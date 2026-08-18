@@ -1,0 +1,40 @@
+name: Performance Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/performance-smoke-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run performance audit
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          node tests/audit-performance.js 16 > audit-results/performance-smoke.log 2>&1
+          code=$?
+          printf '{"sha":"%s","performance":%s}\n' "$GITHUB_SHA" "$code" > audit-results/performance-smoke.json
+          cat audit-results/performance-smoke.log
+          exit 0
+      - name: Store performance report
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add audit-results/performance-smoke.json audit-results/performance-smoke.log
+          if ! git diff --cached --quiet; then git commit -m "Record performance smoke [skip ci]"; fi
+          git pull --rebase origin main
+          git push
