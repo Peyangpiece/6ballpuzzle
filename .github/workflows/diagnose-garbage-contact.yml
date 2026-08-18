@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run reference pile-contact audits
+      - name: Run reference pile-contact and CPU audits
         shell: bash
         run: |
           set +e
@@ -33,10 +33,12 @@ jobs:
           D=$?
           node tests/garbage-settle-state.js >> audit-results/garbage-contact.log 2>&1
           E=$?
+          node tests/ai-technique-levels.js >> audit-results/garbage-contact.log 2>&1
+          F=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","continuousContact":%s,"airborneRigidity":%s,"monotoneAfterContact":%s,"overlap":%s,"settleState":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","continuousContact":%s,"airborneRigidity":%s,"monotoneAfterContact":%s,"overlap":%s,"settleState":%s,"aiTechnique":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
