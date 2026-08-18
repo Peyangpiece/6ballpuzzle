@@ -9,3 +9,4 @@ garbage chain-free dense settle PASS [{"type":1,"done":309,"spawned":18,"maxGlob
 post-garbage internal-clear collapse PASS
 wall + floor gap regression PASS
 game-over former-garbage fade PASS
+garbage render overlap guard PASS
