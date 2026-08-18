@@ -26,9 +26,6 @@
     materializeGarbageContactsThrough=function(g,pack,desiredY){
         if(!pack?.pat?.length)return 0;
 
-        // Before first pile/floor contact the packet is indivisible. Find the
-        // earliest physical contact of ANY member, and do not let the common
-        // packet anchor travel one substep farther than that point.
         if(!pack._pileContactStarted){
             const first=firstRigidContact(g,pack);
             if(!first||desiredY+HEX_GARBAGE_CONTACT_EPS<first.y)return 0;
@@ -39,9 +36,6 @@
             pack._pileContactAnchorY=first.y;
             pack._pileContactClock=Number.isFinite(g?.garbageClock)?g.garbageClock:0;
 
-            // Contacts that are geometrically simultaneous are released in the
-            // same event. Snapshot original indices and process high->low so a
-            // splice cannot change the identity of another tied member.
             let released=0;
             const tied=first.hits.slice().sort((a,b)=>b.index-a.index);
             for(const hit of tied){
@@ -51,28 +45,20 @@
             return released;
         }
 
-        // Once contact has happened, the shape is allowed to break naturally;
-        // each remaining member is handled by the reference pile-contact solver.
         return baseMaterializeThrough(g,pack,desiredY);
     };
 
-    // Reference garbage never rebounds upward after it has joined the pile.
-    // Some generic visual-contact projections can request a tiny upward shift
-    // even though the pre-solve position was already physically valid. Preserve
-    // the old Y in that case; horizontal/downward corrections remain untouched.
-    const baseResolveVisualContacts=resolveVisualContacts;
-    resolveVisualContacts=function(g){
+    function snapshotGarbageY(g){
         const before=new Map();
-        if(g?.vis&&g?.board){
-            for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-                const ball=valid(x,y)?g.board[y][x]:null;
-                const v=ball&&g.vis.get(ball.id);
-                if(ball?.isGarbage&&v&&Number.isFinite(v.y))before.set(ball.id,v.y);
-            }
+        if(!g?.vis||!g?.board)return before;
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            const v=ball&&g.vis.get(ball.id);
+            if(ball?.isGarbage&&v&&Number.isFinite(v.y))before.set(ball.id,v.y);
         }
-
-        baseResolveVisualContacts(g);
-
+        return before;
+    }
+    function restoreNoUpward(g,before){
         for(const [id,oldY] of before){
             const v=g.vis.get(id);
             if(!v||!Number.isFinite(v.y))continue;
@@ -80,7 +66,29 @@
                 v.y=oldY;
                 v.vy=Math.max(0,v.vy||0);
                 v.motionSpeed=Math.max(0,v.motionSpeed||0);
+                v.gravityMismatch=true;
             }
         }
+    }
+
+    // Scheduled pile-flow has an early-return branch inside updateVisuals, so
+    // the older per-ball monotonic guard can be bypassed. Guard the complete
+    // visual integration call: after first contact garbage may move sideways or
+    // down, but never rebound upward. If a stale path finishes above the current
+    // physical centre it is discarded by the base integrator and the next frame
+    // simply resumes gravity toward the logical cell from this preserved Y.
+    const baseUpdateVisuals=updateVisuals;
+    updateVisuals=function(g,dt){
+        const before=snapshotGarbageY(g);
+        baseUpdateVisuals(g,dt);
+        restoreNoUpward(g,before);
+    };
+
+    // Generic contact projection has the same invariant.
+    const baseResolveVisualContacts=resolveVisualContacts;
+    resolveVisualContacts=function(g){
+        const before=snapshotGarbageY(g);
+        baseResolveVisualContacts(g);
+        restoreNoUpward(g,before);
     };
 })();
