@@ -9,7 +9,7 @@
 (function installGarbageNormalPhysics(){
     if(typeof window==="undefined"||window.__hexGarbageNormalPhysics)return;
     window.__hexGarbageNormalPhysics=true;
-    window.__hexGarbageRuntimeVersion="normal-v3";
+    window.__hexGarbageRuntimeVersion="normal-v4-perf";
 
     const NORMAL_GARBAGE_INTERVAL=0.5;
     const NORMAL_GARBAGE_SETTLE_TOL=0.06;
@@ -21,6 +21,27 @@
     if(typeof __hexdropResolveVisualContactsBeforeGarbageQueueGate==="function")
         resolveVisualContacts=__hexdropResolveVisualContactsBeforeGarbageQueueGate;
     __hexdropGarbageMotionQueue=function(){return{minSeq:Infinity,queued:new Set()};};
+
+    // GARBAGE does not remove board balls; it only adds incoming balls. Cache the
+    // object references for the lifetime of the phase and invalidate only when a
+    // new incoming ball is inserted. This removes repeated full-board scans from
+    // every visual substep without changing any physics or animation values.
+    window.__hexInvalidateGarbagePhaseBallCache=function(g){
+        if(g)g._garbagePhaseBallCache=null;
+    };
+    window.__hexGetGarbagePhaseBallCache=function(g){
+        if(!g?.board)return{all:[],garbage:[],byId:new Map()};
+        if(g._garbagePhaseBallCache)return g._garbagePhaseBallCache;
+        const all=[],garbage=[],byId=new Map();
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            if(!ball)continue;
+            const q={ball,v:g.vis.get(ball.id)};
+            all.push(q);byId.set(ball.id,ball);
+            if(ball.isGarbage)garbage.push(q);
+        }
+        return g._garbagePhaseBallCache={all,garbage,byId};
+    };
 
     // A frozen accumulated ball is still a physical support/obstacle; it simply
     // cannot propose its own gravity move until the garbage batch is complete.
@@ -36,12 +57,22 @@
     // candidate set itself; otherwise a moving support can re-create a proposal
     // for that frozen ball. Frozen balls remain in board occupancy, so incoming
     // balls still collide with and rest on them normally.
+    //
+    // The frozen set is immutable during one GARBAGE phase, so reuse the exact ID
+    // set captured at phase start instead of rescanning every lattice cell on
+    // every gravity proposal. Fallback scanning keeps diagnostic/manual boards
+    // with ad-hoc garbagePhaseFrozen flags fully compatible.
     const ordinaryContactEntries=hexPhysContactEntries;
     hexPhysContactEntries=function(board,excluded=new Set()){
         const blocked=new Set(excluded||[]);
-        for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){
-            const ball=valid(x,y)?board[y][x]:null;
-            if(ball?.garbagePhaseFrozen)blocked.add(ball.id);
+        const frozenIds=board?.__hexGarbageFrozenIds;
+        if(frozenIds instanceof Set){
+            for(const id of frozenIds)blocked.add(id);
+        }else{
+            for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){
+                const ball=valid(x,y)?board[y][x]:null;
+                if(ball?.garbagePhaseFrozen)blocked.add(ball.id);
+            }
         }
         return ordinaryContactEntries(board,blocked);
     };
@@ -72,15 +103,17 @@
     }
     function withGarbageRenderedAsOrdinary(g,fn){
         if(!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"))return fn();
-        const hidden=[];
-        for(const q of boardEntries(g))if(q.ball.isGarbage){hidden.push(q.ball);q.ball.isGarbage=false;}
+        const cached=window.__hexGetGarbagePhaseBallCache(g).garbage;
+        for(const q of cached)q.ball.isGarbage=false;
         try{return fn();}
-        finally{for(const ball of hidden)ball.isGarbage=true;}
+        finally{for(const q of cached)q.ball.isGarbage=true;}
     }
 
     // The renderer/contact resolver now takes the identical branches used by
     // ordinary balls. isGarbage remains available outside those calls only as
     // attack/source metadata and for normal drawing after the call returns.
+    // The cached list above changes only lookup cost; the same balls are hidden
+    // for the same duration and the underlying resolver is unchanged.
     const ordinaryUpdateVisuals=updateVisuals;
     updateVisuals=function(g,dt){return withGarbageRenderedAsOrdinary(g,()=>ordinaryUpdateVisuals(g,dt));};
     const ordinaryResolveVisualContacts=resolveVisualContacts;
@@ -88,6 +121,7 @@
 
     function freezeExistingPile(g){
         const ids=new Set();
+        window.__hexInvalidateGarbagePhaseBallCache(g);
         for(const q of boardEntries(g)){
             ids.add(q.ball.id);
             q.ball.garbagePhaseFrozen=true;
@@ -97,16 +131,20 @@
             if(q.v){q.v.vy=0;q.v.motionSpeed=0;}
         }
         g.garbageFrozenPileIds=ids;
+        g.board.__hexGarbageFrozenIds=ids;
+        window.__hexInvalidateGarbagePhaseBallCache(g);
         return ids;
     }
     function unfreezeExistingPile(g){
         const ids=g?.garbageFrozenPileIds;
         if(ids instanceof Set){
-            for(const q of boardEntries(g))if(ids.has(q.ball.id))delete q.ball.garbagePhaseFrozen;
+            const cache=window.__hexGetGarbagePhaseBallCache(g);
+            for(const q of cache.all)if(ids.has(q.ball.id))delete q.ball.garbagePhaseFrozen;
         }else{
             for(const q of boardEntries(g))delete q.ball.garbagePhaseFrozen;
         }
         g.garbageFrozenPileIds=null;
+        if(g?.board)delete g.board.__hexGarbageFrozenIds;
     }
 
     function findSpawnAnchor(g,pat,preferredAx){
@@ -141,6 +179,7 @@
         g.board[y][x]=ball;
         noteBoardCell(g.board,y,ball);
         setVis(g,ball,x,y,RELEASE_INITIAL_VY);
+        window.__hexInvalidateGarbagePhaseBallCache(g);
         const v=g.vis.get(ball.id);
         if(v){v.motionSpeed=RELEASE_INITIAL_VY;v.justReleased=true;}
         return ball;
@@ -193,6 +232,7 @@
         g.garbagePlans=[];
         g.activeGarbagePacks=[];
         g.garbageLooseIds=[];
+        window.__hexInvalidateGarbagePhaseBallCache(g);
         freezeExistingPile(g);
 
         const pending=g.garbShapes.splice(0);
@@ -227,7 +267,8 @@
 
     updateGarbagePacks=function(g,dt){
         g.garbageClock+=Math.max(0,dt||0);
-        g.activeGarbagePacks=[];
+        if(Array.isArray(g.activeGarbagePacks))g.activeGarbagePacks.length=0;
+        else g.activeGarbagePacks=[];
 
         // Exactly the same checkpoint used by normal SETTLE: do not advance
         // logical gravity until the previous fallPath has visibly completed.
@@ -274,7 +315,8 @@
 
     finishGarbageVisuals=function(g){
         unfreezeExistingPile(g);
-        for(const q of boardEntries(g)){
+        const entries=window.__hexGetGarbagePhaseBallCache(g).all;
+        for(const q of entries){
             delete q.ball.garbagePhaseFrozen;
             delete q.ball.garbageBubbleHold;
             delete q.ball.garbageSpawnHold;
@@ -301,6 +343,7 @@
         }
         g.activeGarbagePacks=[];
         g._pileFlowBallById=null;
+        window.__hexInvalidateGarbagePhaseBallCache(g);
         refreshBoardScanMin(g.board);
     };
 
@@ -316,4 +359,6 @@
     window.__hexGarbagePredictiveQueueDisabled=true;
     window.__hexGarbageExistingPileFrozenUntilDone=true;
     window.__hexGarbageFinalizesIntoAccumulatedPile=true;
+    window.__hexGarbagePhaseObjectCacheEnabled=true;
+    window.__hexGarbageFrozenIdCacheEnabled=true;
 })();
