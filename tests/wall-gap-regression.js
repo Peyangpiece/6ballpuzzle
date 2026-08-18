@@ -27,6 +27,7 @@ expect(window.__hexWallGapInvariant===true,"wall no-gap invariant was not instal
 expect(window.__hexWallGapAllowed===false,"wall-gap policy is not strict");
 expect(window.__hexWallAlternatingParityCompaction===true,"alternating wall parity compaction missing");
 expect(window.__hexWallDynamicVacancyClosure===true,"dynamic wall vacancy closure missing");
+expect(window.__hexNormalBallWallPacking===true,"normal-ball wall packing missing");
 expect(window.__hexWallDirectSupportFill===true,"direct-support wall vacancy fill missing");
 expect(window.__hexWallFlowVacancySync===true,"wall pile-flow vacancy synchronization missing");
 expect(window.__hexFloorGapInvariant===true,"floor no-gap invariant was not installed");
@@ -56,6 +57,28 @@ for(const [x,y,label] of [[0,7,"left odd"],[18,7,"right odd"],[1,6,"left even"],
   const p=hexPhysNaturalMotion(b,x,y);
   expect(p&&p.kind==="WALL_DROP",label+" wall ball did not prefer vertical compaction");
   expect(p.tx===x&&p.ty===y+2,label+" wall drop left the side column");
+}
+
+// A NORMAL ball one cell in from the wall can be balanced on a real ball with
+// both lower diagonals open. Residual horizontal momentum must not choose the
+// interior branch and leave the available wall cell empty. Check both sides
+// with momentum deliberately pointing AWAY from the wall.
+for(const [x,targetX,bias,label] of [[2,1,1,"left"],[16,17,-1,"right"]]){
+  const b=newBoard();
+  const ball=put(b,x,9,350+x);
+  const support=put(b,x,11,370+x);
+  ball.momentumX=bias;ball.rollDir=bias;ball.subCellBias=bias;
+  const p=hexPhysNaturalMotion(b,x,9);
+  expect(p&&p.normalWallPack===true,label+" normal ball did not enter wall-packing fork");
+  expect(p.tx===targetX&&p.ty===10,label+" normal ball preferred the interior and left the wall cell open");
+  expect(Array.isArray(p.topPivot)&&p.topPivot[0]===x&&p.topPivot[1]===11,label+" normal wall pack lost its real support pivot");
+  for(let i=0;i<=120;i++){
+    const pt=proposalPointAt(p,i/120),sp=normPoint(x,11);
+    expect(physicalDist(pt,sp)>=HEX_MIN_DIST-1e-6,label+" normal wall-pack roll overlapped its support");
+  }
+  expect(settlePass(b,false),label+" normal wall-pack event was rejected");
+  expect(b[10][targetX]===ball,label+" normal ball did not fill the wall cell");
+  expect(b[11][x]===support,label+" wall-pack support unexpectedly moved");
 }
 
 {
@@ -139,7 +162,7 @@ for(const [x,y,label] of [[0,7,"left odd"],[18,7,"right odd"],[1,6,"left even"],
   }
 }
 
-console.log("wall + floor + dynamic wall-vacancy regression PASS");
+console.log("wall + floor + normal-ball + dynamic wall-vacancy regression PASS");
 `;
 
 const source=`const React={};\nconst window={};\nconst navigator={};\n${runtime}\n${assertions}`;
