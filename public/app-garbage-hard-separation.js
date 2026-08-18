@@ -1,10 +1,10 @@
 /* Garbage-to-garbage continuous frame clamp.
  *
- * Never repair penetration by inventing a new horizontal position. If two
- * independent garbage balls would enter each other during a 120 Hz interval,
- * stop their REAL trajectories at first tangent. Explicit follower/support
- * pairs are excluded because pileFlowPointForBall already enforces their exact
- * tangent relation; clamping them again creates artificial mid-air sticking.
+ * Independent garbage trajectories are clamped at their first tangent. An
+ * explicit follower/support pair may bypass this extra clamp ONLY while its
+ * analytic result is still tangent and the two paths are not converging on the
+ * same logical endpoint. If that invariant is already broken, normal swept
+ * clamping applies immediately.
  */
 (function installGarbageHardSeparation(){
     if(typeof window==="undefined"||window.__hexGarbageHardSeparation)return;
@@ -16,11 +16,13 @@
     function boardItems(g){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null,v=ball&&g.vis.get(ball.id);if(ball?.isGarbage&&v&&Number.isFinite(v.x)&&Number.isFinite(v.y))out.push({ball,v,x,y});}return out;}
     function hardStationary(g,q){if(g?.garbageOriginalPileIds instanceof Set&&g.garbageOriginalPileIds.has(q.ball.id))return true;return q.ball.garbagePileSettled===true&&(!Array.isArray(q.ball.fallPath)||q.ball.fallPath.length===0);}
     function firstSeg(ball){return Array.isArray(ball?.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;}
-    function follows(seg,id){
-        if(Number(seg?.movingSupportId)===id)return true;
-        return Array.isArray(seg?.followSupportIds)&&seg.followSupportIds.includes(id);
-    }
+    function follows(seg,id){if(Number(seg?.movingSupportId)===id)return true;return Array.isArray(seg?.followSupportIds)&&seg.followSupportIds.includes(id);}
     function causalSupportPair(a,b){return follows(firstSeg(a.ball),b.ball.id)||follows(firstSeg(b.ball),a.ball.id);}
+    function sameEndpoint(a,b){const sa=firstSeg(a.ball),sb=firstSeg(b.ball);return Array.isArray(sa?.to)&&Array.isArray(sb?.to)&&physicalDist(sa.to,sb.to)<1e-7;}
+    function causalPairStillValid(a,b,a1,b1){
+        if(!causalSupportPair(a,b)||sameEndpoint(a,b))return false;
+        return physicalDist(a1,b1)>=MIN-2e-6;
+    }
     function scheduleShift(ball,delay){
         if(!(delay>1e-10))return;
         const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
@@ -46,9 +48,9 @@
         for(let pass=0;pass<20;pass++){
             let changed=false;
             for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
-                const a=list[i],b=list[j];
-                if(causalSupportPair(a,b))continue;
-                const a1=[a.v.x,a.v.y],b1=[b.v.x,b.v.y],a0=movementStart(a,before),b0=movementStart(b,before),hardA=hardStationary(g,a),hardB=hardStationary(g,b);
+                const a=list[i],b=list[j],a1=[a.v.x,a.v.y],b1=[b.v.x,b.v.y];
+                if(causalPairStillValid(a,b,a1,b1))continue;
+                const a0=movementStart(a,before),b0=movementStart(b,before),hardA=hardStationary(g,a),hardB=hardStationary(g,b);
                 if(hardA&&hardB)continue;
                 const sa=hardA?a1:a0,sb=hardB?b1:b0,t=firstUnsafeFraction(sa,a1,sb,b1);if(t===null)continue;
                 changed=true;const lost=Math.max(0,1-t)*Math.max(0,dt||0);
