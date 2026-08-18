@@ -9,13 +9,13 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-evalmachine.<anonymous>:4851
+evalmachine.<anonymous>:4821
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage actual overlap: {"variant":1,"type":"PYRAMID","frame":112,"local":[],"d":0.9815204709399161,"a":{"kind":"board","id":17,"x":4.864853297421326,"y":4.86620672926985,"logical":[3,8],"settled":false,"pathLen":3,"seq":24,"seg":{"from":[5,4.8452994616207485],"to":[4,5],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"start":0.9333333328918165,"end":0.9630594146214284}},"b":{"kind":"pack","id":"p0:0","x":6,"y":5.790863729301253}}
-    at expect (evalmachine.<anonymous>:4851:34)
-    at evalmachine.<anonymous>:4895:3
+Error: garbage actual overlap: {"variant":1,"type":"PYRAMID","frame":107,"local":[16],"d":0.8850422005476726,"a":{"kind":"board","id":17,"x":5,"y":4.8452994616207485,"logical":[4,7],"settled":false,"pathLen":2,"seq":24,"seg":{"from":[5,4.8452994616207485],"to":[4,5],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"start":0.8999999999999992,"end":0.9297260817296111}},"b":{"kind":"pack","id":"p0:0","x":4,"y":5.688546911859223}}
+    at expect (evalmachine.<anonymous>:4821:34)
+    at evalmachine.<anonymous>:4865:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -26,13 +26,13 @@ Error: garbage actual overlap: {"variant":1,"type":"PYRAMID","frame":112,"local"
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-evalmachine.<anonymous>:4851
+evalmachine.<anonymous>:4821
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":118,"id":17,"local":[],"visual":[4.864853297421326,4.86620672926985],"logical":[3,8],"path":{"from":[5,4.8452994616207485],"to":[4,5],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":3,"pileFlowStart":0.9833333328918163,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":1.0130594146214282,"garbageImmediateSchedule":true,"garbageGridEntryHandoff":true}}
-    at expect (evalmachine.<anonymous>:4851:34)
-    at evalmachine.<anonymous>:4891:7
+Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":17,"local":[],"visual":[5,4.8452994616207485],"logical":[3,8],"path":{"from":[5,4.8452994616207485],"to":[4,5],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":3,"pileFlowStart":0.9583333333333324,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":0.9880594150629443,"garbageImmediateSchedule":true,"garbageGridEntryHandoff":true}}
+    at expect (evalmachine.<anonymous>:4821:34)
+    at evalmachine.<anonymous>:4861:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
