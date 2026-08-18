@@ -7,7 +7,12 @@ function holds(g){let n=0;for(const q of visuals(g))if(q.b.hardDropContactHold)n
 for(const seed of seeds){
  const g=createEngine(710000+seed);spawn(g);const rng=mulberry32(910000+seed);let id=3000000+seed*60;
  for(let n=0;n<3+(seed%15);n++){const y=BOARD_MIN_ROW+Math.floor(rng()*(ROWS-BOARD_MIN_ROW)),xs=[];for(let x=0;x<W2;x++)if(valid(x,y)&&!g.board[y][x])xs.push(x);if(!xs.length)continue;const x=xs[Math.floor(rng()*xs.length)],c=Math.floor(rng()*COLORS.length);g.board[y][x]=mk(id++,c);}
- settleAll(g.board);try{Object.defineProperty(g.board,'_hexEngine',{value:g,writable:true,configurable:true,enumerable:false});}catch(_){}for(const q of visuals(g)){delete q.b.fallPath;setVis(g,q.b,q.x,q.y,0);}
+ settleAll(g.board);try{Object.defineProperty(g.board,'_hexEngine',{value:g,writable:true,configurable:true,enumerable:false});}catch(_){}
+ // Register every logical pile ball in the visual map before asking the guide
+ // or hard-drop contact solver for a physical pose. Using visuals(g) here was
+ // circular: freshly seeded board balls have no visual entry yet, so the test
+ // accidentally made the guide ignore most of the pile.
+ for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(!b)continue;delete b.fallPath;setVis(g,b,x,y,0);}
  g.state='PLAYING';g.piece.rot=seed%6;const range=legalXRange(g),f=((seed%31)+.37)/31;setFreeX(g,range[0]+(range[1]-range[0])*f);updateVisuals(g,PHYSICS_FRAME);
  const shadow=landingShadowVisualCells(g),before=g.nextId;if(!shadow){fail('missing-shadow',{seed});continue;}hardDrop(g);
  const tracked=new Set([before,before+1,before+2]),prevY=new Map();let clearedHoldAt=null,settledAt=null,maxHold=holds(g),worstOverlap=Infinity;
