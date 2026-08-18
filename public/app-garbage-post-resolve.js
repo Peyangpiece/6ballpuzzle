@@ -1,13 +1,20 @@
 /* Final post-contact projection for garbage.
- * resolveVisualContacts may apply a tiny visual correction after updateVisuals.
- * Re-run the same swept first-contact clamp on exactly that correction so the
- * generic resolver cannot reintroduce a sub-diameter garbage overlap.
+ *
+ * resolveVisualContacts can make a tiny visual correction AFTER the scheduled
+ * swept clamp. Usually the current frame's pre-resolve positions are a safe
+ * start and the normal first-contact clamp is enough. If a tiny penetration was
+ * already inherited from the previous frame, retain the last fully safe garbage
+ * snapshot and use that REAL previous position as the sweep start instead of
+ * inventing a sideways separation.
  */
 (function installGarbagePostResolveClamp(){
     if(typeof window==="undefined"||window.__hexGarbagePostResolveClamp)return;
     window.__hexGarbagePostResolveClamp=true;
 
     const baseResolveVisualContacts=resolveVisualContacts;
+    const SAFE_MIN=0.9990;
+    const lastSafeByEngine=new WeakMap();
+
     function snapshotGarbage(g){
         const before=new Map();
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -18,11 +25,29 @@
         }
         return before;
     }
+    function physicalDist(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
+    function snapshotSafe(map){
+        const pts=[...map.values()];
+        for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++)if(physicalDist(pts[i],pts[j])<SAFE_MIN)return false;
+        return true;
+    }
 
     resolveVisualContacts=function(g){
         const before=snapshotGarbage(g);
+        if(snapshotSafe(before))lastSafeByEngine.set(g,new Map(before));
+
         const out=baseResolveVisualContacts(g);
         if(typeof window.__hexGarbageFrameClamp==="function")window.__hexGarbageFrameClamp(g,before,0);
+
+        let after=snapshotGarbage(g);
+        if(!snapshotSafe(after)){
+            const fallback=lastSafeByEngine.get(g);
+            if(fallback&&typeof window.__hexGarbageFrameClamp==="function"){
+                window.__hexGarbageFrameClamp(g,fallback,0);
+                after=snapshotGarbage(g);
+            }
+        }
+        if(snapshotSafe(after))lastSafeByEngine.set(g,new Map(after));
         return out;
     };
 })();
