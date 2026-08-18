@@ -1,1 +1,1 @@
-{"sha":"8bb607fdf40d2e7bdbaac0acd0fdcd9eb6fc5ca6","status":"pass","continuousContact":0,"airborneRigidity":0,"monotoneAfterContact":0,"overlap":0,"settleState":0,"aiTechnique":0,"sweptTunnel":0,"pileArc":0,"originalPileGrid":0,"noImpact":0}
+{"sha":"a28b5c9ad7c6a5af9ed89800d2625b1e87b26fff","status":"fail","continuousContact":0,"airborneRigidity":0,"monotoneAfterContact":0,"overlap":0,"settleState":0,"aiTechnique":0,"sweptTunnel":0,"pileArc":0,"originalPileGrid":0,"noImpact":0,"stackOnPile":1}

@@ -8,3 +8,20 @@ garbage swept pile-tunnel guard PASS
 accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
+evalmachine.<anonymous>:4478
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: garbage failed to finish lattice settling
+    at expect (evalmachine.<anonymous>:4478:34)
+    at evalmachine.<anonymous>:4546:1
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-stacks-on-pile.js:105:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
