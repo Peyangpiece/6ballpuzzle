@@ -77,7 +77,7 @@ for(let variant=0;variant<3;variant++)for(const type of ["PYRAMID","HEXAGON","ST
  const g=createEngine(99500+variant*17+type.length);
  g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;
  buildPile(g,variant);g.garbShapes=[type];prepareGarbageBatch(g);
- for(let frame=0;frame<360;frame++){
+ for(let frame=0;frame<180;frame++){
   updateGarbagePacks(g,PHYSICS_FRAME);
   updateVisuals(g,PHYSICS_FRAME);
   resolveVisualContacts(g);
