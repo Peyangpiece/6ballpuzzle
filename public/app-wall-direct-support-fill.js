@@ -1,14 +1,15 @@
 /* Wall direct-support vacancy fill.
  *
- * On alternating side-wall rows, a ball can sit directly above another wall
- * ball while the inward diagonal cell is empty. The core one-sided wall test
- * used to choose an inward roll around a virtual OUTSIDE-wall pivot before it
- * reached the real direct-below-support branch. That move is then rejected by
- * the real ball underneath, leaving the just-vacated wall cell open.
+ * After a wall pile ball moves, its old alternating-parity wall cell can become
+ * a secondary vacancy. A ball two rows above that mover may then sit directly
+ * over the moved support while the just-vacated inward diagonal cell is empty.
+ * The core one-sided wall branch chooses a roll around a virtual OUTSIDE-wall
+ * pivot before it reaches the real direct-below-support branch, so that valid
+ * secondary vacancy can remain open.
  *
- * Prefer the physically real direct-below ball as topPivot. This is the same
- * ordinary gravity move (one row down/inward), but now the sweep rolls around
- * the actual support and can legally fill the secondary wall vacancy.
+ * Apply the real topPivot path ONLY when the direct support has actually just
+ * vacated the target cell in its fallPath. This keeps ordinary wall landing
+ * untouched while closing movement-created wall gaps with the real support.
  */
 (function installWallDirectSupportFill(){
     if(typeof window==="undefined"||window.__hexWallDirectSupportFill)return;
@@ -24,6 +25,10 @@
         if(x===right)return -1;
         return 0;
     }
+    function supportVacatedTarget(support,target){
+        const path=Array.isArray(support?.fallPath)?support.fallPath:[];
+        return path.some(seg=>Array.isArray(seg?.from)&&seg.from[0]===target[0]&&seg.from[1]===target[1]);
+    }
 
     hexPhysNaturalMotion=function(board,x,y,ignore=null){
         const ball=valid(x,y)?board[y][x]:null;
@@ -31,13 +36,10 @@
             const inward=wallSideAt(x,y);
             if(inward){
                 const outer=[x-inward,y+1],inner=[x+inward,y+1],direct=[x,y+2];
-                // This special case is only for the parity where the outward
-                // lower diagonal is outside the board. The other parity is
-                // handled by WALL_EDGE_CHAIN_FOLLOW in app-wall-gap-invariant.
                 if(!valid(outer[0],outer[1])&&valid(inner[0],inner[1])&&hexPhysEmpty(board,inner[0],inner[1],ignore)&&valid(direct[0],direct[1])){
                     const support=board[direct[1]][direct[0]];
                     const ignored=!!(support&&ignore&&ignore.has(support.id));
-                    if(support&&!ignored){
+                    if(support&&!ignored&&supportVacatedTarget(support,inner)){
                         return{
                             x,y,tx:inner[0],ty:inner[1],ball,
                             kind:"WALL_DIRECT_SUPPORT_FILL",
@@ -52,6 +54,6 @@
         return baseNaturalMotion(board,x,y,ignore);
     };
 
-    window.__hexWallDirectSupportFillVersion="wall-direct-support-v1";
+    window.__hexWallDirectSupportFillVersion="wall-direct-support-v2";
     window.__hexWallDirectSupportVacancyAllowed=false;
 })();
