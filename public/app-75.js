@@ -3,6 +3,7 @@
  * Normalising the arc to radius exactly 1 moved t=0 by that margin and made an
  * otherwise valid monotonic arc fail its own no-up safety check. */
 const __hex75MotionDurationBeforeRadiusArc=hexMotionDuration;
+const __hex75HardDropBeforeRadiusArc=hardDrop;
 
 hex74ArcPoint=function(meta,t){
     t=Math.max(0,Math.min(1,t));
@@ -42,6 +43,17 @@ hex74InstallRigidContactArc=function(g,ids){
     if(!best)return false;
     for(const m of members)m.seg._hexHardDropRigidArc=best.meta;
     return true;
+};
+
+/* app-74 already attempts to install the support arc at the end of hardDrop().
+ * Re-run that installation here from the final overlay so the radius-aware
+ * implementation above is guaranteed to be the one used for the shipped
+ * hand-off. This is idempotent and only annotates an already-created rigid path. */
+hardDrop=function(g){
+    const before=g?.nextId;
+    __hex75HardDropBeforeRadiusArc(g);
+    if(!g||!Number.isFinite(before))return;
+    hex74InstallRigidContactArc(g,[before,before+1,before+2]);
 };
 
 hexMotionDuration=function(seg,state={vy:0,speed:0}){
