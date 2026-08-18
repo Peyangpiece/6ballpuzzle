@@ -3,16 +3,15 @@
  * resolveVisualContacts can make a tiny visual correction AFTER the scheduled
  * swept clamp. Usually the current frame's pre-resolve positions are a safe
  * start and the normal first-contact clamp is enough. If a tiny penetration was
- * already inherited from the previous frame, retain the last fully safe garbage
- * snapshot and use that REAL previous position as the sweep start instead of
- * inventing a sideways separation.
+ * already inherited from the previous frame, retain the last FULL one-diameter
+ * safe garbage snapshot and use that real previous position as the sweep start.
  */
 (function installGarbagePostResolveClamp(){
     if(typeof window==="undefined"||window.__hexGarbagePostResolveClamp)return;
     window.__hexGarbagePostResolveClamp=true;
 
     const baseResolveVisualContacts=resolveVisualContacts;
-    const SAFE_MIN=0.9990;
+    const SAFE_MIN=Math.max(1,HEX_MIN_DIST-2e-5);
     const lastSafeByEngine=new WeakMap();
 
     function snapshotGarbage(g){
