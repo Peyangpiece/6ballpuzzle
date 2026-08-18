@@ -29,6 +29,27 @@ HARD_DROP_CONVERGENCE {
         "protect": 5,
         "gid": 5,
         "rigid": true
+      },
+      "arcDebug": {
+        "gid": 5,
+        "kinds": [
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE"
+        ],
+        "sameDisp": true,
+        "linearSafe": false,
+        "candidates": [
+          {
+            "leader": 3,
+            "support": 3000542,
+            "ds": 1.000000999999999,
+            "de": 1,
+            "midD": 0.9989361099500046,
+            "da": 0.09228557383487779,
+            "safe": true
+          }
+        ]
       }
     },
     {
@@ -57,7 +78,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 5,
         "gid": 5,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -85,7 +107,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 5,
         "gid": 5,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -113,7 +136,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 5,
         "gid": 5,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -141,6 +165,27 @@ HARD_DROP_CONVERGENCE {
         "protect": 7,
         "gid": 7,
         "rigid": true
+      },
+      "arcDebug": {
+        "gid": 7,
+        "kinds": [
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE"
+        ],
+        "sameDisp": true,
+        "linearSafe": false,
+        "candidates": [
+          {
+            "leader": 2,
+            "support": 3000183,
+            "ds": 1.0000010000000001,
+            "de": 1,
+            "midD": 0.980765720351234,
+            "da": -0.3929045788985286,
+            "safe": true
+          }
+        ]
       }
     },
     {
@@ -169,7 +214,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 7,
         "gid": 7,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -197,6 +243,36 @@ HARD_DROP_CONVERGENCE {
         "protect": 8,
         "gid": 8,
         "rigid": true
+      },
+      "arcDebug": {
+        "gid": 8,
+        "kinds": [
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE"
+        ],
+        "sameDisp": true,
+        "linearSafe": false,
+        "candidates": [
+          {
+            "leader": 2,
+            "support": 3000301,
+            "ds": 1.0000010000000013,
+            "de": 1,
+            "midD": 0.9979686014150765,
+            "da": 0.12751740409366286,
+            "safe": true
+          },
+          {
+            "leader": 3,
+            "support": 3000300,
+            "ds": 1.0000010000000013,
+            "de": 1,
+            "midD": 0.9979686014150765,
+            "da": 0.12751740409366286,
+            "safe": true
+          }
+        ]
       }
     },
     {
@@ -225,7 +301,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 8,
         "gid": 8,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -253,7 +330,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 8,
         "gid": 8,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -281,7 +359,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 8,
         "gid": 8,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -309,6 +388,17 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
+      },
+      "arcDebug": {
+        "gid": 11,
+        "kinds": [
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE"
+        ],
+        "sameDisp": true,
+        "linearSafe": false,
+        "candidates": []
       }
     },
     {
@@ -337,7 +427,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -365,7 +456,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -393,7 +485,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -421,7 +514,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -449,7 +543,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -477,7 +572,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -505,7 +601,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -533,7 +630,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -561,7 +659,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -589,7 +688,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -617,7 +717,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -645,7 +746,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -673,7 +775,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -701,7 +804,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 11,
         "gid": 11,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -729,6 +833,27 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
+      },
+      "arcDebug": {
+        "gid": 12,
+        "kinds": [
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE",
+          "GROUP_SLOPE_TRANSLATE"
+        ],
+        "sameDisp": true,
+        "linearSafe": false,
+        "candidates": [
+          {
+            "leader": 2,
+            "support": 3001024,
+            "ds": 1.000001,
+            "de": 1,
+            "midD": 0.5086356037671811,
+            "da": -2.0743945459588895,
+            "safe": false
+          }
+        ]
       }
     },
     {
@@ -757,7 +882,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -785,7 +911,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -813,7 +940,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -841,7 +969,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -869,7 +998,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -897,7 +1027,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -925,7 +1056,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -953,7 +1085,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -981,7 +1114,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1009,7 +1143,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1037,7 +1172,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1065,7 +1201,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1093,7 +1230,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1121,7 +1259,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1149,7 +1288,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1177,7 +1317,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1205,7 +1346,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1233,7 +1375,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     },
     {
       "type": "tracked-upward-motion",
@@ -1261,7 +1404,8 @@ HARD_DROP_CONVERGENCE {
         "protect": 12,
         "gid": 12,
         "rigid": true
-      }
+      },
+      "arcDebug": null
     }
   ]
 }
