@@ -1,0 +1,36 @@
+name: Hard Drop Overlap Diagnose
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/harddrop-overlap-trigger.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Trace hard drop first frames
+        shell: bash
+        run: |
+          mkdir -p audit-results
+          node tests/diagnose-harddrop-overlap.js > audit-results/harddrop-overlap.log 2>&1
+          cat audit-results/harddrop-overlap.log
+      - name: Store trace
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add audit-results/harddrop-overlap.log
+          if ! git diff --cached --quiet; then git commit -m "Record hard drop overlap trace [skip ci]"; fi
+          git pull --rebase origin main
+          git push
