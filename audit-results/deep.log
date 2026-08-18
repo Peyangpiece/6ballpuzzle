@@ -1,8 +1,8 @@
-AI_STATE_CASE {"seed":1,"level":1,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.95,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":1,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":2,"maxPieceAge":1.95,"bugs":0}
 AI_STATE_CASE {"seed":1,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.542,"bugs":0}
 AI_STATE_CASE {"seed":1,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.242,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":0.792,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":4,"maxPieceAge":0.658,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":4,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":3,"maxPieceAge":0.792,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":4,"maxPieceAge":0.658,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":1,"alive":true,"state":"PLAYING","phase":null,"spawnCount":3,"maxPieceAge":2,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.85,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.442,"bugs":0}
@@ -18,901 +18,901 @@ AI_STATE_AUDIT {
 PERFORMANCE_AUDIT {
   "seconds": 16,
   "stats": {
-    "final-contact-reentry": 7680,
-    "garbage-relax-reentry": 928,
+    "garbage-relax-reentry": 870,
+    "final-contact-reentry": 4333,
     "frame-over-250ms": 2
   },
   "bugs": [
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 0,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 847,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 1,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 848,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 2,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 849,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 3,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 850,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 4,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 851,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 5,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 852,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 6,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 853,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 7,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 854,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 8,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 855,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 9,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 856,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 10,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 857,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 11,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 858,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 12,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 859,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 13,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 860,
+      "resolve": 2,
+      "relax": 7,
+      "final": 4,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 14,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 907,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 15,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 908,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 16,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 909,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 17,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 910,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 18,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 911,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 19,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 912,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 20,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 913,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 21,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 914,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 22,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 915,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 23,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 916,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 24,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 917,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 25,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 918,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 26,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 919,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 27,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 920,
+      "resolve": 2,
+      "relax": 7,
+      "final": 3,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 28,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 921,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 29,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 922,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 30,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 923,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 31,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 924,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 32,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 925,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 33,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 926,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 34,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 927,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 35,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 928,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 36,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 929,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 37,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 930,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 38,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 931,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 39,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 932,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 40,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 933,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 41,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 934,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 42,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 935,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 43,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 936,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 44,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 937,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 45,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 938,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 46,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 939,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 47,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 940,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 48,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 941,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 49,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 942,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 50,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 943,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 51,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 944,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 52,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 945,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 53,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 946,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 54,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 947,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 55,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 948,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 56,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 949,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 57,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 950,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 58,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 951,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 59,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 952,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 60,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 953,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 61,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 954,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 62,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 955,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 63,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 956,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 64,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 957,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 65,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 958,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 66,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 959,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 67,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 960,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 68,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 961,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 69,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 962,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 70,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 963,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 71,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 964,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 72,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 965,
+      "resolve": 2,
+      "relax": 1,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 73,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 966,
+      "resolve": 3,
+      "relax": 3,
+      "final": 11,
+      "rests": 8,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 74,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 967,
+      "resolve": 2,
+      "relax": 7,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 75,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 967,
+      "resolve": 2,
+      "relax": 7,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 76,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 968,
+      "resolve": 2,
+      "relax": 7,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 77,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 968,
+      "resolve": 2,
+      "relax": 7,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
-      "type": "final-contact-reentry",
+      "type": "garbage-relax-reentry",
       "seed": 1,
-      "step": 78,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 969,
+      "resolve": 2,
+      "relax": 7,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     },
     {
       "type": "final-contact-reentry",
       "seed": 1,
-      "step": 79,
-      "resolve": 1,
-      "relax": 0,
-      "final": 6,
-      "rests": 4,
-      "state": "READY",
-      "phase": null
+      "step": 969,
+      "resolve": 2,
+      "relax": 7,
+      "final": 9,
+      "rests": 6,
+      "state": "RESOLVING",
+      "phase": "GARBAGE"
     }
   ],
   "profiles": [
     {
       "seed": 1,
       "frames": 1920,
-      "maxMs": 76,
-      "avgMs": 9.897,
+      "maxMs": 67,
+      "avgMs": 10.579,
       "maxCounts": {
         "step": 1081,
-        "ms": 5,
+        "ms": 6,
         "resolve": 3,
         "relax": 3,
         "final": 15,
@@ -925,8 +925,8 @@ PERFORMANCE_AUDIT {
     {
       "seed": 7,
       "frames": 1920,
-      "maxMs": 37,
-      "avgMs": 5.446,
+      "maxMs": 43,
+      "avgMs": 5.8,
       "maxCounts": {
         "step": 995,
         "ms": 7,
@@ -942,8 +942,8 @@ PERFORMANCE_AUDIT {
     {
       "seed": 19,
       "frames": 1920,
-      "maxMs": 278,
-      "avgMs": 9.149,
+      "maxMs": 262,
+      "avgMs": 6.327,
       "maxCounts": {
         "step": 926,
         "ms": 5,
@@ -957,17 +957,17 @@ PERFORMANCE_AUDIT {
       "slow": [
         {
           "step": 473,
-          "ms": 86,
+          "ms": 97,
           "resolve": 1,
           "relax": 0,
-          "final": 6,
+          "final": 2,
           "rests": 4,
           "state": "PLAYING",
           "phase": null
         },
         {
           "step": 1017,
-          "ms": 141,
+          "ms": 136,
           "resolve": 1,
           "relax": 0,
           "final": 6,
@@ -977,7 +977,7 @@ PERFORMANCE_AUDIT {
         },
         {
           "step": 1096,
-          "ms": 165,
+          "ms": 172,
           "resolve": 1,
           "relax": 0,
           "final": 7,
@@ -987,7 +987,7 @@ PERFORMANCE_AUDIT {
         },
         {
           "step": 1553,
-          "ms": 237,
+          "ms": 262,
           "resolve": 1,
           "relax": 0,
           "final": 6,
@@ -997,17 +997,7 @@ PERFORMANCE_AUDIT {
         },
         {
           "step": 1601,
-          "ms": 263,
-          "resolve": 1,
-          "relax": 0,
-          "final": 6,
-          "rests": 4,
-          "state": "PLAYING",
-          "phase": null
-        },
-        {
-          "step": 1683,
-          "ms": 278,
+          "ms": 258,
           "resolve": 1,
           "relax": 0,
           "final": 6,
@@ -1020,8 +1010,8 @@ PERFORMANCE_AUDIT {
     {
       "seed": 37,
       "frames": 1920,
-      "maxMs": 94,
-      "avgMs": 11.615,
+      "maxMs": 49,
+      "avgMs": 7.14,
       "maxCounts": {
         "step": 985,
         "ms": 4,
@@ -1032,18 +1022,7 @@ PERFORMANCE_AUDIT {
         "state": "RESOLVING",
         "phase": "GARBAGE"
       },
-      "slow": [
-        {
-          "step": 1882,
-          "ms": 94,
-          "resolve": 2,
-          "relax": 7,
-          "final": 13,
-          "rests": 6,
-          "state": "RESOLVING",
-          "phase": "GARBAGE"
-        }
-      ]
+      "slow": []
     }
   ]
 }
@@ -1054,659 +1033,8 @@ SETTLE_AUDIT {
 }
 LANDING_AUDIT {
   "cases": 120,
-  "bugs": [
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 6,
-      "role": 0,
-      "d": 1.0402683052717476,
-      "guide": [
-        5.671290322580646,
-        9.136955274790436
-      ],
-      "actual": [
-        5,
-        8
-      ],
-      "logical": [
-        5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 6,
-      "role": 1,
-      "d": 1.0402683052717476,
-      "guide": [
-        7.671290322580646,
-        9.136955274790436
-      ],
-      "actual": [
-        7,
-        8
-      ],
-      "logical": [
-        7,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 6,
-      "role": 2,
-      "d": 1.0402683052717476,
-      "guide": [
-        6.671290322580646,
-        10.136955274790436
-      ],
-      "actual": [
-        6,
-        9
-      ],
-      "logical": [
-        6,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 9,
-      "role": 0,
-      "d": 1.6916432280825309,
-      "guide": [
-        5.836129032258064,
-        8.951048739387893
-      ],
-      "actual": [
-        6,
-        7
-      ],
-      "logical": [
-        6,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 9,
-      "role": 1,
-      "d": 1.6916432280825309,
-      "guide": [
-        6.836129032258064,
-        9.951048739387893
-      ],
-      "actual": [
-        7,
-        8
-      ],
-      "logical": [
-        7,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 9,
-      "role": 2,
-      "d": 1.6916432280825309,
-      "guide": [
-        4.836129032258064,
-        9.951048739387893
-      ],
-      "actual": [
-        5,
-        8
-      ],
-      "logical": [
-        5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 35,
-      "role": 0,
-      "d": 1.648839650646649,
-      "guide": [
-        3.255483870967742,
-        8.854758250894985
-      ],
-      "actual": [
-        4,
-        7
-      ],
-      "logical": [
-        4,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 35,
-      "role": 1,
-      "d": 1.648839650646649,
-      "guide": [
-        4.255483870967742,
-        9.854758250894985
-      ],
-      "actual": [
-        5,
-        8
-      ],
-      "logical": [
-        5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 35,
-      "role": 2,
-      "d": 1.648839650646649,
-      "guide": [
-        2.255483870967742,
-        9.854758250894985
-      ],
-      "actual": [
-        3,
-        8
-      ],
-      "logical": [
-        3,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 39,
-      "role": 0,
-      "d": 1.6463174737985755,
-      "guide": [
-        3.4299999999999997,
-        8.872302049896339
-      ],
-      "actual": [
-        4,
-        7
-      ],
-      "logical": [
-        4,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 39,
-      "role": 1,
-      "d": 1.6463174737985755,
-      "guide": [
-        4.43,
-        9.872302049896339
-      ],
-      "actual": [
-        5,
-        8
-      ],
-      "logical": [
-        5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 39,
-      "role": 2,
-      "d": 1.6463174737985755,
-      "guide": [
-        2.4299999999999997,
-        9.872302049896339
-      ],
-      "actual": [
-        3,
-        8
-      ],
-      "logical": [
-        3,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 57,
-      "role": 0,
-      "d": 1.7194622869670584,
-      "guide": [
-        15.954516129032259,
-        8.985290360181581
-      ],
-      "actual": [
-        16,
-        7
-      ],
-      "logical": [
-        16,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 57,
-      "role": 1,
-      "d": 1.7194622869670584,
-      "guide": [
-        16.954516129032257,
-        9.985290360181581
-      ],
-      "actual": [
-        17,
-        8
-      ],
-      "logical": [
-        17,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 57,
-      "role": 2,
-      "d": 1.7194622869670584,
-      "guide": [
-        14.954516129032259,
-        9.985290360181581
-      ],
-      "actual": [
-        15,
-        8
-      ],
-      "logical": [
-        15,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 59,
-      "role": 0,
-      "d": 1.6498668202549678,
-      "guide": [
-        9.236451612903226,
-        8.853396518006411
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 59,
-      "role": 1,
-      "d": 1.6498668202549678,
-      "guide": [
-        10.236451612903226,
-        9.853396518006411
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 59,
-      "role": 2,
-      "d": 1.6498668202549678,
-      "guide": [
-        8.236451612903226,
-        9.853396518006411
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 69,
-      "role": 0,
-      "d": 1.650291798267392,
-      "guide": [
-        8.475483870967743,
-        8.8857153519875
-      ],
-      "actual": [
-        8,
-        7
-      ],
-      "logical": [
-        8,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 69,
-      "role": 1,
-      "d": 1.650291798267392,
-      "guide": [
-        9.475483870967743,
-        9.8857153519875
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 69,
-      "role": 2,
-      "d": 1.650291798267392,
-      "guide": [
-        7.475483870967742,
-        9.8857153519875
-      ],
-      "actual": [
-        7,
-        8
-      ],
-      "logical": [
-        7,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 85,
-      "role": 0,
-      "d": 1.6478499248653644,
-      "guide": [
-        15.277096774193549,
-        8.856434613772125
-      ],
-      "actual": [
-        16,
-        7
-      ],
-      "logical": [
-        16,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 85,
-      "role": 1,
-      "d": 1.6478499248653644,
-      "guide": [
-        16.27709677419355,
-        9.856434613772125
-      ],
-      "actual": [
-        17,
-        8
-      ],
-      "logical": [
-        17,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 85,
-      "role": 2,
-      "d": 1.6478499248653644,
-      "guide": [
-        14.277096774193549,
-        9.856434613772125
-      ],
-      "actual": [
-        15,
-        8
-      ],
-      "logical": [
-        15,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 89,
-      "role": 0,
-      "d": 1.0009838565562124,
-      "guide": [
-        8.946129032258064,
-        8.018612549609028
-      ],
-      "actual": [
-        8,
-        7
-      ],
-      "logical": [
-        8,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 89,
-      "role": 1,
-      "d": 1.0009838565562124,
-      "guide": [
-        9.946129032258064,
-        9.018612549609028
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 89,
-      "role": 2,
-      "d": 1.0009838565562126,
-      "guide": [
-        7.946129032258065,
-        9.018612549609028
-      ],
-      "actual": [
-        7,
-        8
-      ],
-      "logical": [
-        7,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 100,
-      "role": 0,
-      "d": 1.15838513614936,
-      "guide": [
-        2.6151612903225807,
-        9.319005137991118
-      ],
-      "actual": [
-        3,
-        8
-      ],
-      "logical": [
-        3,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 100,
-      "role": 1,
-      "d": 1.15838513614936,
-      "guide": [
-        4.615161290322581,
-        9.319005137991118
-      ],
-      "actual": [
-        5,
-        8
-      ],
-      "logical": [
-        5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 100,
-      "role": 2,
-      "d": 1.15838513614936,
-      "guide": [
-        3.6151612903225807,
-        10.319005137991118
-      ],
-      "actual": [
-        4,
-        9
-      ],
-      "logical": [
-        4,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 111,
-      "role": 0,
-      "d": 1.6499365970728908,
-      "guide": [
-        10.481290322580646,
-        8.884809691793144
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 111,
-      "role": 1,
-      "d": 1.6499365970728908,
-      "guide": [
-        11.481290322580646,
-        9.884809691793144
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 111,
-      "role": 2,
-      "d": 1.6499365970728908,
-      "guide": [
-        9.481290322580646,
-        9.884809691793144
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 117,
-      "role": 0,
-      "d": 1.6542632834971935,
-      "guide": [
-        13.578064516129032,
-        8.894581615375651
-      ],
-      "actual": [
-        14,
-        7
-      ],
-      "logical": [
-        14,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 117,
-      "role": 1,
-      "d": 1.6542632834971935,
-      "guide": [
-        14.578064516129032,
-        9.894581615375651
-      ],
-      "actual": [
-        15,
-        8
-      ],
-      "logical": [
-        15,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 117,
-      "role": 2,
-      "d": 1.6542632834971935,
-      "guide": [
-        12.578064516129032,
-        9.894581615375651
-      ],
-      "actual": [
-        13,
-        8
-      ],
-      "logical": [
-        13,
-        8
-      ]
-    }
-  ],
-  "stats": {
-    "guide-harddrop-contact-disagreement": 36
-  }
+  "bugs": [],
+  "stats": {}
 }
 RENDERED_GUIDE_AUDIT {
   "cases": 120,
