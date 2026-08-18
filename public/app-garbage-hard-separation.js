@@ -1,10 +1,12 @@
-/* Final garbage-to-garbage distance invariant.
+/* Final garbage-to-garbage motion invariant.
  *
- * app-garbage-visible-overlap closes the board/airborne representation gap.
- * This final projection handles board-edge cases where a queued garbage ball is
- * already at x=0/x=W2-1. A moving garbage ball that has no lateral escape is
- * clamped back to its first contact along this frame's actual motion segment;
- * it is never pushed toward the other ball. Pre-drop pile remains immutable.
+ * app-17 serializes garbage motion, but its historical queue used motionSeq.
+ * Scheduled pileFlow deliberately clears motionSeq to zero and preserves the
+ * true order in pileFlowOriginalSeq. That let a later garbage member start while
+ * an earlier member was still travelling, so two paths could converge on the
+ * same intermediate lattice point. Use the preserved original sequence as the
+ * authoritative queue order, pause queued schedules in real time, and retain a
+ * final continuous separation clamp as a last-resort invariant.
  */
 (function installGarbageHardSeparation(){
     if(typeof window==="undefined"||window.__hexGarbageHardSeparation)return;
@@ -15,6 +17,29 @@
     const BISECT=22;
     const previousByEngine=new WeakMap();
 
+    function segmentSeq(seg){
+        const original=Number(seg?.pileFlowOriginalSeq),motion=Number(seg?.motionSeq);
+        if(Number.isFinite(original)&&original>0)return original;
+        if(Number.isFinite(motion)&&motion>0)return motion;
+        return 0;
+    }
+
+    // Replace app-17's queue lookup. Its updateVisuals/resolveVisualContacts
+    // wrappers call this name dynamically, so later assignment is authoritative.
+    __hexdropGarbageMotionQueue=function(g){
+        let minSeq=Infinity;
+        const queued=new Set(),entries=[];
+        if(!g||g.state!=="RESOLVING"||g.phase!=="GARBAGE")return{minSeq,queued};
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
+            const seq=segmentSeq(seg);
+            if(seq>0){entries.push({id:ball.id,isGarbage:!!ball.isGarbage,seq});minSeq=Math.min(minSeq,seq);}
+        }
+        if(Number.isFinite(minSeq))for(const e of entries)if(e.isGarbage&&e.seq>minSeq)queued.add(e.id);
+        return{minSeq,queued};
+    };
+
     function items(g){
         const out=[];
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -24,26 +49,24 @@
         return out;
     }
     function immutable(g,q){return g?.garbageOriginalPileIds instanceof Set&&g.garbageOriginalPileIds.has(q.ball.id);}
-    function settled(q){return q.ball.garbagePileSettled===true;}
-    function seq(q){
-        const s=Array.isArray(q.ball?.fallPath)&&q.ball.fallPath.length?q.ball.fallPath[0]:null;
-        const a=Number(s?.pileFlowOriginalSeq),b=Number(s?.motionSeq);
-        return Number.isFinite(a)&&a>0?a:(Number.isFinite(b)&&b>0?b:0);
+    function resting(q){
+        if(q.ball.garbagePileSettled!==true)return false;
+        if(Array.isArray(q.ball.fallPath)&&q.ball.fallPath.length)return false;
+        if(q.v.pileFlow||q.v._pendingPathComplete)return false;
+        return Math.abs(q.v.x-q.x)<=.02&&Math.abs(q.v.y-q.y)<=.02;
     }
+    function seq(q){return segmentSeq(Array.isArray(q.ball?.fallPath)&&q.ball.fallPath.length?q.ball.fallPath[0]:null);}
     function distance(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*HEX_ROW_H);}
     function pointDistance(p,q){return Math.hypot((p[0]-q[0])*.5,(p[1]-q[1])*HEX_ROW_H);}
 
     function snapshot(g){
-        const m=new Map();
-        for(const q of items(g))m.set(q.ball.id,[q.v.x,q.v.y]);
-        previousByEngine.set(g,m);
-        return m;
+        const m=new Map();for(const q of items(g))m.set(q.ball.id,[q.v.x,q.v.y]);
+        previousByEngine.set(g,m);return m;
     }
     function prevMap(g){return previousByEngine.get(g)||null;}
 
     function outwardDir(q,other){
-        let dir=Math.sign(q.v.x-other.v.x);
-        if(!dir)dir=Math.sign(q.x-other.x);
+        let dir=Math.sign(q.v.x-other.v.x);if(!dir)dir=Math.sign(q.x-other.x);
         if(!dir){const left=q.v.x,right=(W2-1)-q.v.x;dir=right>=left?1:-1;}
         return dir;
     }
@@ -61,11 +84,8 @@
         return Math.max(0,Math.sqrt(Math.max(0,MIN*MIN-vy*vy))-Math.abs((a.v.x-b.v.x)*.5));
     }
 
-    // Continuous fallback for a moving ball pinned against a side wall. Previous
-    // frame must be safe; binary-search the current frame's segment and keep the
-    // deepest point whose centre is still one full diameter from the fixed ball.
     function clampToPreviousContact(g,mover,other){
-        const pm=prevMap(g),p0=pm?.get(mover.ball.id);if(!p0)return false;
+        const p0=prevMap(g)?.get(mover.ball.id);if(!p0)return false;
         const p1=[mover.v.x,mover.v.y],op=[other.v.x,other.v.y];
         if(pointDistance(p0,op)<MIN-1e-7)return false;
         if(pointDistance(p1,op)>=MIN-1e-9)return true;
@@ -83,25 +103,41 @@
         return pointDistance([mover.v.x,mover.v.y],op)>=MIN-5e-7;
     }
 
+    function pauseQueuedSchedules(g,queued,dt){
+        if(!queued?.size||!(dt>0))return;
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;if(!ball?.isGarbage||!queued.has(ball.id))continue;
+            const path=Array.isArray(ball.fallPath)?ball.fallPath:[];
+            for(const seg of path){
+                if(!seg?.pileFlow)continue;
+                if(Number.isFinite(seg.pileFlowStart))seg.pileFlowStart+=dt;
+                if(Number.isFinite(seg.pileFlowEnd))seg.pileFlowEnd+=dt;
+            }
+            const v=g.vis.get(ball.id);if(v){v.vy=0;v.motionSpeed=0;v.garbageQueueHeld=true;}
+        }
+    }
+
     function hardSeparate(g){
         const list=items(g);if(list.length<2)return;
+        const queued=(typeof __hexdropGarbageMotionQueue==="function"?__hexdropGarbageMotionQueue(g).queued:new Set());
         for(let pass=0;pass<64;pass++){
             let changed=false;
             for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
                 const a=list[i],b=list[j];if(distance(a,b)>=MIN-1e-9)continue;
                 changed=true;
 
-                if(settled(a)&&settled(b)&&!immutable(g,a)&&!immutable(g,b)){
+                if(resting(a)&&resting(b)&&!immutable(g,a)&&!immutable(g,b)){
                     a.v.x=a.x;a.v.y=a.y;b.v.x=b.x;b.v.y=b.y;continue;
                 }
 
-                const ia=immutable(g,a),ib=immutable(g,b);if(ia&&ib)continue;
+                const fixedA=immutable(g,a)||resting(a)||queued.has(a.ball.id);
+                const fixedB=immutable(g,b)||resting(b)||queued.has(b.ball.id);
+                if(fixedA&&fixedB)continue;
                 let need=requiredHorizontal(a,b);if(need<=1e-10)continue;
+
                 let first,second;
-                if(ia){first=b;second=null;}
-                else if(ib){first=a;second=null;}
-                else if(settled(a)&&!settled(b)){first=b;second=null;}
-                else if(settled(b)&&!settled(a)){first=a;second=null;}
+                if(fixedA){first=b;second=null;}
+                else if(fixedB){first=a;second=null;}
                 else{
                     const later=seq(a)>seq(b)?a:(seq(b)>seq(a)?b:(a.ball.id>b.ball.id?a:b)),earlier=later===a?b:a;
                     const laterRoom=availablePhysical(later,outwardDir(later,earlier));
@@ -110,34 +146,34 @@
                     else{first=earlier;second=later;}
                 }
 
-                const other=first===a?b:a;
-                const firstRoom=availablePhysical(first,outwardDir(first,other));
-                // If the only movable ball is wall-blocked, prefer continuous
-                // time-of-impact clamping over any sideways correction.
-                if(firstRoom+1e-10<need&&(!second||settled(other)||immutable(g,other))){
+                const other=first===a?b:a,firstRoom=availablePhysical(first,outwardDir(first,other));
+                if(firstRoom+1e-10<need&&(fixedA||fixedB)){
                     if(clampToPreviousContact(g,first,other))continue;
                 }
-
                 need-=pushOut(first,other,need);
-                if(need>1e-8&&second&&!immutable(g,second)&&!settled(second)){
+                if(need>1e-8&&second&&!immutable(g,second)&&!resting(second)&&!queued.has(second.ball.id)){
                     need-=pushOut(second,second===a?b:a,need);
                 }
-
                 if(distance(a,b)<MIN-5e-7){
-                    // Last resort is still a time clamp, never a push toward the
-                    // neighbour. Try whichever non-fixed ball actually moved.
-                    if(!immutable(g,first)&&clampToPreviousContact(g,first,other))continue;
-                    if(second&&!immutable(g,second))clampToPreviousContact(g,second,second===a?b:a);
+                    if(clampToPreviousContact(g,first,other))continue;
+                    if(second)clampToPreviousContact(g,second,second===a?b:a);
                 }
             }
             if(!changed)break;
         }
     }
 
-    // Loaded last: retain the true start-of-frame garbage centres so later queue
-    // restoration layers cannot erase the collision history needed by the clamp.
+    // Loaded after app-17. Snapshot before its queue-restoration wrapper runs;
+    // then preserve queue time as well as queue position.
     const baseUpdateVisuals=updateVisuals;
-    updateVisuals=function(g,dt){snapshot(g);const out=baseUpdateVisuals(g,dt);hardSeparate(g);return out;};
+    updateVisuals=function(g,dt){
+        snapshot(g);
+        const beforeQueue=typeof __hexdropGarbageMotionQueue==="function"?__hexdropGarbageMotionQueue(g).queued:new Set();
+        const out=baseUpdateVisuals(g,dt);
+        pauseQueuedSchedules(g,beforeQueue,Math.max(0,dt||0));
+        hardSeparate(g);
+        return out;
+    };
 
     const baseResolve=resolveVisualContacts;
     resolveVisualContacts=function(g){const out=baseResolve(g);hardSeparate(g);return out;};
@@ -146,4 +182,5 @@
     updateGarbagePacks=function(g,dt){const out=baseUpdateGarbage(g,dt);hardSeparate(g);return out;};
 
     window.__hexHardSeparateGarbage=hardSeparate;
+    window.__hexGarbageOriginalSequence=segmentSeq;
 })();
