@@ -3,15 +3,13 @@
  * contact with the accumulated pile or floor. A physics frame is never allowed
  * to overshoot that first contact and start splitting the shape below it.
  *
- * At that first contact rigidity is released. Remaining members are handed to
- * the lattice from their exact current centres, one member per 120 Hz physics
- * frame. If the next member cannot be registered because another rendered ball
- * still occupies the entry corridor, the unresolved remainder stays parked at
- * the first-contact anchor and retries later. It is never allowed to continue
- * through the accumulated pile. Once registered, the normal lattice solver owns
- * the ball: it free-falls or rolls on support arcs and is later promoted to
- * accumulated pile by app-garbage-settle-state when its final visual/logical
- * position agrees.
+ * At that first contact rigidity is released. All members are immediately
+ * offered a lattice entry from their exact current centres so their future cells
+ * are reserved before another member can settle into them. Any member that still
+ * cannot register safely remains parked at the first-contact anchor and retries;
+ * the unresolved remainder never continues through the accumulated pile. Once
+ * registered, normal lattice gravity/support arcs own the ball, and the settle
+ * state promotes it to accumulated pile after its final visual position rests.
  */
 (function installGarbageAirborneRigidity(){
     if(typeof window==="undefined"||window.__hexGarbageAirborneRigidity)return;
@@ -30,19 +28,25 @@
         return Number.isFinite(y)?{y,hits}:null;
     }
 
-    function releaseOneAtFirstContact(g,pack,anchorY){
+    function releaseAvailableAtFirstContact(g,pack,anchorY){
         if(!pack?.pat?.length)return 0;
-        // Lower members enter first. Only one member is allowed to reserve a new
-        // logical/visual route during this physics frame; later members wait for
-        // that route to advance, avoiding cross-reservation deadlocks.
-        const order=pack.pat
-            .map((slot,index)=>({index,dy:slot[1],dx:slot[0]}))
-            .sort((a,b)=>b.dy-a.dy||Math.abs(a.dx)-Math.abs(b.dx)||b.index-a.index);
-        for(const q of order){
-            if(q.index>=pack.pat.length)continue;
-            if(materializeGarbageBallAtContact(g,pack,q.index,anchorY))return 1;
+        let released=0,guard=Math.max(6,pack.pat.length*4);
+        while(pack.pat.length&&guard-->0){
+            const order=pack.pat
+                .map((slot,index)=>({index,dy:slot[1],dx:slot[0]}))
+                .sort((a,b)=>b.dy-a.dy||Math.abs(a.dx)-Math.abs(b.dx)||b.index-a.index);
+            let progressed=false;
+            for(const q of order){
+                if(q.index>=pack.pat.length)continue;
+                if(materializeGarbageBallAtContact(g,pack,q.index,anchorY)){
+                    released++;
+                    progressed=true;
+                    break;
+                }
+            }
+            if(!progressed)break;
         }
-        return 0;
+        return released;
     }
 
     materializeGarbageContactsThrough=function(g,pack,desiredY){
@@ -59,16 +63,13 @@
             pack._pileContactClock=Number.isFinite(g?.garbageClock)?g.garbageClock:0;
             pack._gridReleaseStarted=true;
 
-            return releaseOneAtFirstContact(g,pack,first.y);
+            return releaseAvailableAtFirstContact(g,pack,first.y);
         }
 
-        // After first contact the unresolved members no longer follow free-flight
-        // desiredY. They wait at exactly the contact-height configuration until
-        // each can enter a collision-free lattice route.
         const anchor=Number.isFinite(pack._pileContactAnchorY)?pack._pileContactAnchorY:pack.y;
         pack.y=anchor;
         pack.contactY=anchor;
-        return releaseOneAtFirstContact(g,pack,anchor);
+        return releaseAvailableAtFirstContact(g,pack,anchor);
     };
 
     function snapshotGarbageY(g){
