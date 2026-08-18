@@ -31,6 +31,35 @@ HARD_DROP_CONVERGENCE {
         "rigid": true
       },
       "arcDebug": {
+        "installAttempt": {
+          "before": 1,
+          "ids": [
+            1,
+            2,
+            3
+          ],
+          "installed": false,
+          "paths": [
+            {
+              "id": 1,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 2,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 3,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            }
+          ]
+        },
         "gid": 5,
         "kinds": [
           "GROUP_SLOPE_TRANSLATE",
@@ -167,6 +196,35 @@ HARD_DROP_CONVERGENCE {
         "rigid": true
       },
       "arcDebug": {
+        "installAttempt": {
+          "before": 1,
+          "ids": [
+            1,
+            2,
+            3
+          ],
+          "installed": false,
+          "paths": [
+            {
+              "id": 1,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 2,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 3,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            }
+          ]
+        },
         "gid": 7,
         "kinds": [
           "GROUP_SLOPE_TRANSLATE",
@@ -245,6 +303,35 @@ HARD_DROP_CONVERGENCE {
         "rigid": true
       },
       "arcDebug": {
+        "installAttempt": {
+          "before": 1,
+          "ids": [
+            1,
+            2,
+            3
+          ],
+          "installed": false,
+          "paths": [
+            {
+              "id": 1,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 2,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 3,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            }
+          ]
+        },
         "gid": 8,
         "kinds": [
           "GROUP_SLOPE_TRANSLATE",
@@ -390,6 +477,35 @@ HARD_DROP_CONVERGENCE {
         "rigid": true
       },
       "arcDebug": {
+        "installAttempt": {
+          "before": 1,
+          "ids": [
+            1,
+            2,
+            3
+          ],
+          "installed": false,
+          "paths": [
+            {
+              "id": 1,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 2,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 3,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            }
+          ]
+        },
         "gid": 11,
         "kinds": [
           "GROUP_SLOPE_TRANSLATE",
@@ -835,6 +951,35 @@ HARD_DROP_CONVERGENCE {
         "rigid": true
       },
       "arcDebug": {
+        "installAttempt": {
+          "before": 1,
+          "ids": [
+            1,
+            2,
+            3
+          ],
+          "installed": false,
+          "paths": [
+            {
+              "id": 1,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 2,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            },
+            {
+              "id": 3,
+              "found": true,
+              "kind": "GROUP_SLOPE_TRANSLATE",
+              "arc": false
+            }
+          ]
+        },
         "gid": 12,
         "kinds": [
           "GROUP_SLOPE_TRANSLATE",
