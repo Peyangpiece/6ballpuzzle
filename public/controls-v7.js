@@ -6,11 +6,9 @@
  * - short tap in the bottom drop zone: instant drop
  * - one-finger long press in the lower half: fast fall only while held
  *
- * Release invariant:
- * - sub-cell X belongs to the live drag only. After release/cancel/blur the
- *   active piece must return to its current legal lattice anchor. Keeping an
- *   off-grid freeX/pieceVX without an owning pointer can strand the rendered
- *   piece between columns and make it appear frozen.
+ * The active piece keeps its exact sub-cell X after finger release. Only lock()
+ * commits it to a logical lattice anchor. Normal/fast vertical legality is
+ * continuous (app-78), so releasing between columns must never snap or freeze.
  */
 (function installHexControlsV7(){
     if(typeof document==="undefined"||window.__hexControlsV7Installed)return;
@@ -35,15 +33,8 @@
     const DROP_MOVE_TOL=48;
     const DRAG_START_TOL=4;
     const DRAG_AXIS_RATIO=.60;
-    // A long press should survive normal thumb drift. Horizontal intent still
-    // commits to a drag once it becomes clear.
     const HOLD_JITTER_TOL=30;
     const HOLD_DRAG_COMMIT_TOL=22;
-    // A deliberate downward stroke is an immediate fast-fall command. This is
-    // additive to long press and makes fast fall robust on browsers that emit
-    // pointermove while the finger is being held.
-    const FAST_SWIPE_START=18;
-    const FAST_AXIS_RATIO=1.10;
 
     const isCanvas=e=>e?.target?.tagName==="CANVAS";
     const player=()=>{
@@ -66,29 +57,21 @@
     const releaseCapture=rec=>{try{if(rec?.canvas?.hasPointerCapture?.(rec.id))rec.canvas.releasePointerCapture(rec.id);}catch(_){};};
     const clearHold=rec=>{if(rec?.holdTimer){clearTimeout(rec.holdTimer);rec.holdTimer=null;}};
 
-    function settleReleasedDrag(g){
+    function preserveReleasedDrag(g){
         if(!g)return false;
         g.dragging=false;
-        if(!validGame(g)){
-            g.freeX=null;
-            return false;
+        if(!validGame(g))return false;
+        if(Number.isFinite(g.freeX)){
+            setFreeX(g,g.freeX);
+            g.pieceVX=g.freeX;
         }
-        // setFreeX already moved logical piece.x whenever a midpoint was
-        // crossed. piece.x is therefore the reachable lattice anchor for this
-        // drag. Remove the fractional authority instead of preserving it after
-        // the pointer no longer exists.
-        g.freeX=null;
-        g.pieceVX=g.piece.x;
         return true;
     }
-    window.__hexSettleReleasedDragV7=settleReleasedDrag;
+    window.__hexSettleReleasedDragV7=preserveReleasedDrag;
 
     function instantVerticalDrop(g){
         if(!validGame(g))return false;
         stopFast(g);
-        // Heal a stale fractional state from an interrupted prior gesture before
-        // issuing the discrete instant-drop command.
-        if(!g.dragging&&(Number.isFinite(g.freeX)||Math.abs((Number.isFinite(g.pieceVX)?g.pieceVX:g.piece.x)-g.piece.x)>1e-7))settleReleasedDrag(g);
         const beforeState=g.state,beforePiece=g.piece,beforeId=g.nextId;
         const ok=hardDrop(g);
         return ok===true||g.state!==beforeState||g.piece!==beforePiece||g.nextId!==beforeId;
@@ -121,7 +104,6 @@
         if(!isCanvas(e))return;
         const g=player();if(!validGame(g))return;
         consume(e);try{Sfx.init();}catch(_){}
-
         if(pointers.size){resetAll("multi-touch-cancel");return;}
 
         const p=point(e,e.target);
@@ -153,14 +135,7 @@
         const dx=rec.lastX-rec.startX,dy=rec.lastY-rec.startY,dist=Math.hypot(dx,dy);
 
         if(rec.longActive)return;
-
-        if(!rec.bottomPress&&rec.fastEligible&&dy>=FAST_SWIPE_START&&Math.abs(dy)>=Math.abs(dx)*FAST_AXIS_RATIO){
-            if(startFast(rec))return;
-        }
-
         if(rec.bottomPress){
-            // Instant drop is a discrete bottom-zone tap. Tolerate ordinary
-            // thumb jitter instead of cancelling at the generic 20px threshold.
             if(dist>DROP_MOVE_TOL)rec.tapEligible=false;
             if(dist>HOLD_JITTER_TOL*2)clearHold(rec);
             return;
@@ -190,7 +165,7 @@
         const g=rec.g,wasLong=rec.longActive;
         if(wasLong)stopFast(g);
 
-        if(g&&rec.dragActive)settleReleasedDrag(g);
+        if(g&&rec.dragActive)preserveReleasedDrag(g);
 
         const elapsed=performance.now()-rec.downAt;
         const dist=Math.hypot(rec.lastX-rec.startX,rec.lastY-rec.startY);
@@ -209,7 +184,7 @@
         }
         for(const g of engines){
             stopFast(g);
-            settleReleasedDrag(g);
+            preserveReleasedDrag(g);
         }
         pointers.clear();
         window.__hexControlsV7LastReset={reason,at:performance.now()};
