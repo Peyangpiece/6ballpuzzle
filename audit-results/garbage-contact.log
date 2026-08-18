@@ -14,13 +14,13 @@ evalmachine.<anonymous>:4857
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":15,"local":[19],"visual":[7,6.8452994616207485],"logical":[5,10],"path":{"from":[7,6.8452994616207485],"to":[6,7],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":1,"pileFlowStart":0.9653398677154814,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":0.9950659494450933,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":true,"garbageGridEntryHandoff":true,"garbageRealCollisionDelay":true,"garbageRealCollisionDelayCount":8}}
+Error: garbage never moved concurrently: {"type":"PYRAMID","variant":0,"maxConcurrent":1,"maxStall":0}
     at expect (evalmachine.<anonymous>:4857:34)
-    at evalmachine.<anonymous>:4897:7
+    at evalmachine.<anonymous>:4921:2
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-natural-fall.js:70:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-natural-fall.js:83:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
