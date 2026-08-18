@@ -85,6 +85,21 @@
 
     const baseMaterializeGarbageBallAtContact=materializeGarbageBallAtContact;
 
+    function motionReservesCell(g,cx,cy){
+        const target=[cx,cy];
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;if(!ball)continue;
+            const v=g.vis.get(ball.id);
+            if(v&&physDist([v.x,v.y],target)<0.985)return true;
+            const path=Array.isArray(ball.fallPath)?ball.fallPath:[];
+            for(const seg of path){
+                if(Array.isArray(seg?.from)&&physDist(seg.from,target)<1e-7)return true;
+                if(Array.isArray(seg?.to)&&physDist(seg.to,target)<1e-7)return true;
+            }
+        }
+        return false;
+    }
+
     function nearestReleasedLogicalCell(g,x,visualY){
         const first=Math.max(BOARD_MIN_ROW,Math.ceil(visualY-1e-8));
         let best=null;
@@ -92,7 +107,7 @@
             for(let dx=0;dx<W2;dx++){
                 const xs=dx===0?[x]:[x-dx,x+dx];
                 for(const cx of xs){
-                    if(!Number.isInteger(cx)||!valid(cx,y)||g.board[y][cx])continue;
+                    if(!Number.isInteger(cx)||!valid(cx,y)||g.board[y][cx]||motionReservesCell(g,cx,y))continue;
                     const score=(y-visualY)*2+Math.abs(cx-x)*.6;
                     if(!best||score<best.score)best={x:cx,y,score};
                 }
@@ -107,7 +122,6 @@
         const slot=pack?.pat?.[index];if(!slot)return false;
         const [dx,dy]=slot,exactX=pack.ax+dx,exactY=pack.y+dy,cell=nearestReleasedLogicalCell(g,exactX,exactY);
         if(!cell)return false;
-
         clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
         const color=pack.colors[index],ball=mkBall(g,color);
         ball.isGarbage=true;ball.garbageType=pack.type;ball.garbageSourceSeq=pack.seq;ball.garbageSourceRole=(pack.totalBalls||0)-(pack.pat.length||0);
@@ -115,26 +129,20 @@
         g.board[cell.y][cell.x]=ball;noteBoardCell(g.board,cell.y,ball);
         setVis(g,ball,exactX,exactY,Math.max(0,(pack.vy||0)/HEX_ROW_H));
         const v=g.vis.get(ball.id);if(v){v.motionSpeed=Math.max(RELEASE_INITIAL_VY,pack.vy||0);v.garbageBubbleT=pack.bubbleT;v.justReleased=true;v.garbageFreeFlightHandoff=true;v.pileFlow=true;}
-
         if(!Array.isArray(pack.entryBalls))pack.entryBalls=[];
         pack.entryBalls.push({id:ball.id,c:ball.c,x:cell.x,y:cell.y,contactX:exactX,contactY:exactY,handoffX:exactX,handoffY:exactY,rigidityRelease:true});
         pack.landedCount=(pack.landedCount||0)+1;pack.pat.splice(index,1);pack.colors.splice(index,1);
-
         const firstSeg={from:[exactX,exactY],to:[cell.x,cell.y],kind:"GARBAGE_RIGIDITY_RELEASE_FREE",pileFlow:true,pileFlowEntry:true,pileFlowReason:"garbage_pile_contact",motionSeq:0,garbageRigidityRelease:true};
         ball.fallPath=[firstSeg];
         if(settlePass(g.board))g.ver++;
-
         const path=Array.isArray(ball.fallPath)?ball.fallPath:[];
-        const baseSeq=(g._garbageReleaseSeq=(g._garbageReleaseSeq||100000)+path.length+1)-path.length;
-        const fresh=[];
+        const baseSeq=(g._garbageReleaseSeq=(g._garbageReleaseSeq||100000)+path.length+1)-path.length,fresh=[];
         for(let i=0;i<path.length;i++){
             const seg=path[i];delete seg.pileFlowStart;delete seg.pileFlowDuration;delete seg.pileFlowEnd;delete seg._hexGravityProfile;delete seg._hexGravityLinear;
             if(i>0&&typeof repairPileFlowSegmentGeometry==="function")repairPileFlowSegmentGeometry(g,ball,seg,"garbage_pile_contact");
             seg.pileFlowOriginalSeq=baseSeq+i;seg.motionSeq=0;seg.pileFlow=true;seg.pileFlowReason="garbage_pile_contact";seg.pileFlowEntry=i===0;fresh.push({ball,seg,seq:baseSeq+i});
         }
-        scheduleGarbageImmediately(g,fresh);
-        g.ver++;
-        return true;
+        scheduleGarbageImmediately(g,fresh);g.ver++;return true;
     }
 
     function releaseRemainingSiblingsToContinuousPhysics(g,pack){
@@ -146,9 +154,7 @@
             const order=pack.pat.map((q,i)=>({i,dy:q[1]})).sort((a,b)=>b.dy-a.dy||b.i-a.i);
             for(const hit of order){
                 if(hit.i>=pack.pat.length)continue;
-                if(baseMaterializeGarbageBallAtContact(g,pack,hit.i,pack.y)||forceRegisterReleasedSibling(g,pack,hit.i)){
-                    released++;progressed=true;break;
-                }
+                if(baseMaterializeGarbageBallAtContact(g,pack,hit.i,pack.y)||forceRegisterReleasedSibling(g,pack,hit.i)){released++;progressed=true;break;}
             }
             if(!progressed)break;
         }
