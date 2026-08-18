@@ -1,6 +1,370 @@
 FAST_KNOWN_REGRESSION {
   "failures": []
 }
+HARD_DROP_CONVERGENCE {
+  "failures": [
+    {
+      "type": "tracked-upward-motion",
+      "seed": 9,
+      "step": 1,
+      "id": 1,
+      "from": 8.951048739387893,
+      "to": 8.8903781674906
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 9,
+      "step": 1,
+      "id": 3,
+      "from": 9.951048739387893,
+      "to": 9.845650764052925
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 9,
+      "step": 2,
+      "id": 1,
+      "from": 8.8903781674906,
+      "to": 8.866287155127495
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 9,
+      "step": 3,
+      "id": 1,
+      "from": 8.866287155127495,
+      "to": 8.86181137220004
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 3,
+      "step": 1,
+      "id": 1,
+      "from": 8.855145991854574,
+      "to": 8.849899723692804
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 3,
+      "step": 1,
+      "id": 2,
+      "from": 9.855145991854574,
+      "to": 9.84676138970238
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
+      "step": 1,
+      "id": 1,
+      "from": 8.9346954226483,
+      "to": 8.86116345312676
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
+      "step": 1,
+      "id": 3,
+      "from": 9.9346954226483,
+      "to": 9.846009489547178
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
+      "step": 1,
+      "id": 2,
+      "from": 9.9346954226483,
+      "to": 9.848650884805936
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
+      "step": 2,
+      "id": 1,
+      "from": 8.86116345312676,
+      "to": 8.85297021903232
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 2,
+      "id": 1,
+      "from": 7.9405485470552195,
+      "to": 7.9285432730364205
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 2,
+      "id": 3,
+      "from": 8.932452327539478,
+      "to": 8.913463697355075
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 3,
+      "id": 1,
+      "from": 7.9285432730364205,
+      "to": 7.912548407300546
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 3,
+      "id": 3,
+      "from": 8.913463697355075,
+      "to": 8.894921145210297
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 4,
+      "id": 1,
+      "from": 7.912548407300546,
+      "to": 7.89548046184589
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 4,
+      "id": 3,
+      "from": 8.894921145210297,
+      "to": 8.878449794178023
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 5,
+      "id": 1,
+      "from": 7.89548046184589,
+      "to": 7.879488685935407
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 5,
+      "id": 3,
+      "from": 8.878449794178023,
+      "to": 8.864941852799381
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 6,
+      "id": 1,
+      "from": 7.879488685935407,
+      "to": 7.8660323908349765
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 6,
+      "id": 3,
+      "from": 8.864941852799381,
+      "to": 8.854859754267485
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 7,
+      "id": 1,
+      "from": 7.8660323908349765,
+      "to": 7.855989034095841
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 7,
+      "id": 3,
+      "from": 8.854859754267485,
+      "to": 8.848375171808122
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 8,
+      "id": 1,
+      "from": 7.855989034095841,
+      "to": 7.849786887965946
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 8,
+      "id": 3,
+      "from": 8.848375171808122,
+      "to": 8.845481680518743
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 9,
+      "id": 1,
+      "from": 7.849786887965946,
+      "to": 7.847540573481891
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 1,
+      "id": 1,
+      "from": 8.988652436322894,
+      "to": 8.981872280003754
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 1,
+      "id": 2,
+      "from": 9.988652436322894,
+      "to": 9.969337951511221
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 2,
+      "id": 1,
+      "from": 8.981872280003754,
+      "to": 8.967320533853924
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 2,
+      "id": 2,
+      "from": 9.969337951511221,
+      "to": 9.946904137322509
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 3,
+      "id": 1,
+      "from": 8.967320533853924,
+      "to": 8.948118570021565
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 3,
+      "id": 2,
+      "from": 9.946904137322509,
+      "to": 9.924321174319823
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 4,
+      "id": 1,
+      "from": 8.948118570021565,
+      "to": 8.927001712421443
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 4,
+      "id": 2,
+      "from": 9.924321174319823,
+      "to": 9.903248936167268
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 5,
+      "id": 1,
+      "from": 8.927001712421443,
+      "to": 8.906174485207258
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 5,
+      "id": 2,
+      "from": 9.903248936167268,
+      "to": 9.884787836653985
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 6,
+      "id": 1,
+      "from": 8.906174485207258,
+      "to": 8.887309094813846
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 6,
+      "id": 2,
+      "from": 9.884787836653985,
+      "to": 9.869610083987489
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 7,
+      "id": 1,
+      "from": 8.887309094813846,
+      "to": 8.871554829041129
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 7,
+      "id": 2,
+      "from": 9.869610083987489,
+      "to": 9.858055435249803
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 8,
+      "id": 1,
+      "from": 8.871554829041129,
+      "to": 8.859588793799565
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 8,
+      "id": 2,
+      "from": 9.858055435249803,
+      "to": 9.85022639446025
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 9,
+      "id": 1,
+      "from": 8.859588793799565,
+      "to": 8.851712087950535
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 9,
+      "id": 2,
+      "from": 9.85022639446025,
+      "to": 9.846077971761789
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 10,
+      "id": 1,
+      "from": 8.851712087950535,
+      "to": 8.847968724826396
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 10,
+      "id": 2,
+      "from": 9.846077971761789,
+      "to": 9.845490400514432
+    }
+  ]
+}
 GARBAGE_BALL_INTERVAL_REGRESSION PASS {"expanded":19,"starts":[0.008333333333333333,1.2083333333333333,1.7266666666666666,2.4466666666666663,2.9549999999999996],"minGap":0.5083333333333333}
 TOUCH_CONTROL_REGRESSION PASS
 ATTACK_CONSERVATION_AUDIT {
