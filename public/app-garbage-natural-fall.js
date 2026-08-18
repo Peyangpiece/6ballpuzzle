@@ -38,12 +38,7 @@
     function scheduledConflict(g,a,b){
         if(!a?.seg||!b?.seg)return false;
         const now=Math.max(0,g?.pileFlowClock||0),as=a.seg,bs=b.seg;
-
-        // Exact convergence/swap is a real path conflict, but do not hold it
-        // early if the segments themselves have not started yet.
-        if((sameDestination(as,bs)||endpointSwap(as,bs))&&
-           startsWithinHorizon(as,now)&&startsWithinHorizon(bs,now))return true;
-
+        if((sameDestination(as,bs)||endpointSwap(as,bs))&&startsWithinHorizon(as,now)&&startsWithinHorizon(bs,now))return true;
         const a0=Number(as.pileFlowStart),a1=Number(as.pileFlowEnd),b0=Number(bs.pileFlowStart),b1=Number(bs.pileFlowEnd);
         if(!(Number.isFinite(a0)&&Number.isFinite(a1)&&Number.isFinite(b0)&&Number.isFinite(b1)))return false;
         const lo=Math.max(now,a0,b0),hi=Math.min(now+HORIZON,a1,b1);
@@ -127,8 +122,6 @@
         previousQueueByEngine.set(g,new Set(current));
     }
 
-    // Final exact projection, loaded after every legacy garbage wrapper. It only
-    // resolves actual penetration and never causes an upward correction.
     function finalGarbageProjection(g){
         const list=[];
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -139,34 +132,35 @@
             if(g?.garbageOriginalPileIds instanceof Set&&g.garbageOriginalPileIds.has(q.ball.id))return true;
             return q.ball.garbagePileSettled===true&&(!Array.isArray(q.ball.fallPath)||q.ball.fallPath.length===0);
         };
+        const queue=__hexdropGarbageMotionQueue(g).queued;
+        const moveAway=(q,o,n)=>{
+            if(!(n>0))return 0;
+            let dir=Math.sign(q.v.x-o.v.x);if(!dir)dir=Math.sign(q.x-o.x)||1;
+            const room=Math.max(0,(dir>0?(W2-1)-q.v.x:q.v.x)*.5);
+            if(room<=1e-10)return 0;
+            const take=Math.min(n,room);q.v.x+=dir*(take/.5);return take;
+        };
         for(let pass=0;pass<48;pass++){
             let changed=false;
             for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
                 const a=list[i],b=list[j];
-                let dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H,d=Math.hypot(dx,dy);
+                const dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H,d=Math.hypot(dx,dy);
                 if(d>=1-1e-9)continue;
                 changed=true;
                 const ha=isHard(a),hb=isHard(b);if(ha&&hb)continue;
-                const vertical=Math.abs(dy),targetX=vertical<1?Math.sqrt(Math.max(0,1-vertical*vertical)):0,currentX=Math.abs(dx);
-                let need=Math.max(0,targetX-currentX)+2e-6;
+                const targetX=Math.abs(dy)<1?Math.sqrt(Math.max(0,1-dy*dy)):0;
+                let need=Math.max(0,targetX-Math.abs(dx))+2e-6;
                 let first,second;
-                if(ha){first=b;second=null;}else if(hb){first=a;second=null;}
+                if(ha){first=b;second=null;}
+                else if(hb){first=a;second=null;}
                 else{
-                    const qa=__hexdropGarbageMotionQueue(g).queued.has(a.ball.id),qb=__hexdropGarbageMotionQueue(g).queued.has(b.ball.id);
+                    const qa=queue.has(a.ball.id),qb=queue.has(b.ball.id);
                     if(qa!==qb)first=qa?a:b;
                     else first=segmentSeq(a.ball.fallPath?.[0])>=segmentSeq(b.ball.fallPath?.[0])?a:b;
                     second=first===a?b:a;
                 }
-                const moveAway=(q,o,n)=>{
-                    if(!(n>0))return 0;
-                    let dir=Math.sign(q.v.x-o.v.x);if(!dir)dir=q.v.x<(W2-1)/2?-1:1;
-                    let room=(dir>0?(W2-1)-q.v.x:q.v.x)*.5;
-                    if(room<=1e-10){dir=-dir;room=(dir>0?(W2-1)-q.v.x:q.v.x)*.5;}
-                    const take=Math.min(n,Math.max(0,room));q.v.x+=dir*(take/.5);return take;
-                };
                 need-=moveAway(first,first===a?b:a,need);
-                if(need>1e-8&&second&&!isHard(second))moveAway(second,second===a?b:a,need);
-                if(a.v.y<0||b.v.y<0){} // no vertical correction: garbage never rebounds upward
+                if(need>1e-8&&second&&!isHard(second))need-=moveAway(second,second===a?b:a,need);
             }
             if(!changed)break;
         }
