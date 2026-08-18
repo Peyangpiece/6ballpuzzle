@@ -6,17 +6,18 @@ function items(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let 
 function minPair(g){const a=items(g);let min=Infinity,pair=null;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const d=hexPhysDist(a[i].v.x,a[i].v.y,a[j].v.x,a[j].v.y);if(d<min){min=d;pair=[a[i].b.id,a[j].b.id];}}return{min,pair};}
 // Root-cause fixture for the historical seed-8 recoil / random settle ball loss:
 // two separately accepted bundles may never reserve the same target, and an
-// invalid simultaneous event must not delete either source ball.
+// invalid simultaneous event must not delete either source ball.  Coordinates
+// deliberately obey the current floor-based doubled-x parity lattice.
 {
  const b=newBoard(),a={id:5101,c:0,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false},c={id:5102,c:1,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false};
- b[6][4]=a;b[6][8]=c;
- const pa={x:4,y:6,tx:6,ty:8,ball:a,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:101};
- const pc={x:8,y:6,tx:6,ty:8,ball:c,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:202};
+ b[6][5]=a;b[6][9]=c;
+ const pa={x:5,y:6,tx:7,ty:8,ball:a,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:101};
+ const pc={x:9,y:6,tx:7,ty:8,ball:c,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:202};
  if(!hexPhysBundleTargetsFree([pa],b,[]))fail('atomic-first-bundle-rejected',{});
  if(hexPhysBundleTargetsFree([pc],b,[pa]))fail('accepted-target-not-reserved',{});
- const before=[b[6][4]?.id,b[6][8]?.id];const applied=hexPhysApplyEvent(b,[pa,pc]);
+ const before=[b[6][5]?.id,b[6][9]?.id];const applied=hexPhysApplyEvent(b,[pa,pc]);
  if(applied)fail('duplicate-target-event-applied',{});
- const after=[b[6][4]?.id,b[6][8]?.id];if(JSON.stringify(before)!==JSON.stringify(after))fail('invalid-event-mutated-board',{before,after});
+ const after=[b[6][5]?.id,b[6][9]?.id];if(JSON.stringify(before)!==JSON.stringify(after))fail('invalid-event-mutated-board',{before,after});
 }
 // Exact landing-guide generator seed 6: shadow and hard drop must share the same physical envelope.
 {
