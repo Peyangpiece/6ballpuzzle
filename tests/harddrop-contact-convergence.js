@@ -32,20 +32,55 @@ function motionMeta(b){
   const s=b?.fallPath?.[0];
   return s?{from:s.from,to:s.to,kind:s.kind,pivot:s.pivot||null,topPivot:s.topPivot||null,virtualPivot:!!s.virtualPivot,arc:s._hexHardDropRigidArc||null,pathN:b.fallPath.length,protect:b._hexHardDropProtectRigid||0,gid:b.motionGroupId||0,role:b.motionGroupRole,orientation:b.motionGroupOrientation,rigid:!!b.rigid}:null;
 }
+function separatorMeta(s){return s?{dir:s.dir,top:s.top?.ball?.id||0,pairLower:s.pairLower?.ball?.id||0,solo:s.solo?.ball?.id||0,support:s.support?.id||0,px:s.px,py:s.py,hitFraction:s.hitFraction,contactSide:s.contactSide}:null;}
+function analyzeMembers(g,members){
+  const independent=members.map(m=>hexPhysIndependentMemberMotion(g.board,members,m));
+  const raw=members.map(m=>hexPhysNaturalMotion(g.board,m.x,m.y,null));
+  const plan=hexPhysPlanGroup(g.board,members,true);
+  const contacts=typeof slopeRigidExternalContacts==='function'?slopeRigidExternalContacts(g.board,members):[];
+  const separator=hexPhysUpConvexSeparator(g.board,members,independent);
+  return{
+    members:members.map((m,i)=>({id:m.ball.id,logical:[m.x,m.y],role:m.ball.motionGroupRole,orientation:m.ball.motionGroupOrientation,bias:hexPhysBias(m.ball),raw:proposalMeta(raw[i]),independent:proposalMeta(independent[i])})),
+    contacts,
+    rigidPlan:plan.map(proposalMeta),
+    separator:separatorMeta(separator)
+  };
+}
+function preMoveDiag(g,tracked){
+  const qs=visuals(g).filter(q=>tracked.has(q.b.id)).sort((a,b)=>a.b.id-b.b.id);
+  if(qs.length!==3)return{reason:'member-count',memberCount:qs.length};
+  let dir=0;
+  for(const q of qs){
+    const s=q.b.fallPath?.[0],pv=s?.topPivot||s?.pivot;
+    if(!s?.to||!pv)continue;
+    const d=Math.sign(s.to[0]-pv[0]);
+    if(d){if(dir&&dir!==d)return{reason:'mixed-dir'};dir=d;}
+  }
+  if(!dir)return{reason:'no-dir'};
+  const src=qs.map(q=>({q,x:q.x-dir,y:q.y-1}));
+  if(src.some(s=>!valid(s.x,s.y)))return{reason:'invalid-source',dir,sources:src.map(s=>[s.x,s.y])};
+  const trackedIds=new Set(qs.map(q=>q.b.id));
+  for(const s of src){const occ=g.board[s.y][s.x];if(occ&&!trackedIds.has(occ.id))return{reason:'source-occupied',dir,source:[s.x,s.y],occupant:occ.id};}
+  for(const q of qs)if(g.board[q.y][q.x]===q.b)g.board[q.y][q.x]=null;
+  let result;
+  try{
+    for(const s of src)g.board[s.y][s.x]=s.q.b;
+    const members=src.map(s=>({ball:s.q.b,x:s.x,y:s.y,role:s.q.b.motionGroupRole,orientation:s.q.b.motionGroupOrientation}));
+    result={reason:'ok',dir,analysis:analyzeMembers(g,members)};
+  }finally{
+    for(const s of src)if(g.board[s.y][s.x]===s.q.b)g.board[s.y][s.x]=null;
+    for(const q of qs)g.board[q.y][q.x]=q.b;
+  }
+  return result;
+}
 function releaseDiag(g,tracked){
   const qs=visuals(g).filter(q=>tracked.has(q.b.id)).sort((a,b)=>a.b.id-b.b.id);
   if(qs.length!==3)return{memberCount:qs.length};
   const members=qs.map(q=>({ball:q.b,x:q.x,y:q.y,role:q.b.motionGroupRole,orientation:q.b.motionGroupOrientation}));
-  const motions=members.map(m=>hexPhysIndependentMemberMotion(g.board,members,m));
-  const separator=hexPhysUpConvexSeparator(g.board,members,motions);
-  const plan=hexPhysPlanGroup(g.board,members,true);
-  const contacts=typeof slopeRigidExternalContacts==='function'?slopeRigidExternalContacts(g.board,members):[];
-  return{
-    members:qs.map((q,i)=>({id:q.b.id,logical:[q.x,q.y],visual:[q.v.x,q.v.y],role:q.b.motionGroupRole,orientation:q.b.motionGroupOrientation,bias:hexPhysBias(q.b),independent:proposalMeta(motions[i])})),
-    contacts,
-    rigidPlan:plan.map(proposalMeta),
-    separator:separator?{dir:separator.dir,top:separator.top?.ball?.id||0,pairLower:separator.pairLower?.ball?.id||0,solo:separator.solo?.ball?.id||0,support:separator.support?.id||0,px:separator.px,py:separator.py,hitFraction:separator.hitFraction,contactSide:separator.contactSide}:null
-  };
+  const now=analyzeMembers(g,members);
+  now.visuals=qs.map(q=>({id:q.b.id,visual:[q.v.x,q.v.y]}));
+  now.preMove=preMoveDiag(g,tracked);
+  return now;
 }
 function arcDebug(g,tracked){
   const memberQs=visuals(g).filter(q=>tracked.has(q.b.id)).sort((a,b)=>a.b.id-b.b.id);
