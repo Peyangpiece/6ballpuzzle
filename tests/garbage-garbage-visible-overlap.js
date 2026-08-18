@@ -59,6 +59,21 @@ function buildPile(g,variant){
 
 expect(window.__hexGarbageVisibleOverlapGuard===true,"garbage render overlap guard is not installed");
 expect(window.__hexGarbageHardSeparation===true,"garbage hard-separation guard is not installed");
+
+// Scheduled pileFlow clears motionSeq but preserves its causal order in
+// pileFlowOriginalSeq. The later member must remain queued even when motionSeq=0.
+{
+ const qg=createEngine(99491);qg.state="RESOLVING";qg.phase="GARBAGE";
+ const early=put(qg,4,7,0);early.isGarbage=true;
+ const late=put(qg,8,7,1);late.isGarbage=true;
+ early.fallPath=[{from:[4,7],to:[5,8],kind:"FOLLOW_SUPPORT",motionSeq:0,pileFlow:true,pileFlowOriginalSeq:42,pileFlowStart:0,pileFlowEnd:1}];
+ late.fallPath=[{from:[8,7],to:[7,8],kind:"ROLL_LEFT",motionSeq:0,pileFlow:true,pileFlowOriginalSeq:44,pileFlowStart:0,pileFlowEnd:1}];
+ const q=__hexdropGarbageMotionQueue(qg);
+ expect(q.minSeq===42,"garbage queue ignored earliest pileFlowOriginalSeq: "+q.minSeq);
+ expect(q.queued.has(late.id),"later pileFlowOriginalSeq garbage was not queued");
+ expect(!q.queued.has(early.id),"earliest garbage was incorrectly queued");
+}
+
 let worstActual={d:Infinity},worstRender={d:Infinity};
 for(let variant=0;variant<3;variant++)for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
  const g=createEngine(99500+variant*17+type.length);
