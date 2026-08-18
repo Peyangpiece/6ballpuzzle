@@ -1,11 +1,11 @@
 garbage airborne pass-through + continuous pile contact PASS
-evalmachine.<anonymous>:3757
+evalmachine.<anonymous>:3765
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: PYRAMID changed relative distances before pile contact
-    at expect (evalmachine.<anonymous>:3757:34)
-    at evalmachine.<anonymous>:3813:11
+    at expect (evalmachine.<anonymous>:3765:34)
+    at evalmachine.<anonymous>:3821:11
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -16,22 +16,5 @@ Error: PYRAMID changed relative distances before pile contact
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-gridified garbage diagnostic {"totalUp":1,"upWorst":{"type":"HEXAGON","frame":163,"id":6,"prev":9.435394388677906,"now":8.010978852786439,"delta":1.4244155358914679,"logical":[7,10],"path":[]},"min":0.9999999990293273,"worst":{"type":"HEXAGON","frame":132,"d":0.9999999990293273,"a":{"id":3,"logical":[0,11],"visual":[1.294791157140247,9.957772310660669],"path":[]},"b":{"id":2,"logical":[2,11],"visual":[2.155769857781451,11],"path":[]}},"pileMin":null,"pileWorst":null}
-evalmachine.<anonymous>:3757
-function expect(v,m){if(!v)throw new Error(m);}
-                           ^
-
-Error: gridified garbage moved upward: {"type":"HEXAGON","frame":163,"id":6,"prev":9.435394388677906,"now":8.010978852786439,"delta":1.4244155358914679,"logical":[7,10],"path":[]}
-    at expect (evalmachine.<anonymous>:3757:34)
-    at evalmachine.<anonymous>:3786:1
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-gridified-motion-diagnostic.js:42:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-
-Node.js v22.23.2
-garbage queued-motion overlap diagnostic PASS {"min":0.9999999990004724,"worst":{"step":1210,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990004724,"pair":[{"id":10,"logical":[5,10],"visual":[5.648631783950619,9.14876483142528],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
+gridified garbage diagnostic {"totalUp":0,"upWorst":null,"min":0.9999999990293273,"worst":{"type":"HEXAGON","frame":132,"d":0.9999999990293273,"a":{"id":3,"logical":[0,11],"visual":[1.294791157140247,9.957772310660669],"path":[]},"b":{"id":2,"logical":[2,11],"visual":[2.155769857781451,11],"path":[]}},"pileMin":null,"pileWorst":null}
+garbage queued-motion overlap diagnostic PASS {"min":0.9999999990168355,"worst":{"step":1211,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990168355,"pair":[{"id":10,"logical":[5,10],"visual":[5.6478352473129085,9.149186570838365],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
