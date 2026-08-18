@@ -19,7 +19,11 @@ hex74InstallRigidContactArc=function(g,ids){
     diag.memberCount=members.length;
     if(members.length!==3){diag.reason='member-count';return false;}
     const gid=members[0].ball.motionGroupId;diag.gid=gid;diag.kinds=members.map(m=>m.seg?.kind||null);
-    if(!gid||members.some(m=>m.ball.motionGroupId!==gid||!m.ball.rigid||!m.seg?.from||!m.seg?.to||m.seg.pivot||m.seg.topPivot)){diag.reason='member-shape';return false;}
+    /* GROUP_SLOPE_TRANSLATE intentionally carries per-member pivot/topPivot
+     * metadata from the logical planner. The visual override below replaces
+     * those individual arcs with one common rigid-body support arc, so pivot
+     * metadata is not a reason to reject the hand-off. */
+    if(!gid||members.some(m=>m.ball.motionGroupId!==gid||!m.ball.rigid||!m.seg?.from||!m.seg?.to)){diag.reason='member-shape';return false;}
     if(members.some(m=>m.seg.kind!=="GROUP_SLOPE_TRANSLATE")){diag.reason='kind';return false;}
     const d0=[members[0].seg.to[0]-members[0].seg.from[0],members[0].seg.to[1]-members[0].seg.from[1]];
     diag.sameDisp=members.every(m=>Math.abs((m.seg.to[0]-m.seg.from[0])-d0[0])<=1e-6&&Math.abs((m.seg.to[1]-m.seg.from[1])-d0[1])<=1e-6);
