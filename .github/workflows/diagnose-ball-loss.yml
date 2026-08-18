@@ -28,19 +28,21 @@ jobs:
           node tests/landing-guide-smoke.js > audit-results/landing-smoke.log 2>&1 || true
           node tests/diagnose-landing-anchor.js > audit-results/landing-anchor.log 2>&1 || true
           node tests/diagnose-harddrop-postcontact.js > audit-results/harddrop-postcontact.log 2>&1 || true
+          node tests/harddrop-contact-convergence.js > audit-results/harddrop-convergence.log 2>&1 || true
           node tests/ball-conservation-fast.js > audit-results/ball-conservation-fast.log 2>&1 || true
           cat audit-results/ball-loss.log
           cat audit-results/rigid-recoil.log
           cat audit-results/landing-smoke.log
           cat audit-results/landing-anchor.log
           cat audit-results/harddrop-postcontact.log
+          cat audit-results/harddrop-convergence.log
           cat audit-results/ball-conservation-fast.log
       - name: Store diagnosis
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add audit-results/ball-loss.log audit-results/rigid-recoil.log audit-results/landing-smoke.log audit-results/landing-anchor.log audit-results/harddrop-postcontact.log audit-results/ball-conservation-fast.log
+          git add audit-results/ball-loss.log audit-results/rigid-recoil.log audit-results/landing-smoke.log audit-results/landing-anchor.log audit-results/harddrop-postcontact.log audit-results/harddrop-convergence.log audit-results/ball-conservation-fast.log
           if ! git diff --cached --quiet; then git commit -m "Record focused physics diagnoses [skip ci]"; fi
           git pull --rebase origin main
           git push
