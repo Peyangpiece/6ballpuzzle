@@ -35,16 +35,17 @@ function put(g,x,y,c,isGarbage=false){
  expect(v.y<6,"blocked garbage ended below the obstacle centre");
 }
 
-// A legitimate tangent arc around a pile ball must remain free to move; the
-// swept guard must not mistake exact surface contact for penetration.
+// A legitimate DOWNWARD tangent arc around a pile ball must remain free to
+// move. This is the reference slide: upper-left contact -> left side ->
+// lower-left contact, never requiring the garbage ball to rebound upward.
 {
  const g=createEngine(97002);
  const support=put(g,5,6,2,false);
- const garbage=put(g,6,5,3,true);
+ const garbage=put(g,4,7,3,true);
  garbage.garbagePileSettled=false;
  const v=g.vis.get(garbage.id);v.x=4;v.y=5;v.pileFlow=true;
  garbage.fallPath=[{
-   from:[4,5],to:[6,5],pivot:[5,6],kind:"TEST_TANGENT_ARC",pileFlow:true,
+   from:[4,5],to:[4,7],pivot:[5,6],kind:"TEST_TANGENT_ARC",pileFlow:true,
    pileFlowEntry:false,pileFlowStart:0,pileFlowDuration:.2,pileFlowEnd:.2
  }];
  g.pileFlowClock=.1;
@@ -52,6 +53,7 @@ function put(g,x,y,c,isGarbage=false){
  updateScheduledPileFlowVisual(g,garbage,v,.1,new Map());
  const sv=g.vis.get(support.id),d=hexPhysDist(v.x,v.y,sv.x,sv.y);
  expect(Math.hypot(v.x-before[0],v.y-before[1])>.01,"valid tangent arc was falsely frozen");
+ expect(v.y>=before[1]-1e-9,"valid tangent arc moved upward");
  expect(Math.abs(d-1)<2e-4,"tangent arc lost surface contact: "+JSON.stringify({d,v,sv}));
 }
 
