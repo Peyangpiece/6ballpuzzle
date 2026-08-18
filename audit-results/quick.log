@@ -9,9 +9,9 @@ GARBAGE_BALL_INTERVAL_REGRESSION PASS {"expanded":19,"starts":[0.008333333333333
 function assert(cond,msg){if(!cond)throw new Error(msg);}
                                    ^
 
-Error: fixture did not release at fractional X
+Error: fractional-X release never reached a legal lock
     at assert (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/touch-control-regression.js:41:42)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/touch-control-regression.js:110:3)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/touch-control-regression.js:122:3)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
