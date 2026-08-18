@@ -19,8 +19,6 @@ function visibleGarbage(g,lead=0){
   const b=valid(x,y)?g.board[y][x]:null;if(!b?.isGarbage)continue;
   const v=g.vis.get(b.id);if(!v)continue;
   let px=v.x,py=v.y;
-  // The installed renderer guard deliberately uses the already collision-
-  // resolved visual centre for garbage instead of cosmetic renderLead.
   if(lead>0&&!window.__hexGarbageVisibleOverlapGuard&&v.pileFlow&&Array.isArray(b.fallPath)&&b.fallPath.length){
    const p=pileFlowPositionAt(g,b,(g.pileFlowClock||0)+lead,0,null,memo);
    if(Number.isFinite(p?.[0])&&Number.isFinite(p?.[1])){px=p[0];py=Math.max(v.y,p[1]);}
@@ -30,7 +28,8 @@ function visibleGarbage(g,lead=0){
  for(const pack of g.activeGarbagePacks||[]){
   if(!pack||pack.landed||!pack._started)continue;
   for(let i=0;i<pack.pat.length;i++){
-   const [dx,dy]=pack.pat[i];pts.push({kind:"pack",id:`p${pack.seq}:${i}`,x:pack.ax+dx,y:pack.y+dy});
+   const q=pack.pat[i],dx=q[0],dy=q[1];
+   pts.push({kind:"pack",id:"p"+pack.seq+":"+i,x:pack.ax+dx,y:pack.y+dy});
   }
  }
  return pts;
