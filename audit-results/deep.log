@@ -1,821 +1,1060 @@
 AI_STATE_CASE {"seed":1,"level":1,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.95,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.892,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.242,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":4,"maxPieceAge":0.933,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":7,"maxPieceAge":0.683,"bugs":0}
-AI_STATE_CASE {"seed":2,"level":1,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":2.617,"bugs":0}
-AI_STATE_CASE {"seed":2,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.85,"bugs":0}
-node:vm:149
-    return ReflectApply(super.runInContext, this, args);
-           ^
-
-Error: Script execution timed out after 420000ms
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at runSuite (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/audit-harness.js:20:6)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/audit-ai-state.js:32:11)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
-  code: 'ERR_SCRIPT_EXECUTION_TIMEOUT'
+AI_STATE_CASE {"seed":1,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.542,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.242,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":0.792,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":4,"maxPieceAge":0.658,"bugs":0}
+AI_STATE_CASE {"seed":2,"level":1,"alive":true,"state":"PLAYING","phase":null,"spawnCount":3,"maxPieceAge":2,"bugs":0}
+AI_STATE_CASE {"seed":2,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.85,"bugs":0}
+AI_STATE_CASE {"seed":2,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.442,"bugs":0}
+AI_STATE_CASE {"seed":2,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":0.842,"bugs":0}
+AI_STATE_CASE {"seed":2,"level":5,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":4,"maxPieceAge":0.508,"bugs":0}
+AI_STATE_AUDIT {
+  "start": 1,
+  "count": 2,
+  "seconds": 12,
+  "stats": {},
+  "bugs": []
 }
-
-Node.js v22.23.2
-node:vm:149
-    return ReflectApply(super.runInContext, this, args);
-           ^
-
-Error: Script execution timed out after 420000ms
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at runSuite (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/audit-harness.js:20:6)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/audit-performance.js:25:11)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
-  code: 'ERR_SCRIPT_EXECUTION_TIMEOUT'
-}
-
-Node.js v22.23.2
-SETTLE_AUDIT {
-  "cases": 2000,
+PERFORMANCE_AUDIT {
+  "seconds": 16,
+  "stats": {
+    "final-contact-reentry": 7680,
+    "garbage-relax-reentry": 928,
+    "frame-over-250ms": 2
+  },
   "bugs": [
     {
-      "type": "ball-conservation",
-      "seed": 0,
-      "startCount": 32,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
+      "type": "final-contact-reentry",
       "seed": 1,
-      "startCount": 19,
-      "endCount": 5
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 2,
-      "startCount": 33,
-      "endCount": 14
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 3,
-      "startCount": 30,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 4,
-      "startCount": 32,
-      "endCount": 11
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 5,
-      "startCount": 4,
-      "endCount": 2
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 6,
-      "startCount": 33,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 7,
-      "startCount": 17,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 8,
-      "startCount": 30,
-      "endCount": 12
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 9,
-      "startCount": 13,
-      "endCount": 5
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 10,
-      "startCount": 34,
-      "endCount": 15
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 11,
-      "startCount": 5,
-      "endCount": 2
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 12,
-      "startCount": 36,
-      "endCount": 14
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 13,
-      "startCount": 17,
-      "endCount": 5
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 14,
-      "startCount": 23,
-      "endCount": 9
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 15,
-      "startCount": 16,
-      "endCount": 2
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 16,
-      "startCount": 28,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 17,
-      "startCount": 37,
-      "endCount": 18
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 18,
-      "startCount": 18,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 19,
-      "startCount": 23,
-      "endCount": 11
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 20,
-      "startCount": 8,
-      "endCount": 1
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 21,
-      "startCount": 4,
-      "endCount": 3
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 22,
-      "startCount": 10,
-      "endCount": 5
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 23,
-      "startCount": 35,
-      "endCount": 16
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 24,
-      "startCount": 15,
-      "endCount": 7
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 25,
-      "startCount": 8,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 26,
-      "startCount": 13,
-      "endCount": 6
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 27,
-      "startCount": 22,
-      "endCount": 10
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 28,
-      "startCount": 22,
-      "endCount": 14
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 29,
-      "startCount": 11,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 30,
-      "startCount": 18,
-      "endCount": 6
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 31,
-      "startCount": 36,
-      "endCount": 17
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 32,
-      "startCount": 12,
-      "endCount": 6
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 33,
-      "startCount": 10,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 34,
-      "startCount": 35,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 35,
-      "startCount": 4,
-      "endCount": 2
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 36,
-      "startCount": 15,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 37,
-      "startCount": 16,
-      "endCount": 7
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 38,
-      "startCount": 6,
-      "endCount": 2
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 39,
-      "startCount": 20,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 40,
-      "startCount": 6,
-      "endCount": 3
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 41,
-      "startCount": 17,
-      "endCount": 9
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 42,
-      "startCount": 32,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 43,
-      "startCount": 5,
-      "endCount": 0
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 44,
-      "startCount": 36,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 45,
-      "startCount": 9,
-      "endCount": 3
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 46,
-      "startCount": 7,
-      "endCount": 2
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 47,
-      "startCount": 16,
-      "endCount": 6
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 48,
-      "startCount": 25,
-      "endCount": 12
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 49,
-      "startCount": 10,
-      "endCount": 5
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 50,
-      "startCount": 20,
-      "endCount": 11
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 51,
-      "startCount": 29,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 52,
-      "startCount": 24,
-      "endCount": 11
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 53,
-      "startCount": 33,
-      "endCount": 15
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 54,
-      "startCount": 37,
-      "endCount": 17
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 55,
-      "startCount": 34,
-      "endCount": 14
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 56,
-      "startCount": 27,
-      "endCount": 13
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 57,
-      "startCount": 36,
-      "endCount": 22
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 58,
-      "startCount": 5,
-      "endCount": 2
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 59,
-      "startCount": 24,
-      "endCount": 7
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 60,
-      "startCount": 14,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 61,
-      "startCount": 36,
-      "endCount": 16
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 62,
-      "startCount": 4,
-      "endCount": 1
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 63,
-      "startCount": 19,
-      "endCount": 9
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 64,
-      "startCount": 4,
-      "endCount": 1
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 65,
-      "startCount": 35,
-      "endCount": 17
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 66,
-      "startCount": 12,
-      "endCount": 7
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 67,
-      "startCount": 17,
-      "endCount": 7
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 68,
-      "startCount": 25,
-      "endCount": 10
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 69,
-      "startCount": 12,
-      "endCount": 5
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 70,
-      "startCount": 25,
-      "endCount": 7
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 71,
-      "startCount": 16,
-      "endCount": 6
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 72,
-      "startCount": 11,
-      "endCount": 3
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 73,
-      "startCount": 30,
-      "endCount": 11
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 74,
-      "startCount": 7,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 75,
-      "startCount": 19,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 76,
-      "startCount": 12,
-      "endCount": 9
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 77,
-      "startCount": 12,
-      "endCount": 6
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 78,
-      "startCount": 8,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 79,
-      "startCount": 37,
-      "endCount": 16
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 80,
-      "startCount": 30,
-      "endCount": 9
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 81,
-      "startCount": 7,
-      "endCount": 3
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 82,
-      "startCount": 23,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 83,
-      "startCount": 10,
-      "endCount": 3
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 84,
-      "startCount": 10,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 85,
-      "startCount": 16,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 86,
-      "startCount": 22,
-      "endCount": 10
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 87,
-      "startCount": 29,
-      "endCount": 18
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 88,
-      "startCount": 25,
-      "endCount": 11
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 89,
-      "startCount": 32,
-      "endCount": 12
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 90,
-      "startCount": 12,
-      "endCount": 6
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 91,
-      "startCount": 24,
-      "endCount": 10
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 92,
-      "startCount": 20,
-      "endCount": 8
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 93,
-      "startCount": 11,
-      "endCount": 3
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 94,
-      "startCount": 10,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 95,
-      "startCount": 30,
-      "endCount": 15
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 96,
-      "startCount": 15,
-      "endCount": 5
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 97,
-      "startCount": 8,
-      "endCount": 4
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 98,
-      "startCount": 28,
-      "endCount": 12
-    },
-    {
-      "type": "ball-conservation",
-      "seed": 99,
-      "startCount": 16,
-      "endCount": 8
+      "step": 0,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 1,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 2,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 3,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 4,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 5,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 6,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 7,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 8,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 9,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 10,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 11,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 12,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 13,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 14,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 15,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 16,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 17,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 18,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 19,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 20,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 21,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 22,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 23,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 24,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 25,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 26,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 27,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 28,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 29,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 30,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 31,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 32,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 33,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 34,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 35,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 36,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 37,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 38,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 39,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 40,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 41,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 42,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 43,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 44,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 45,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 46,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 47,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 48,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 49,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 50,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 51,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 52,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 53,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 54,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 55,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 56,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 57,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 58,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 59,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 60,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 61,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 62,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 63,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 64,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 65,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 66,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 67,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 68,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 69,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 70,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 71,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 72,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 73,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 74,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 75,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 76,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 77,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 78,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
+    },
+    {
+      "type": "final-contact-reentry",
+      "seed": 1,
+      "step": 79,
+      "resolve": 1,
+      "relax": 0,
+      "final": 6,
+      "rests": 4,
+      "state": "READY",
+      "phase": null
     }
   ],
-  "stats": {
-    "ball-conservation": 1998
-  }
+  "profiles": [
+    {
+      "seed": 1,
+      "frames": 1920,
+      "maxMs": 76,
+      "avgMs": 9.897,
+      "maxCounts": {
+        "step": 1081,
+        "ms": 5,
+        "resolve": 3,
+        "relax": 3,
+        "final": 15,
+        "rests": 8,
+        "state": "RESOLVING",
+        "phase": "GARBAGE"
+      },
+      "slow": []
+    },
+    {
+      "seed": 7,
+      "frames": 1920,
+      "maxMs": 37,
+      "avgMs": 5.446,
+      "maxCounts": {
+        "step": 995,
+        "ms": 7,
+        "resolve": 3,
+        "relax": 3,
+        "final": 15,
+        "rests": 8,
+        "state": "RESOLVING",
+        "phase": "GARBAGE"
+      },
+      "slow": []
+    },
+    {
+      "seed": 19,
+      "frames": 1920,
+      "maxMs": 278,
+      "avgMs": 9.149,
+      "maxCounts": {
+        "step": 926,
+        "ms": 5,
+        "resolve": 3,
+        "relax": 3,
+        "final": 15,
+        "rests": 8,
+        "state": "RESOLVING",
+        "phase": "GARBAGE"
+      },
+      "slow": [
+        {
+          "step": 473,
+          "ms": 86,
+          "resolve": 1,
+          "relax": 0,
+          "final": 6,
+          "rests": 4,
+          "state": "PLAYING",
+          "phase": null
+        },
+        {
+          "step": 1017,
+          "ms": 141,
+          "resolve": 1,
+          "relax": 0,
+          "final": 6,
+          "rests": 4,
+          "state": "PLAYING",
+          "phase": null
+        },
+        {
+          "step": 1096,
+          "ms": 165,
+          "resolve": 1,
+          "relax": 0,
+          "final": 7,
+          "rests": 4,
+          "state": "RESOLVING",
+          "phase": "SETTLE"
+        },
+        {
+          "step": 1553,
+          "ms": 237,
+          "resolve": 1,
+          "relax": 0,
+          "final": 6,
+          "rests": 4,
+          "state": "PLAYING",
+          "phase": null
+        },
+        {
+          "step": 1601,
+          "ms": 263,
+          "resolve": 1,
+          "relax": 0,
+          "final": 6,
+          "rests": 4,
+          "state": "PLAYING",
+          "phase": null
+        },
+        {
+          "step": 1683,
+          "ms": 278,
+          "resolve": 1,
+          "relax": 0,
+          "final": 6,
+          "rests": 4,
+          "state": "PLAYING",
+          "phase": null
+        }
+      ]
+    },
+    {
+      "seed": 37,
+      "frames": 1920,
+      "maxMs": 94,
+      "avgMs": 11.615,
+      "maxCounts": {
+        "step": 985,
+        "ms": 4,
+        "resolve": 3,
+        "relax": 3,
+        "final": 15,
+        "rests": 8,
+        "state": "RESOLVING",
+        "phase": "GARBAGE"
+      },
+      "slow": [
+        {
+          "step": 1882,
+          "ms": 94,
+          "resolve": 2,
+          "relax": 7,
+          "final": 13,
+          "rests": 6,
+          "state": "RESOLVING",
+          "phase": "GARBAGE"
+        }
+      ]
+    }
+  ]
+}
+SETTLE_AUDIT {
+  "cases": 500,
+  "bugs": [],
+  "stats": {}
 }
 LANDING_AUDIT {
-  "cases": 400,
+  "cases": 120,
   "bugs": [
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 1,
-      "role": 0,
-      "d": 0.8783211684355309,
-      "guide": [
-        1.7070967741935483,
-        10
-      ],
-      "actual": [
-        2,
-        9
-      ],
-      "logical": [
-        2,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 1,
-      "role": 1,
-      "d": 0.8783211684355309,
-      "guide": [
-        2.7070967741935483,
-        11
-      ],
-      "actual": [
-        3,
-        10
-      ],
-      "logical": [
-        3,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 1,
-      "role": 2,
-      "d": 0.8783211684355309,
-      "guide": [
-        0.7070967741935484,
-        11
-      ],
-      "actual": [
-        1,
-        10
-      ],
-      "logical": [
-        1,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 3,
-      "role": 0,
-      "d": 0.9416269932307874,
-      "guide": [
-        2.7393548387096773,
-        10
-      ],
-      "actual": [
-        2,
-        9
-      ],
-      "logical": [
-        2,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 3,
-      "role": 1,
-      "d": 0.9416269932307874,
-      "guide": [
-        3.7393548387096773,
-        11
-      ],
-      "actual": [
-        3,
-        10
-      ],
-      "logical": [
-        3,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 3,
-      "role": 2,
-      "d": 0.9416269932307874,
-      "guide": [
-        1.7393548387096776,
-        11
-      ],
-      "actual": [
-        1,
-        10
-      ],
-      "logical": [
-        1,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 5,
-      "role": 0,
-      "d": 0.9513187216141877,
-      "guide": [
-        11.21258064516129,
-        10
-      ],
-      "actual": [
-        12,
-        9
-      ],
-      "logical": [
-        12,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 5,
-      "role": 1,
-      "d": 0.9513187216141877,
-      "guide": [
-        12.21258064516129,
-        11
-      ],
-      "actual": [
-        13,
-        10
-      ],
-      "logical": [
-        13,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 5,
-      "role": 2,
-      "d": 0.9513187216141877,
-      "guide": [
-        10.21258064516129,
-        11
-      ],
-      "actual": [
-        11,
-        10
-      ],
-      "logical": [
-        11,
-        10
-      ]
-    },
     {
       "type": "guide-harddrop-contact-disagreement",
       "seed": 6,
@@ -921,762 +1160,6 @@ LANDING_AUDIT {
       ],
       "logical": [
         5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 11,
-      "role": 0,
-      "d": 1.6581016452112036,
-      "guide": [
-        6.868387096774193,
-        8.847801226103112
-      ],
-      "actual": [
-        6,
-        7
-      ],
-      "logical": [
-        6,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 11,
-      "role": 1,
-      "d": 1.6581016452112036,
-      "guide": [
-        7.868387096774193,
-        9.847801226103112
-      ],
-      "actual": [
-        7,
-        8
-      ],
-      "logical": [
-        7,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 11,
-      "role": 2,
-      "d": 1.6581016452112036,
-      "guide": [
-        5.868387096774193,
-        9.847801226103112
-      ],
-      "actual": [
-        5,
-        8
-      ],
-      "logical": [
-        5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 12,
-      "role": 0,
-      "d": 1.6869358833836037,
-      "guide": [
-        5.187419354838709,
-        7.944897999383748
-      ],
-      "actual": [
-        5,
-        6
-      ],
-      "logical": [
-        5,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 12,
-      "role": 1,
-      "d": 1.6869358833836037,
-      "guide": [
-        7.187419354838709,
-        7.944897999383748
-      ],
-      "actual": [
-        7,
-        6
-      ],
-      "logical": [
-        7,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 12,
-      "role": 2,
-      "d": 1.6869358833836037,
-      "guide": [
-        6.187419354838709,
-        8.944897999383748
-      ],
-      "actual": [
-        6,
-        7
-      ],
-      "logical": [
-        6,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 13,
-      "role": 0,
-      "d": 1.659446338149194,
-      "guide": [
-        4.881612903225806,
-        8.847323043907304
-      ],
-      "actual": [
-        4,
-        7
-      ],
-      "logical": [
-        4,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 13,
-      "role": 1,
-      "d": 1.659446338149194,
-      "guide": [
-        5.881612903225806,
-        9.847323043907304
-      ],
-      "actual": [
-        5,
-        8
-      ],
-      "logical": [
-        5,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 13,
-      "role": 2,
-      "d": 1.659446338149194,
-      "guide": [
-        3.881612903225806,
-        9.847323043907304
-      ],
-      "actual": [
-        3,
-        8
-      ],
-      "logical": [
-        3,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 15,
-      "role": 0,
-      "d": 0.9836549736467667,
-      "guide": [
-        8.932903225806452,
-        10
-      ],
-      "actual": [
-        8,
-        9
-      ],
-      "logical": [
-        8,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 15,
-      "role": 1,
-      "d": 0.9836549736467667,
-      "guide": [
-        9.932903225806452,
-        11
-      ],
-      "actual": [
-        9,
-        10
-      ],
-      "logical": [
-        9,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 15,
-      "role": 2,
-      "d": 0.9836549736467662,
-      "guide": [
-        7.932903225806451,
-        11
-      ],
-      "actual": [
-        7,
-        10
-      ],
-      "logical": [
-        7,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 17,
-      "role": 0,
-      "d": 1.7223116205532418,
-      "guide": [
-        9.96516129032258,
-        8.988652436322894
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 17,
-      "role": 1,
-      "d": 1.7223116205532418,
-      "guide": [
-        10.96516129032258,
-        9.988652436322894
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 17,
-      "role": 2,
-      "d": 1.7223116205532418,
-      "guide": [
-        8.96516129032258,
-        9.988652436322894
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 18,
-      "role": 0,
-      "d": 1.107825179776661,
-      "guide": [
-        9.481290322580646,
-        9.248661435455181
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 18,
-      "role": 1,
-      "d": 1.107825179776661,
-      "guide": [
-        11.481290322580646,
-        9.248661435455181
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 18,
-      "role": 2,
-      "d": 1.107825179776661,
-      "guide": [
-        10.481290322580646,
-        10.248661435455181
-      ],
-      "actual": [
-        10,
-        9
-      ],
-      "logical": [
-        10,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 19,
-      "role": 0,
-      "d": 0.8682029144896991,
-      "guide": [
-        12.122903225806452,
-        10
-      ],
-      "actual": [
-        12,
-        9
-      ],
-      "logical": [
-        12,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 19,
-      "role": 1,
-      "d": 0.8682029144896991,
-      "guide": [
-        13.122903225806452,
-        11
-      ],
-      "actual": [
-        13,
-        10
-      ],
-      "logical": [
-        13,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 19,
-      "role": 2,
-      "d": 0.8682029144896991,
-      "guide": [
-        11.122903225806452,
-        11
-      ],
-      "actual": [
-        11,
-        10
-      ],
-      "logical": [
-        11,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 21,
-      "role": 0,
-      "d": 1.6457504266840133,
-      "guide": [
-        9.378709677419355,
-        8.866188290142064
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 21,
-      "role": 1,
-      "d": 1.6457504266840133,
-      "guide": [
-        10.378709677419355,
-        9.866188290142064
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 21,
-      "role": 2,
-      "d": 1.6457504266840133,
-      "guide": [
-        8.378709677419355,
-        9.866188290142064
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 25,
-      "role": 0,
-      "d": 1.7071651765698284,
-      "guide": [
-        14.094193548387098,
-        8.970514259088477
-      ],
-      "actual": [
-        14,
-        7
-      ],
-      "logical": [
-        14,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 25,
-      "role": 1,
-      "d": 1.7071651765698284,
-      "guide": [
-        15.094193548387098,
-        9.970514259088477
-      ],
-      "actual": [
-        15,
-        8
-      ],
-      "logical": [
-        15,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 25,
-      "role": 2,
-      "d": 1.7071651765698284,
-      "guide": [
-        13.094193548387098,
-        9.970514259088477
-      ],
-      "actual": [
-        13,
-        8
-      ],
-      "logical": [
-        13,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 26,
-      "role": 0,
-      "d": 1.0578549190205049,
-      "guide": [
-        13.610322580645162,
-        9.169577483016573
-      ],
-      "actual": [
-        13,
-        8
-      ],
-      "logical": [
-        13,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 26,
-      "role": 1,
-      "d": 1.0578549190205049,
-      "guide": [
-        15.610322580645162,
-        9.169577483016573
-      ],
-      "actual": [
-        15,
-        8
-      ],
-      "logical": [
-        15,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 26,
-      "role": 2,
-      "d": 1.0578549190205049,
-      "guide": [
-        14.610322580645162,
-        10.169577483016573
-      ],
-      "actual": [
-        14,
-        9
-      ],
-      "logical": [
-        14,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 27,
-      "role": 0,
-      "d": 0.8707060688157815,
-      "guide": [
-        16.18032258064516,
-        10
-      ],
-      "actual": [
-        16,
-        9
-      ],
-      "logical": [
-        16,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 27,
-      "role": 1,
-      "d": 0.8707060688157815,
-      "guide": [
-        17.18032258064516,
-        11
-      ],
-      "actual": [
-        17,
-        10
-      ],
-      "logical": [
-        17,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 27,
-      "role": 2,
-      "d": 0.8707060688157815,
-      "guide": [
-        15.18032258064516,
-        11
-      ],
-      "actual": [
-        15,
-        10
-      ],
-      "logical": [
-        15,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 29,
-      "role": 0,
-      "d": 3.472173046662989,
-      "guide": [
-        9.526774193548388,
-        -1
-      ],
-      "actual": [
-        10,
-        -5
-      ],
-      "logical": [
-        10,
-        -5
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 29,
-      "role": 1,
-      "d": 3.472173046662989,
-      "guide": [
-        10.526774193548388,
-        0
-      ],
-      "actual": [
-        11,
-        -4
-      ],
-      "logical": [
-        11,
-        -4
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 29,
-      "role": 2,
-      "d": 3.472173046662989,
-      "guide": [
-        8.526774193548388,
-        0
-      ],
-      "actual": [
-        9,
-        -4
-      ],
-      "logical": [
-        9,
-        -4
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 31,
-      "role": 0,
-      "d": 1.6529070830432793,
-      "guide": [
-        1.1909677419354838,
-        8.850574154698085
-      ],
-      "actual": [
-        2,
-        7
-      ],
-      "logical": [
-        2,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 31,
-      "role": 1,
-      "d": 1.6529070830432793,
-      "guide": [
-        2.190967741935484,
-        9.850574154698085
-      ],
-      "actual": [
-        3,
-        8
-      ],
-      "logical": [
-        3,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 31,
-      "role": 2,
-      "d": 1.6529070830432793,
-      "guide": [
-        0.19096774193548383,
-        9.850574154698085
-      ],
-      "actual": [
-        1,
-        8
-      ],
-      "logical": [
-        1,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 33,
-      "role": 0,
-      "d": 1.6473366466584278,
-      "guide": [
-        10.53516129032258,
-        8.876918973835899
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 33,
-      "role": 1,
-      "d": 1.6473366466584278,
-      "guide": [
-        11.53516129032258,
-        9.876918973835899
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 33,
-      "role": 2,
-      "d": 1.6473366466584278,
-      "guide": [
-        9.53516129032258,
-        9.876918973835899
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
         8
       ]
     },
@@ -1790,492 +1273,6 @@ LANDING_AUDIT {
     },
     {
       "type": "guide-harddrop-contact-disagreement",
-      "seed": 43,
-      "role": 0,
-      "d": 1.6554389992770053,
-      "guide": [
-        11.591290322580644,
-        8.896915875914795
-      ],
-      "actual": [
-        12,
-        7
-      ],
-      "logical": [
-        12,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 43,
-      "role": 1,
-      "d": 1.6554389992770053,
-      "guide": [
-        12.591290322580644,
-        9.896915875914795
-      ],
-      "actual": [
-        13,
-        8
-      ],
-      "logical": [
-        13,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 43,
-      "role": 2,
-      "d": 1.6554389992770053,
-      "guide": [
-        10.591290322580644,
-        9.896915875914795
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 44,
-      "role": 0,
-      "d": 1.6569143716649026,
-      "guide": [
-        8.606774193548386,
-        7.899722295956199
-      ],
-      "actual": [
-        9,
-        6
-      ],
-      "logical": [
-        9,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 44,
-      "role": 1,
-      "d": 1.6569143716649026,
-      "guide": [
-        10.606774193548386,
-        7.899722295956199
-      ],
-      "actual": [
-        11,
-        6
-      ],
-      "logical": [
-        11,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 44,
-      "role": 2,
-      "d": 1.6569143716649026,
-      "guide": [
-        9.606774193548386,
-        8.899722295956199
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 45,
-      "role": 0,
-      "d": 0.8907441732068624,
-      "guide": [
-        8.416774193548386,
-        10
-      ],
-      "actual": [
-        8,
-        9
-      ],
-      "logical": [
-        8,
-        9
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 45,
-      "role": 1,
-      "d": 0.8907441732068624,
-      "guide": [
-        9.416774193548386,
-        11
-      ],
-      "actual": [
-        9,
-        10
-      ],
-      "logical": [
-        9,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 45,
-      "role": 2,
-      "d": 0.8907441732068624,
-      "guide": [
-        7.416774193548386,
-        11
-      ],
-      "actual": [
-        7,
-        10
-      ],
-      "logical": [
-        7,
-        10
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 47,
-      "role": 0,
-      "d": 1.6468102347568183,
-      "guide": [
-        9.449032258064516,
-        8.874777350740237
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 47,
-      "role": 1,
-      "d": 1.6468102347568183,
-      "guide": [
-        10.449032258064516,
-        9.874777350740237
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 47,
-      "role": 2,
-      "d": 1.6468102347568183,
-      "guide": [
-        8.449032258064516,
-        9.874777350740237
-      ],
-      "actual": [
-        9,
-        8
-      ],
-      "logical": [
-        9,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 51,
-      "role": 0,
-      "d": 1.7091178809729735,
-      "guide": [
-        13.913870967741936,
-        8.97289275887367
-      ],
-      "actual": [
-        14,
-        7
-      ],
-      "logical": [
-        14,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 51,
-      "role": 1,
-      "d": 1.7091178809729735,
-      "guide": [
-        14.913870967741936,
-        9.97289275887367
-      ],
-      "actual": [
-        15,
-        8
-      ],
-      "logical": [
-        15,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 51,
-      "role": 2,
-      "d": 1.7091178809729735,
-      "guide": [
-        12.913870967741936,
-        9.97289275887367
-      ],
-      "actual": [
-        13,
-        8
-      ],
-      "logical": [
-        13,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 53,
-      "role": 0,
-      "d": 1.6469704055947276,
-      "guide": [
-        12.545806451612904,
-        8.875468064688313
-      ],
-      "actual": [
-        12,
-        7
-      ],
-      "logical": [
-        12,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 53,
-      "role": 1,
-      "d": 1.6469704055947276,
-      "guide": [
-        13.545806451612904,
-        9.875468064688313
-      ],
-      "actual": [
-        13,
-        8
-      ],
-      "logical": [
-        13,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 53,
-      "role": 2,
-      "d": 1.6469704055947276,
-      "guide": [
-        11.545806451612904,
-        9.875468064688313
-      ],
-      "actual": [
-        11,
-        8
-      ],
-      "logical": [
-        11,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 54,
-      "role": 0,
-      "d": 1.647257043495863,
-      "guide": [
-        8.29258064516129,
-        7.857720908872528
-      ],
-      "actual": [
-        9,
-        6
-      ],
-      "logical": [
-        9,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 54,
-      "role": 1,
-      "d": 1.647257043495863,
-      "guide": [
-        10.29258064516129,
-        7.857720908872528
-      ],
-      "actual": [
-        11,
-        6
-      ],
-      "logical": [
-        11,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 54,
-      "role": 2,
-      "d": 1.647257043495863,
-      "guide": [
-        9.29258064516129,
-        8.857720908872528
-      ],
-      "actual": [
-        10,
-        7
-      ],
-      "logical": [
-        10,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 55,
-      "role": 0,
-      "d": 1.6643119612912032,
-      "guide": [
-        15.07516129032258,
-        8.846113988812725
-      ],
-      "actual": [
-        16,
-        7
-      ],
-      "logical": [
-        16,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 55,
-      "role": 1,
-      "d": 1.6643119612912032,
-      "guide": [
-        16.07516129032258,
-        9.846113988812725
-      ],
-      "actual": [
-        17,
-        8
-      ],
-      "logical": [
-        17,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 55,
-      "role": 2,
-      "d": 1.6643119612912032,
-      "guide": [
-        14.07516129032258,
-        9.846113988812725
-      ],
-      "actual": [
-        15,
-        8
-      ],
-      "logical": [
-        15,
-        8
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 56,
-      "role": 0,
-      "d": 1.70716517656983,
-      "guide": [
-        13.094193548387098,
-        7.970514259088478
-      ],
-      "actual": [
-        13,
-        6
-      ],
-      "logical": [
-        13,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 56,
-      "role": 1,
-      "d": 1.70716517656983,
-      "guide": [
-        15.094193548387098,
-        7.970514259088478
-      ],
-      "actual": [
-        15,
-        6
-      ],
-      "logical": [
-        15,
-        6
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
-      "seed": 56,
-      "role": 2,
-      "d": 1.70716517656983,
-      "guide": [
-        14.094193548387098,
-        8.970514259088478
-      ],
-      "actual": [
-        14,
-        7
-      ],
-      "logical": [
-        14,
-        7
-      ]
-    },
-    {
-      "type": "guide-harddrop-contact-disagreement",
       "seed": 57,
       "role": 0,
       "d": 1.7194622869670584,
@@ -2384,78 +1381,356 @@ LANDING_AUDIT {
     },
     {
       "type": "guide-harddrop-contact-disagreement",
-      "seed": 61,
+      "seed": 69,
       "role": 0,
-      "d": 0.9294362920715822,
+      "d": 1.650291798267392,
       "guide": [
-        16.67483870967742,
-        10
+        8.475483870967743,
+        8.8857153519875
       ],
       "actual": [
-        16,
-        9
+        8,
+        7
       ],
       "logical": [
-        16,
-        9
+        8,
+        7
       ]
     },
     {
       "type": "guide-harddrop-contact-disagreement",
-      "seed": 61,
+      "seed": 69,
       "role": 1,
-      "d": 0.9294362920715822,
+      "d": 1.650291798267392,
       "guide": [
-        17.67483870967742,
-        11
+        9.475483870967743,
+        9.8857153519875
       ],
       "actual": [
-        17,
-        10
+        9,
+        8
       ],
       "logical": [
-        17,
-        10
+        9,
+        8
       ]
     },
     {
       "type": "guide-harddrop-contact-disagreement",
-      "seed": 61,
+      "seed": 69,
       "role": 2,
-      "d": 0.9294362920715822,
+      "d": 1.650291798267392,
       "guide": [
-        15.67483870967742,
-        11
+        7.475483870967742,
+        9.8857153519875
       ],
       "actual": [
-        15,
-        10
+        7,
+        8
       ],
       "logical": [
-        15,
-        10
+        7,
+        8
       ]
     },
     {
       "type": "guide-harddrop-contact-disagreement",
-      "seed": 63,
+      "seed": 85,
       "role": 0,
-      "d": 1.649651795997325,
+      "d": 1.6478499248653644,
       "guide": [
-        6.486129032258065,
-        8.884063229312703
+        15.277096774193549,
+        8.856434613772125
       ],
       "actual": [
-        6,
+        16,
         7
       ],
       "logical": [
-        6,
+        16,
         7
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 85,
+      "role": 1,
+      "d": 1.6478499248653644,
+      "guide": [
+        16.27709677419355,
+        9.856434613772125
+      ],
+      "actual": [
+        17,
+        8
+      ],
+      "logical": [
+        17,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 85,
+      "role": 2,
+      "d": 1.6478499248653644,
+      "guide": [
+        14.277096774193549,
+        9.856434613772125
+      ],
+      "actual": [
+        15,
+        8
+      ],
+      "logical": [
+        15,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 89,
+      "role": 0,
+      "d": 1.0009838565562124,
+      "guide": [
+        8.946129032258064,
+        8.018612549609028
+      ],
+      "actual": [
+        8,
+        7
+      ],
+      "logical": [
+        8,
+        7
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 89,
+      "role": 1,
+      "d": 1.0009838565562124,
+      "guide": [
+        9.946129032258064,
+        9.018612549609028
+      ],
+      "actual": [
+        9,
+        8
+      ],
+      "logical": [
+        9,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 89,
+      "role": 2,
+      "d": 1.0009838565562126,
+      "guide": [
+        7.946129032258065,
+        9.018612549609028
+      ],
+      "actual": [
+        7,
+        8
+      ],
+      "logical": [
+        7,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 100,
+      "role": 0,
+      "d": 1.15838513614936,
+      "guide": [
+        2.6151612903225807,
+        9.319005137991118
+      ],
+      "actual": [
+        3,
+        8
+      ],
+      "logical": [
+        3,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 100,
+      "role": 1,
+      "d": 1.15838513614936,
+      "guide": [
+        4.615161290322581,
+        9.319005137991118
+      ],
+      "actual": [
+        5,
+        8
+      ],
+      "logical": [
+        5,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 100,
+      "role": 2,
+      "d": 1.15838513614936,
+      "guide": [
+        3.6151612903225807,
+        10.319005137991118
+      ],
+      "actual": [
+        4,
+        9
+      ],
+      "logical": [
+        4,
+        9
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 111,
+      "role": 0,
+      "d": 1.6499365970728908,
+      "guide": [
+        10.481290322580646,
+        8.884809691793144
+      ],
+      "actual": [
+        10,
+        7
+      ],
+      "logical": [
+        10,
+        7
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 111,
+      "role": 1,
+      "d": 1.6499365970728908,
+      "guide": [
+        11.481290322580646,
+        9.884809691793144
+      ],
+      "actual": [
+        11,
+        8
+      ],
+      "logical": [
+        11,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 111,
+      "role": 2,
+      "d": 1.6499365970728908,
+      "guide": [
+        9.481290322580646,
+        9.884809691793144
+      ],
+      "actual": [
+        9,
+        8
+      ],
+      "logical": [
+        9,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 117,
+      "role": 0,
+      "d": 1.6542632834971935,
+      "guide": [
+        13.578064516129032,
+        8.894581615375651
+      ],
+      "actual": [
+        14,
+        7
+      ],
+      "logical": [
+        14,
+        7
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 117,
+      "role": 1,
+      "d": 1.6542632834971935,
+      "guide": [
+        14.578064516129032,
+        9.894581615375651
+      ],
+      "actual": [
+        15,
+        8
+      ],
+      "logical": [
+        15,
+        8
+      ]
+    },
+    {
+      "type": "guide-harddrop-contact-disagreement",
+      "seed": 117,
+      "role": 2,
+      "d": 1.6542632834971935,
+      "guide": [
+        12.578064516129032,
+        9.894581615375651
+      ],
+      "actual": [
+        13,
+        8
+      ],
+      "logical": [
+        13,
+        8
       ]
     }
   ],
   "stats": {
-    "guide-harddrop-contact-disagreement": 573
+    "guide-harddrop-contact-disagreement": 36
   }
+}
+RENDERED_GUIDE_AUDIT {
+  "cases": 120,
+  "stats": {},
+  "bugs": []
+}
+ONLINE_ROUNDTRIP_AUDIT {
+  "stats": {},
+  "bugs": []
+}
+ONLINE_RATING_AUDIT {
+  "definitions": 2,
+  "calls": 1,
+  "zeroDeltaFinish": false,
+  "issues": []
+}
+FRIEND_ROOM_AUDIT {
+  "createCalls": 1,
+  "joinCalls": 1,
+  "mockLabel": false,
+  "fakeStart": false,
+  "issues": []
+}
+ATTACK_CONSERVATION_AUDIT {
+  "stats": {},
+  "bugs": []
 }
