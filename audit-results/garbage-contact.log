@@ -17,4 +17,4 @@ Error: gridified garbage moved upward: {"type":"HEXAGON","frame":163,"id":6,"pre
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-garbage queued-motion overlap diagnostic PASS {"min":0.9999999990698493,"worst":{"step":1203,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990698493,"pair":[{"id":10,"logical":[5,10],"visual":[5.94128156293775,9.020354611167344],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
+garbage queued-motion overlap diagnostic PASS {"min":0.9999999990004724,"worst":{"step":1210,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990004724,"pair":[{"id":10,"logical":[5,10],"visual":[5.648631783950619,9.14876483142528],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
