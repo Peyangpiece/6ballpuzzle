@@ -37,7 +37,6 @@ jobs:
           if 'friendRoomRef' not in s:
               once('const matchRef = useRef(null), reportedRef = useRef(false);','const matchRef = useRef(null), reportedRef = useRef(false), friendRoomRef = useRef(null);','friend ref')
 
-          # Rating wiring is idempotent with the earlier dedicated patch.
           lines=s.splitlines()
           fi=[i for i,l in enumerate(lines) if l.startswith('const finish = useCallback((win) =>')]
           if len(fi)!=1: raise SystemExit(f'finish: expected one line, found {len(fi)}')
@@ -56,7 +55,6 @@ jobs:
 
           old_join='onClick: () => startMatch("FRIEND", 3, { name: "フレンド", rating })'
           new_join='onClick: async () => { try { setNetErr(null); const match=await Net.joinRoom(room); beginOnline(match,"FRIEND"); } catch(e) { setNetErr((e&&e.message)||String(e)); setScreen("HOME"); } }'
-          # There were two fake startMatch calls; first is join, second is room mock.
           if old_join in s: s=s.replace(old_join,new_join,1)
 
           old_room_back='screen === "ROOM" && React.createElement(Screen, { title: "部屋をつくった", back: () => setScreen("FRIEND") }'
@@ -71,7 +69,6 @@ jobs:
           new_next='onNext:()=>{if(mode==="ONLINE")setScreen("MATCHING");else if(mode==="FRIEND")setScreen("FRIEND");else startMatch(mode,aiLevel,opp);}'
           if old_next in s: once(old_next,new_next,'result next')
 
-          # Production invariants: no shipped mock label / no local FRIEND route.
           if '相手が入室した（模擬）' in s: raise SystemExit('mock friend UI remains')
           if 'startMatch("FRIEND"' in s: raise SystemExit('local fake FRIEND route remains')
           if 'Net.createRoom()' not in s or 'Net.joinRoom(room)' not in s: raise SystemExit('real room calls missing')
@@ -80,12 +77,12 @@ jobs:
           node --check public/app-16.js
           node tests/audit-friend-room.js
           node tests/audit-online-rating.js
-      - name: Commit patch
+      - name: Commit and push patch
         shell: bash
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git pull --rebase origin main
           git add public/app-16.js
-          git diff --cached --quiet || git commit -m "Wire real friend rooms and online rating"
+          if ! git diff --cached --quiet; then git commit -m "Wire real friend rooms and online rating"; fi
+          git pull --rebase origin main
           git push
