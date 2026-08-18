@@ -1,1 +1,1 @@
-run focused diagnoses 18 fixed convergence wrapper app74
+run focused diagnoses 19 current app73+app74
