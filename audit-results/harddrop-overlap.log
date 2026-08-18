@@ -35,6 +35,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 5.836129032258064,
+            "y": 8.951048739387893,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               5.836129032258064,
@@ -70,6 +79,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -93,6 +110,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 6.836129032258064,
+            "y": 9.951048739387893,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               6.836129032258064,
@@ -128,6 +154,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 8,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -151,6 +185,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 4.836129032258064,
+            "y": 9.951048739387893,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               4.836129032258064,
@@ -186,6 +229,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -236,6 +287,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 5.172879900877107,
+          "y": 8.951048739387893,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.836129032258064,
@@ -271,6 +331,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -294,6 +362,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.105792043255426,
+          "y": 9.951107198163674,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.836129032258064,
@@ -329,6 +406,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 8,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -352,6 +437,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.049330703569214,
+          "y": 9.951048739387893,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.836129032258064,
@@ -387,6 +481,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -436,6 +538,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 5.27726544339719,
+          "y": 8.951048739387893,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.836129032258064,
@@ -471,6 +582,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -494,6 +613,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.215170002628104,
+          "y": 9.951410434763016,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.836129032258064,
@@ -529,6 +657,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 8,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -552,6 +688,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.16451053741647,
+          "y": 9.951048739387893,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.836129032258064,
@@ -587,6 +732,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -636,6 +789,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 5.378220660970168,
+          "y": 8.951048739387893,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.836129032258064,
@@ -671,6 +833,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -694,6 +864,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.323080297272994,
+          "y": 9.951872823363022,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.836129032258064,
@@ -729,6 +908,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 8,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -752,6 +939,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.280532017457444,
+          "y": 9.951048739387893,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.836129032258064,
@@ -787,6 +983,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -836,6 +1040,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 5.475187291382477,
+          "y": 8.951048739387893,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.836129032258064,
@@ -871,6 +1084,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -894,6 +1115,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.428702620841532,
+          "y": 9.952379389135675,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.836129032258064,
@@ -929,6 +1159,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 8,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -952,6 +1190,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.395908173770445,
+          "y": 9.951048739387893,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.836129032258064,
@@ -987,6 +1234,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -1036,6 +1291,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 5.5677541780684034,
+          "y": 8.951048739387893,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.836129032258064,
@@ -1071,6 +1335,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -1094,6 +1366,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.531300859298654,
+          "y": 9.95281561821877,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.836129032258064,
@@ -1129,6 +1410,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 8,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -1152,6 +1441,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.508876225080116,
+          "y": 9.951048739387893,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.836129032258064,
@@ -1187,6 +1485,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -1214,1128 +1520,6 @@ HARD_DROP_OVERLAP_DIAG [
         "a": 2,
         "b": 3,
         "d": 1.011213474825716
-      }
-    ]
-  },
-  {
-    "seed": 9,
-    "visibleOnly": false,
-    "step": 5,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          6,
-          9
-        ],
-        "v": [
-          5.655711114036257,
-          8.951048739387893
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.836129032258064,
-            8.951048739387893
-          ],
-          "to": [
-            6,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.951048739387893,
-        "nearest": {
-          "d": 1.9580591856628724,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          7,
-          10
-        ],
-        "v": [
-          6.63025074368135,
-          9.953100299975574
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            7,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.953100299975574,
-        "nearest": {
-          "d": 1.1362449087805844,
-          "ball": {
-            "id": 3000541,
-            "l": [
-              8,
-              11
-            ],
-            "v": [
-              8,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.617522725212292,
-          9.951048739387893
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.951048739387893,
-        "nearest": {
-          "d": 0.9594569502552992,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9952448794112702
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0096825157801956
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0063655775900864
-      }
-    ]
-  },
-  {
-    "seed": 9,
-    "visibleOnly": false,
-    "step": 6,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          6,
-          9
-        ],
-        "v": [
-          5.7390656678253125,
-          8.951048739387893
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.836129032258064,
-            8.951048739387893
-          ],
-          "to": [
-            6,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.951048739387893,
-        "nearest": {
-          "d": 1.9760410675198858,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          7,
-          10
-        ],
-        "v": [
-          6.725058121013425,
-          9.953214628953313
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            7,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.953214628953313,
-        "nearest": {
-          "d": 1.1082368467419166,
-          "ball": {
-            "id": 3000541,
-            "l": [
-              8,
-              11
-            ],
-            "v": [
-              8,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.72001161114571,
-          9.951048739387893
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.951048739387893,
-        "nearest": {
-          "d": 0.9771531304769772,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.998147099425889
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0047973888345791
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.002525009658803
-      }
-    ]
-  },
-  {
-    "seed": 9,
-    "visibleOnly": false,
-    "step": 7,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          6,
-          9
-        ],
-        "v": [
-          5.818001881908904,
-          8.951048739387893
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.836129032258064,
-            8.951048739387893
-          ],
-          "to": [
-            6,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.951048739387893,
-        "nearest": {
-          "d": 1.993723567079708,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          7,
-          10
-        ],
-        "v": [
-          6.815367438400699,
-          9.953221365833238
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            7,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.953221365833238,
-        "nearest": {
-          "d": 1.0828885945522528,
-          "ball": {
-            "id": 3000541,
-            "l": [
-              8,
-              11
-            ],
-            "v": [
-              8,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.814849289529142,
-          9.951048739387893
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.951048739387893,
-        "nearest": {
-          "d": 0.9955997697450178,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0009730232210647
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0007890791268454
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0002608440903673
-      }
-    ]
-  },
-  {
-    "seed": 9,
-    "visibleOnly": false,
-    "step": 8,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          6,
-          9
-        ],
-        "v": [
-          5.907980999479094,
-          8.971154286820266
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.836129032258064,
-            8.951048739387893
-          ],
-          "to": [
-            6,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.971154286820266,
-        "nearest": {
-          "d": 1.999314649951115,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          7,
-          10
-        ],
-        "v": [
-          6.907980999479093,
-          9.971154286820266
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            7,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.971154286820266,
-        "nearest": {
-          "d": 1.0449971294318983,
-          "ball": {
-            "id": 3000541,
-            "l": [
-              8,
-              11
-            ],
-            "v": [
-              8,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.907980999479093,
-          9.971154286820266
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.836129032258064,
-            9.951048739387893
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 1,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.971154286820266,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9999999999999994
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0000000000000004
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 9,
-    "visibleOnly": false,
-    "step": 9,
-    "state": "RESOLVING",
-    "phase": "CHECK",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          6,
-          9
-        ],
-        "v": [
-          6,
-          9
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "nearest": {
-          "d": 2,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          7,
-          10
-        ],
-        "v": [
-          7,
-          10
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000541,
-            "l": [
-              8,
-              11
-            ],
-            "v": [
-              8,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          5,
-          10
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 9,
-    "visibleOnly": false,
-    "step": 10,
-    "state": "GAMEOVER",
-    "phase": "CHECK",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          6,
-          9
-        ],
-        "v": [
-          6.000000001241737,
-          8.999999874255202
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "nearest": {
-          "d": 2.000000098770876,
-          "ball": {
-            "id": 3000541,
-            "l": [
-              8,
-              11
-            ],
-            "v": [
-              8.000000019090846,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          7,
-          10
-        ],
-        "v": [
-          7.0000000494724315,
-          9.99999992406983
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "nearest": {
-          "d": 1.0000000493522327,
-          "ball": {
-            "id": 3000541,
-            "l": [
-              8,
-              11
-            ],
-            "v": [
-              8.000000019090846,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.999999950636105,
-          9.999999923961292
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "nearest": {
-          "d": 1.0000000496295534,
-          "ball": {
-            "id": 3000542,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              3.9999999802340183,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0000000494186438
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0000000499309756
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0000000494181633
       }
     ]
   },
@@ -2375,6 +1559,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 2.7393548387096773,
+            "y": 8.855145991854574,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               2.7393548387096773,
@@ -2410,6 +1603,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -2433,6 +1634,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 3.7393548387096773,
+            "y": 9.855145991854574,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               3.7393548387096773,
@@ -2468,6 +1678,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -2491,6 +1709,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 1.7393548387096776,
+            "y": 9.855145991854574,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               1.7393548387096776,
@@ -2526,6 +1753,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -2576,6 +1811,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684397,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.8900348185050495,
+          "y": 8.855145991854574,
+          "vy": 3.6275987284684397,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7393548387096773,
@@ -2611,6 +1855,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -2634,6 +1886,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.8993912751257227,
+          "y": 9.855145991854574,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7393548387096773,
@@ -2669,6 +1930,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -2692,6 +1961,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 1.8953280875141127,
+          "y": 9.855145991854574,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             1.7393548387096776,
@@ -2727,6 +2005,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -2776,6 +2062,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684397,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.788562983730033,
+          "y": 8.855145991854574,
+          "vy": 3.6275987284684397,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7393548387096773,
@@ -2811,6 +2106,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -2834,6 +2137,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.792235797285675,
+          "y": 9.855145991854574,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7393548387096773,
@@ -2869,6 +2181,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -2892,6 +2212,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 1.7909430734646938,
+          "y": 9.855145991854574,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             1.7393548387096776,
@@ -2927,6 +2256,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -2976,6 +2313,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684397,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.6871310699195385,
+          "y": 8.859515741363884,
+          "vy": 3.6275987284684397,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7393548387096773,
@@ -3011,6 +2357,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3034,6 +2388,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.687131069919539,
+          "y": 9.859515741363884,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7393548387096773,
@@ -3069,6 +2432,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3092,6 +2463,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 1.6871310699195388,
+          "y": 9.859515741363884,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             1.7393548387096776,
@@ -3127,6 +2507,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3176,6 +2564,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684397,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.584176618364481,
+          "y": 8.870532438818302,
+          "vy": 3.6275987284684397,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7393548387096773,
@@ -3211,6 +2608,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3234,6 +2639,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.584176618364482,
+          "y": 9.870532438818302,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7393548387096773,
@@ -3269,6 +2683,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3292,6 +2714,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 1.584176618364482,
+          "y": 9.870532438818302,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             1.7393548387096776,
@@ -3327,6 +2758,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3376,6 +2815,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684397,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.4823619097949585,
+          "y": 8.884644928349589,
+          "vy": 3.6275987284684397,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7393548387096773,
@@ -3411,6 +2859,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3434,6 +2890,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.4823619097949594,
+          "y": 9.88464492834959,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7393548387096773,
@@ -3469,6 +2934,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3492,6 +2965,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.6275987284684343,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 1.4823619097949596,
+          "y": 9.88464492834959,
+          "vy": 3.6275987284684343,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             1.7393548387096776,
@@ -3527,6 +3009,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -3554,1433 +3044,6 @@ HARD_DROP_OVERLAP_DIAG [
         "a": 2,
         "b": 3,
         "d": 0.9999999999999999
-      }
-    ]
-  },
-  {
-    "seed": 3,
-    "visibleOnly": true,
-    "step": 5,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          2,
-          9
-        ],
-        "v": [
-          2.381966011250105,
-          8.90181452860489
-        ],
-        "vy": 3.6275987284684397,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7393548387096773,
-            8.855145991854574
-          ],
-          "to": [
-            2,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.90181452860489,
-        "nearest": {
-          "d": 1.9890437907365475,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          3.381966011250106,
-          9.901814528604891
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7393548387096773,
-            9.855145991854574
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.901814528604891,
-        "nearest": {
-          "d": 0.9999999999999994,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          1,
-          10
-        ],
-        "v": [
-          1.381966011250106,
-          9.901814528604891
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            1.7393548387096776,
-            9.855145991854574
-          ],
-          "to": [
-            1,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.901814528604891,
-        "nearest": {
-          "d": 1.6180339887498942,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0000000000000016
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.000000000000001
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 3,
-    "visibleOnly": true,
-    "step": 6,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          2,
-          9
-        ],
-        "v": [
-          2.2832641009094,
-          8.92199417890335
-        ],
-        "vy": 3.6275987284684397,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7393548387096773,
-            8.855145991854574
-          ],
-          "to": [
-            2,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.92199417890335,
-        "nearest": {
-          "d": 1.9938346674662553,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          3.283264100909401,
-          9.92199417890335
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7393548387096773,
-            9.855145991854574
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.92199417890335,
-        "nearest": {
-          "d": 0.999999999999999,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          1,
-          10
-        ],
-        "v": [
-          1.2832641009094008,
-          9.92199417890335
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            1.7393548387096776,
-            9.855145991854574
-          ],
-          "to": [
-            1,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.92199417890335,
-        "nearest": {
-          "d": 1.6482523772440303,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 0.9999999999999997
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 3,
-    "visibleOnly": true,
-    "step": 7,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          2,
-          9
-        ],
-        "v": [
-          2.1865267138483997,
-          8.945128568226169
-        ],
-        "vy": 3.6275987284684397,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7393548387096773,
-            8.855145991854574
-          ],
-          "to": [
-            2,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.945128568226169,
-        "nearest": {
-          "d": 1.9972590695091477,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          3.186526713848401,
-          9.94512856822617
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7393548387096773,
-            9.855145991854574
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.94512856822617,
-        "nearest": {
-          "d": 0.9999999999999984,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          1,
-          10
-        ],
-        "v": [
-          1.186526713848401,
-          9.94512856822617
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            1.7393548387096776,
-            9.855145991854574
-          ],
-          "to": [
-            1,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.94512856822617,
-        "nearest": {
-          "d": 1.6773411358908468,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0000000000000018
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0000000000000009
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 3,
-    "visibleOnly": true,
-    "step": 8,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          2,
-          9
-        ],
-        "v": [
-          2.0920190005209065,
-          8.971154286820266
-        ],
-        "vy": 3.6275987284684397,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7393548387096773,
-            8.855145991854574
-          ],
-          "to": [
-            2,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.971154286820266,
-        "nearest": {
-          "d": 1.9993146499511147,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          3.0920190005209083,
-          9.971154286820266
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7393548387096773,
-            9.855145991854574
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.971154286820266,
-        "nearest": {
-          "d": 0.9999999999999997,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          1,
-          10
-        ],
-        "v": [
-          1.0920190005209083,
-          9.971154286820266
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            1.7393548387096776,
-            9.855145991854574
-          ],
-          "to": [
-            1,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.971154286820266,
-        "nearest": {
-          "d": 1.7052803287081837,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0000000000000004
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 0.9999999999999994
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 3,
-    "visibleOnly": true,
-    "step": 9,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          1,
-          10
-        ],
-        "v": [
-          2,
-          9
-        ],
-        "vy": 3.6275987284684397,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2,
-            9
-          ],
-          "to": [
-            1,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            3,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9,
-        "nearest": {
-          "d": 2,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          2,
-          11
-        ],
-        "v": [
-          3,
-          10
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3,
-            10
-          ],
-          "to": [
-            2,
-            11
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            4,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 10,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          0,
-          11
-        ],
-        "v": [
-          1,
-          10
-        ],
-        "vy": 3.6275987284684343,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            1,
-            10
-          ],
-          "to": [
-            0,
-            11
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            2,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 10,
-        "nearest": {
-          "d": 1.7320508075688772,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 3,
-    "visibleOnly": true,
-    "step": 10,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          1,
-          10
-        ],
-        "v": [
-          1.9107219299699458,
-          9.031586643670586
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2,
-            9
-          ],
-          "to": [
-            1,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            3,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.031586643670586,
-        "nearest": {
-          "d": 1.9993146499511145,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          2,
-          11
-        ],
-        "v": [
-          2.910721929969946,
-          10.031586643670586
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3,
-            10
-          ],
-          "to": [
-            2,
-            11
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            4,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 10.031586643670586,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          0,
-          11
-        ],
-        "v": [
-          0.9107219299699458,
-          10.031586643670586
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            1,
-            10
-          ],
-          "to": [
-            0,
-            11
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            2,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 10.031586643670586,
-        "nearest": {
-          "d": 1.7576342253239308,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 3,
-    "visibleOnly": true,
-    "step": 11,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          1,
-          10
-        ],
-        "v": [
-          1.8244294954150533,
-          9.065827641037284
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2,
-            9
-          ],
-          "to": [
-            1,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            3,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.065827641037284,
-        "nearest": {
-          "d": 1.9972590695091479,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          2,
-          11
-        ],
-        "v": [
-          2.8244294954150533,
-          10.065827641037284
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3,
-            10
-          ],
-          "to": [
-            2,
-            11
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            4,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 10.065827641037284,
-        "nearest": {
-          "d": 1.0000000000000002,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          0,
-          11
-        ],
-        "v": [
-          0.8244294954150533,
-          10.065827641037284
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            1,
-            10
-          ],
-          "to": [
-            0,
-            11
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            2,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 2,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 10.065827641037284,
-        "nearest": {
-          "d": 1.782013048376736,
-          "ball": {
-            "id": 3000183,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
       }
     ]
   },
@@ -5020,6 +3083,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 3.7716129032258063,
+            "y": 8.9346954226483,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               3.7716129032258063,
@@ -5055,6 +3127,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -5078,6 +3158,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 4.771612903225806,
+            "y": 9.9346954226483,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               4.771612903225806,
@@ -5113,6 +3202,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -5136,6 +3233,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 2.7716129032258063,
+            "y": 9.9346954226483,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               2.7716129032258063,
@@ -5171,6 +3277,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 2,
+                "y": 11,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -5221,6 +3335,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.115636400067084,
+          "y": 8.9346954226483,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7716129032258063,
@@ -5256,6 +3379,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5279,6 +3410,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.152268310065511,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.771612903225806,
@@ -5314,6 +3454,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5337,6 +3485,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.0701263527820304,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7716129032258063,
@@ -5372,6 +3529,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 2,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5421,6 +3586,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.2288826411265092,
+          "y": 8.9346954226483,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7716129032258063,
@@ -5456,6 +3630,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5479,6 +3661,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.262516158147608,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.771612903225806,
@@ -5514,6 +3705,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5537,6 +3736,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.180993994818178,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7716129032258063,
@@ -5572,6 +3780,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 2,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5621,6 +3837,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.3386253733611895,
+          "y": 8.9346954226483,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7716129032258063,
@@ -5656,6 +3881,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5679,6 +3912,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.368093464468235,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.771612903225806,
@@ -5714,6 +3956,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5737,6 +3987,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.2925792375854446,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7716129032258063,
@@ -5772,6 +4031,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 2,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5821,6 +4088,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.4433032775286105,
+          "y": 8.9346954226483,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7716129032258063,
@@ -5856,6 +4132,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5879,6 +4163,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.468338097779918,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.771612903225806,
@@ -5914,6 +4207,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -5937,6 +4238,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.4038629240025813,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7716129032258063,
@@ -5972,6 +4282,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 2,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -6021,6 +4339,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468439,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 3.543022851973022,
+          "y": 8.9346954226483,
+          "vy": 3.627598728468439,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             3.7716129032258063,
@@ -6056,6 +4383,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -6079,6 +4414,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 4.561861843722146,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             4.771612903225806,
@@ -6114,6 +4458,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 4,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -6137,6 +4489,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 3.627598728468434,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 2.513048772638017,
+          "y": 9.9346954226483,
+          "vy": 3.627598728468434,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             2.7716129032258063,
@@ -6172,6 +4533,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 2,
+              "y": 11,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -6199,1343 +4568,6 @@ HARD_DROP_OVERLAP_DIAG [
         "a": 2,
         "b": 3,
         "d": 1.0244065355420644
-      }
-    ]
-  },
-  {
-    "seed": 5,
-    "visibleOnly": true,
-    "step": 5,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          4,
-          9
-        ],
-        "v": [
-          3.636421494328321,
-          8.9346954226483
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7716129032258063,
-            8.9346954226483
-          ],
-          "to": [
-            4,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.9346954226483,
-        "nearest": {
-          "d": 1.7978207864993176,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.649217229880464,
-          9.9346954226483
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.771612903225806,
-            9.9346954226483
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.9346954226483,
-        "nearest": {
-          "d": 0.9780215410655735,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          2.618504225873824,
-          9.9346954226483
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7716129032258063,
-            9.9346954226483
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.9346954226483,
-        "nearest": {
-          "d": 0.9730325026692621,
-          "ball": {
-            "id": 3000300,
-            "l": [
-              2,
-              11
-            ],
-            "v": [
-              2,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0032142345920694
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0045092788792278
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0153565020033202
-      }
-    ]
-  },
-  {
-    "seed": 5,
-    "visibleOnly": true,
-    "step": 6,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          4,
-          9
-        ],
-        "v": [
-          3.7243563859137736,
-          8.9346954226483
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7716129032258063,
-            8.9346954226483
-          ],
-          "to": [
-            4,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.9346954226483,
-        "nearest": {
-          "d": 1.793908330550656,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.729417055523575,
-          9.9346954226483
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.771612903225806,
-            9.9346954226483
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.9346954226483,
-        "nearest": {
-          "d": 0.9920522627951783,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          2.71831519470374,
-          9.9346954226483
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7716129032258063,
-            9.9346954226483
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.9346954226483,
-        "nearest": {
-          "d": 0.9900250308100453,
-          "ball": {
-            "id": 3000300,
-            "l": [
-              2,
-              11
-            ],
-            "v": [
-              2,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.001267565338619
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0015137141361699
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0055509304099175
-      }
-    ]
-  },
-  {
-    "seed": 5,
-    "visibleOnly": true,
-    "step": 7,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          4,
-          9
-        ],
-        "v": [
-          3.8134732861516007,
-          8.945128568226169
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7716129032258063,
-            8.9346954226483
-          ],
-          "to": [
-            4,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.945128568226169,
-        "nearest": {
-          "d": 1.782013048376736,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.813473286151599,
-          9.94512856822617
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.771612903225806,
-            9.9346954226483
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.94512856822617,
-        "nearest": {
-          "d": 0.9999999999999986,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          2.8134732861515994,
-          9.94512856822617
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7716129032258063,
-            9.9346954226483
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.94512856822617,
-        "nearest": {
-          "d": 0.9999999999999986,
-          "ball": {
-            "id": 3000300,
-            "l": [
-              2,
-              11
-            ],
-            "v": [
-              2,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0000000000000009
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0000000000000018
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 5,
-    "visibleOnly": true,
-    "step": 8,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          4,
-          9
-        ],
-        "v": [
-          3.907980999479094,
-          8.971154286820266
-        ],
-        "vy": 3.627598728468439,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            3.7716129032258063,
-            8.9346954226483
-          ],
-          "to": [
-            4,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.971154286820266,
-        "nearest": {
-          "d": 1.757634225323931,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          5,
-          10
-        ],
-        "v": [
-          4.907980999479093,
-          9.971154286820266
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            4.771612903225806,
-            9.9346954226483
-          ],
-          "to": [
-            5,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.971154286820266,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          2.9079809994790926,
-          9.971154286820266
-        ],
-        "vy": 3.627598728468434,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            2.7716129032258063,
-            9.9346954226483
-          ],
-          "to": [
-            3,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": null,
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 3,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 9.971154286820266,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000300,
-            "l": [
-              2,
-              11
-            ],
-            "v": [
-              2,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9999999999999997
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0000000000000002
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 5,
-    "visibleOnly": true,
-    "step": 9,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          4,
-          9
-        ],
-        "v": [
-          4,
-          9
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 9,
-        "nearest": {
-          "d": 1.7320508075688772,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          6,
-          11
-        ],
-        "v": [
-          5,
-          10
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": {
-          "from": [
-            5,
-            10
-          ],
-          "to": [
-            6,
-            11
-          ],
-          "kind": "ROLL_RIGHT",
-          "pivot": [
-            4,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 10,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          3,
-          10
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 10,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000300,
-            "l": [
-              2,
-              11
-            ],
-            "v": [
-              2,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1
-      }
-    ]
-  },
-  {
-    "seed": 5,
-    "visibleOnly": true,
-    "step": 10,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          4,
-          9
-        ],
-        "v": [
-          4,
-          9
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 9,
-        "nearest": {
-          "d": 1.7320508075688772,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          6,
-          11
-        ],
-        "v": [
-          5.089278070030055,
-          10.031586643670586
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5,
-            10
-          ],
-          "to": [
-            6,
-            11
-          ],
-          "kind": "ROLL_RIGHT",
-          "pivot": [
-            4,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 10.031586643670586,
-        "nearest": {
-          "d": 1.0000000000000002,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          3,
-          10
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 10,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000300,
-            "l": [
-              2,
-              11
-            ],
-            "v": [
-              2,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0463077611352019
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.044997129431898
-      }
-    ]
-  },
-  {
-    "seed": 5,
-    "visibleOnly": true,
-    "step": 11,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          4,
-          9
-        ],
-        "v": [
-          4,
-          9
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 9,
-        "nearest": {
-          "d": 1.7320508075688772,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          6,
-          11
-        ],
-        "v": [
-          5.175570504584947,
-          10.065827641037284
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5,
-            10
-          ],
-          "to": [
-            6,
-            11
-          ],
-          "kind": "ROLL_RIGHT",
-          "pivot": [
-            4,
-            11
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 10.065827641037284,
-        "nearest": {
-          "d": 1.0000000000000002,
-          "ball": {
-            "id": 3000301,
-            "l": [
-              4,
-              11
-            ],
-            "v": [
-              4,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          3,
-          10
-        ],
-        "v": [
-          3,
-          10
-        ],
-        "vy": 0,
-        "speed": 0,
-        "path": null,
-        "pathN": 0,
-        "gid": 0,
-        "size": 0,
-        "role": -1,
-        "rigid": false,
-        "hold": null,
-        "rest": null,
-        "noUp": 10,
-        "nearest": {
-          "d": 1,
-          "ball": {
-            "id": 3000300,
-            "l": [
-              2,
-              11
-            ],
-            "v": [
-              2,
-              11
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 1.0942956287547954
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0892780700300546
       }
     ]
   },
@@ -7575,6 +4607,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 6.868387096774193,
+            "y": 7.588038166568918,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               6.868387096774193,
@@ -7613,6 +4654,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 9,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -7636,6 +4685,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 7.868387096774193,
+            "y": 8.588038166568918,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               7.868387096774193,
@@ -7674,6 +4732,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 7,
+                "y": 10,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -7697,6 +4763,15 @@ HARD_DROP_OVERLAP_DIAG [
           ],
           "vy": 5,
           "speed": 5,
+          "sq": 0,
+          "vis": {
+            "x": 5.868387096774193,
+            "y": 8.588038166568918,
+            "vy": 5,
+            "sq": 0,
+            "motionSpeed": 5,
+            "justReleased": true
+          },
           "path": {
             "from": [
               5.868387096774193,
@@ -7735,6 +4810,14 @@ HARD_DROP_OVERLAP_DIAG [
               ],
               "vy": 0,
               "speed": 0,
+              "sq": 0,
+              "vis": {
+                "x": 4,
+                "y": 9,
+                "vy": 0,
+                "sq": 0,
+                "motionSpeed": 0
+              },
               "path": null,
               "pathN": 0,
               "gid": 0,
@@ -7785,6 +4868,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 7.2616540725525445,
+          "y": 7.9405485470552195,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.868387096774193,
@@ -7823,6 +4915,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -7846,6 +4946,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 8.256268630815514,
+          "y": 8.945791325435067,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             7.868387096774193,
@@ -7884,6 +4993,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -7907,6 +5024,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.237749452588795,
+          "y": 8.932452327539478,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.868387096774193,
@@ -7945,6 +5071,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -7994,6 +5128,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 7.366941768417691,
+          "y": 7.9405485470552195,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.868387096774193,
@@ -8032,6 +5175,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8055,6 +5206,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 8.35445341697782,
+          "y": 8.945791325435067,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             7.868387096774193,
@@ -8093,6 +5253,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8116,6 +5284,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.323009168447808,
+          "y": 8.932452327539478,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.868387096774193,
@@ -8154,6 +5331,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8203,6 +5388,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 7.474788299298982,
+          "y": 7.9405485470552195,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.868387096774193,
@@ -8241,6 +5435,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8264,6 +5466,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 8.454407601452798,
+          "y": 8.945791325435067,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             7.868387096774193,
@@ -8302,6 +5513,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8325,6 +5544,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.405904668960422,
+          "y": 8.932452327539478,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.868387096774193,
@@ -8363,6 +5591,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8412,6 +5648,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 7.584401949452895,
+          "y": 7.9405485470552195,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.868387096774193,
@@ -8450,6 +5695,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8473,6 +5726,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 8.555857216768532,
+          "y": 8.945791325435067,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             7.868387096774193,
@@ -8511,6 +5773,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8534,6 +5804,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.494954146827152,
+          "y": 8.932452327539478,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.868387096774193,
@@ -8572,6 +5851,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8621,6 +5908,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 7.695212618064825,
+          "y": 7.9405485470552195,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             6.868387096774193,
@@ -8659,6 +5955,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8682,6 +5986,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 8.658524196581114,
+          "y": 8.945791325435067,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             7.868387096774193,
@@ -8720,6 +6033,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8743,6 +6064,15 @@ HARD_DROP_OVERLAP_DIAG [
         ],
         "vy": 7.255197456936871,
         "speed": 6.283185307179586,
+        "sq": 0,
+        "vis": {
+          "x": 6.590059484486593,
+          "y": 8.932452327539478,
+          "vy": 7.255197456936871,
+          "sq": 0,
+          "motionSpeed": 6.283185307179586,
+          "justReleased": false
+        },
         "path": {
           "from": [
             5.868387096774193,
@@ -8781,6 +6111,14 @@ HARD_DROP_OVERLAP_DIAG [
             ],
             "vy": 0,
             "speed": 0,
+            "sq": 0,
+            "vis": {
+              "x": 7,
+              "y": 10,
+              "vy": 0,
+              "sq": 0,
+              "motionSpeed": 0
+            },
             "path": null,
             "pathN": 0,
             "gid": 0,
@@ -8808,1469 +6146,6 @@ HARD_DROP_OVERLAP_DIAG [
         "a": 2,
         "b": 3,
         "d": 1.034296868864888
-      }
-    ]
-  },
-  {
-    "seed": 11,
-    "visibleOnly": true,
-    "step": 5,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          10,
-          9
-        ],
-        "v": [
-          7.806566060669026,
-          7.9405485470552195
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.868387096774193,
-            7.588038166568918
-          ],
-          "to": [
-            10,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            8,
-            9
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 7.9405485470552195,
-        "nearest": {
-          "d": 1.8285629378922301,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          11,
-          10
-        ],
-        "v": [
-          8.762127137835177,
-          8.945791325435067
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            7.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            11,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            9,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.945791325435067,
-        "nearest": {
-          "d": 1.268774983840619,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          9,
-          10
-        ],
-        "v": [
-          6.690976237083439,
-          8.932452327539478
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            9,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            7,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.932452327539478,
-        "nearest": {
-          "d": 0.9373459586746435,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9930553990902825
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0242265354530478
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0356398795285107
-      }
-    ]
-  },
-  {
-    "seed": 11,
-    "visibleOnly": true,
-    "step": 6,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          10,
-          9
-        ],
-        "v": [
-          7.917726500715655,
-          7.9405485470552195
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.868387096774193,
-            7.588038166568918
-          ],
-          "to": [
-            10,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            8,
-            9
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 7.9405485470552195,
-        "nearest": {
-          "d": 1.8416190425292158,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          11,
-          10
-        ],
-        "v": [
-          8.866382072070094,
-          8.945791325435067
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            7.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            11,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            9,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.945791325435067,
-        "nearest": {
-          "d": 1.3055123350172253,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          9,
-          10
-        ],
-        "v": [
-          6.797273921922828,
-          8.932452327539478
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            9,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            7,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.932452327539478,
-        "nearest": {
-          "d": 0.9300634335436733,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9913988253367465
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0255526937388915
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0346185678307265
-      }
-    ]
-  },
-  {
-    "seed": 11,
-    "visibleOnly": true,
-    "step": 7,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          10,
-          9
-        ],
-        "v": [
-          8.027887903039955,
-          7.9405485470552195
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.868387096774193,
-            7.588038166568918
-          ],
-          "to": [
-            10,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            8,
-            9
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 7.9405485470552195,
-        "nearest": {
-          "d": 1.8561098029430385,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          11,
-          10
-        ],
-        "v": [
-          8.971003243757798,
-          8.945791325435067
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            7.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            11,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            9,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.945791325435067,
-        "nearest": {
-          "d": 1.3434025434961423,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          9,
-          10
-        ],
-        "v": [
-          6.908284065671784,
-          8.932452327539478
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            9,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            7,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.932452327539478,
-        "nearest": {
-          "d": 0.9256600228400993,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9900764713333812
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0253209353498087
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0314242815445078
-      }
-    ]
-  },
-  {
-    "seed": 11,
-    "visibleOnly": true,
-    "step": 8,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          10,
-          9
-        ],
-        "v": [
-          8.136198684934653,
-          7.9405485470552195
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.868387096774193,
-            7.588038166568918
-          ],
-          "to": [
-            10,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            8,
-            9
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 7.9405485470552195,
-        "nearest": {
-          "d": 1.8718285386725686,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          11,
-          10
-        ],
-        "v": [
-          9.075703893538822,
-          8.945791325435067
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            7.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            11,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            9,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.945791325435067,
-        "nearest": {
-          "d": 1.3822639438830129,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          9,
-          10
-        ],
-        "v": [
-          7.023036861844214,
-          8.932452327539478
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            9,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            7,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.932452327539478,
-        "nearest": {
-          "d": 0.9245951540987094,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9892180203889421
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0235658959738403
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.026398525135404
-      }
-    ]
-  },
-  {
-    "seed": 11,
-    "visibleOnly": true,
-    "step": 9,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          10,
-          9
-        ],
-        "v": [
-          8.241397485402475,
-          7.9405485470552195
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.868387096774193,
-            7.588038166568918
-          ],
-          "to": [
-            10,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            8,
-            9
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 7.9405485470552195,
-        "nearest": {
-          "d": 1.8884576099209038,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          11,
-          10
-        ],
-        "v": [
-          9.182315339680082,
-          8.945892716853153
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            7.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            11,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            9,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.945892716853153,
-        "nearest": {
-          "d": 1.4226671022196893,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          9,
-          10
-        ],
-        "v": [
-          7.138324194723741,
-          8.932452327539478
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            9,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            7,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.932452327539478,
-        "nearest": {
-          "d": 0.9271067470595828,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9896308791335368
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0208317703992296
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0220618539079038
-      }
-    ]
-  },
-  {
-    "seed": 11,
-    "visibleOnly": true,
-    "step": 10,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          10,
-          9
-        ],
-        "v": [
-          8.342938353445069,
-          7.9405485470552195
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.868387096774193,
-            7.588038166568918
-          ],
-          "to": [
-            10,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            8,
-            9
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 7.9405485470552195,
-        "nearest": {
-          "d": 1.9057481655679782,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          11,
-          10
-        ],
-        "v": [
-          9.289934713544397,
-          8.946145669574555
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            7.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            11,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            9,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.946145669574555,
-        "nearest": {
-          "d": 1.4642086464678665,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          9,
-          10
-        ],
-        "v": [
-          7.252757001537052,
-          8.932452327539478
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            9,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            7,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.932452327539478,
-        "nearest": {
-          "d": 0.9331211337165228,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.9912717619930067
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.017363591503166
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0186578857923487
-      }
-    ]
-  },
-  {
-    "seed": 11,
-    "visibleOnly": true,
-    "step": 11,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "balls": [
-      {
-        "id": 1,
-        "l": [
-          10,
-          9
-        ],
-        "v": [
-          8.44072052193453,
-          7.9405485470552195
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            6.868387096774193,
-            7.588038166568918
-          ],
-          "to": [
-            10,
-            9
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            8,
-            9
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 0,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 7.9405485470552195,
-        "nearest": {
-          "d": 1.923518682222271,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 2,
-        "l": [
-          11,
-          10
-        ],
-        "v": [
-          9.39554827893269,
-          8.946460153381402
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            7.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            11,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            9,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 1,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.946460153381402,
-        "nearest": {
-          "d": 1.5056966977064796,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      },
-      {
-        "id": 3,
-        "l": [
-          9,
-          10
-        ],
-        "v": [
-          7.366789703318737,
-          8.932452327539478
-        ],
-        "vy": 7.255197456936871,
-        "speed": 6.283185307179586,
-        "path": {
-          "from": [
-            5.868387096774193,
-            8.588038166568918
-          ],
-          "to": [
-            9,
-            10
-          ],
-          "kind": "GROUP_SLOPE_TRANSLATE",
-          "pivot": [
-            7,
-            10
-          ],
-          "pileFlow": false
-        },
-        "pathN": 1,
-        "gid": 4,
-        "size": 3,
-        "role": 2,
-        "rigid": true,
-        "hold": null,
-        "rest": null,
-        "noUp": 8.932452327539478,
-        "nearest": {
-          "d": 0.9425376365679361,
-          "ball": {
-            "id": 3000671,
-            "l": [
-              7,
-              10
-            ],
-            "v": [
-              7,
-              10
-            ],
-            "vy": 0,
-            "speed": 0,
-            "path": null,
-            "pathN": 0,
-            "gid": 0,
-            "size": 0,
-            "role": -1,
-            "rigid": false,
-            "hold": null,
-            "rest": null
-          }
-        }
-      }
-    ],
-    "pairs": [
-      {
-        "a": 1,
-        "b": 2,
-        "d": 0.993386949375632
-      },
-      {
-        "a": 1,
-        "b": 3,
-        "d": 1.0130334067035596
-      },
-      {
-        "a": 2,
-        "b": 3,
-        "d": 1.0144518243467266
       }
     ]
   }
