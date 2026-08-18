@@ -24,8 +24,6 @@
         return 0;
     }
 
-    // Replace app-17's queue lookup. Its updateVisuals/resolveVisualContacts
-    // wrappers call this name dynamically, so later assignment is authoritative.
     __hexdropGarbageMotionQueue=function(g){
         let minSeq=Infinity;
         const queued=new Set(),entries=[];
@@ -59,10 +57,7 @@
     function distance(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*HEX_ROW_H);}
     function pointDistance(p,q){return Math.hypot((p[0]-q[0])*.5,(p[1]-q[1])*HEX_ROW_H);}
 
-    function snapshot(g){
-        const m=new Map();for(const q of items(g))m.set(q.ball.id,[q.v.x,q.v.y]);
-        previousByEngine.set(g,m);return m;
-    }
+    function snapshot(g){const m=new Map();for(const q of items(g))m.set(q.ball.id,[q.v.x,q.v.y]);previousByEngine.set(g,m);return m;}
     function prevMap(g){return previousByEngine.get(g)||null;}
 
     function outwardDir(q,other){
@@ -163,14 +158,17 @@
         }
     }
 
-    // Loaded after app-17. Snapshot before its queue-restoration wrapper runs;
-    // then preserve queue time as well as queue position.
+    // Freeze queued schedules BEFORE the core visual step. Other moving balls
+    // then see the queued garbage at its true fixed position during swept
+    // collision prediction; restoring the queued visual can no longer create a
+    // post-sweep overlap. Advancing pileFlowClock by dt keeps queued progress
+    // unchanged because its start/end times were shifted by the same dt first.
     const baseUpdateVisuals=updateVisuals;
     updateVisuals=function(g,dt){
         snapshot(g);
         const beforeQueue=typeof __hexdropGarbageMotionQueue==="function"?__hexdropGarbageMotionQueue(g).queued:new Set();
-        const out=baseUpdateVisuals(g,dt);
         pauseQueuedSchedules(g,beforeQueue,Math.max(0,dt||0));
+        const out=baseUpdateVisuals(g,dt);
         hardSeparate(g);
         return out;
     };
