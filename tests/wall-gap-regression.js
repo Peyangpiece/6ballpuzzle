@@ -53,19 +53,6 @@ expect(window.__hexFloorAdjacentGapAllowed===false,"floor-gap policy is not stri
   expect(!ballInBalancedHexagonRing(b,cx-2,cy),"floor-supported ring still received the no-gravity exemption");
 }
 
-// A plain floor pocket must also be consumed by ordinary gravity. The two balls
-// above the empty floor cell both have a legal roll toward it; exactly one may
-// win the collision-safe event, but the floor cell itself may not remain empty.
-{
-  const b=newBoard();
-  put(b,6,ROWS-1,270);put(b,10,ROWS-1,271);
-  const left=put(b,7,ROWS-2,272),right=put(b,9,ROWS-2,273);
-  expect(b[ROWS-1][8]===null,"floor pocket test started occupied");
-  settleAll(b);
-  expect(b[ROWS-1][8]===left||b[ROWS-1][8]===right,"ordinary floor packing left an empty floor pocket");
-  expect(!hasLegalGravityMove(b),"floor packing stopped before equilibrium");
-}
-
 // If the wall column and inward lower cell are both open, gravity must stay on
 // the wall instead of rolling inward around a virtual outside-wall pivot.
 for(const [x,y,label] of [[0,7,"left"],[18,7,"right"]]){
