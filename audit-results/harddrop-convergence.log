@@ -1,66 +1,15 @@
-HARD_DROP_CONVERGENCE {
-  "failures": [
-    {
-      "type": "harddrop-hold-stuck",
-      "seed": 1,
-      "holds": 3,
-      "state": "GAMEOVER",
-      "phase": "CHECK"
-    },
-    {
-      "type": "harddrop-hold-stuck",
-      "seed": 3,
-      "holds": 3,
-      "state": "GAMEOVER",
-      "phase": "CHECK"
-    },
-    {
-      "type": "harddrop-hold-stuck",
-      "seed": 5,
-      "holds": 3,
-      "state": "GAMEOVER",
-      "phase": "CHECK"
-    },
-    {
-      "type": "tracked-upward-motion",
-      "seed": 9,
-      "step": 1,
-      "id": 1,
-      "from": 8.951048739387893,
-      "to": 8.8903781674906
-    },
-    {
-      "type": "tracked-upward-motion",
-      "seed": 9,
-      "step": 1,
-      "id": 3,
-      "from": 9.951048739387893,
-      "to": 9.845650764052925
-    },
-    {
-      "type": "tracked-upward-motion",
-      "seed": 9,
-      "step": 2,
-      "id": 1,
-      "from": 8.8903781674906,
-      "to": 8.866287155127495
-    },
-    {
-      "type": "tracked-upward-motion",
-      "seed": 9,
-      "step": 3,
-      "id": 1,
-      "from": 8.866287155127495,
-      "to": 8.86181137220004
-    }
-  ],
-  "last": {
-    "seed": 9,
-    "clearedHoldAt": 0,
-    "settledAt": null,
-    "maxHold": 0,
-    "worstOverlap": 0.9999999990653526,
-    "state": "GAMEOVER",
-    "phase": "CHECK"
-  }
-}
+/home/runner/work/6ballpuzzle/6ballpuzzle/tests/harddrop-contact-convergence.js:16
+
+
+
+SyntaxError: Unexpected end of input
+    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
+    at Module._compile (node:internal/modules/cjs/loader:1755:20)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.23.2
