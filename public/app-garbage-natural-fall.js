@@ -6,10 +6,6 @@
  * continuous board-ball solver at its CURRENT visual centre and velocity. This
  * is an internal solver registration, not a pile-settled state: released garbage
  * remains garbagePileSettled=false until its own final resting position.
- *
- * This removes the mixed "board ball + still-rigid sibling packet" phase that
- * could pin a large formation in mid-air. After first contact every member uses
- * the ordinary free-fall / tangent-arc / swept-collision path independently.
  */
 (function installNaturalGarbageFall(){
     if(typeof window==="undefined"||window.__hexNaturalGarbageFall)return;
@@ -70,8 +66,6 @@
         return{minSeq,queued};
     }
 
-    // Never restore a whole garbage visual snapshot. That legacy queue was the
-    // direct mechanism behind the floating cluster.
     __hexdropGarbageMotionQueue=function(){return{minSeq:Infinity,queued:new Set()};};
 
     function boardBallById(g,id){for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b?.id===id)return b;}return null;}
@@ -89,49 +83,49 @@
         }
     }
 
+    // First segment of every newly released garbage ball starts on THIS frame.
+    // Only later segments of the SAME ball are chained behind its previous end.
+    // The earlier implementation called pileFlowPreviousEnd even for segment 0,
+    // which could insert an artificial 1-2 frame wait in unsupported mid-air.
     function scheduleGarbageImmediately(g,fresh){
-        if(!Array.isArray(fresh)||!fresh.length)return;preparePileFlowDurations(g,fresh);const clock=Math.max(0,g?.pileFlowClock||0);
-        for(const {ball,seg} of fresh){const duration=Math.max(1/120,seg?._pileNominalDuration||1/120),start=pileFlowPreviousEnd(ball,seg,clock);if(typeof pileFlowAttachCausalSupports==="function")pileFlowAttachCausalSupports(g,ball,seg,start,duration);seg.pileFlowStart=start;seg.pileFlowDuration=duration;seg.pileFlowEnd=start+duration;seg.garbageImmediateSchedule=true;}
+        if(!Array.isArray(fresh)||!fresh.length)return;
+        preparePileFlowDurations(g,fresh);
+        const clock=Math.max(0,g?.pileFlowClock||0),lastEnd=new Map(),seen=new Set();
+        for(const {ball,seg} of fresh){
+            const duration=Math.max(1/120,seg?._pileNominalDuration||1/120);
+            const firstForBall=!seen.has(ball.id);
+            const start=firstForBall?clock:(lastEnd.get(ball.id)??clock);
+            seen.add(ball.id);
+            if(typeof pileFlowAttachCausalSupports==="function")pileFlowAttachCausalSupports(g,ball,seg,start,duration);
+            seg.pileFlowStart=start;
+            seg.pileFlowDuration=duration;
+            seg.pileFlowEnd=start+duration;
+            seg.garbageImmediateSchedule=true;
+            seg.garbageImmediateFirstSegment=firstForBall;
+            lastEnd.set(ball.id,seg.pileFlowEnd);
+        }
     }
     const baseScheduleFreshPileFlow=scheduleFreshPileFlow;
     scheduleFreshPileFlow=function(g,fresh,reason="pile_flow"){if(reason==="garbage_pile_contact"&&Array.isArray(fresh)&&fresh.some(q=>q?.ball?.isGarbage))return scheduleGarbageImmediately(g,fresh);return baseScheduleFreshPileFlow(g,fresh,reason);};
 
-    /*
-     * Convert every sibling that remains after the first actual contact into an
-     * independent board-physics ball immediately. baseMaterialize already uses
-     * the final collision-safe contact wrapper (app-garbage-contact), so passing
-     * the packet's CURRENT anchor Y preserves exact visual position while it
-     * constructs a continuous hand-off route to a nearby logical cell.
-     */
     const baseMaterializeGarbageBallAtContact=materializeGarbageBallAtContact;
-
     function releaseRemainingSiblingsToContinuousPhysics(g,pack){
         if(!pack||pack._rigidityReleasedAfterFirstContact)return;
-        pack._rigidityReleasedAfterFirstContact=true;
-        pack.straightAtomic=false;
+        pack._rigidityReleasedAfterFirstContact=true;pack.straightAtomic=false;
         let guard=Math.max(4,(pack.pat?.length||0)*3),released=0;
-
         while(Array.isArray(pack.pat)&&pack.pat.length&&guard-->0){
             let progressed=false;
-            // Prefer lower siblings first so the logical solver receives physical
-            // supports in the same bottom-up order that gravity sees them.
             const order=pack.pat.map((q,i)=>({i,dy:q[1]})).sort((a,b)=>b.dy-a.dy||b.i-a.i);
             for(const hit of order){
                 if(hit.i>=pack.pat.length)continue;
-                // This is a solver hand-off, not a new pile contact. The exact
-                // current packet anchor retains this sibling's current centre.
-                if(baseMaterializeGarbageBallAtContact(g,pack,hit.i,pack.y)){
-                    released++;progressed=true;break;
-                }
+                if(baseMaterializeGarbageBallAtContact(g,pack,hit.i,pack.y)){released++;progressed=true;break;}
             }
             if(!progressed)break;
         }
-
         pack._releasedSiblingCount=(pack._releasedSiblingCount||0)+released;
         if(!pack.pat.length){pack.landed=true;pack.releaseTime=g.garbageClock;}
         return released;
     }
-
     materializeGarbageBallAtContact=function(g,pack,index,contactAnchorY){
         const firstContact=!!pack&&!pack._rigidityReleasedAfterFirstContact&&(pack.landedCount||0)===0;
         const ok=baseMaterializeGarbageBallAtContact(g,pack,index,contactAnchorY);
