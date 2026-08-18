@@ -13,13 +13,13 @@ evalmachine.<anonymous>:4894
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: local garbage conflict queue is not installed
+Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":117,"d":0.9983216258316364,"a":{"kind":"board","id":26,"x":12.9872320813339,"y":6.007048958006178,"logical":[12,9],"settled":false,"pathLen":2,"seq":100035,"seg":{"from":[13,6],"to":[13,8],"kind":"FREE_FALL","pileFlow":true,"start":0.9912032033425752,"end":1.269820412640178}},"b":{"kind":"board","id":17,"x":13.999476393732337,"y":7.0006863376086,"logical":[13,10],"settled":false,"pathLen":2,"seq":100008,"seg":{"from":[14,7],"to":[14,9],"kind":"FREE_FALL","pileFlow":true,"start":0.9833333745112779,"end":1.2619505838088807}}}
     at expect (evalmachine.<anonymous>:4894:34)
-    at evalmachine.<anonymous>:4918:1
+    at evalmachine.<anonymous>:4930:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:65:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:56:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
