@@ -6,7 +6,7 @@ const runtime=[
   "app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
   "app-garbage-contact.js","app-garbage-rigidity.js","app-garbage-settle-state.js",
   "app-garbage-no-impact.js","app-garbage-sweep-guard.js","app-garbage-visible-overlap.js",
-  "app-garbage-hard-separation.js","app-garbage-natural-fall.js"
+  "app-garbage-hard-separation.js","app-garbage-natural-fall.js","app-garbage-post-resolve.js"
 ].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const checks=String.raw`
@@ -40,6 +40,7 @@ function actualPathCanAdvance(g,q){
 expect(window.__hexNaturalGarbageFall===true,"natural garbage fall override missing");
 expect(window.__hexGarbageLocalConflictQueue===true,"local garbage conflict queue missing");
 expect(window.__hexGarbageGlobalQueueDisabled===true,"legacy visual queue still enabled");
+expect(window.__hexGarbagePostResolveClamp===true,"post-resolve garbage clamp missing");
 expect(typeof window.__hexGarbageLocalConflictIds==="function","local conflict API missing");
 
 let globalMaxStall=0,globalConcurrent=0,globalMin=Infinity,totalMovedFrames=0;
@@ -70,10 +71,6 @@ for(const [variant,type] of [[0,"PYRAMID"],[1,"HEXAGON"],[1,"STRAIGHT"]]){
    expect(d>=HEX_MIN_DIST-5e-4,"garbage overlap during natural fall: "+JSON.stringify({type,variant,frame,d,local:[...window.__hexGarbageLocalConflictIds(g)],a:list[i].b.id,b:list[j].b.id}));
   }
  }
- // Each fixture must actually animate and must contain no unsupported freeze.
- // Whether two balls can legally move on the SAME frame depends on support
- // geometry; forcing concurrency per fixture would manufacture non-reference
- // motion. Concurrency is required across the suite instead.
  expect(movedFrames>0,"garbage never moved in fixture: "+JSON.stringify({type,variant,maxConcurrent,maxStall}));
  caseStats.push({type,variant,maxConcurrent,maxStall,movedFrames});
  globalConcurrent=Math.max(globalConcurrent,maxConcurrent);globalMaxStall=Math.max(globalMaxStall,maxStall);totalMovedFrames+=movedFrames;
