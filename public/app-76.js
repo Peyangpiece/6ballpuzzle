@@ -1,15 +1,19 @@
-/* HEXDROP hard-drop anchor locality repair.
+/* HEXDROP hard-drop anchor locality + straight-handoff repair.
  *
  * app-68 ranked `noUp` before horizontal locality. Near walls / dense piles a
- * perfectly valid contact could therefore be stored two logical columns away
- * just to keep the bookkeeping anchor below the rendered contact. The first
- * pile step then had to traverse that artificial horizontal gap, which created
- * an apparent upward recoil around the supporting ball.
+ * valid contact could therefore be stored two logical columns away merely to
+ * keep the bookkeeping anchor below the rendered contact. Prefer a local rigid
+ * horizontal offset first.
  *
- * Keep the exact contact pose and the same candidate set, but prefer anchors
- * whose rigid horizontal offset is local (<= 1 doubled-grid unit). Within that
- * physically local set, keep the original no-up and distance preferences.
+ * A second continuity issue appears after that anchor is corrected: the logical
+ * GROUP_SLOPE_TRANSLATE still carries pivot/topPivot metadata calculated from
+ * the old lattice-centre start. Once the segment start is rebased to the exact
+ * landing-guide contact, that old pivot can make an otherwise collision-free
+ * translation arc upward. If the common straight rigid path is proven safe and
+ * monotonic from the rebased contact, render that straight path directly.
  */
+const __hex76HardDropBeforeStraightHandoff=hardDrop;
+
 hexHardDropContactAnchor=function(g,target,pose){
     if(!g||!target||!Array.isArray(pose)||pose.length!==3)return null;
     const candidates=[];
@@ -38,4 +42,35 @@ hexHardDropContactAnchor=function(g,target,pose){
         a.dy-b.dy||Math.abs(a.dx)-Math.abs(b.dx)
     );
     return candidates[0];
+};
+
+function hex76UseSafeStraightHandoff(g,ids){
+    if(!g||!Array.isArray(ids)||ids.length!==3)return false;
+    const idSet=new Set(ids);
+    const members=ids.map(id=>hex74FindById(g,id)).filter(Boolean).map(q=>({ball:q.b,seg:q.b.fallPath?.[0]}));
+    if(members.length!==3)return false;
+    const gid=members[0].ball.motionGroupId;
+    if(!gid||members.some(m=>m.ball.motionGroupId!==gid||!m.ball.rigid||!m.seg?.from||!m.seg?.to||m.seg.kind!=="GROUP_SLOPE_TRANSLATE"))return false;
+    const d0=[members[0].seg.to[0]-members[0].seg.from[0],members[0].seg.to[1]-members[0].seg.from[1]];
+    if(members.some(m=>Math.abs((m.seg.to[0]-m.seg.from[0])-d0[0])>1e-6||Math.abs((m.seg.to[1]-m.seg.from[1])-d0[1])>1e-6))return false;
+    if(members.some(m=>m.seg.to[1]<m.seg.from[1]-1e-7))return false;
+    const obstacles=hex74ObstacleItems(g,idSet);
+    if(!hex74RigidLinearSafe(members,obstacles))return false;
+    for(const m of members){
+        m.seg.pivot=null;
+        m.seg.topPivot=null;
+        m.seg.virtualPivot=false;
+        delete m.seg._hexHardDropRigidArc;
+        m.seg._hexHardDropStraight=true;
+    }
+    return true;
+}
+
+hardDrop=function(g){
+    const before=g?.nextId;
+    __hex76HardDropBeforeStraightHandoff(g);
+    if(!g||!Number.isFinite(before))return;
+    const ids=[before,before+1,before+2];
+    const straight=hex76UseSafeStraightHandoff(g,ids);
+    g._hex76StraightHandoff={ids,straight};
 };
