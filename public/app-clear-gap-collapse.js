@@ -2,17 +2,16 @@
  *
  * Balanced gaps are context-sensitive:
  *   - During ordinary landing/SETTLE, a genuinely balanced HEXAGON may keep its
- *     centre hole. This preserves the reference behaviour for a normal ball
- *     landing onto an already stable pile.
+ *     centre hole only when it is an interior structure supported by balls.
+ *     A wall can never substitute for one of those supports, and a HEXAGON
+ *     touching either side wall never receives the balanced-hole exemption.
  *   - During clear_support_loss, the connected pile region that is actually
  *     collapsing may NOT finish with an internal hole merely because its
  *     transient geometry happens to look like a balanced HEXAGON.
  *
- * The ordinary global HEXAGON rule is never changed.  Instead this layer tracks
- * only the support-loss component touched by the current clear.  If a member of
- * that component becomes part of a balanced ring while the pile is collapsing,
- * the ring exemption is bypassed for that collapse only, and only by using the
- * ordinary single-ball natural-motion + swept-collision checks.
+ * The wall rule is global because the user-facing invariant is simple: wall-side
+ * gaps are never legal.  The stricter post-clear rule remains scoped only to the
+ * support-loss component touched by the current clear.
  */
 (function installPostClearGapCollapse(){
     if(typeof window==="undefined"||window.__hexPostClearGapCollapse)return;
@@ -21,6 +20,41 @@
     const basePrepareContinuousPileFlow=prepareContinuousPileFlow;
     const MAX_CLEAR_FALLBACK_EVENTS=(ROWS-BOARD_MIN_ROW)*W2*4;
     const RING_OFFSETS=[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+
+    function ringTouchesSideWall(cx,cy){
+        for(const[dx,dy]of RING_OFFSETS){
+            const x=cx+dx,y=cy+dy;
+            if(!valid(x,y))return true;
+            // Same-row neighbours are +/-2 in doubled-x coordinates.  If one
+            // does not exist, this ring member is physically touching a side
+            // wall.  Such a wall must never act as part of HEXAGON equilibrium.
+            if(!valid(x-2,y)||!valid(x+2,y))return true;
+        }
+        return false;
+    }
+
+    function lowerArchHasRealSupport(b,x,y){
+        if(!valid(x,y)||!b[y][x])return false;
+        if(touchesFloorRow(y))return true;
+        const s=hexPhysSupportInfo(b,x,y);
+        // hexPhysSupportInfo deliberately counts an invalid wall side as
+        // occupied for ordinary collision handling.  A balanced HEXAGON is
+        // stricter: away from the floor, both lower contacts must be real balls.
+        return !!(s.left.valid&&s.right.valid&&s.left.ball&&s.right.ball);
+    }
+
+    function strictInteriorBalancedHexagon(b,cx,cy){
+        if(typeof referenceHexagonRingBalls!=="function")return false;
+        if(!referenceHexagonRingBalls(b,cx,cy))return false;
+        if(ringTouchesSideWall(cx,cy))return false;
+        return [[cx-1,cy+1],[cx+1,cy+1]].every(([x,y])=>lowerArchHasRealSupport(b,x,y));
+    }
+
+    // app-07 supplies the ordinary balanced-ring exemption.  Replace only its
+    // definition of what counts as balanced; every consumer (natural gravity,
+    // illegal-float checks and intentional-hole checks) continues to use the
+    // same canonical function names.
+    isBalancedHexagonCenterHole=strictInteriorBalancedHexagon;
 
     function clearedVacancyKeys(g){
         const out=new Set();
@@ -176,8 +210,9 @@
     }
 
     prepareContinuousPileFlow=function(g,reason="pile_flow"){
-        // Ordinary landing/SETTLE never enters this branch, so balanced HEXAGON
-        // holes remain legal there exactly as before.
+        // Ordinary landing/SETTLE never enters this branch.  Interior HEXAGON
+        // holes can therefore remain legal, but wall-side holes cannot because
+        // the global balanced predicate above rejects them before gravity rests.
         if(reason!=="clear_support_loss")return basePrepareContinuousPileFlow(g,reason);
 
         normalizeAllNonActivePileBalls(g);
@@ -202,8 +237,9 @@
         };
     };
 
-    window.__hexPostClearGapCollapseVersion="clear-gap-v2";
+    window.__hexPostClearGapCollapseVersion="clear-gap-v3";
     window.__hexPostClearGapCollapseInstalled=true;
     window.__hexOrdinaryBalancedHexagonGapAllowed=true;
+    window.__hexWallAdjacentGapAllowed=false;
     window.__hexCollapseBalancedHexagonGapAllowed=false;
 })();
