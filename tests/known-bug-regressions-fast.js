@@ -5,19 +5,24 @@ function fail(type,data){failures.push({type,...data});}
 function items(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,v,x,y});}return a;}
 function minPair(g){const a=items(g);let min=Infinity,pair=null;for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){const d=hexPhysDist(a[i].v.x,a[i].v.y,a[j].v.x,a[j].v.y);if(d<min){min=d;pair=[a[i].b.id,a[j].b.id];}}return{min,pair};}
 // Root-cause fixture for the historical seed-8 recoil / random settle ball loss:
-// two separately accepted bundles may never reserve the same target, and an
-// invalid simultaneous event must not delete either source ball.  Coordinates
-// deliberately obey the current floor-based doubled-x parity lattice.
+// two distinct, genuinely legal natural proposals compete for the same empty
+// target. The first bundle must be accepted, the second rejected by reservation,
+// and applying both at once must be rejected atomically without deleting balls.
 {
- const b=newBoard(),a={id:5101,c:0,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false},c={id:5102,c:1,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false};
- b[6][5]=a;b[6][9]=c;
- const pa={x:5,y:6,tx:7,ty:8,ball:a,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:101};
- const pc={x:9,y:6,tx:7,ty:8,ball:c,kind:'FREE_FALL',pivot:null,topPivot:null,bundleId:202};
- if(!hexPhysBundleTargetsFree([pa],b,[]))fail('atomic-first-bundle-rejected',{});
- if(hexPhysBundleTargetsFree([pc],b,[pa]))fail('accepted-target-not-reserved',{});
- const before=[b[6][5]?.id,b[6][9]?.id];const applied=hexPhysApplyEvent(b,[pa,pc]);
+ const b=newBoard();
+ const a={id:5101,c:0,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false};
+ const c={id:5102,c:1,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false};
+ const sl={id:5103,c:2,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false};
+ const sr={id:5104,c:3,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false};
+ b[7][6]=a;b[7][8]=c;b[8][5]=sl;b[8][9]=sr;
+ const pa=hexPhysNaturalMotion(b,6,7),pc=hexPhysNaturalMotion(b,8,7);
+ if(!pa||pa.tx!==7||pa.ty!==8)fail('atomic-first-natural-proposal-missing',{pa:pa&&[pa.tx,pa.ty,pa.kind]});
+ if(!pc||pc.tx!==7||pc.ty!==8)fail('atomic-second-natural-proposal-missing',{pc:pc&&[pc.tx,pc.ty,pc.kind]});
+ if(pa&& !hexPhysBundleTargetsFree([pa],b,[]))fail('atomic-first-bundle-rejected',{});
+ if(pa&&pc&&hexPhysBundleTargetsFree([pc],b,[pa]))fail('accepted-target-not-reserved',{});
+ const before=[b[7][6]?.id,b[7][8]?.id,b[8][5]?.id,b[8][9]?.id];const applied=pa&&pc?hexPhysApplyEvent(b,[pa,pc]):false;
  if(applied)fail('duplicate-target-event-applied',{});
- const after=[b[6][5]?.id,b[6][9]?.id];if(JSON.stringify(before)!==JSON.stringify(after))fail('invalid-event-mutated-board',{before,after});
+ const after=[b[7][6]?.id,b[7][8]?.id,b[8][5]?.id,b[8][9]?.id];if(JSON.stringify(before)!==JSON.stringify(after))fail('invalid-event-mutated-board',{before,after});
 }
 // Exact landing-guide generator seed 6: shadow and hard drop must share the same physical envelope.
 {
