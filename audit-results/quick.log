@@ -1,124 +1,167 @@
-TARGETED_FAILURES {
-  "upwardVisual": {
-    "seed": 8,
-    "step": 1997,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "from": [
-      6.12180452755871,
-      1.9130531700660849
-    ],
-    "to": [
-      6.121157095621133,
-      1.9130038080288871
-    ],
-    "ball": {
-      "id": 21,
-      "c": 3,
-      "garbage": true,
-      "garbageType": "HEXAGON",
-      "logical": [
-        4,
-        3
-      ],
-      "visual": [
-        6.121157095621133,
-        1.9130038080288871
-      ],
-      "vy": 0,
-      "motionSpeed": 0,
-      "rigid": false,
-      "group": 0,
-      "role": -1,
-      "rest": {
-        "px": 3.060030626194244,
-        "py": 2.1566371347867657,
-        "groupKey": "garbage-contact-2"
-      },
-      "relax": null,
-      "path": []
-    }
-  },
-  "grossOverlap": {
-    "seed": 8,
-    "step": 2207,
-    "state": "RESOLVING",
-    "phase": "SETTLE",
-    "min": 0.9818679800856482,
-    "a": {
-      "id": 37,
-      "c": 1,
-      "garbage": true,
-      "garbageType": "STRAIGHT",
-      "logical": [
-        17,
-        0
-      ],
-      "visual": [
-        18,
-        9.864000546610677
-      ],
-      "vy": 0,
-      "motionSpeed": 0,
-      "rigid": false,
-      "group": 0,
-      "role": -1,
-      "rest": {
-        "px": 9,
-        "py": 9.042475056308435,
-        "groupKey": "garbage-contact-3"
-      },
-      "relax": null,
-      "path": []
+FAST_KNOWN_REGRESSION {
+  "failures": [
+    {
+      "type": "atomic-first-bundle-rejected"
     },
-    "b": {
-      "id": 38,
-      "c": 0,
-      "garbage": true,
-      "garbageType": "STRAIGHT",
-      "logical": [
-        17,
-        10
+    {
+      "type": "seed6-guide-harddrop-disagreement",
+      "role": 0,
+      "d": 1.0402683052717476,
+      "guide": [
+        5.671290322580646,
+        9.136955274790436
       ],
-      "visual": [
-        16.422641180148748,
-        9.18867394051371
-      ],
-      "vy": 2.4302020820531567,
-      "motionSpeed": 2.9978866069398786,
-      "rigid": false,
-      "group": 0,
-      "role": -1,
-      "rest": null,
-      "relax": null,
-      "path": [
-        {
-          "from": [
-            16.422641180148748,
-            9.18867394051371
-          ],
-          "to": [
-            17,
-            10
-          ],
-          "kind": "CLEAR_HOLE_ROLL_RIGHT",
-          "motionSeq": 0,
-          "pileFlow": true,
-          "pileFlowStart": 18.4000000000001,
-          "pileFlowEnd": 18.5727049067422,
-          "garbageContinuousHandoff": false,
-          "followSupportIds": []
-        }
+      "actual": [
+        5,
+        8
       ]
     },
-    "pending": 2,
-    "pileClock": 18.4000000000001,
-    "garbageClock": 1.1833333333333316
-  }
+    {
+      "type": "seed6-guide-harddrop-disagreement",
+      "role": 1,
+      "d": 1.0402683052717476,
+      "guide": [
+        7.671290322580646,
+        9.136955274790436
+      ],
+      "actual": [
+        7,
+        8
+      ]
+    },
+    {
+      "type": "seed6-guide-harddrop-disagreement",
+      "role": 2,
+      "d": 1.0402683052717476,
+      "guide": [
+        6.671290322580646,
+        10.136955274790436
+      ],
+      "actual": [
+        6,
+        9
+      ]
+    }
+  ]
 }
-KNOWN_BUG_GATE {
+GARBAGE_BALL_INTERVAL_REGRESSION PASS {"expanded":19,"starts":[0.008333333333333333,1.2083333333333333,1.7266666666666666,2.4466666666666663,2.9549999999999996],"minGap":0.5083333333333333}
+TOUCH_CONTROL_REGRESSION PASS
+ATTACK_CONSERVATION_AUDIT {
+  "stats": {},
+  "bugs": []
+}
+BALL_CONSERVATION_FAST {
+  "failures": []
+}
+LANDING_GUIDE_SMOKE {
   "failures": [
-    "upwardVisual",
-    "grossOverlap"
+    {
+      "type": "disagreement",
+      "seed": 6,
+      "role": 0,
+      "d": 1.0402683052717476,
+      "guide": [
+        5.671290322580646,
+        9.136955274790436
+      ],
+      "actual": [
+        5,
+        8
+      ],
+      "logical": [
+        5,
+        8
+      ]
+    },
+    {
+      "type": "disagreement",
+      "seed": 6,
+      "role": 1,
+      "d": 1.0402683052717476,
+      "guide": [
+        7.671290322580646,
+        9.136955274790436
+      ],
+      "actual": [
+        7,
+        8
+      ],
+      "logical": [
+        7,
+        8
+      ]
+    },
+    {
+      "type": "disagreement",
+      "seed": 6,
+      "role": 2,
+      "d": 1.0402683052717476,
+      "guide": [
+        6.671290322580646,
+        10.136955274790436
+      ],
+      "actual": [
+        6,
+        9
+      ],
+      "logical": [
+        6,
+        9
+      ]
+    },
+    {
+      "type": "disagreement",
+      "seed": 9,
+      "role": 0,
+      "d": 1.6916432280825309,
+      "guide": [
+        5.836129032258064,
+        8.951048739387893
+      ],
+      "actual": [
+        6,
+        7
+      ],
+      "logical": [
+        6,
+        7
+      ]
+    },
+    {
+      "type": "disagreement",
+      "seed": 9,
+      "role": 1,
+      "d": 1.6916432280825309,
+      "guide": [
+        6.836129032258064,
+        9.951048739387893
+      ],
+      "actual": [
+        7,
+        8
+      ],
+      "logical": [
+        7,
+        8
+      ]
+    },
+    {
+      "type": "disagreement",
+      "seed": 9,
+      "role": 2,
+      "d": 1.6916432280825309,
+      "guide": [
+        4.836129032258064,
+        9.951048739387893
+      ],
+      "actual": [
+        5,
+        8
+      ],
+      "logical": [
+        5,
+        8
+      ]
+    }
   ]
 }
