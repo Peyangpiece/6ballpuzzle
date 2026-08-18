@@ -1,1 +1,1 @@
-run focused diagnoses 19 current app73+app74
+run focused diagnoses 20 single transaction app73+app74
