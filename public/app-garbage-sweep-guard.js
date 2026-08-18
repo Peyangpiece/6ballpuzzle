@@ -90,6 +90,11 @@
         if(!collision)return baseUpdateScheduledPileFlowVisual(g,cell,v,dt,pileMemo);
         const safePos=pileFlowPositionAt(g,cell,collision.safeT),oldY=Number.isFinite(v.y)?v.y:safePos[1];
         v.x=safePos[0];v.y=Math.max(oldY,safePos[1]);v.vy=0;v.motionSpeed=0;v.pileFlow=true;v.garbageSweepBlocked=true;v.garbageSweepBlockCount=(v.garbageSweepBlockCount||0)+1;
+        v.garbageSweepBlockerId=collision.blocker?.id;
+        v.garbageSweepSafeT=collision.safeT;
+        v.garbageSweepHitT=collision.hitT;
+        seg.garbageSweepBlockerId=collision.blocker?.id;
+        seg.garbageSweepBlockCount=(seg.garbageSweepBlockCount||0)+1;
         const delay=Math.max(1e-9,now-collision.safeT);shiftRemainingSchedule(path,delay);
         if(tryTangentReroute(g,cell,v,collision.blocker,[v.x,v.y]))v.garbageSweepBlocked=false;
         return true;
