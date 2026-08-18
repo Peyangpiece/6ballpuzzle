@@ -52,12 +52,12 @@ function put(g,x,y,c=0,garbage=false){
 // transmitting an artificial impact into the old pile.
 {
  const g=createEngine(98002);
- const anchor=put(g,5,5,0);
- expect(!!hexPhysNaturalMotion(g.board,5,5),"test anchor unexpectedly stable");
+ const anchor=put(g,5,8,0);
+ expect(!!hexPhysNaturalMotion(g.board,5,8),"test anchor unexpectedly stable");
  prepareGarbageBatch(g);
  const movedDuring=settlePass(g.board,false);
  expect(movedDuring===false,"pinned original pile moved during garbage phase");
- expect(g.board[5][5]===anchor,"pinned original pile changed lattice cell");
+ expect(g.board[8][5]===anchor,"pinned original pile changed lattice cell");
  expect(!Array.isArray(anchor.fallPath)||anchor.fallPath.length===0,"pinned original pile received a fallPath");
 
  // Empty test batch can finish immediately. Protection must then release so this
