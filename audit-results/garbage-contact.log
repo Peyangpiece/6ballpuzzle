@@ -30,9 +30,9 @@ evalmachine.<anonymous>:4894
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: local garbage conflict queue missing
+Error: unsupported garbage froze in air: {"type":"HEXAGON","variant":1,"frame":190,"id":19,"visual":[2,7.511321128701201],"logical":[1,8],"path":{"from":[2,7],"to":[1,8],"pivot":null,"topPivot":[2,9],"movingSupportId":0,"followSupportIds":[],"kind":"ROLL_LEFT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"pileFlowOriginalSeq":100007,"pileFlow":true,"pileFlowReason":"garbage_pile_contact","pileFlowEntry":false,"_pileNominalDuration":0.23376922038491138,"pileFlowStart":1.4559541680194703,"pileFlowDuration":0.23376922038491138,"pileFlowEnd":1.6897233884043816,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":false}}
     at expect (evalmachine.<anonymous>:4894:34)
-    at evalmachine.<anonymous>:4922:1
+    at evalmachine.<anonymous>:4943:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
