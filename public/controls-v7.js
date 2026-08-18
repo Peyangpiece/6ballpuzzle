@@ -2,9 +2,9 @@
  *
  * Reference interaction:
  * - one-finger horizontal slide: continuous 1:1 horizontal movement
- * - short tap in the play area: rotate toward the tapped half
- * - short tap in the bottom drop zone: instant drop
- * - one-finger long press in the lower half: fast fall only while held
+ * - one-finger short tap: rotate toward the tapped half
+ * - two-finger short tap: instant drop
+ * - two-finger long press: fast fall only while BOTH fingers remain held
  *
  * The active piece keeps its exact sub-cell X after finger release. Only lock()
  * commits it to a logical lattice anchor. Normal/fast vertical legality is
@@ -27,14 +27,13 @@
     }
 
     const pointers=new Map();
+    let pairGesture=null;
     const HOLD_MS=LONG_PRESS_MS;
     const TAP_MAX_MS=350;
     const TAP_MOVE_TOL=20;
-    const DROP_MOVE_TOL=48;
     const DRAG_START_TOL=4;
     const DRAG_AXIS_RATIO=.60;
-    const HOLD_JITTER_TOL=30;
-    const HOLD_DRAG_COMMIT_TOL=22;
+    const TWO_FINGER_JITTER_TOL=30;
 
     const isCanvas=e=>e?.target?.tagName==="CANVAS";
     const player=()=>{
@@ -55,7 +54,7 @@
     const currentX=g=>Number.isFinite(g?.freeX)?g.freeX:Number.isFinite(g?.pieceVX)?g.pieceVX:Number.isFinite(g?.piece?.x)?g.piece.x:SPAWN_X;
     const stopFast=g=>{if(g)g.fastForward=false;};
     const releaseCapture=rec=>{try{if(rec?.canvas?.hasPointerCapture?.(rec.id))rec.canvas.releasePointerCapture(rec.id);}catch(_){};};
-    const clearHold=rec=>{if(rec?.holdTimer){clearTimeout(rec.holdTimer);rec.holdTimer=null;}};
+    const clearPairHold=()=>{if(pairGesture?.holdTimer){clearTimeout(pairGesture.holdTimer);pairGesture.holdTimer=null;}};
 
     function preserveReleasedDrag(g){
         if(!g)return false;
@@ -78,53 +77,80 @@
     }
     window.__hexInstantDropV7=instantVerticalDrop;
 
-    function startFast(rec){
-        if(!rec||rec.dragActive||rec.longActive||!rec.fastEligible||!validGame(rec.g))return false;
-        rec.longActive=true;rec.tapEligible=false;clearHold(rec);
-        if(!rec.g.fastForward)emit(rec.g,{t:"fast"});
-        rec.g.fastForward=true;
+    function startPairFast(pair){
+        if(!pair||pair!==pairGesture||pair.longActive||!pair.tapEligible||!validGame(pair.g))return false;
+        if(pair.ids.some(id=>!pointers.has(id)))return false;
+        pair.longActive=true;
+        pair.tapEligible=false;
+        clearPairHold();
+        if(!pair.g.fastForward)emit(pair.g,{t:"fast"});
+        pair.g.fastForward=true;
         return true;
     }
 
     function beginDrag(rec){
-        if(!rec||rec.bottomPress||rec.dragActive||rec.longActive||pointers.size!==1||!validGame(rec.g))return false;
-        rec.dragActive=true;rec.dragMoved=true;rec.tapEligible=false;clearHold(rec);
+        if(!rec||rec.paired||rec.dragActive||pointers.size!==1||!validGame(rec.g))return false;
+        rec.dragActive=true;rec.dragMoved=true;rec.tapEligible=false;
         rec.dragBaseX=currentX(rec.g);rec.g.dragging=true;rec.g.freeX=rec.dragBaseX;
         return true;
     }
     function updateDrag(rec){
-        if(!rec?.dragActive||!validGame(rec.g))return;
+        if(!rec?.dragActive||rec.paired||!validGame(rec.g))return;
         const targetX=rec.dragBaseX+((rec.lastX-rec.startX)/ME.D)*2;
         setFreeX(rec.g,targetX);
         if(Number.isFinite(rec.g.freeX))rec.g.pieceVX=rec.g.freeX;
     }
     window.__hexSingleSlideV7=true;
 
+    function armPair(first,second){
+        if(!first||!second||first.g!==second.g||!validGame(first.g))return false;
+        if(first.dragActive)preserveReleasedDrag(first.g);
+        first.dragActive=false;first.tapEligible=false;first.paired=true;
+        second.dragActive=false;second.tapEligible=false;second.paired=true;
+        first.pairStartX=first.lastX;first.pairStartY=first.lastY;
+        second.pairStartX=second.lastX;second.pairStartY=second.lastY;
+        const pair={
+            g:first.g,ids:[first.id,second.id],startedAt:performance.now(),
+            tapEligible:true,longActive:false,cancelled:false,holdTimer:null
+        };
+        pairGesture=pair;
+        pair.holdTimer=setTimeout(()=>startPairFast(pair),HOLD_MS);
+        return true;
+    }
+
+    function updatePairMotion(rec){
+        const pair=pairGesture;
+        if(!pair||!rec?.paired||!pair.ids.includes(rec.id))return;
+        const dx=rec.lastX-rec.pairStartX,dy=rec.lastY-rec.pairStartY;
+        if(Math.hypot(dx,dy)>TWO_FINGER_JITTER_TOL){
+            pair.tapEligible=false;
+            clearPairHold();
+        }
+    }
+
     const onDown=e=>{
         if(!isCanvas(e))return;
         const g=player();if(!validGame(g))return;
         consume(e);try{Sfx.init();}catch(_){}
-        if(pointers.size){resetAll("multi-touch-cancel");return;}
+
+        // A third contact is never a gameplay command. Cancel the active pair
+        // safely, but do not drop or leave fast-fall latched.
+        if(pointers.size>=2){resetAll("three-touch-cancel");return;}
 
         const p=point(e,e.target);
         const rec={
             id:e.pointerId,canvas:e.target,g,
             startX:p.x,startY:p.y,lastX:p.x,lastY:p.y,
             downAt:performance.now(),half:p.x>=VW*.5?1:-1,
-            bottomPress:p.y>=DROP_ZONE_Y,
-            fastEligible:p.y>=VH*.5,
-            tapEligible:true,dragActive:false,dragMoved:false,longActive:false,
-            dragBaseX:currentX(g),holdTimer:null
+            tapEligible:true,dragActive:false,dragMoved:false,paired:false,
+            dragBaseX:currentX(g),pairStartX:p.x,pairStartY:p.y
         };
         pointers.set(rec.id,rec);
         try{rec.canvas.setPointerCapture(rec.id);}catch(_){}
 
-        if(rec.fastEligible){
-            rec.holdTimer=setTimeout(()=>{
-                const live=pointers.get(rec.id);
-                if(live!==rec)return;
-                startFast(rec);
-            },HOLD_MS);
+        if(pointers.size===2){
+            const first=[...pointers.values()].find(q=>q.id!==rec.id);
+            if(!armPair(first,rec))resetAll("invalid-two-touch");
         }
     };
 
@@ -132,61 +158,68 @@
         const rec=pointers.get(e.pointerId);if(!rec)return;
         consume(e);
         const p=point(e,rec.canvas);rec.lastX=p.x;rec.lastY=p.y;
+
+        if(rec.paired){updatePairMotion(rec);return;}
+
         const dx=rec.lastX-rec.startX,dy=rec.lastY-rec.startY,dist=Math.hypot(dx,dy);
-
-        if(rec.longActive)return;
-        if(rec.bottomPress){
-            if(dist>DROP_MOVE_TOL)rec.tapEligible=false;
-            if(dist>HOLD_JITTER_TOL*2)clearHold(rec);
-            return;
-        }
-
-        const elapsed=performance.now()-rec.downAt;
-        if(rec.fastEligible&&!rec.dragActive&&elapsed<HOLD_MS&&dist<=HOLD_JITTER_TOL)return;
-
         if(!rec.dragActive){
-            const threshold=rec.fastEligible&&elapsed<HOLD_MS?HOLD_DRAG_COMMIT_TOL:DRAG_START_TOL;
-            const horizontalEnough=Math.abs(dx)>=threshold&&Math.abs(dx)>=Math.abs(dy)*DRAG_AXIS_RATIO;
+            const horizontalEnough=Math.abs(dx)>=DRAG_START_TOL&&Math.abs(dx)>=Math.abs(dy)*DRAG_AXIS_RATIO;
             if(horizontalEnough)beginDrag(rec);
-            else if(dist>TAP_MOVE_TOL){
-                rec.tapEligible=false;
-                if(dist>HOLD_JITTER_TOL*2)clearHold(rec);
-                return;
-            }
+            else if(dist>TAP_MOVE_TOL){rec.tapEligible=false;return;}
         }
         updateDrag(rec);
     };
+
+    function finishPairPointer(rec,cancelled){
+        const pair=pairGesture;
+        if(!pair||!rec?.paired||!pair.ids.includes(rec.id))return false;
+        updatePairMotion(rec);
+        if(cancelled){pair.cancelled=true;pair.tapEligible=false;}
+
+        // Fast fall exists only while both fingers are physically held.
+        if(pair.longActive)stopFast(pair.g);
+        clearPairHold();
+
+        const bothReleased=pair.ids.every(id=>!pointers.has(id));
+        if(bothReleased){
+            const elapsed=performance.now()-pair.startedAt;
+            const shouldDrop=!pair.cancelled&&!pair.longActive&&pair.tapEligible&&elapsed<=TAP_MAX_MS&&validGame(pair.g);
+            const g=pair.g;
+            pairGesture=null;
+            if(shouldDrop)instantVerticalDrop(g);
+        }
+        return true;
+    }
 
     const finish=(e,cancelled)=>{
         const rec=pointers.get(e.pointerId);if(!rec)return;
         consume(e);
         try{const p=point(e,rec.canvas);rec.lastX=p.x;rec.lastY=p.y;}catch(_){}
-        pointers.delete(rec.id);clearHold(rec);releaseCapture(rec);
-        const g=rec.g,wasLong=rec.longActive;
-        if(wasLong)stopFast(g);
+        pointers.delete(rec.id);releaseCapture(rec);
 
-        if(g&&rec.dragActive)preserveReleasedDrag(g);
+        if(rec.paired){
+            finishPairPointer(rec,cancelled);
+            return;
+        }
 
+        if(rec.dragActive)preserveReleasedDrag(rec.g);
         const elapsed=performance.now()-rec.downAt;
         const dist=Math.hypot(rec.lastX-rec.startX,rec.lastY-rec.startY);
-        const moveTol=rec.bottomPress?DROP_MOVE_TOL:TAP_MOVE_TOL;
-        if(!cancelled&&!wasLong&&!rec.dragActive&&rec.tapEligible&&elapsed<=TAP_MAX_MS&&dist<=moveTol&&validGame(g)){
-            if(rec.bottomPress)instantVerticalDrop(g);
-            else rotate(g,rec.half>0?1:-1);
+        if(!cancelled&&!rec.dragActive&&rec.tapEligible&&elapsed<=TAP_MAX_MS&&dist<=TAP_MOVE_TOL&&validGame(rec.g)){
+            rotate(rec.g,rec.half>0?1:-1);
         }
-        if(!pointers.size)stopFast(g);
     };
 
     function resetAll(reason="reset"){
         const engines=new Set();
+        if(pairGesture?.g)engines.add(pairGesture.g);
         for(const rec of pointers.values()){
-            clearHold(rec);releaseCapture(rec);if(rec.g)engines.add(rec.g);
+            releaseCapture(rec);if(rec.g)engines.add(rec.g);
         }
-        for(const g of engines){
-            stopFast(g);
-            preserveReleasedDrag(g);
-        }
+        clearPairHold();
+        for(const g of engines){stopFast(g);preserveReleasedDrag(g);}
         pointers.clear();
+        pairGesture=null;
         window.__hexControlsV7LastReset={reason,at:performance.now()};
     }
     window.__hexResetTouchInput=resetAll;
