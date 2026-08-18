@@ -26,6 +26,9 @@ jobs:
       - name: Run physics regressions
         run: node tests/physics-regressions.js
 
+      - name: Run wall-gap regression
+        run: node tests/wall-gap-regression.js
+
       - name: Run airborne garbage pass-through regression
         run: node tests/garbage-airborne-pass-through.js
 
