@@ -5,7 +5,7 @@ const runtime=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
   "app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
   "app-garbage-contact.js","app-garbage-rigidity.js","app-garbage-settle-state.js",
-  "app-garbage-no-impact.js","app-garbage-sweep-guard.js"
+  "app-garbage-no-impact.js","app-garbage-sweep-guard.js","app-garbage-visible-overlap.js"
 ].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const checks=String.raw`
@@ -19,7 +19,9 @@ function visibleGarbage(g,lead=0){
   const b=valid(x,y)?g.board[y][x]:null;if(!b?.isGarbage)continue;
   const v=g.vis.get(b.id);if(!v)continue;
   let px=v.x,py=v.y;
-  if(lead>0&&v.pileFlow&&Array.isArray(b.fallPath)&&b.fallPath.length){
+  // The installed renderer guard deliberately uses the already collision-
+  // resolved visual centre for garbage instead of cosmetic renderLead.
+  if(lead>0&&!window.__hexGarbageVisibleOverlapGuard&&v.pileFlow&&Array.isArray(b.fallPath)&&b.fallPath.length){
    const p=pileFlowPositionAt(g,b,(g.pileFlowClock||0)+lead,0,null,memo);
    if(Number.isFinite(p?.[0])&&Number.isFinite(p?.[1])){px=p[0];py=Math.max(v.y,p[1]);}
   }
@@ -47,6 +49,7 @@ function buildPile(g,variant){
  if(variant===2){put(g,1,ROWS-2,1);put(g,5,ROWS-2,2);put(g,9,ROWS-2,3);put(g,4,ROWS-3,4);put(g,6,ROWS-3,0);}
 }
 
+expect(window.__hexGarbageVisibleOverlapGuard===true,"garbage render overlap guard is not installed");
 let worstActual={d:Infinity},worstRender={d:Infinity};
 for(let variant=0;variant<3;variant++)for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
  const g=createEngine(99500+variant*17+type.length);buildPile(g,variant);g.garbShapes=[type];prepareGarbageBatch(g);
@@ -60,7 +63,7 @@ for(let variant=0;variant<3;variant++)for(const type of ["PYRAMID","HEXAGON","ST
   const render=minPair(visibleGarbage(g,PHYSICS_FRAME));
   if(render.d<worstRender.d)worstRender={...render,variant,type,frame};
   expect(actual.d>=HEX_MIN_DIST-5e-4,"garbage actual overlap: "+JSON.stringify({variant,type,frame,...actual}));
-  expect(render.d>=HEX_MIN_DIST-5e-4,"garbage render-lead overlap: "+JSON.stringify({variant,type,frame,...render}));
+  expect(render.d>=HEX_MIN_DIST-5e-4,"garbage visible overlap: "+JSON.stringify({variant,type,frame,...render}));
   if(garbageBatchDone(g))break;
  }
 }
