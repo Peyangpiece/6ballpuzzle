@@ -1,19 +1,31 @@
 /* Garbage presentation/timing only: no garbage-specific fall equation.
  *
- * One shaped packet (e.g. all six PYRAMID balls) is one incoming unit.
- * Units begin 0.600 s apart. Every unit is inserted as ordinary board balls,
- * then the canonical settleAll/hexPhysNaturalMotion solver compiles its normal
- * fallPath. The familiar bubble/pop appearance is visual-only: there is no
- * garbageBubbleHold or spawn hold, so the effect never freezes gravity.
+ * One shaped packet (e.g. all six PYRAMID balls) is one incoming unit. Units
+ * begin exactly 0.600 s apart. Each unit is inserted as ordinary board balls
+ * and `settleAll` compiles the canonical ordinary fallPath, including the
+ * original motionSeq waves, topPivot arcs and FOLLOW_SUPPORT dependencies.
+ *
+ * Different incoming units may overlap in wall-clock time, so the global
+ * motionSeq queue cannot be used to render them. Instead, each unit's ordinary
+ * event waves are mapped to absolute pileFlowStart/End times beginning at the
+ * unit's own spawn time. `pileFlowPointForBall` then evaluates the SAME solver-
+ * authored paths and moving-support relations on that unit-local timeline.
+ * This preserves normal-ball causality inside a six-ball unit without delaying
+ * the next unit beyond the requested 0.600 s cadence.
+ *
+ * The bubble/pop appearance is visual-only. There is no garbageBubbleHold or
+ * spawn hold, so the effect never freezes gravity.
  */
 (function installGarbagePresentation(){
     if(typeof window==="undefined"||window.__hexGarbagePresentation)return;
     window.__hexGarbagePresentation=true;
 
     const GARBAGE_UNIT_INTERVAL=0.600;
+    const MIN_EVENT_DURATION=1/120;
     window.__hexGarbageUnitInterval=GARBAGE_UNIT_INTERVAL;
     window.__hexGarbageSpawnEffectPreserved=true;
     window.__hexGarbageTimedUnitsUseOrdinarySolver=true;
+    window.__hexGarbageUnitLocalTimeline=true;
 
     function boardEntries(g){
         const out=[];
@@ -25,6 +37,7 @@
         return out;
     }
     function garbageEntries(g){return boardEntries(g).filter(q=>q.ball?.isGarbage);}
+    function findBallById(g,id){for(const q of boardEntries(g))if(q.ball.id===id)return q.ball;return null;}
 
     function findSpawnAnchor(g,pat,preferredAx){
         const minX=Math.min(...pat.map(([x])=>x)),maxX=Math.max(...pat.map(([x])=>x));
@@ -67,119 +80,64 @@
         return ball;
     }
 
-    function findBallById(g,id){
-        for(const q of boardEntries(g))if(q.ball.id===id)return q.ball;
-        return null;
-    }
-
-    function shiftedPoint(p,dx,dy){return Array.isArray(p)?[p[0]+dx,p[1]+dy]:null;}
-    function resolveFollowSupportGeometry(g,ball,seg,depth=0,seen=new Set()){
-        if(!seg||seg.kind!=="FOLLOW_SUPPORT"||!Array.isArray(seg.from)||!Array.isArray(seg.to))return seg;
-        if(depth>10||seen.has(ball.id))return seg;
-        const nextSeen=new Set(seen);nextSeen.add(ball.id);
-        const supportIds=[...(seg.followSupportIds||[])];
-        if(seg.movingSupportId&&!supportIds.includes(seg.movingSupportId))supportIds.unshift(seg.movingSupportId);
-        for(const sid of supportIds){
-            const support=findBallById(g,sid);
-            if(!support||nextSeen.has(support.id)||!Array.isArray(support.fallPath))continue;
-            const supportSeg=support.fallPath.find(s=>
-                s&&s.motionSeq===seg.motionSeq&&Array.isArray(s.from)&&Array.isArray(s.to)
-            );
-            if(!supportSeg)continue;
-            const base=resolveFollowSupportGeometry(g,support,supportSeg,depth+1,nextSeen);
-            if(!base?.from||!base?.to)continue;
-            const ox=seg.from[0]-base.from[0],oy=seg.from[1]-base.from[1];
-            const expected=[base.to[0]+ox,base.to[1]+oy];
-            if(Math.abs(expected[0]-seg.to[0])>1e-6||Math.abs(expected[1]-seg.to[1])>1e-6)continue;
-            // FOLLOW_SUPPORT is a rigid positional offset from the moving
-            // support during this one ordinary event. Copy the support's exact
-            // path geometry and translate its pivot by the same offset. This is
-            // mathematically identical to liveBatchPointAt without requiring a
-            // global motionSeq queue, so 0.600 s units remain independent.
-            return{
-                ...seg,
-                pivot:shiftedPoint(base.pivot,ox,oy),
-                topPivot:shiftedPoint(base.topPivot,ox,oy),
-                movingSupportId:0,
-                followSupportIds:[],
-                kind:base.topPivot?"FOLLOW_RESOLVED_TOP_PIVOT":base.pivot?"FOLLOW_RESOLVED_ARC":"FOLLOW_RESOLVED_TRANSLATE",
-                garbageResolvedFollowSupport:true
-            };
-        }
-        // Keep the original metadata if no matching support event can be found;
-        // the stress audit treats a resulting stall as a hard failure rather
-        // than silently inventing a different physical path.
-        return seg;
-    }
-
-    function resolveAllFollowSupportGeometry(g,ids){
-        // Two-pass replacement: every lookup sees the original motionSeq paths,
-        // even when the support is another member of the same six-ball unit.
-        const replacements=new Map();
-        for(const id of ids){
-            const ball=findBallById(g,id);
-            if(!ball||!Array.isArray(ball.fallPath))continue;
-            replacements.set(ball,ball.fallPath.map(seg=>resolveFollowSupportGeometry(g,ball,seg)));
-        }
-        for(const [ball,path] of replacements)ball.fallPath=path;
-    }
-
-    function expandZeroSeqTopPivotPath(ball){
-        if(!ball||!Array.isArray(ball.fallPath)||!ball.fallPath.length)return;
-        const expanded=[];
-        for(const seg of ball.fallPath){
-            if(!seg?.topPivot||!Array.isArray(seg.from)||!Array.isArray(seg.to)){
-                expanded.push(seg);continue;
-            }
-            const [px,py]=seg.topPivot;
-            const contactRow=(cellCenterYNorm(py)-1-BOARD_TOP_CENTER_N)/HEX_ROW_H;
-            if(!(contactRow>seg.from[1]+1e-7)||contactRow>seg.to[1]+1e-6){
-                expanded.push(seg);continue;
-            }
-            const contact=[px,contactRow];
-            const fall={
-                ...seg,
-                from:[...seg.from],to:contact,
-                pivot:null,topPivot:null,
-                movingSupportId:0,followSupportIds:[],
-                kind:"FREE_FALL_TO_SUPPORT",
-                motionSeq:0,bundleId:0,groupSize:0,
-                continuousChain:true,
-                garbageExpandedTopPivot:true
-            };
-            const arc={
-                ...seg,
-                from:contact,to:[...seg.to],
-                pivot:[px,py],topPivot:null,
-                movingSupportId:0,followSupportIds:[],
-                kind:"ROLL_FROM_TOP_CONTACT",
-                motionSeq:0,bundleId:0,groupSize:0,
-                continuousChain:true,
-                garbageExpandedTopPivot:true
-            };
-            expanded.push(fall,arc);
-        }
-        ball.fallPath=expanded;
-    }
-
-    function compileOrdinaryUnitPath(g,ids){
+    function scheduleOrdinaryUnitTimeline(g,ids,unitSeq){
+        // Compile exactly the same logical path ordinary balls receive.
         settleAll(g.board);
 
-        // Resolve canonical coupled geometry BEFORE removing motionSeq, because
-        // that event id is the exact link between a FOLLOW_SUPPORT member and
-        // the support segment it follows.
-        resolveAllFollowSupportGeometry(g,ids);
-
+        const entries=[];
         for(const id of ids){
             const ball=findBallById(g,id);
             if(!ball||!Array.isArray(ball.fallPath))continue;
-            expandZeroSeqTopPivotPath(ball);
-            for(const seg of ball.fallPath){
-                seg.motionSeq=0;
-                delete seg.pileFlow;
-                delete seg.pileFlowStart;
-                delete seg.pileFlowEnd;
-                delete seg.pileFlowDuration;
+            for(let index=0;index<ball.fallPath.length;index++){
+                const seg=ball.fallPath[index];
+                if(!seg?.to)continue;
+                entries.push({ball,seg,index,seq:Number(seg.motionSeq)||0});
+            }
+        }
+        if(!entries.length){g.ver++;return;}
+
+        // settleAll's event sequence is the canonical dependency order. Every
+        // member of one event gets the same real-time duration, matching the
+        // ordinary liveBatch renderer. A later event starts only after the prior
+        // event of THIS UNIT, not after another 0.600 s unit.
+        const seqs=[...new Set(entries.map(e=>e.seq))].sort((a,b)=>a-b);
+        const stateByBall=new Map();
+        for(const id of ids){
+            const ball=findBallById(g,id),v=ball&&g.vis.get(id);
+            stateByBall.set(id,{vy:Math.max(0,v?.vy||RELEASE_INITIAL_VY),speed:Math.max(0,v?.motionSpeed||RELEASE_INITIAL_VY)});
+        }
+        let cursor=Math.max(0,g.pileFlowClock||0);
+        for(const seq of seqs){
+            const wave=entries.filter(e=>e.seq===seq);
+            let waveDuration=MIN_EVENT_DURATION;
+            const endStates=new Map();
+            for(const e of wave){
+                const start=stateByBall.get(e.ball.id)||{vy:RELEASE_INITIAL_VY,speed:RELEASE_INITIAL_VY};
+                const end={...start};
+                const natural=Math.max(MIN_EVENT_DURATION,hexMotionDuration(e.seg,end));
+                waveDuration=Math.max(waveDuration,natural);
+                endStates.set(e.ball.id,end);
+            }
+            for(const e of wave){
+                e.seg.pileFlow=true;
+                e.seg.pileFlowStart=cursor;
+                e.seg.pileFlowDuration=waveDuration;
+                e.seg.pileFlowEnd=cursor+waveDuration;
+                e.seg.garbageUnitTimeline=true;
+                e.seg.garbageUnitSeq=unitSeq;
+                e.seg.garbageOriginalMotionSeq=e.seq;
+                // Keep motionSeq for diagnostics/dependency identity. Scheduled
+                // pileFlow segments are explicitly excluded from liveBatch.
+            }
+            for(const [id,end] of endStates)stateByBall.set(id,end);
+            cursor+=waveDuration;
+        }
+        for(const id of ids){
+            const ball=findBallById(g,id),v=ball&&g.vis.get(id);
+            if(v&&ball?.fallPath?.length){
+                v.pileFlow=true;
+                v.vy=Math.max(v.vy||0,RELEASE_INITIAL_VY);
+                v.motionSpeed=Math.max(v.motionSpeed||0,v.vy||0,0.0001);
             }
         }
         g.ver++;
@@ -199,7 +157,7 @@
         plan._started=true;
         plan.actualStartTime=g.garbageClock;
         plan.landed=false;
-        compileOrdinaryUnitPath(g,plan.ballIds);
+        scheduleOrdinaryUnitTimeline(g,plan.ballIds,plan.seq);
         g.garbagePresentationLastUnitStart=plan.actualStartTime;
         g.garbageNextBallAt=plan.actualStartTime+GARBAGE_UNIT_INTERVAL;
         return true;
@@ -230,6 +188,8 @@
         if(!g._garbagePresentationKnownIds){
             g._garbagePresentationKnownIds=new Set(garbageEntries(g).map(q=>q.ball.id));
         }
+        // Advance ordinary GARBAGE bookkeeping/clock, but suppress the old 0.5 s
+        // shaped-unit start gate. This layer owns shaped starts at exactly 0.600 s.
         const nextUnstarted=(g.garbagePlans||[]).find(p=>!p._started);
         const scheduledAt=g.garbageNextBallAt;
         if(nextUnstarted)g.garbageNextBallAt=Infinity;
@@ -239,11 +199,11 @@
 
         const due=(g.garbagePlans||[]).find(p=>!p._started);
         if(due&&g.garbageClock+1e-9>=g.garbageNextBallAt){
-            if(spawnTimedPlan(g,due)){
-                for(const id of due.ballIds)g._garbagePresentationKnownIds.add(id);
-            }
+            if(spawnTimedPlan(g,due))for(const id of due.ballIds)g._garbagePresentationKnownIds.add(id);
         }
 
+        // Numeric/legacy single garbage still comes from the normal adapter;
+        // preserve its appearance and use the same following-unit cadence.
         const afterLoose=(g.garbageLooseIds||[]).length;
         if(afterLoose>beforeLoose){
             armUnseenLooseEffects(g,g._garbagePresentationKnownIds);
@@ -254,6 +214,6 @@
         return r;
     };
 
-    window.__hexGarbageTopPivotExpandedForIndependentUnits=true;
-    window.__hexGarbageFollowSupportResolvedForIndependentUnits=true;
+    window.__hexGarbageTopPivotExpandedForIndependentUnits=false;
+    window.__hexGarbageFollowSupportResolvedForIndependentUnits=false;
 })();
