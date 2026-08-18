@@ -1,604 +1,364 @@
 HARD_DROP_CONVERGENCE {
   "failures": [
     {
-      "type": "visual-overlap",
+      "type": "tracked-upward-motion",
       "seed": 9,
       "step": 1,
-      "d": 0.8792022554837787,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 8.951048739387893,
+      "to": 8.8903781674906
     },
     {
-      "type": "visual-overlap",
+      "type": "tracked-upward-motion",
       "seed": 9,
       "step": 1,
-      "d": 0.6515606228360185,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 3,
+      "from": 9.951048739387893,
+      "to": 9.845650764052925
     },
     {
-      "type": "visual-overlap",
+      "type": "tracked-upward-motion",
       "seed": 9,
       "step": 2,
-      "d": 0.8900304332651435,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 8.8903781674906,
+      "to": 8.866287155127495
     },
     {
-      "type": "visual-overlap",
+      "type": "tracked-upward-motion",
       "seed": 9,
+      "step": 3,
+      "id": 1,
+      "from": 8.866287155127495,
+      "to": 8.86181137220004
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 3,
+      "step": 1,
+      "id": 1,
+      "from": 8.855145991854574,
+      "to": 8.849899723692804
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 3,
+      "step": 1,
+      "id": 2,
+      "from": 9.855145991854574,
+      "to": 9.84676138970238
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
+      "step": 1,
+      "id": 1,
+      "from": 8.9346954226483,
+      "to": 8.86116345312676
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
+      "step": 1,
+      "id": 3,
+      "from": 9.9346954226483,
+      "to": 9.846009489547178
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
+      "step": 1,
+      "id": 2,
+      "from": 9.9346954226483,
+      "to": 9.848650884805936
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 5,
       "step": 2,
-      "d": 0.7047739480922504,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 8.86116345312676,
+      "to": 8.85297021903232
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 2,
+      "id": 1,
+      "from": 7.9405485470552195,
+      "to": 7.9285432730364205
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
+      "step": 2,
+      "id": 3,
+      "from": 8.932452327539478,
+      "to": 8.913463697355075
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 3,
-      "d": 0.9036047134314433,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 7.9285432730364205,
+      "to": 7.912548407300546
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 3,
-      "d": 0.7566429783091546,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 3,
+      "from": 8.913463697355075,
+      "to": 8.894921145210297
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 4,
-      "d": 0.919469364711047,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 7.912548407300546,
+      "to": 7.89548046184589
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 4,
-      "d": 0.8069091349069692,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 3,
+      "from": 8.894921145210297,
+      "to": 8.878449794178023
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 5,
-      "d": 0.9371147868921222,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 7.89548046184589,
+      "to": 7.879488685935407
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 5,
-      "d": 0.8553717502893543,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 3,
+      "from": 8.878449794178023,
+      "to": 8.864941852799381
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 6,
-      "d": 0.9560338239810185,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 7.879488685935407,
+      "to": 7.8660323908349765
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 6,
-      "d": 0.9018836815943917,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 3,
+      "from": 8.864941852799381,
+      "to": 8.854859754267485
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 7,
-      "d": 0.975775278664504,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 7.8660323908349765,
+      "to": 7.855989034095841
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 7,
-      "d": 0.9463377966448694,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 3,
+      "from": 8.854859754267485,
+      "to": 8.848375171808122
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 8,
-      "d": 0.9954991578200167,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 7.855989034095841,
+      "to": 7.849786887965946
     },
     {
-      "type": "visual-overlap",
-      "seed": 9,
+      "type": "tracked-upward-motion",
+      "seed": 11,
       "step": 8,
-      "d": 0.9896209917522756,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 3,
+      "from": 8.848375171808122,
+      "to": 8.845481680518743
     },
     {
-      "type": "visual-overlap",
-      "seed": 3,
-      "step": 1,
-      "d": 0.96395700570207,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 3,
-      "step": 1,
-      "d": 0.9233376928485486,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 3,
-      "step": 2,
-      "d": 0.9876411037632852,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 3,
-      "step": 2,
-      "d": 0.9748019050546574,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 5,
-      "step": 1,
-      "d": 0.8829428303093729,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 5,
-      "step": 2,
-      "d": 0.8956974395966228,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 5,
-      "step": 3,
-      "d": 0.9112495735649259,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 5,
-      "step": 4,
-      "d": 0.9288659697355494,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 5,
-      "step": 5,
-      "d": 0.9480339272708272,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 5,
-      "step": 6,
-      "d": 0.9679739019266904,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 5,
-      "step": 7,
-      "d": 0.9883977114254678,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
+      "type": "tracked-upward-motion",
       "seed": 11,
       "step": 9,
-      "d": 0.9245358633965942,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 7.849786887965946,
+      "to": 7.847540573481891
     },
     {
-      "type": "visual-overlap",
-      "seed": 11,
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 1,
+      "id": 1,
+      "from": 8.988652436322894,
+      "to": 8.981872280003754
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 1,
+      "id": 2,
+      "from": 9.988652436322894,
+      "to": 9.969337951511221
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 2,
+      "id": 1,
+      "from": 8.981872280003754,
+      "to": 8.967320533853924
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 2,
+      "id": 2,
+      "from": 9.969337951511221,
+      "to": 9.946904137322509
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 3,
+      "id": 1,
+      "from": 8.967320533853924,
+      "to": 8.948118570021565
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 3,
+      "id": 2,
+      "from": 9.946904137322509,
+      "to": 9.924321174319823
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 4,
+      "id": 1,
+      "from": 8.948118570021565,
+      "to": 8.927001712421443
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 4,
+      "id": 2,
+      "from": 9.924321174319823,
+      "to": 9.903248936167268
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 5,
+      "id": 1,
+      "from": 8.927001712421443,
+      "to": 8.906174485207258
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 5,
+      "id": 2,
+      "from": 9.903248936167268,
+      "to": 9.884787836653985
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 6,
+      "id": 1,
+      "from": 8.906174485207258,
+      "to": 8.887309094813846
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 6,
+      "id": 2,
+      "from": 9.884787836653985,
+      "to": 9.869610083987489
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 7,
+      "id": 1,
+      "from": 8.887309094813846,
+      "to": 8.871554829041129
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 7,
+      "id": 2,
+      "from": 9.869610083987489,
+      "to": 9.858055435249803
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 8,
+      "id": 1,
+      "from": 8.871554829041129,
+      "to": 8.859588793799565
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 8,
+      "id": 2,
+      "from": 9.858055435249803,
+      "to": 9.85022639446025
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
       "step": 9,
-      "d": 0.9492158557247169,
-      "a": 3000671,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 8.859588793799565,
+      "to": 8.851712087950535
     },
     {
-      "type": "visual-overlap",
-      "seed": 11,
+      "type": "tracked-upward-motion",
+      "seed": 17,
+      "step": 9,
+      "id": 2,
+      "from": 9.85022639446025,
+      "to": 9.846077971761789
+    },
+    {
+      "type": "tracked-upward-motion",
+      "seed": 17,
       "step": 10,
-      "d": 0.9346950843308789,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 1,
+      "from": 8.851712087950535,
+      "to": 8.847968724826396
     },
     {
-      "type": "visual-overlap",
-      "seed": 11,
+      "type": "tracked-upward-motion",
+      "seed": 17,
       "step": 10,
-      "d": 0.9555538767321938,
-      "a": 3000671,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 11,
-      "d": 0.9454274382182658,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 11,
-      "d": 0.9624684343119138,
-      "a": 3000671,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 12,
-      "d": 0.9564840442408319,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 12,
-      "d": 0.9698085133869266,
-      "a": 3000671,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 13,
-      "d": 0.9676838803036985,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 13,
-      "d": 0.9774706026294082,
-      "a": 3000671,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 14,
-      "d": 0.9788602325896365,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 14,
-      "d": 0.9853538312238778,
-      "a": 3000671,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 15,
-      "d": 0.9896301357319657,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 15,
-      "d": 0.9935839270723335,
-      "a": 3000671,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 11,
-      "step": 16,
-      "d": 0.9994123533261491,
-      "a": 1,
-      "b": 3,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 11,
-      "d": 0.8734369724265452,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 11,
-      "d": 0.6135455810645785,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 12,
-      "d": 0.8817925231185113,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 12,
-      "d": 0.6660081861097789,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 13,
-      "d": 0.8928437990551537,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 13,
-      "d": 0.7171886697335186,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 14,
-      "d": 0.9062075050203681,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 14,
-      "d": 0.7668578452678885,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 15,
-      "d": 0.9217945793371682,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 15,
-      "d": 0.8156158807495518,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 16,
-      "d": 0.9393236034858297,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 16,
-      "d": 0.8632534716235845,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 17,
-      "d": 0.9578700714486049,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 17,
-      "d": 0.9084276983093016,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 18,
-      "d": 0.9768557285775555,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 18,
-      "d": 0.9509183984641354,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 19,
-      "d": 0.9958218725347651,
-      "a": 1,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
-    },
-    {
-      "type": "visual-overlap",
-      "seed": 17,
-      "step": 19,
-      "d": 0.9905628591791049,
-      "a": 3,
-      "b": 2,
-      "state": "RESOLVING",
-      "phase": "SETTLE"
+      "id": 2,
+      "from": 9.846077971761789,
+      "to": 9.845490400514432
     }
   ]
 }
