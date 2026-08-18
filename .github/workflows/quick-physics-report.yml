@@ -51,9 +51,9 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git pull --rebase origin main
           git add audit-results/quick.json audit-results/quick.log
-          git diff --cached --quiet || git commit -m "Record quick physics report [skip ci]"
+          if ! git diff --cached --quiet; then git commit -m "Record quick physics report [skip ci]"; fi
+          git pull --rebase origin main
           git push
       - name: Enforce quick gates
         shell: bash
