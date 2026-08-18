@@ -62,8 +62,6 @@
         if(v){
             v.motionSpeed=RELEASE_INITIAL_VY;
             v.justReleased=true;
-            // Restore the reference appearance at the exact unit start without
-            // restoring the old effect hold/freeze behavior.
             v.garbageBubbleT=0;
         }
         return ball;
@@ -72,6 +70,58 @@
     function findBallById(g,id){
         for(const q of boardEntries(g))if(q.ball.id===id)return q.ball;
         return null;
+    }
+
+    function shiftedPoint(p,dx,dy){return Array.isArray(p)?[p[0]+dx,p[1]+dy]:null;}
+    function resolveFollowSupportGeometry(g,ball,seg,depth=0,seen=new Set()){
+        if(!seg||seg.kind!=="FOLLOW_SUPPORT"||!Array.isArray(seg.from)||!Array.isArray(seg.to))return seg;
+        if(depth>10||seen.has(ball.id))return seg;
+        const nextSeen=new Set(seen);nextSeen.add(ball.id);
+        const supportIds=[...(seg.followSupportIds||[])];
+        if(seg.movingSupportId&&!supportIds.includes(seg.movingSupportId))supportIds.unshift(seg.movingSupportId);
+        for(const sid of supportIds){
+            const support=findBallById(g,sid);
+            if(!support||nextSeen.has(support.id)||!Array.isArray(support.fallPath))continue;
+            const supportSeg=support.fallPath.find(s=>
+                s&&s.motionSeq===seg.motionSeq&&Array.isArray(s.from)&&Array.isArray(s.to)
+            );
+            if(!supportSeg)continue;
+            const base=resolveFollowSupportGeometry(g,support,supportSeg,depth+1,nextSeen);
+            if(!base?.from||!base?.to)continue;
+            const ox=seg.from[0]-base.from[0],oy=seg.from[1]-base.from[1];
+            const expected=[base.to[0]+ox,base.to[1]+oy];
+            if(Math.abs(expected[0]-seg.to[0])>1e-6||Math.abs(expected[1]-seg.to[1])>1e-6)continue;
+            // FOLLOW_SUPPORT is a rigid positional offset from the moving
+            // support during this one ordinary event. Copy the support's exact
+            // path geometry and translate its pivot by the same offset. This is
+            // mathematically identical to liveBatchPointAt without requiring a
+            // global motionSeq queue, so 0.600 s units remain independent.
+            return{
+                ...seg,
+                pivot:shiftedPoint(base.pivot,ox,oy),
+                topPivot:shiftedPoint(base.topPivot,ox,oy),
+                movingSupportId:0,
+                followSupportIds:[],
+                kind:base.topPivot?"FOLLOW_RESOLVED_TOP_PIVOT":base.pivot?"FOLLOW_RESOLVED_ARC":"FOLLOW_RESOLVED_TRANSLATE",
+                garbageResolvedFollowSupport:true
+            };
+        }
+        // Keep the original metadata if no matching support event can be found;
+        // the stress audit treats a resulting stall as a hard failure rather
+        // than silently inventing a different physical path.
+        return seg;
+    }
+
+    function resolveAllFollowSupportGeometry(g,ids){
+        // Two-pass replacement: every lookup sees the original motionSeq paths,
+        // even when the support is another member of the same six-ball unit.
+        const replacements=new Map();
+        for(const id of ids){
+            const ball=findBallById(g,id);
+            if(!ball||!Array.isArray(ball.fallPath))continue;
+            replacements.set(ball,ball.fallPath.map(seg=>resolveFollowSupportGeometry(g,ball,seg)));
+        }
+        for(const [ball,path] of replacements)ball.fallPath=path;
     }
 
     function expandZeroSeqTopPivotPath(ball){
@@ -83,13 +133,6 @@
             }
             const [px,py]=seg.topPivot;
             const contactRow=(cellCenterYNorm(py)-1-BOARD_TOP_CENTER_N)/HEX_ROW_H;
-            // topPivot is canonically a vertical fall to the top tangent point,
-            // followed by a circular roll around the support. The ordinary
-            // motionSeq renderer already knows this combined geometry, but the
-            // 0.600 s independent-unit renderer intentionally uses motionSeq=0.
-            // Split that same geometry into two ordinary segments so app-08 can
-            // render it without drawing the invalid straight chord through the
-            // support ball (the source of the permanent clamp/freeze).
             if(!(contactRow>seg.from[1]+1e-7)||contactRow>seg.to[1]+1e-6){
                 expanded.push(seg);continue;
             }
@@ -108,6 +151,7 @@
                 ...seg,
                 from:contact,to:[...seg.to],
                 pivot:[px,py],topPivot:null,
+                movingSupportId:0,followSupportIds:[],
                 kind:"ROLL_FROM_TOP_CONTACT",
                 motionSeq:0,bundleId:0,groupSize:0,
                 continuousChain:true,
@@ -119,15 +163,13 @@
     }
 
     function compileOrdinaryUnitPath(g,ids){
-        // Canonical physics only. settleAll repeatedly calls settlePass, which
-        // calls hexPhysNaturalMotion and appends the same pivot/topPivot paths
-        // used by ordinary released balls.
         settleAll(g.board);
 
-        // A later 0.600 s unit must not wait behind the global motionSeq of an
-        // earlier unit. The geometry remains canonical. topPivot segments are
-        // expanded into their exact fall-then-arc components because app-08's
-        // motionSeq=0 branch otherwise treats topPivot as a straight diagonal.
+        // Resolve canonical coupled geometry BEFORE removing motionSeq, because
+        // that event id is the exact link between a FOLLOW_SUPPORT member and
+        // the support segment it follows.
+        resolveAllFollowSupportGeometry(g,ids);
+
         for(const id of ids){
             const ball=findBallById(g,id);
             if(!ball||!Array.isArray(ball.fallPath))continue;
@@ -188,10 +230,6 @@
         if(!g._garbagePresentationKnownIds){
             g._garbagePresentationKnownIds=new Set(garbageEntries(g).map(q=>q.ball.id));
         }
-
-        // Let the normal adapter advance its clock, settle completed paths and
-        // manage legacy loose singles, but prevent it from using its old 0.5 s
-        // shaped-packet start gate while an unstarted shaped unit exists.
         const nextUnstarted=(g.garbagePlans||[]).find(p=>!p._started);
         const scheduledAt=g.garbageNextBallAt;
         if(nextUnstarted)g.garbageNextBallAt=Infinity;
@@ -206,9 +244,6 @@
             }
         }
 
-        // Numeric/legacy single garbage still comes from the normal adapter;
-        // preserve its appearance and keep its following unit no earlier than
-        // 0.600 s as well.
         const afterLoose=(g.garbageLooseIds||[]).length;
         if(afterLoose>beforeLoose){
             armUnseenLooseEffects(g,g._garbagePresentationKnownIds);
@@ -220,4 +255,5 @@
     };
 
     window.__hexGarbageTopPivotExpandedForIndependentUnits=true;
+    window.__hexGarbageFollowSupportResolvedForIndependentUnits=true;
 })();
