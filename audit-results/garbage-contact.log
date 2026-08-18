@@ -4,13 +4,13 @@ accumulated pile support-arc motion PASS
 technique-aware CPU levels PASS {"hex3":75.2136,"hex4":247.13040000000004,"hex5":737.9064000000001,"pyr5":583.57332,"move":{"x":5,"y":10,"rot":3}}
 garbage post-split rigidity zero PASS {"plan":[{"id":2,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":3,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":4,"kind":"ROLL_RIGHT","bundle":0,"size":0}],"support":1}
 garbage lower-diagonal before final settle PASS {"from":[2,1],"to":[1,2],"frozen":[8,1],"kind":"ROLL_LEFT","pivot":[3,2],"topPivot":null}
-evalmachine.<anonymous>:4314
+evalmachine.<anonymous>:4360
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage chain froze despite remaining gravity: {"type":1,"frame":153,"id":18,"cell":[2,9],"visual":[4.319176882255941,6.914262173704711],"path":[{"from":[5,6],"to":[4,7],"pivot":null,"topPivot":[5,8],"movingSupportId":0,"followSupportIds":[],"kind":"ROLL_LEFT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageIndependentAfterSplit":true},{"from":[4,7],"to":[3,8],"pivot":[5,8],"topPivot":null,"movingSupportId":0,"followSupportIds":[],"kind":"ROLL_LEFT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageIndependentAfterSplit":true},{"from":[3,8],"to":[2,9],"pivot":null,"topPivot":[3,10],"movingSupportId":0,"followSupportIds":[],"kind":"ROLL_LEFT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageIndependentAfterSplit":true}],"proposal":null}
-    at expect (evalmachine.<anonymous>:4314:34)
-    at evalmachine.<anonymous>:4347:4
+Error: garbage chain froze despite remaining gravity: {"type":1,"frame":151,"id":14,"cell":[2,7],"visual":[4.357411766148822,4.84852907364803],"path":[{"from":[5,4],"to":[4,5],"pivot":null,"topPivot":null,"movingSupportId":15,"followSupportIds":[15,16],"kind":"FOLLOW_SUPPORT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageIndependentAfterSplit":true},{"from":[4,5],"to":[3,6],"pivot":null,"topPivot":null,"movingSupportId":15,"followSupportIds":[15,16],"kind":"FOLLOW_SUPPORT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageIndependentAfterSplit":true},{"from":[3,6],"to":[2,7],"pivot":null,"topPivot":null,"movingSupportId":16,"followSupportIds":[16],"kind":"FOLLOW_SUPPORT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageIndependentAfterSplit":true}],"proposal":null}
+    at expect (evalmachine.<anonymous>:4360:34)
+    at evalmachine.<anonymous>:4393:4
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
