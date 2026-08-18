@@ -1,0 +1,16 @@
+const {runSuite}=require('./audit-harness');
+const suite=String.raw`
+const out=[];
+const mk=(id,c)=>({id,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:'',motionGroupSize:0,rigid:false,momentumX:0,rollDir:0,subCellBias:0});
+function items(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,v,x,y});}return a;}
+function seedPile(g,seed,visibleOnly){const rng=mulberry32(910000+seed);let id=3000000+seed*60;for(let n=0;n<3+(seed%15);n++){const y=visibleOnly?Math.floor(rng()*ROWS):BOARD_MIN_ROW+Math.floor(rng()*(ROWS-BOARD_MIN_ROW)),xs=[];for(let x=0;x<W2;x++)if(valid(x,y)&&!g.board[y][x])xs.push(x);if(!xs.length)continue;const x=xs[Math.floor(rng()*xs.length)],c=Math.floor(rng()*COLORS.length);g.board[y][x]=mk(id++,c);}settleAll(g.board);try{Object.defineProperty(g.board,'_hexEngine',{value:g,writable:true,configurable:true,enumerable:false});}catch(_){}for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b){delete b.fallPath;setVis(g,b,x,y,0);}}}
+function pathInfo(b){const s=b?.fallPath?.[0];return s?{from:s.from,to:s.to,kind:s.kind,pivot:s.pivot||null,pileFlow:!!s.pileFlow,start:s.pileFlowStart,end:s.pileFlowEnd,dur:s.pileFlowDuration}:null;}
+function ballInfo(q){return{id:q.b.id,l:[q.x,q.y],v:[q.v.x,q.v.y],vy:q.v.vy||0,speed:q.v.motionSpeed||0,path:pathInfo(q.b),pathN:q.b.fallPath?.length||0,gid:q.b.motionGroupId||0,size:q.b.motionGroupSize||0,role:q.b.motionGroupRole,rigid:!!q.b.rigid,hold:q.b.hardDropContactHold||null,rest:q.b._hexHardDropContinuousRest||null,noUp:q.b._hexHardDropNoUpY};}
+function nearest(g,q,tracked){let best=null;for(const r of items(g)){if(r.b.id===q.b.id||tracked.has(r.b.id))continue;const d=hexPhysDist(q.v.x,q.v.y,r.v.x,r.v.y);if(!best||d<best.d)best={d,ball:ballInfo(r)};}return best;}
+function frame(g,seed,visibleOnly,step,tracked){const all=items(g),tr=all.filter(q=>tracked.has(q.b.id)).sort((a,b)=>a.b.id-b.b.id);const pairs=[];for(let i=0;i<tr.length;i++)for(let j=i+1;j<tr.length;j++)pairs.push({a:tr[i].b.id,b:tr[j].b.id,d:hexPhysDist(tr[i].v.x,tr[i].v.y,tr[j].v.x,tr[j].v.y)});return{seed,visibleOnly,step,state:g.state,phase:g.phase,balls:tr.map(q=>({...ballInfo(q),nearest:nearest(g,q,tracked)})),pairs};}
+for(const cfg of [{seed:9,visibleOnly:false},{seed:3,visibleOnly:true},{seed:5,visibleOnly:true},{seed:11,visibleOnly:true}]){
+ const {seed,visibleOnly}=cfg,g=createEngine((visibleOnly?810000:710000)+seed);spawn(g);seedPile(g,seed,visibleOnly);g.state='PLAYING';g.piece.rot=seed%6;const range=legalXRange(g),f=((seed%31)+.37)/31;setFreeX(g,range[0]+(range[1]-range[0])*f);updateVisuals(g,PHYSICS_FRAME);const shadow=landingShadowVisualCells(g),before=g.nextId;if(!shadow){out.push({seed,visibleOnly,error:'missing-shadow'});continue;}hardDrop(g);const tracked=new Set([before,before+1,before+2]);out.push({seed,visibleOnly,shadow:shadow.map(p=>[p[0],p[1]]),afterDrop:frame(g,seed,visibleOnly,-1,tracked)});for(let step=0;step<12&&g.alive;step++){stepEngine(g,PHYSICS_FRAME);out.push(frame(g,seed,visibleOnly,step,tracked));}
+}
+globalThis.__HARD_DROP_OVERLAP_DIAG=out;
+`;
+const ctx=runSuite(suite,{timeout:180000});console.log('HARD_DROP_OVERLAP_DIAG',JSON.stringify(ctx.__HARD_DROP_OVERLAP_DIAG,null,2));
