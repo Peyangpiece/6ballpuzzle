@@ -1,13 +1,13 @@
 AI_STATE_CASE {"seed":1,"level":1,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":2,"maxPieceAge":1.95,"bugs":0}
 AI_STATE_CASE {"seed":1,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.542,"bugs":0}
 AI_STATE_CASE {"seed":1,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.242,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":4,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":3,"maxPieceAge":0.792,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":4,"maxPieceAge":0.658,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.242,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.108,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":1,"alive":true,"state":"PLAYING","phase":null,"spawnCount":3,"maxPieceAge":2,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.85,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.442,"bugs":0}
-AI_STATE_CASE {"seed":2,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":0.842,"bugs":0}
-AI_STATE_CASE {"seed":2,"level":5,"alive":true,"state":"RESOLVING","phase":"SETTLE","spawnCount":4,"maxPieceAge":0.508,"bugs":0}
+AI_STATE_CASE {"seed":2,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":1.292,"bugs":0}
+AI_STATE_CASE {"seed":2,"level":5,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":0.95,"bugs":0}
 AI_STATE_AUDIT {
   "start": 1,
   "count": 2,
@@ -18,9 +18,8 @@ AI_STATE_AUDIT {
 PERFORMANCE_AUDIT {
   "seconds": 16,
   "stats": {
-    "garbage-relax-reentry": 870,
-    "final-contact-reentry": 4333,
-    "frame-over-250ms": 2
+    "garbage-relax-reentry": 907,
+    "final-contact-reentry": 4279
   },
   "bugs": [
     {
@@ -908,11 +907,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 1,
       "frames": 1920,
-      "maxMs": 67,
-      "avgMs": 10.579,
+      "maxMs": 61,
+      "avgMs": 7.603,
       "maxCounts": {
         "step": 1081,
-        "ms": 6,
+        "ms": 5,
         "resolve": 3,
         "relax": 3,
         "final": 15,
@@ -925,11 +924,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 7,
       "frames": 1920,
-      "maxMs": 43,
-      "avgMs": 5.8,
+      "maxMs": 30,
+      "avgMs": 4.168,
       "maxCounts": {
         "step": 995,
-        "ms": 7,
+        "ms": 5,
         "resolve": 3,
         "relax": 3,
         "final": 15,
@@ -942,11 +941,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 19,
       "frames": 1920,
-      "maxMs": 262,
-      "avgMs": 6.327,
+      "maxMs": 26,
+      "avgMs": 4.652,
       "maxCounts": {
-        "step": 926,
-        "ms": 5,
+        "step": 980,
+        "ms": 3,
         "resolve": 3,
         "relax": 3,
         "final": 15,
@@ -954,64 +953,13 @@ PERFORMANCE_AUDIT {
         "state": "RESOLVING",
         "phase": "GARBAGE"
       },
-      "slow": [
-        {
-          "step": 473,
-          "ms": 97,
-          "resolve": 1,
-          "relax": 0,
-          "final": 2,
-          "rests": 4,
-          "state": "PLAYING",
-          "phase": null
-        },
-        {
-          "step": 1017,
-          "ms": 136,
-          "resolve": 1,
-          "relax": 0,
-          "final": 6,
-          "rests": 4,
-          "state": "PLAYING",
-          "phase": null
-        },
-        {
-          "step": 1096,
-          "ms": 172,
-          "resolve": 1,
-          "relax": 0,
-          "final": 7,
-          "rests": 4,
-          "state": "RESOLVING",
-          "phase": "SETTLE"
-        },
-        {
-          "step": 1553,
-          "ms": 262,
-          "resolve": 1,
-          "relax": 0,
-          "final": 6,
-          "rests": 4,
-          "state": "PLAYING",
-          "phase": null
-        },
-        {
-          "step": 1601,
-          "ms": 258,
-          "resolve": 1,
-          "relax": 0,
-          "final": 6,
-          "rests": 4,
-          "state": "PLAYING",
-          "phase": null
-        }
-      ]
+      "slow": []
     },
     {
       "seed": 37,
       "frames": 1920,
-      "maxMs": 49,
-      "avgMs": 7.14,
+      "maxMs": 34,
+      "avgMs": 5.037,
       "maxCounts": {
         "step": 985,
         "ms": 4,
