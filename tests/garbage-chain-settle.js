@@ -22,6 +22,7 @@ function terrain(g,type){
 function stateOf(gs){const m=new Map();for(const q of gs)m.set(q.b.id,{cell:[q.x,q.y],visual:[q.v.x,q.v.y],path:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0});return m;}
 function changed(prev,now){if(!prev)return true;if(prev.size!==now.size)return true;for(const[id,n]of now){const p=prev.get(id);if(!p)return true;if(p.cell[0]!==n.cell[0]||p.cell[1]!==n.cell[1]||p.path!==n.path||phys(p.visual,n.visual)>1e-6)return true;}return false;}
 function rawDown(g,q){if(Array.isArray(q.b.fallPath)&&q.b.fallPath.length)return null;const p=hexPhysNaturalMotion(g.board,q.x,q.y);return p&&p.ty>p.y?p:null;}
+function safeRawDown(g,q){const p=rawDown(g,q);if(!p)return null;return hexPhysPathHitsStationary(p,g.board,new Set([q.b.id]))?null:p;}
 function pathBlockers(g,p){
  if(!p)return[];const pv=p.topPivot||p.pivot,out=[];
  for(const q of entries(g)){
@@ -34,9 +35,11 @@ function pathBlockers(g,p){
  return out.sort((a,b)=>a.min-b.min);
 }
 expect(window.__hexGarbageNoChainFreeze===true,"chain-free garbage settle layer missing");
-expect(window.__hexGarbageMovingPeersAreSimultaneous===true,"simultaneous moving-garbage layer missing");
+expect(window.__hexGarbageMovingPeersAreSimultaneous===true,"garbage contact layer missing");
+expect(window.__hexGarbageCanonicalPositionRollbackDisabled===true,"obsolete canonical-position rollback is still active");
 expect(window.__hexGarbageUnitLocalTimeline===true,"unit-local ordinary timeline missing");
 expect(window.__hexGarbageDeepSettleUsesCanonicalEventResolver===true,"canonical deep settle resolver missing");
+expect(window.__hexGarbageRawFallbackAfterFailedFollow===true,"failed FOLLOW_SUPPORT raw-gravity fallback missing");
 const reports=[];
 for(let type=1;type<=4;type++){
  const g=createEngine(72000+type);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;terrain(g,type);
@@ -48,21 +51,20 @@ for(let type=1;type<=4;type++){
   for(const[id,o]of original){const q=entries(g).find(z=>z.b.id===id);expect(q,"original pile disappeared "+id);expect(q.x===o.x&&q.y===o.y,"original pile logical move during attack");expect(Math.abs(q.v.x-o.vx)<1e-8&&Math.abs(q.v.y-o.vy)<1e-8,"original pile visual move during attack");expect(q.b.garbagePhaseFrozen===true,"original pile lost freeze during attack");}
   const gs=entries(g).filter(q=>q.b.isGarbage&&!original.has(q.b.id));spawned=Math.max(spawned,gs.length);for(const q of gs)expect(!q.b.garbagePhaseFrozen,"current-batch garbage was promoted into frozen snapshot: "+q.b.id);
   for(let i=0;i<gs.length;i++)for(let j=i+1;j<gs.length;j++){const d=phys([gs[i].v.x,gs[i].v.y],[gs[j].v.x,gs[j].v.y]);minDistance=Math.min(minDistance,d);expect(d>=HEX_MIN_DIST-9e-4,"garbage overlap in chain settle stress: "+JSON.stringify({type,frame,d,a:gs[i].b.id,b:gs[j].b.id}));}
+
   const now=stateOf(gs),progress=changed(prevState,now);prevState=now;
-  const hasPath=gs.some(q=>Array.isArray(q.b.fallPath)&&q.b.fallPath.length),raw=gs.map(q=>({q,p:rawDown(g,q)})).filter(z=>z.p),accepted=window.__hexGarbageCanonicalReadyEvent(g,true)||[];
-  const unfinished=hasPath||raw.length>0||accepted.length>0||(g.garbagePlans||[]).some(p=>!p._started);
+  const hasPath=gs.some(q=>Array.isArray(q.b.fallPath)&&q.b.fallPath.length),safeRaw=gs.map(q=>({q,p:safeRawDown(g,q)})).filter(z=>z.p),accepted=window.__hexGarbageNextReadyGravityEvent(g,true)||[];
+  const unfinished=hasPath||safeRaw.length>0||accepted.length>0||(g.garbagePlans||[]).some(p=>!p._started);
   if(unfinished&&!progress)globalStall++;else globalStall=0;maxGlobalStall=Math.max(maxGlobalStall,globalStall);
-  expect(globalStall<72,"whole garbage system chain-froze with remaining gravity: "+JSON.stringify({type,frame,raw:raw.slice(0,8).map(z=>({id:z.q.b.id,cell:[z.q.x,z.q.y],to:[z.p.tx,z.p.ty],kind:z.p.kind,pivot:z.p.pivot,blockers:pathBlockers(g,z.p)})),accepted:(accepted||[]).map(p=>({id:p.ball?.id,from:[p.x,p.y],to:[p.tx,p.ty],kind:p.kind,follow:p.followSupportIds||[]})),active:gs.filter(q=>q.b.fallPath?.length).slice(0,8).map(q=>({id:q.b.id,cell:[q.x,q.y],visual:[q.v.x,q.v.y],seg:q.b.fallPath[0]}))}));
+  expect(globalStall<72,"whole garbage system chain-froze with reachable gravity: "+JSON.stringify({type,frame,safeRaw:safeRaw.slice(0,8).map(z=>({id:z.q.b.id,cell:[z.q.x,z.q.y],to:[z.p.tx,z.p.ty],kind:z.p.kind,pivot:z.p.pivot,blockers:pathBlockers(g,z.p)})),accepted:(accepted||[]).map(p=>({id:p.ball?.id,from:[p.x,p.y],to:[p.tx,p.ty],kind:p.kind,follow:p.followSupportIds||[]})),active:gs.filter(q=>q.b.fallPath?.length).slice(0,8).map(q=>({id:q.b.id,cell:[q.x,q.y],visual:[q.v.x,q.v.y],seg:q.b.fallPath[0]}))}));
   if(garbageBatchDone(g)){done=frame;break;}
  }
  expect(done>=0,"garbage batch never completed on terrain "+type);expect(spawned>=12,"too few garbage balls spawned on terrain "+type+": "+spawned);
  const finalGarbage=entries(g).filter(z=>z.b.isGarbage&&!original.has(z.b.id));
  for(const q of finalGarbage){
   expect(!(Array.isArray(q.b.fallPath)&&q.b.fallPath.length),"finished garbage retained fallPath: "+q.b.id);
-  const p=hexPhysNaturalMotion(g.board,q.x,q.y);
-  const proposalEntry=p?(hexPhysContactEntries(g.board,new Set()).find(z=>z.ball?.id===q.b.id)||p):null;
-  const safe=p?!hexPhysPathHitsStationary(proposalEntry,g.board,new Set([q.b.id])):true;
-  expect(!p||p.ty<=p.y,"finished garbage still had downward/open-gap move: "+JSON.stringify({type,id:q.b.id,cell:[q.x,q.y],raw:{to:p&&[p.tx,p.ty],kind:p&&p.kind,pivot:p&&p.pivot,topPivot:p&&p.topPivot},contactProposal:proposalEntry&&{to:[proposalEntry.tx,proposalEntry.ty],kind:proposalEntry.kind,pivot:proposalEntry.pivot,follow:proposalEntry.followSupportIds||[]},pathSafe:safe,blockers:pathBlockers(g,proposalEntry||p),canonical:(window.__hexGarbageCanonicalReadyEvent(g,true)||[]).map(z=>({id:z.ball?.id,to:[z.tx,z.ty],kind:z.kind}))}));
+  const p=safeRawDown(g,q);
+  expect(!p,"finished garbage retained a reachable downward/open-gap move: "+JSON.stringify({type,id:q.b.id,cell:[q.x,q.y],to:p&&[p.tx,p.ty],kind:p&&p.kind,pivot:p&&p.pivot,topPivot:p&&p.topPivot,blockers:p&&pathBlockers(g,p)}));
  }
  reports.push({type,done,spawned,maxGlobalStall,minDistance});
 }
