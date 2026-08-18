@@ -3,8 +3,9 @@
  * Independent garbage trajectories are clamped at their first tangent. When
  * two MOVING garbage balls meet, do not automatically stop both: if the lower
  * (or earlier) ball can continue from the tangent while increasing/maintaining
- * one-diameter separation, only the other ball yields. This prevents the
- * symmetric "both wait forever" deadlock that produced floating garbage.
+ * one-diameter separation, only the other ball yields. Explicit moving-support
+ * pairs are already solved analytically and are excluded unless they illegally
+ * converge on the same endpoint.
  */
 (function installGarbageHardSeparation(){
     if(typeof window==="undefined"||window.__hexGarbageHardSeparation)return;
@@ -19,7 +20,7 @@
     function follows(seg,id){if(Number(seg?.movingSupportId)===id)return true;return Array.isArray(seg?.followSupportIds)&&seg.followSupportIds.includes(id);}
     function causalSupportPair(a,b){return follows(firstSeg(a.ball),b.ball.id)||follows(firstSeg(b.ball),a.ball.id);}
     function sameEndpoint(a,b){const sa=firstSeg(a.ball),sb=firstSeg(b.ball);return Array.isArray(sa?.to)&&Array.isArray(sb?.to)&&physicalDist(sa.to,sb.to)<1e-7;}
-    function causalPairStillValid(a,b,a1,b1){if(!causalSupportPair(a,b)||sameEndpoint(a,b))return false;return physicalDist(a1,b1)>=MIN-2e-6;}
+    function causalPairStillValid(a,b){return causalSupportPair(a,b)&&!sameEndpoint(a,b);}
     function motionSeq(ball){const s=firstSeg(ball),a=Number(s?.pileFlowOriginalSeq),b=Number(s?.motionSeq);if(Number.isFinite(a)&&a>0)return a;if(Number.isFinite(b)&&b>0)return b;return Infinity;}
     function scheduleShift(ball,delay,blockerId){
         if(!(delay>1e-10))return;
@@ -71,35 +72,26 @@
                 const a=list[i],b=list[j],pairKey=a.ball.id<b.ball.id?a.ball.id+":"+b.ball.id:b.ball.id+":"+a.ball.id;
                 if(resolvedPairs.has(pairKey))continue;
                 const a1=[a.v.x,a.v.y],b1=[b.v.x,b.v.y];
-                if(causalPairStillValid(a,b,a1,b1)){resolvedPairs.add(pairKey);continue;}
+                if(causalPairStillValid(a,b)){resolvedPairs.add(pairKey);continue;}
                 const a0=movementStart(a,before),b0=movementStart(b,before),hardA=hardStationary(g,a),hardB=hardStationary(g,b);
                 if(hardA&&hardB){resolvedPairs.add(pairKey);continue;}
                 const sa=hardA?a1:a0,sb=hardB?b1:b0,t=firstUnsafeFraction(sa,a1,sb,b1);if(t===null){resolvedPairs.add(pairKey);continue;}
                 changed=true;
                 const aT=pointAt(sa,a1,t),bT=pointAt(sb,b1,t);
-
                 if(hardA){clampOne(b,sb,b1,t,a,dt);resolvedPairs.add(pairKey);continue;}
                 if(hardB){clampOne(a,sa,a1,t,b,dt);resolvedPairs.add(pairKey);continue;}
-
                 const preferred=choosePreferredWinner(a,b,aT,bT),other=preferred===a?b:a;
                 const wT=preferred===a?aT:bT,wEnd=preferred===a?a1:b1,lT=preferred===a?bT:aT;
                 if(canAdvanceAway(wT,wEnd,lT)){
                     if(other===a)clampOne(a,sa,a1,t,b,dt);else clampOne(b,sb,b1,t,a,dt);
-                    preferred.v.garbageContactYieldWinner=true;
-                    resolvedPairs.add(pairKey);continue;
+                    preferred.v.garbageContactYieldWinner=true;resolvedPairs.add(pairKey);continue;
                 }
-
                 const otherEnd=other===a?a1:b1;
                 if(canAdvanceAway(lT,otherEnd,wT)){
                     if(preferred===a)clampOne(a,sa,a1,t,b,dt);else clampOne(b,sb,b1,t,a,dt);
-                    other.v.garbageContactYieldWinner=true;
-                    resolvedPairs.add(pairKey);continue;
+                    other.v.garbageContactYieldWinner=true;resolvedPairs.add(pairKey);continue;
                 }
-
-                // True mutual jam: neither member can continue without entering
-                // the other. Only here do both trajectories stop at first tangent.
-                clampOne(a,sa,a1,t,b,dt);clampOne(b,sb,b1,t,a,dt);
-                resolvedPairs.add(pairKey);
+                clampOne(a,sa,a1,t,b,dt);clampOne(b,sb,b1,t,a,dt);resolvedPairs.add(pairKey);
             }
             if(!changed)break;
         }
