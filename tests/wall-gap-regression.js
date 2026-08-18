@@ -1,7 +1,7 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const runtime=["app-01.js","app-02.js","app-03.js","app-07.js","app-clear-gap-collapse.js","app-wall-gap-invariant.js"]
+const runtime=["app-01.js","app-02.js","app-03.js","app-07.js","app-clear-gap-collapse.js","app-floor-gap-invariant.js","app-wall-gap-invariant.js"]
   .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const assertions=String.raw`
@@ -15,10 +15,17 @@ function placeHexagonWithBallFoundation(board,cx,cy,startId=1){
   const foundation=[[cx-2,cy+2],[cx,cy+2],[cx+2,cy+2]];
   for(const[x,y]of foundation)if(!board[y][x])put(board,x,y,id++,1);
 }
+function placeHexagonRing(board,cx,cy,startId=1){
+  const ring=[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+  let id=startId;
+  for(const[dx,dy]of ring)put(board,cx+dx,cy+dy,id++,0);
+}
 function physicalDist(a,b){return Math.hypot(a[0]-b[0],a[1]-b[1]);}
 
 expect(window.__hexWallGapInvariant===true,"wall no-gap invariant was not installed");
 expect(window.__hexWallGapAllowed===false,"wall-gap policy is not strict");
+expect(window.__hexFloorGapInvariant===true,"floor no-gap invariant was not installed");
+expect(window.__hexFloorAdjacentGapAllowed===false,"floor-gap policy is not strict");
 
 // Interior ball-supported HEXAGON holes remain legal.
 {
@@ -34,6 +41,29 @@ expect(window.__hexWallGapAllowed===false,"wall-gap policy is not strict");
   placeHexagonWithBallFoundation(b,cx,cy,200);
   expect(!isBalancedHexagonCenterHole(b,cx,cy),"wall-adjacent HEXAGON gap was incorrectly preserved");
   expect(!ballInBalancedHexagonRing(b,cx-2,cy),"wall-adjacent ring still received the no-gravity exemption");
+}
+
+// The floor cannot substitute for the two real-ball supports required by the
+// intentional HEXAGON exception. A ring whose two lower members sit directly on
+// the floor must keep resolving instead of freezing a floor-adjacent cavity.
+{
+  const b=newBoard(),cx=8,cy=ROWS-2;
+  placeHexagonRing(b,cx,cy,250);
+  expect(!isBalancedHexagonCenterHole(b,cx,cy),"floor-supported HEXAGON gap was incorrectly preserved");
+  expect(!ballInBalancedHexagonRing(b,cx-2,cy),"floor-supported ring still received the no-gravity exemption");
+}
+
+// A plain floor pocket must also be consumed by ordinary gravity. The two balls
+// above the empty floor cell both have a legal roll toward it; exactly one may
+// win the collision-safe event, but the floor cell itself may not remain empty.
+{
+  const b=newBoard();
+  put(b,6,ROWS-1,270);put(b,10,ROWS-1,271);
+  const left=put(b,7,ROWS-2,272),right=put(b,9,ROWS-2,273);
+  expect(b[ROWS-1][8]===null,"floor pocket test started occupied");
+  settleAll(b);
+  expect(b[ROWS-1][8]===left||b[ROWS-1][8]===right,"ordinary floor packing left an empty floor pocket");
+  expect(!hasLegalGravityMove(b),"floor packing stopped before equilibrium");
 }
 
 // If the wall column and inward lower cell are both open, gravity must stay on
@@ -81,7 +111,7 @@ for(const [x,y,label] of [[0,7,"left"],[18,7,"right"]]){
   }
 }
 
-console.log("wall gap regression PASS");
+console.log("wall + floor gap regression PASS");
 `;
 
 const source=`const React={};\nconst window={};\nconst navigator={};\n${runtime}\n${assertions}`;
