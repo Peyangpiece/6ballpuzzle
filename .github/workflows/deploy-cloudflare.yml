@@ -29,6 +29,9 @@ jobs:
       - name: Run wall-gap regression
         run: node tests/wall-gap-regression.js
 
+      - name: Run post-garbage clear-collapse regression
+        run: node tests/garbage-post-clear-collapse.js
+
       - name: Run airborne garbage pass-through regression
         run: node tests/garbage-airborne-pass-through.js
 
