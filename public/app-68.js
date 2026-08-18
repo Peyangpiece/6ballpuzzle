@@ -5,6 +5,7 @@
  */
 const __hexLockBeforeHardDropContact = lock;
 const __hexHardDropBeforeContact = hardDrop;
+const __hexUpdateVisualsBeforeHardDropContact = updateVisuals;
 
 function hexHardDropContactAnchor(g,target,pose){
     if(!g||!target||!Array.isArray(pose)||pose.length!==3)return null;
@@ -20,8 +21,6 @@ function hexHardDropContactAnchor(g,target,pose){
                Math.abs((pose[i][1]-cs[i][1])-oy)>1e-7){rigid=false;break;}
         }
         if(!rigid)continue;
-        // Never choose a logical anchor above the already-rendered contact.
-        // That would require a visible upward correction on the next frame.
         const noUp=oy<=1e-7;
         const localX=Math.abs(ox)<=1.000001;
         const dist=Math.hypot(ox*.5,oy*HEX_ROW_H);
@@ -30,18 +29,50 @@ function hexHardDropContactAnchor(g,target,pose){
     if(!candidates.length)return null;
     candidates.sort((a,b)=>
         Number(b.noUp)-Number(a.noUp)||
+        a.dist-b.dist||
         Number(b.localX)-Number(a.localX)||
-        a.dist-b.dist||a.dy-b.dy||Math.abs(a.dx)-Math.abs(b.dx)
+        a.dy-b.dy||Math.abs(a.dx)-Math.abs(b.dx)
     );
     return candidates[0];
 }
+
+function hexEachHeldContactBall(g,fn){
+    if(!g?.board)return;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null,hold=ball?.hardDropContactHold;
+        if(ball&&hold)fn(ball,hold,x,y);
+    }
+}
+
+// A contact pose can sit between lattice centres. Keep that exact rendered pose
+// while the logical ball is quiescent. As soon as pile physics creates a real
+// motion segment, release the hold and rebase that segment from the contact pose.
+updateVisuals=function(g,dt){
+    hexEachHeldContactBall(g,(ball,hold,x,y)=>{
+        const path=Array.isArray(ball.fallPath)?ball.fallPath:null;
+        if(path&&path.length){
+            const seg=path[0];
+            if(seg?.from)seg.from=[hold.x,hold.y];
+            delete ball.hardDropContactHold;
+        }else if(x!==hold.ax||y!==hold.ay){
+            delete ball.hardDropContactHold;
+        }
+    });
+    __hexUpdateVisualsBeforeHardDropContact(g,dt);
+    hexEachHeldContactBall(g,(ball,hold,x,y)=>{
+        if(x!==hold.ax||y!==hold.ay){delete ball.hardDropContactHold;return;}
+        const v=g.vis.get(ball.id);
+        if(!v)return;
+        v.x=hold.x;v.y=hold.y;v.vy=0;v.motionSpeed=0;
+    });
+};
 
 function hexLockHardDropAtContact(g,vy,contact){
     if(!g?.piece||!contact?.pose?.length)return __hexLockBeforeHardDropContact(g,vy);
     clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
     const target={...g.piece,colors:g.piece.colors.slice()},splitRot=target.rot;
     const anchor=hexHardDropContactAnchor(g,target,contact.pose);
-    if(!anchor||!anchor.noUp){
+    if(!anchor){
         delete g._hardDropContactPose;
         return __hexLockBeforeHardDropContact(g,vy);
     }
@@ -61,6 +92,9 @@ function hexLockHardDropAtContact(g,vy,contact){
         ball.impactOffsetX=offX;
         ball.subCellBias=Math.abs(offX)>1e-5?Math.sign(offX):0;
         ball.momentumX=ball.subCellBias;
+        if(Math.abs(p[0]-x)>1e-7||Math.abs(p[1]-y)>1e-7){
+            ball.hardDropContactHold={x:p[0],y:p[1],ax:x,ay:y};
+        }
         g.board[y][x]=ball;noteBoardCell(g.board,y,ball);made.push({ball,role,x,y});
         setVis(g,ball,p[0],p[1],Math.max(RELEASE_INITIAL_VY,vy||0));
         const vv=g.vis.get(ball.id);vv.motionSpeed=Math.max(RELEASE_INITIAL_VY,vy||0);vv.justReleased=true;
@@ -77,7 +111,7 @@ function hexLockHardDropAtContact(g,vy,contact){
     // the exact guide/contact pose so the first resolving frame is continuous.
     for(const m of made){
         const p=contact.pose[m.role],seg=m.ball.fallPath?.[0];
-        if(seg?.from)seg.from=[p[0],p[1]];
+        if(seg?.from){seg.from=[p[0],p[1]];delete m.ball.hardDropContactHold;}
     }
 
     delete g._hardDropContactPose;
