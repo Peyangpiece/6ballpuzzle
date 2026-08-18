@@ -1,9 +1,11 @@
 /* Garbage pile-state gate.
  * A garbage ball that has lost packet rigidity is NOT accumulated pile yet.
- * It becomes pile only after all of its movement has finished and its rendered
- * centre agrees with the final logical lattice cell. Until then it may collide
- * visually (no overlap), but it must not act as a settled support/contact
- * surface that causes later airborne garbage to hand off early.
+ * It becomes pile only after all of its initial post-contact movement has
+ * finished and its rendered centre agrees with the final logical lattice cell.
+ * Until then it may collide visually (no overlap), but it must not act as a
+ * settled support/contact surface that causes later airborne garbage to hand
+ * off early. Promotion is one-way: after the first final settle it remains a
+ * normal pile ball even if a later clear makes the pile move again.
  */
 (function installGarbageSettleState(){
     if(typeof window==="undefined"||window.__hexGarbageSettleState)return;
@@ -30,21 +32,20 @@
         return true;
     }
 
+    function promoteGarbagePileBall(g,ball,x,y){
+        if(ball.garbagePileSettled===true)return true;
+        if(!garbagePositionFinal(g,ball,x,y))return false;
+        ball.garbagePileSettled=true;
+        ball.garbagePileSettledAt=Number.isFinite(g.garbageClock)?g.garbageClock:0;
+        return true;
+    }
+
     function refreshGarbagePileState(g){
         if(!g?.board||!g?.vis)return;
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
             const ball=valid(x,y)?g.board[y][x]:null;
-            if(!ball?.isGarbage)continue;
-            const final=garbagePositionFinal(g,ball,x,y);
-            if(final){
-                if(!ball.garbagePileSettled){
-                    ball.garbagePileSettled=true;
-                    ball.garbagePileSettledAt=Number.isFinite(g.garbageClock)?g.garbageClock:0;
-                }
-            }else{
-                ball.garbagePileSettled=false;
-                delete ball.garbagePileSettledAt;
-            }
+            if(!ball?.isGarbage||ball.garbagePileSettled===true)continue;
+            promoteGarbagePileBall(g,ball,x,y);
         }
     }
 
@@ -53,13 +54,7 @@
         if(!ball.isGarbage)return true;
         if(ball.garbagePileSettled===true)return true;
         const cell=garbageLogicalCell(g,ball.id);
-        if(!cell)return false;
-        if(garbagePositionFinal(g,ball,cell.x,cell.y)){
-            ball.garbagePileSettled=true;
-            ball.garbagePileSettledAt=Number.isFinite(g.garbageClock)?g.garbageClock:0;
-            return true;
-        }
-        return false;
+        return !!cell&&promoteGarbagePileBall(g,ball,cell.x,cell.y);
     };
 
     // Every newly hand-offed garbage member starts in the moving/non-pile state.
@@ -78,9 +73,8 @@
         return true;
     };
 
-    // Airborne garbage may contact ordinary pile balls or already-FINAL garbage
-    // only. A de-rigidified but still moving garbage ball is deliberately
-    // excluded from this support/contact scan.
+    // Airborne garbage may contact ordinary pile balls or garbage whose INITIAL
+    // landing has already fully settled. De-rigidified moving garbage is excluded.
     hexGarbageBallContactY=function(g,pack,index){
         if(!pack?.pat?.[index])return Infinity;
         refreshGarbagePileState(g);
