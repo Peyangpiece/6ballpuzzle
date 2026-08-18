@@ -43,10 +43,12 @@ jobs:
           node tests/garbage-chain-terrain2-diagnostic-v2.js >> audit-results/garbage-contact.log 2>&1
           node tests/garbage-chain-settle.js >> audit-results/garbage-contact.log 2>&1
           G=$?
+          node tests/garbage-post-clear-collapse.js >> audit-results/garbage-contact.log 2>&1
+          H=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
