@@ -34,6 +34,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": {
@@ -134,7 +136,106 @@ HARD_DROP_CONVERGENCE {
             "da": -2.0743945459588895,
             "safe": false
           }
-        ]
+        ],
+        "release": {
+          "members": [
+            {
+              "id": 1,
+              "logical": [
+                7,
+                10
+              ],
+              "visual": [
+                9.86508593635599,
+                8.981872280003754
+              ],
+              "role": 0,
+              "orientation": "up",
+              "bias": -1,
+              "independent": {
+                "from": [
+                  7,
+                  10
+                ],
+                "to": [
+                  6,
+                  11
+                ],
+                "kind": "FLOOR_DROP",
+                "pivot": null,
+                "topPivot": null,
+                "virtualPivot": false,
+                "bundleId": 0,
+                "groupSize": 0
+              }
+            },
+            {
+              "id": 2,
+              "logical": [
+                8,
+                11
+              ],
+              "visual": [
+                10.901780029511213,
+                9.969337951511221
+              ],
+              "role": 1,
+              "orientation": "up",
+              "bias": -1,
+              "independent": null
+            },
+            {
+              "id": 3,
+              "logical": [
+                6,
+                11
+              ],
+              "visual": [
+                8.872160522855685,
+                9.988652436322894
+              ],
+              "role": 2,
+              "orientation": "up",
+              "bias": -1,
+              "independent": null
+            }
+          ],
+          "contacts": [
+            {
+              "kind": "floor",
+              "memberId": 2,
+              "x": 8,
+              "y": 12,
+              "side": 0
+            },
+            {
+              "kind": "floor",
+              "memberId": 3,
+              "x": 6,
+              "y": 12,
+              "side": 0
+            }
+          ],
+          "rigidPlan": [
+            {
+              "from": [
+                7,
+                10
+              ],
+              "to": [
+                6,
+                11
+              ],
+              "kind": "FLOOR_DROP",
+              "pivot": null,
+              "topPivot": null,
+              "virtualPivot": false,
+              "bundleId": 0,
+              "groupSize": 0
+            }
+          ],
+          "separator": null
+        }
       }
     },
     {
@@ -168,6 +269,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -203,6 +306,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -238,6 +343,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -273,6 +380,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -308,6 +417,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -343,6 +454,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -378,6 +491,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -413,6 +528,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -448,6 +565,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -483,6 +602,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -518,6 +639,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -553,6 +676,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -588,6 +713,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -623,6 +750,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -658,6 +787,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -693,6 +824,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -728,6 +861,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -763,6 +898,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 0,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
@@ -798,6 +935,8 @@ HARD_DROP_CONVERGENCE {
         "pathN": 1,
         "protect": 12,
         "gid": 12,
+        "role": 1,
+        "orientation": "up",
         "rigid": true
       },
       "arcDebug": null
