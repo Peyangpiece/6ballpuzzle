@@ -9,7 +9,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 1,
       "from": 8.951048739387893,
-      "to": 8.8903781674906
+      "to": 8.8903781674906,
+      "visual": [
+        5.172879900877107,
+        8.8903781674906
+      ],
+      "motion": {
+        "from": [
+          5.836129032258064,
+          8.951048739387893
+        ],
+        "to": [
+          6,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 5,
+        "gid": 5,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -17,7 +37,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 3,
       "from": 9.951048739387893,
-      "to": 9.845650764052925
+      "to": 9.845650764052925,
+      "visual": [
+        4.049330703569214,
+        9.845650764052925
+      ],
+      "motion": {
+        "from": [
+          4.836129032258064,
+          9.951048739387893
+        ],
+        "to": [
+          5,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 5,
+        "gid": 5,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -25,7 +65,27 @@ HARD_DROP_CONVERGENCE {
       "step": 2,
       "id": 1,
       "from": 8.8903781674906,
-      "to": 8.866287155127495
+      "to": 8.866287155127495,
+      "visual": [
+        5.234276418002613,
+        8.866287155127495
+      ],
+      "motion": {
+        "from": [
+          5.836129032258064,
+          8.951048739387893
+        ],
+        "to": [
+          6,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 5,
+        "gid": 5,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -33,7 +93,27 @@ HARD_DROP_CONVERGENCE {
       "step": 3,
       "id": 1,
       "from": 8.866287155127495,
-      "to": 8.86181137220004
+      "to": 8.86181137220004,
+      "visual": [
+        5.317379992598716,
+        8.86181137220004
+      ],
+      "motion": {
+        "from": [
+          5.836129032258064,
+          8.951048739387893
+        ],
+        "to": [
+          6,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 5,
+        "gid": 5,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -41,7 +121,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 1,
       "from": 8.855145991854574,
-      "to": 8.849899723692804
+      "to": 8.849899723692804,
+      "visual": [
+        2.8900348185050495,
+        8.849899723692804
+      ],
+      "motion": {
+        "from": [
+          2.7393548387096773,
+          8.855145991854574
+        ],
+        "to": [
+          2,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 7,
+        "gid": 7,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -49,7 +149,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 2,
       "from": 9.855145991854574,
-      "to": 9.84676138970238
+      "to": 9.84676138970238,
+      "visual": [
+        3.8993912751257227,
+        9.84676138970238
+      ],
+      "motion": {
+        "from": [
+          3.7393548387096773,
+          9.855145991854574
+        ],
+        "to": [
+          3,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 7,
+        "gid": 7,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -57,7 +177,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 1,
       "from": 8.9346954226483,
-      "to": 8.86116345312676
+      "to": 8.86116345312676,
+      "visual": [
+        3.115636400067084,
+        8.86116345312676
+      ],
+      "motion": {
+        "from": [
+          3.7716129032258063,
+          8.9346954226483
+        ],
+        "to": [
+          4,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 8,
+        "gid": 8,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -65,7 +205,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 3,
       "from": 9.9346954226483,
-      "to": 9.846009489547178
+      "to": 9.846009489547178,
+      "visual": [
+        2.0701263527820304,
+        9.846009489547178
+      ],
+      "motion": {
+        "from": [
+          2.7716129032258063,
+          9.9346954226483
+        ],
+        "to": [
+          3,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 8,
+        "gid": 8,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -73,7 +233,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 2,
       "from": 9.9346954226483,
-      "to": 9.848650884805936
+      "to": 9.848650884805936,
+      "visual": [
+        4.152268310065511,
+        9.848650884805936
+      ],
+      "motion": {
+        "from": [
+          4.771612903225806,
+          9.9346954226483
+        ],
+        "to": [
+          5,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 8,
+        "gid": 8,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -81,7 +261,27 @@ HARD_DROP_CONVERGENCE {
       "step": 2,
       "id": 1,
       "from": 8.86116345312676,
-      "to": 8.85297021903232
+      "to": 8.85297021903232,
+      "visual": [
+        3.2100536351558686,
+        8.85297021903232
+      ],
+      "motion": {
+        "from": [
+          3.7716129032258063,
+          8.9346954226483
+        ],
+        "to": [
+          4,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 8,
+        "gid": 8,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -89,7 +289,27 @@ HARD_DROP_CONVERGENCE {
       "step": 2,
       "id": 1,
       "from": 7.9405485470552195,
-      "to": 7.9285432730364205
+      "to": 7.9285432730364205,
+      "visual": [
+        7.366941768417691,
+        7.9285432730364205
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -97,7 +317,27 @@ HARD_DROP_CONVERGENCE {
       "step": 2,
       "id": 3,
       "from": 8.932452327539478,
-      "to": 8.913463697355075
+      "to": 8.913463697355075,
+      "visual": [
+        6.323009168447808,
+        8.913463697355075
+      ],
+      "motion": {
+        "from": [
+          5.868387096774193,
+          8.588038166568918
+        ],
+        "to": [
+          9,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -105,7 +345,27 @@ HARD_DROP_CONVERGENCE {
       "step": 3,
       "id": 1,
       "from": 7.9285432730364205,
-      "to": 7.912548407300546
+      "to": 7.912548407300546,
+      "visual": [
+        7.47110773186917,
+        7.912548407300546
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -113,7 +373,27 @@ HARD_DROP_CONVERGENCE {
       "step": 3,
       "id": 3,
       "from": 8.913463697355075,
-      "to": 8.894921145210297
+      "to": 8.894921145210297,
+      "visual": [
+        6.4199981257874805,
+        8.894921145210297
+      ],
+      "motion": {
+        "from": [
+          5.868387096774193,
+          8.588038166568918
+        ],
+        "to": [
+          9,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -121,7 +401,27 @@ HARD_DROP_CONVERGENCE {
       "step": 4,
       "id": 1,
       "from": 7.912548407300546,
-      "to": 7.89548046184589
+      "to": 7.89548046184589,
+      "visual": [
+        7.573645776599371,
+        7.89548046184589
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -129,7 +429,27 @@ HARD_DROP_CONVERGENCE {
       "step": 4,
       "id": 3,
       "from": 8.894921145210297,
-      "to": 8.878449794178023
+      "to": 8.878449794178023,
+      "visual": [
+        6.524210753103814,
+        8.878449794178023
+      ],
+      "motion": {
+        "from": [
+          5.868387096774193,
+          8.588038166568918
+        ],
+        "to": [
+          9,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -137,7 +457,27 @@ HARD_DROP_CONVERGENCE {
       "step": 5,
       "id": 1,
       "from": 7.89548046184589,
-      "to": 7.879488685935407
+      "to": 7.879488685935407,
+      "visual": [
+        7.67509637607921,
+        7.879488685935407
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -145,7 +485,27 @@ HARD_DROP_CONVERGENCE {
       "step": 5,
       "id": 3,
       "from": 8.878449794178023,
-      "to": 8.864941852799381
+      "to": 8.864941852799381,
+      "visual": [
+        6.632673159950846,
+        8.864941852799381
+      ],
+      "motion": {
+        "from": [
+          5.868387096774193,
+          8.588038166568918
+        ],
+        "to": [
+          9,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -153,7 +513,27 @@ HARD_DROP_CONVERGENCE {
       "step": 6,
       "id": 1,
       "from": 7.879488685935407,
-      "to": 7.8660323908349765
+      "to": 7.8660323908349765,
+      "visual": [
+        7.775963374616869,
+        7.8660323908349765
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -161,7 +541,27 @@ HARD_DROP_CONVERGENCE {
       "step": 6,
       "id": 3,
       "from": 8.864941852799381,
-      "to": 8.854859754267485
+      "to": 8.854859754267485,
+      "visual": [
+        6.743170396338385,
+        8.854859754267485
+      ],
+      "motion": {
+        "from": [
+          5.868387096774193,
+          8.588038166568918
+        ],
+        "to": [
+          9,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -169,7 +569,27 @@ HARD_DROP_CONVERGENCE {
       "step": 7,
       "id": 1,
       "from": 7.8660323908349765,
-      "to": 7.855989034095841
+      "to": 7.855989034095841,
+      "visual": [
+        7.876622209967543,
+        7.855989034095841
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -177,7 +597,27 @@ HARD_DROP_CONVERGENCE {
       "step": 7,
       "id": 3,
       "from": 8.854859754267485,
-      "to": 8.848375171808122
+      "to": 8.848375171808122,
+      "visual": [
+        6.85412073758254,
+        8.848375171808122
+      ],
+      "motion": {
+        "from": [
+          5.868387096774193,
+          8.588038166568918
+        ],
+        "to": [
+          9,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -185,7 +625,27 @@ HARD_DROP_CONVERGENCE {
       "step": 8,
       "id": 1,
       "from": 7.855989034095841,
-      "to": 7.849786887965946
+      "to": 7.849786887965946,
+      "visual": [
+        7.977276314864911,
+        7.849786887965946
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -193,7 +653,27 @@ HARD_DROP_CONVERGENCE {
       "step": 8,
       "id": 3,
       "from": 8.848375171808122,
-      "to": 8.845481680518743
+      "to": 8.845481680518743,
+      "visual": [
+        6.964470489323938,
+        8.845481680518743
+      ],
+      "motion": {
+        "from": [
+          5.868387096774193,
+          8.588038166568918
+        ],
+        "to": [
+          9,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -201,7 +681,27 @@ HARD_DROP_CONVERGENCE {
       "step": 9,
       "id": 1,
       "from": 7.849786887965946,
-      "to": 7.847540573481891
+      "to": 7.847540573481891,
+      "visual": [
+        8.077959819209012,
+        7.847540573481891
+      ],
+      "motion": {
+        "from": [
+          6.868387096774193,
+          7.588038166568918
+        ],
+        "to": [
+          10,
+          9
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 11,
+        "gid": 11,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -209,7 +709,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 1,
       "from": 8.988652436322894,
-      "to": 8.981872280003754
+      "to": 8.981872280003754,
+      "visual": [
+        9.86508593635599,
+        8.981872280003754
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -217,7 +737,27 @@ HARD_DROP_CONVERGENCE {
       "step": 1,
       "id": 2,
       "from": 9.988652436322894,
-      "to": 9.969337951511221
+      "to": 9.969337951511221,
+      "visual": [
+        10.901780029511213,
+        9.969337951511221
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -225,7 +765,27 @@ HARD_DROP_CONVERGENCE {
       "step": 2,
       "id": 1,
       "from": 8.981872280003754,
-      "to": 8.967320533853924
+      "to": 8.967320533853924,
+      "visual": [
+        9.761455918811523,
+        8.967320533853924
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -233,7 +793,27 @@ HARD_DROP_CONVERGENCE {
       "step": 2,
       "id": 2,
       "from": 9.969337951511221,
-      "to": 9.946904137322509
+      "to": 9.946904137322509,
+      "visual": [
+        10.820345849038471,
+        9.946904137322509
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -241,7 +821,27 @@ HARD_DROP_CONVERGENCE {
       "step": 3,
       "id": 1,
       "from": 8.967320533853924,
-      "to": 8.948118570021565
+      "to": 8.948118570021565,
+      "visual": [
+        9.65893266562049,
+        8.948118570021565
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -249,7 +849,27 @@ HARD_DROP_CONVERGENCE {
       "step": 3,
       "id": 2,
       "from": 9.946904137322509,
-      "to": 9.924321174319823
+      "to": 9.924321174319823,
+      "visual": [
+        10.727148667224986,
+        9.924321174319823
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -257,7 +877,27 @@ HARD_DROP_CONVERGENCE {
       "step": 4,
       "id": 1,
       "from": 8.948118570021565,
-      "to": 8.927001712421443
+      "to": 8.927001712421443,
+      "visual": [
+        9.557535064880126,
+        8.927001712421443
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -265,7 +905,27 @@ HARD_DROP_CONVERGENCE {
       "step": 4,
       "id": 2,
       "from": 9.924321174319823,
-      "to": 9.903248936167268
+      "to": 9.903248936167268,
+      "visual": [
+        10.625628728556539,
+        9.903248936167268
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -273,7 +933,27 @@ HARD_DROP_CONVERGENCE {
       "step": 5,
       "id": 1,
       "from": 8.927001712421443,
-      "to": 8.906174485207258
+      "to": 8.906174485207258,
+      "visual": [
+        9.456983035754371,
+        8.906174485207258
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -281,7 +961,27 @@ HARD_DROP_CONVERGENCE {
       "step": 5,
       "id": 2,
       "from": 9.903248936167268,
-      "to": 9.884787836653985
+      "to": 9.884787836653985,
+      "visual": [
+        10.518560976892283,
+        9.884787836653985
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -289,7 +989,27 @@ HARD_DROP_CONVERGENCE {
       "step": 6,
       "id": 1,
       "from": 8.906174485207258,
-      "to": 8.887309094813846
+      "to": 8.887309094813846,
+      "visual": [
+        9.356924360351288,
+        8.887309094813846
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -297,7 +1017,27 @@ HARD_DROP_CONVERGENCE {
       "step": 6,
       "id": 2,
       "from": 9.884787836653985,
-      "to": 9.869610083987489
+      "to": 9.869610083987489,
+      "visual": [
+        10.408235113651871,
+        9.869610083987489
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -305,7 +1045,27 @@ HARD_DROP_CONVERGENCE {
       "step": 7,
       "id": 1,
       "from": 8.887309094813846,
-      "to": 8.871554829041129
+      "to": 8.871554829041129,
+      "visual": [
+        9.257012007560444,
+        8.871554829041129
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -313,7 +1073,27 @@ HARD_DROP_CONVERGENCE {
       "step": 7,
       "id": 2,
       "from": 9.869610083987489,
-      "to": 9.858055435249803
+      "to": 9.858055435249803,
+      "visual": [
+        10.296458813245934,
+        9.858055435249803
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -321,7 +1101,27 @@ HARD_DROP_CONVERGENCE {
       "step": 8,
       "id": 1,
       "from": 8.871554829041129,
-      "to": 8.859588793799565
+      "to": 8.859588793799565,
+      "visual": [
+        9.156983322763297,
+        8.859588793799565
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -329,7 +1129,27 @@ HARD_DROP_CONVERGENCE {
       "step": 8,
       "id": 2,
       "from": 9.858055435249803,
-      "to": 9.85022639446025
+      "to": 9.85022639446025,
+      "visual": [
+        10.18455883457337,
+        9.85022639446025
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -337,7 +1157,27 @@ HARD_DROP_CONVERGENCE {
       "step": 9,
       "id": 1,
       "from": 8.859588793799565,
-      "to": 8.851712087950535
+      "to": 8.851712087950535,
+      "visual": [
+        9.056714240216762,
+        8.851712087950535
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -345,7 +1185,27 @@ HARD_DROP_CONVERGENCE {
       "step": 9,
       "id": 2,
       "from": 9.85022639446025,
-      "to": 9.846077971761789
+      "to": 9.846077971761789,
+      "visual": [
+        10.073429273725429,
+        9.846077971761789
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -353,7 +1213,27 @@ HARD_DROP_CONVERGENCE {
       "step": 10,
       "id": 1,
       "from": 8.851712087950535,
-      "to": 8.847968724826396
+      "to": 8.847968724826396,
+      "visual": [
+        8.956231972331365,
+        8.847968724826396
+      ],
+      "motion": {
+        "from": [
+          9.96516129032258,
+          8.988652436322894
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     },
     {
       "type": "tracked-upward-motion",
@@ -361,7 +1241,27 @@ HARD_DROP_CONVERGENCE {
       "step": 10,
       "id": 2,
       "from": 9.846077971761789,
-      "to": 9.845490400514432
+      "to": 9.845490400514432,
+      "visual": [
+        9.963630364030301,
+        9.845490400514432
+      ],
+      "motion": {
+        "from": [
+          10.96516129032258,
+          9.988652436322894
+        ],
+        "to": [
+          8,
+          11
+        ],
+        "kind": "GROUP_SLOPE_TRANSLATE",
+        "arc": null,
+        "pathN": 1,
+        "protect": 12,
+        "gid": 12,
+        "rigid": true
+      }
     }
   ]
 }
