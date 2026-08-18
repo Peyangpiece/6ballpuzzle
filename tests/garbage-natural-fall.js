@@ -21,7 +21,6 @@ function densePile(g,variant){
 }
 function actualPathCanAdvance(g,q){
  if(!Array.isArray(q.b.fallPath)||!q.b.fallPath.length)return false;
- if(window.__hexGarbageLocalConflictIds(g).has(q.b.id))return false;
  const seg=q.b.fallPath[0],now=Math.max(0,g.pileFlowClock||0),start=Number(seg?.pileFlowStart),end=Number(seg?.pileFlowEnd);
  if(!Array.isArray(seg?.to))return false;
  if(Number.isFinite(start)&&start>now+1e-7&&seg.garbageRealCollisionDelay)return false;
@@ -38,10 +37,11 @@ function actualPathCanAdvance(g,q){
 }
 
 expect(window.__hexNaturalGarbageFall===true,"natural garbage fall override missing");
-expect(window.__hexGarbageLocalConflictQueue===true,"local garbage conflict queue missing");
+expect(window.__hexGarbageLocalConflictQueue===false,"predictive garbage queue still enabled");
 expect(window.__hexGarbageGlobalQueueDisabled===true,"legacy visual queue still enabled");
 expect(window.__hexGarbagePostResolveClamp===true,"post-resolve garbage clamp missing");
-expect(typeof window.__hexGarbageLocalConflictIds==="function","local conflict API missing");
+expect(typeof window.__hexGarbageLocalConflictIds==="function","garbage conflict API missing");
+expect(window.__hexGarbageLocalConflictIds(createEngine(77)).size===0,"predictive garbage hold set is not empty");
 
 let globalMaxStall=0,globalConcurrent=0,globalMin=Infinity,totalMovedFrames=0;
 const caseStats=[];
@@ -59,7 +59,7 @@ for(const [variant,type] of [[0,"PYRAMID"],[1,"HEXAGON"],[1,"STRAIGHT"]]){
     const moved=physical(p,now);if(moved>0.001)concurrent++;
     if(actualPathCanAdvance(g,q)&&moved<1e-5){
       const n=(stall.get(q.b.id)||0)+1;stall.set(q.b.id,n);maxStall=Math.max(maxStall,n);
-      expect(n<=6,"unsupported garbage froze in air: "+JSON.stringify({type,variant,frame,id:q.b.id,local:[...window.__hexGarbageLocalConflictIds(g)],visual:now,logical:[q.x,q.y],path:q.b.fallPath?.[0]}));
+      expect(n<=6,"unsupported garbage froze in air: "+JSON.stringify({type,variant,frame,id:q.b.id,visual:now,logical:[q.x,q.y],path:q.b.fallPath?.[0]}));
     }else stall.set(q.b.id,0);
    }
    prev.set(q.b.id,now);
@@ -68,7 +68,7 @@ for(const [variant,type] of [[0,"PYRAMID"],[1,"HEXAGON"],[1,"STRAIGHT"]]){
   maxConcurrent=Math.max(maxConcurrent,concurrent);
   for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
    const d=physical([list[i].v.x,list[i].v.y],[list[j].v.x,list[j].v.y]);globalMin=Math.min(globalMin,d);
-   expect(d>=HEX_MIN_DIST-5e-4,"garbage overlap during natural fall: "+JSON.stringify({type,variant,frame,d,local:[...window.__hexGarbageLocalConflictIds(g)],a:list[i].b.id,b:list[j].b.id}));
+   expect(d>=HEX_MIN_DIST-5e-4,"garbage overlap during natural fall: "+JSON.stringify({type,variant,frame,d,a:list[i].b.id,b:list[j].b.id}));
   }
  }
  expect(movedFrames>0,"garbage never moved in fixture: "+JSON.stringify({type,variant,maxConcurrent,maxStall}));
