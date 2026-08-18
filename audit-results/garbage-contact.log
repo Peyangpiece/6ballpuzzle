@@ -10,13 +10,13 @@ garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
 garbage-to-garbage visible overlap guard PASS {"actual":{"d":0.9999999990377815,"a":{"kind":"board","id":20,"x":8,"y":9,"logical":[8,9],"settled":true,"pathLen":0,"seq":0,"seg":null},"b":{"kind":"board","id":21,"x":6.9999593690246975,"y":8.000013545308276,"logical":[5,10],"settled":false,"pathLen":2,"seq":48,"seg":{"from":[6.9999996392789985,8.000693513729225],"to":[6,9],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":1.0909534353354422,"end":1.2575722579932305}},"variant":1,"type":"STRAIGHT","frame":128},"render":{"d":0.9999999990377815,"a":{"kind":"board","id":20,"x":8,"y":9,"logical":[8,9],"settled":true,"pathLen":0,"seq":0,"seg":null},"b":{"kind":"board","id":21,"x":6.9999593690246975,"y":8.000013545308276,"logical":[5,10],"settled":false,"pathLen":2,"seq":48,"seg":{"from":[6.9999996392789985,8.000693513729225],"to":[6,9],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":1.0909534353354422,"end":1.2575722579932305}},"variant":1,"type":"STRAIGHT","frame":128}}
-evalmachine.<anonymous>:4911
+evalmachine.<anonymous>:4857
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":15,"local":[19],"visual":[7,6.8452994616207485],"logical":[5,10],"path":{"from":[7,6.8452994616207485],"to":[6,7],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":1,"pileFlowStart":0.9653398677154814,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":0.9950659494450933,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":true,"garbageGridEntryHandoff":true}}
-    at expect (evalmachine.<anonymous>:4911:34)
-    at evalmachine.<anonymous>:4951:7
+Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":15,"local":[19],"visual":[7,6.8452994616207485],"logical":[5,10],"path":{"from":[7,6.8452994616207485],"to":[6,7],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":1,"pileFlowStart":0.9653398677154814,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":0.9950659494450933,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":true,"garbageGridEntryHandoff":true,"garbageRealCollisionDelay":true,"garbageRealCollisionDelayCount":8}}
+    at expect (evalmachine.<anonymous>:4857:34)
+    at evalmachine.<anonymous>:4897:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
