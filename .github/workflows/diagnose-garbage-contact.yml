@@ -20,48 +20,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run reference pile-contact and CPU audits
+      - name: Run unified garbage and core physics audits
         shell: bash
         run: |
           set +e
           mkdir -p audit-results
           : > audit-results/garbage-contact.log
 
-          node tests/garbage-airborne-pass-through.js >> audit-results/garbage-contact.log 2>&1
+          node tests/garbage-normal-physics.js >> audit-results/garbage-contact.log 2>&1
           A=$?
-          node tests/garbage-airborne-rigidity.js >> audit-results/garbage-contact.log 2>&1
-          B=$?
-          node tests/garbage-gridified-motion-diagnostic.js >> audit-results/garbage-contact.log 2>&1
-          C=$?
-          node tests/garbage-overlap-frame-diagnostic.js >> audit-results/garbage-contact.log 2>&1
-          D=$?
-          node tests/garbage-settle-state.js >> audit-results/garbage-contact.log 2>&1
-          E=$?
-          node tests/ai-technique-levels.js >> audit-results/garbage-contact.log 2>&1
-          F=$?
-          node tests/garbage-swept-tunnel.js >> audit-results/garbage-contact.log 2>&1
-          G=$?
           node tests/pile-arc-motion.js >> audit-results/garbage-contact.log 2>&1
-          H=$?
-          node tests/garbage-original-pile-grid.js >> audit-results/garbage-contact.log 2>&1
-          I=$?
-          node tests/garbage-no-impact.js >> audit-results/garbage-contact.log 2>&1
-          J=$?
-          node tests/garbage-stacks-on-pile.js >> audit-results/garbage-contact.log 2>&1
-          K=$?
-          node tests/garbage-garbage-visible-overlap.js >> audit-results/garbage-contact.log 2>&1
-          L=$?
-          node tests/garbage-natural-fall.js >> audit-results/garbage-contact.log 2>&1
-          M=$?
+          B=$?
+          node tests/ai-technique-levels.js >> audit-results/garbage-contact.log 2>&1
+          C=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ] && [ "$K" -eq 0 ] && [ "$L" -eq 0 ] && [ "$M" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","continuousContact":%s,"airborneRigidity":%s,"monotoneAfterContact":%s,"overlap":%s,"settleState":%s,"aiTechnique":%s,"sweptTunnel":%s,"pileArc":%s,"originalPileGrid":%s,"noImpact":%s,"stackOnPile":%s,"garbageVisibleOverlap":%s,"naturalFall":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" "$K" "$L" "$M" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"pileArc":%s,"aiTechnique":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add audit-results/garbage-contact.log audit-results/garbage-contact.json
-          git commit -m 'Record garbage pile-contact audit [skip ci]' || true
+          git commit -m 'Record unified garbage audit [skip ci]' || true
           git pull --rebase origin main
           git push origin HEAD:main
 
