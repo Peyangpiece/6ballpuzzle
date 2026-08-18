@@ -9,7 +9,7 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:31
+/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:33
    const [dx,dy]=pack.pat[i];pts.push({kind:"pack",id:`p${pack.seq}:${i}`,x:pack.ax+dx,y:pack.y+dy});
                                                        ^^
 
