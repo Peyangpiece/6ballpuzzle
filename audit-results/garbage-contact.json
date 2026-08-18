@@ -1,1 +1,1 @@
-{"sha":"3610472df4a8e987554b16a72cd480b50327aa51","status":"pass","continuousContact":0,"airborneRigidity":0,"monotoneAfterContact":0,"overlap":0,"settleState":0,"aiTechnique":0,"sweptTunnel":0,"pileArc":0}
+{"sha":"fb3562c990746a1d992757b50a6c84372d381fb5","status":"fail","continuousContact":0,"airborneRigidity":0,"monotoneAfterContact":0,"overlap":0,"settleState":1,"aiTechnique":0,"sweptTunnel":0,"pileArc":0}
