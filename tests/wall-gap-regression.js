@@ -1,7 +1,7 @@
 const fs=require("fs");
 const vm=require("vm");
 
-const runtime=["app-01.js","app-02.js","app-03.js","app-07.js","app-clear-gap-collapse.js","app-floor-gap-invariant.js","app-wall-gap-invariant.js"]
+const runtime=["app-01.js","app-02.js","app-03.js","app-07.js","app-clear-gap-collapse.js","app-floor-gap-invariant.js","app-wall-gap-invariant.js","app-wall-direct-support-fill.js"]
   .map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const assertions=String.raw`
@@ -27,6 +27,7 @@ expect(window.__hexWallGapInvariant===true,"wall no-gap invariant was not instal
 expect(window.__hexWallGapAllowed===false,"wall-gap policy is not strict");
 expect(window.__hexWallAlternatingParityCompaction===true,"alternating wall parity compaction missing");
 expect(window.__hexWallDynamicVacancyClosure===true,"dynamic wall vacancy closure missing");
+expect(window.__hexWallDirectSupportFill===true,"direct-support wall vacancy fill missing");
 expect(window.__hexFloorGapInvariant===true,"floor no-gap invariant was not installed");
 expect(window.__hexFloorAdjacentGapAllowed===false,"floor-gap policy is not strict");
 
@@ -122,6 +123,7 @@ for(const [x,y,label] of [[0,7,"left odd"],[18,7,"right odd"],[1,6,"left even"],
   expect(b[10][1]===outerSupport,"outer support did not reach its inward destination");
   expect(settlePass(b,false),"secondary wall vacancy did not trigger another gravity event");
   expect(b[8][1]===top,"pile movement left the even-row wall vacancy open");
+  expect(top.fallPath?.some(s=>s.kind==="WALL_DIRECT_SUPPORT_FILL"&&s.to[0]===1&&s.to[1]===8),"secondary wall vacancy did not use the real direct support");
   expect(b[11][0]===blocker,"wall blocker unexpectedly moved");
 }
 
