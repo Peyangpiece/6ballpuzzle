@@ -46,15 +46,18 @@ function buildPile(g,variant){
 
 expect(window.__hexGarbageVisibleOverlapGuard===true,"garbage render overlap guard is not installed");
 expect(window.__hexGarbageHardSeparation===true,"garbage hard-separation guard is not installed");
-expect(window.__hexNaturalGarbageFall===true,"natural garbage fall override is not installed");
+expect(window.__hexGarbageLocalConflictQueue===true,"local garbage conflict queue is not installed");
 {
  const qg=createEngine(99491);qg.state="RESOLVING";qg.phase="GARBAGE";
- const early=put(qg,4,7,0);early.isGarbage=true;
- const late=put(qg,8,7,1);late.isGarbage=true;
- early.fallPath=[{from:[4,7],to:[5,8],motionSeq:0,pileFlow:true,pileFlowOriginalSeq:42,pileFlowStart:0,pileFlowEnd:1}];
- late.fallPath=[{from:[8,7],to:[7,8],motionSeq:0,pileFlow:true,pileFlowOriginalSeq:44,pileFlowStart:0,pileFlowEnd:1}];
- const q=__hexdropGarbageMotionQueue(qg);
- expect(q.queued.size===0,"garbage was globally serialized instead of collision-gated");
+ const a=put(qg,4,7,0),b=put(qg,8,7,1);a.isGarbage=b.isGarbage=true;
+ a.fallPath=[{from:[4,7],to:[5,8],motionSeq:0,pileFlow:true,pileFlowOriginalSeq:42,pileFlowStart:0,pileFlowEnd:1}];
+ b.fallPath=[{from:[8,7],to:[7,8],motionSeq:0,pileFlow:true,pileFlowOriginalSeq:44,pileFlowStart:0,pileFlowEnd:1}];
+ let q=__hexdropGarbageMotionQueue(qg);
+ expect(q.queued.size===0,"independent garbage paths were globally serialized");
+ b.fallPath=[{from:[6,7],to:[5,8],motionSeq:0,pileFlow:true,pileFlowOriginalSeq:44,pileFlowStart:0,pileFlowEnd:1}];
+ q=__hexdropGarbageMotionQueue(qg);
+ expect(q.queued.has(b.id),"later garbage entering the same intermediate cell was not locally queued");
+ expect(!q.queued.has(a.id),"earlier conflicting garbage was incorrectly queued");
 }
 
 let worstActual={d:Infinity},worstRender={d:Infinity};
