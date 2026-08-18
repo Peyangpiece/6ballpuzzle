@@ -1066,11 +1066,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 1,
       "frames": 1920,
-      "maxMs": 36,
-      "avgMs": 3.345,
+      "maxMs": 21,
+      "avgMs": 1.841,
       "maxCounts": {
         "step": 1081,
-        "ms": 5,
+        "ms": 3,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1085,11 +1085,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 7,
       "frames": 1920,
-      "maxMs": 29,
-      "avgMs": 3.442,
+      "maxMs": 15,
+      "avgMs": 1.879,
       "maxCounts": {
         "step": 995,
-        "ms": 5,
+        "ms": 3,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1104,11 +1104,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 19,
       "frames": 1920,
-      "maxMs": 13,
-      "avgMs": 3.453,
+      "maxMs": 7,
+      "avgMs": 1.872,
       "maxCounts": {
         "step": 980,
-        "ms": 5,
+        "ms": 3,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1123,11 +1123,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 37,
       "frames": 1920,
-      "maxMs": 16,
-      "avgMs": 3.343,
+      "maxMs": 6,
+      "avgMs": 1.777,
       "maxCounts": {
         "step": 985,
-        "ms": 4,
+        "ms": 3,
         "resolve": 3,
         "relax": 1,
         "final": 6,
