@@ -10,7 +10,6 @@
     if(typeof window==="undefined"||window.__hexTechniqueAwareCpu)return;
     window.__hexTechniqueAwareCpu=true;
 
-    // Keep the existing timing feel while changing what each level understands.
     Object.assign(AI_PARAMS[1],{think:.95,act:.30,random:.82,depth:0,name:"超弱い",technique:0,beam:0});
     Object.assign(AI_PARAMS[2],{think:.72,act:.22,random:.45,depth:0,name:"弱い",technique:.10,beam:0});
     Object.assign(AI_PARAMS[3],{think:.50,act:.16,random:.15,depth:0,name:"普通",technique:.36,beam:0});
@@ -28,8 +27,6 @@
         return [p,p.map(([x,y])=>[x,maxY-y])];
     }
 
-    // Precompute every legal translated technique footprint once. Evaluating a
-    // move then only scans six cells per footprint instead of searching anchors.
     const placements=[];
     const seenPlacement=new Set();
     for(const [type,patterns] of [
@@ -64,19 +61,14 @@
             }
             if(mixed||occupied===0)continue;
             let value=MATCH_VALUE[Math.min(6,occupied)]*TYPE_VALUE[pl.type];
-            // Lower constructions are safer and more realistically buildable.
             value*=1+Math.max(0,pl.bottom-(ROWS-5))*.025;
-            // Level 4/5 also understand whether the known incoming set contains
-            // the colour needed to finish the current target.
             if(level>=4&&color!==null&&Array.isArray(availableColors)){
                 const avail=availableColors.reduce((n,c)=>n+(c===color?1:0),0);
                 value*=1+avail*(level===5?.10:.06);
             }
-            if(value>bestScore){secondScore=bestScore;bestScore=value;best={type,color,matched:occupied,cells:pl.cells};}
+            if(value>bestScore){secondScore=bestScore;bestScore=value;best={type:pl.type,color,matched:occupied,cells:pl.cells};}
             else if(value>secondScore)secondScore=value;
         }
-        // Preserve one secondary construction without letting scattered plans
-        // outweigh the strongest coherent target.
         return {score:(bestScore+secondScore*.18)*scale,best};
     }
 
@@ -95,8 +87,6 @@
             if(y<0||!valid(x,y)||settled[y][x]!==null)return null;
             settled[y][x]=c;
         }
-        // The live game resolves gravity before checking formations. Match that
-        // order so CPU planning cannot rely on a shape that would fall apart.
         settleAll(settled);
         const preClear=cloneHexGrid(settled,v=>v);
         const waza=immediateWaza(preClear);
@@ -108,8 +98,6 @@
     function wazaBonus(waza,level){
         if(level<=2)return 0;
         const k=level===3?.35:level===4?.72:1;
-        // Technique priority follows the game's own priority order. HEXAGON is
-        // deliberately most valuable at level 5, then PYRAMID, then STRAIGHT.
         return k*((waza.HEXAGON||0)*2300+(waza.PYRAMID||0)*1450+(waza.STRAIGHT||0)*260);
     }
 
@@ -120,18 +108,13 @@
 
         const after=techniquePotential(sim.b,level,knownNext);
         const gain=after.score-beforePotential;
-        const P=AI_PARAMS[level];
         score+=after.score*.64+gain*(level>=4?1.28:.72);
         score+=wazaBonus(sim.waza,level);
 
-        // A technique plan is never allowed to excuse an immediate overflow.
         const h=heightOf(sim.b);
         if(h>=ROWS-2)score-=level>=4?2600:1300;
         if(h>=ROWS-1)score-=6000;
 
-        // At the top levels, five-of-six is a real tactical threat and receives
-        // an extra completion-pressure bonus. This is what makes the CPU keep
-        // feeding the missing colour instead of abandoning a nearly built form.
         if(level>=4&&after.best){
             if(after.best.matched===5)score+=(after.best.type==="HEXAGON"?420:300)*(level===5?1.35:1);
             else if(after.best.matched===4)score+=(after.best.type==="HEXAGON"?105:80)*(level===5?1.2:1);
@@ -139,7 +122,6 @@
         return score;
     }
 
-    // Expose small read-only diagnostics for regression tests.
     window.__hexAiTechniquePotential=(board,level=5,next=null)=>techniquePotential(board,level,next);
     window.__hexAiSimulateDetailed=simulateDetailed;
 
@@ -179,8 +161,6 @@
                     future=Math.max(future,scoreDetailed(s2,level,nextBefore,null,rnd));
                 }
                 if(future>-1e11){
-                    // Strong still values the current move; Super Strong gives
-                    // NEXT more authority so it can deliberately build a setup.
                     const nowW=level===5?.36:.55;
                     c.s=c.s*nowW+future*(1-nowW);
                 }
