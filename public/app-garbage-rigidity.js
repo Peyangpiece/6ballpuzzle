@@ -2,14 +2,20 @@
  * The complete incoming garbage shape is one rigid body until its FIRST real
  * contact with the accumulated pile or floor. A physics frame is never allowed
  * to overshoot that first contact and start splitting the shape below it.
- * Only after the first contact event may individual members hand off to the
- * normal pile-contact / slide / split solver.
+ *
+ * At that first contact rigidity is released. Every remaining member is handed
+ * to the lattice from its exact current centre. If a member cannot be registered
+ * immediately because another rendered ball still occupies the required entry
+ * space, the unresolved remainder stays parked at the first-contact anchor and
+ * retries on later 120 Hz frames. It is never allowed to continue through the
+ * accumulated pile. Once registered, the normal lattice solver owns the ball:
+ * it free-falls or rolls on support arcs and is later promoted to accumulated
+ * pile by app-garbage-settle-state when its final visual/logical position agrees.
  */
 (function installGarbageAirborneRigidity(){
     if(typeof window==="undefined"||window.__hexGarbageAirborneRigidity)return;
     window.__hexGarbageAirborneRigidity=true;
 
-    const baseMaterializeThrough=materializeGarbageContactsThrough;
     const CONTACT_TIE_EPS=2e-6;
 
     function firstRigidContact(g,pack){
@@ -21,6 +27,30 @@
             else if(Math.abs(cy-y)<=CONTACT_TIE_EPS)hits.push({index:i,cy});
         }
         return Number.isFinite(y)?{y,hits}:null;
+    }
+
+    function releaseRemainingAtFirstContact(g,pack,anchorY){
+        if(!pack?.pat?.length)return 0;
+        let released=0;
+        let guard=Math.max(6,pack.pat.length*4);
+        while(pack.pat.length&&guard-->0){
+            // Lower members enter first. Their logical settle may immediately
+            // open the correct support geometry for higher members.
+            const order=pack.pat
+                .map((slot,index)=>({index,dy:slot[1],dx:slot[0]}))
+                .sort((a,b)=>b.dy-a.dy||Math.abs(a.dx)-Math.abs(b.dx)||b.index-a.index);
+            let progressed=false;
+            for(const q of order){
+                if(q.index>=pack.pat.length)continue;
+                if(materializeGarbageBallAtContact(g,pack,q.index,anchorY)){
+                    released++;
+                    progressed=true;
+                    break;
+                }
+            }
+            if(!progressed)break;
+        }
+        return released;
     }
 
     materializeGarbageContactsThrough=function(g,pack,desiredY){
@@ -35,17 +65,19 @@
             pack._pileContactStarted=true;
             pack._pileContactAnchorY=first.y;
             pack._pileContactClock=Number.isFinite(g?.garbageClock)?g.garbageClock:0;
+            pack._gridReleaseStarted=true;
 
-            let released=0;
-            const tied=first.hits.slice().sort((a,b)=>b.index-a.index);
-            for(const hit of tied){
-                if(hit.index>=pack.pat.length)continue;
-                if(materializeGarbageBallAtContact(g,pack,hit.index,first.y))released++;
-            }
-            return released;
+            return releaseRemainingAtFirstContact(g,pack,first.y);
         }
 
-        return baseMaterializeThrough(g,pack,desiredY);
+        // After the first physical contact this object is no longer an airborne
+        // rigid body. Any member that could not yet enter the lattice must remain
+        // at the original contact-height configuration rather than following the
+        // continuously increasing free-flight desiredY through the old pile.
+        const anchor=Number.isFinite(pack._pileContactAnchorY)?pack._pileContactAnchorY:pack.y;
+        pack.y=anchor;
+        pack.contactY=anchor;
+        return releaseRemainingAtFirstContact(g,pack,anchor);
     };
 
     function snapshotGarbageY(g){
