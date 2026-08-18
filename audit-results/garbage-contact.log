@@ -1,12 +1,12 @@
 garbage airborne pass-through + continuous pile contact PASS
-gridified garbage diagnostic {"totalUp":1,"upWorst":{"type":"HEXAGON","frame":151,"id":6,"prev":9.041328207125442,"now":9.000063686399725,"delta":0.041264520725716736,"logical":[1,10],"path":[]},"min":0.9999999999999987,"worst":{"type":"HEXAGON","frame":155,"d":0.9999999999999987,"a":{"id":5,"logical":[3,10],"visual":[3.5163865132697163,9.879565858628515],"path":[]},"b":{"id":1,"logical":[4,11],"visual":[4,11],"path":[]}},"pileMin":null,"pileWorst":null}
-evalmachine.<anonymous>:3670
+gridified garbage diagnostic {"totalUp":1,"upWorst":{"type":"HEXAGON","frame":163,"id":6,"prev":9.435394388677906,"now":8.010978852786439,"delta":1.4244155358914679,"logical":[7,10],"path":[]},"min":0.9999999990293273,"worst":{"type":"HEXAGON","frame":132,"d":0.9999999990293273,"a":{"id":3,"logical":[0,11],"visual":[1.294791157140247,9.957772310660669],"path":[]},"b":{"id":2,"logical":[2,11],"visual":[2.155769857781451,11],"path":[]}},"pileMin":null,"pileWorst":null}
+evalmachine.<anonymous>:3757
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: gridified garbage moved upward: {"type":"HEXAGON","frame":151,"id":6,"prev":9.041328207125442,"now":9.000063686399725,"delta":0.041264520725716736,"logical":[1,10],"path":[]}
-    at expect (evalmachine.<anonymous>:3670:34)
-    at evalmachine.<anonymous>:3699:1
+Error: gridified garbage moved upward: {"type":"HEXAGON","frame":163,"id":6,"prev":9.435394388677906,"now":8.010978852786439,"delta":1.4244155358914679,"logical":[7,10],"path":[]}
+    at expect (evalmachine.<anonymous>:3757:34)
+    at evalmachine.<anonymous>:3786:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
