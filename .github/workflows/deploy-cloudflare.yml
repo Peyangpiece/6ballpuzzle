@@ -32,6 +32,9 @@ jobs:
       - name: Run post-garbage clear-collapse regression
         run: node tests/garbage-post-clear-collapse.js
 
+      - name: Run game-over garbage fade regression
+        run: node tests/gameover-garbage-fade.js
+
       - name: Run airborne garbage pass-through regression
         run: node tests/garbage-airborne-pass-through.js
 
