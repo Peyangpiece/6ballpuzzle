@@ -1,0 +1,365 @@
+POST_CONTACT [
+  {
+    "seed": 6,
+    "rot": 0,
+    "orientation": "down",
+    "target": [
+      [
+        5,
+        8
+      ],
+      [
+        7,
+        8
+      ],
+      [
+        6,
+        9
+      ]
+    ],
+    "shadow": [
+      [
+        5.671290322580646,
+        9.136955274790436
+      ],
+      [
+        7.671290322580646,
+        9.136955274790436
+      ],
+      [
+        6.671290322580646,
+        10.136955274790436
+      ]
+    ],
+    "full": [
+      {
+        "from": [
+          5,
+          8
+        ],
+        "to": [
+          5,
+          10
+        ],
+        "kind": "GROUP_TRANSLATE",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          7,
+          8
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_TRANSLATE",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          6,
+          9
+        ],
+        "to": [
+          6,
+          11
+        ],
+        "kind": "GROUP_TRANSLATE",
+        "pivot": null,
+        "topPivot": null
+      }
+    ],
+    "independent": [
+      {
+        "from": [
+          5,
+          8
+        ],
+        "to": [
+          5,
+          10
+        ],
+        "kind": "FREE_FALL",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          7,
+          8
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "FREE_FALL",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          6,
+          9
+        ],
+        "to": [
+          6,
+          11
+        ],
+        "kind": "FREE_FALL",
+        "pivot": null,
+        "topPivot": null
+      }
+    ],
+    "pairs": [
+      {
+        "omit": 0,
+        "ids": [
+          8000061,
+          8000062
+        ],
+        "plan": [
+          {
+            "from": [
+              7,
+              8
+            ],
+            "to": [
+              7,
+              10
+            ],
+            "kind": "GROUP_TRANSLATE",
+            "pivot": null,
+            "topPivot": null
+          },
+          {
+            "from": [
+              6,
+              9
+            ],
+            "to": [
+              6,
+              11
+            ],
+            "kind": "GROUP_TRANSLATE",
+            "pivot": null,
+            "topPivot": null
+          }
+        ]
+      },
+      {
+        "omit": 1,
+        "ids": [
+          8000060,
+          8000062
+        ],
+        "plan": [
+          {
+            "from": [
+              5,
+              8
+            ],
+            "to": [
+              5,
+              10
+            ],
+            "kind": "GROUP_TRANSLATE",
+            "pivot": null,
+            "topPivot": null
+          },
+          {
+            "from": [
+              6,
+              9
+            ],
+            "to": [
+              6,
+              11
+            ],
+            "kind": "GROUP_TRANSLATE",
+            "pivot": null,
+            "topPivot": null
+          }
+        ]
+      },
+      {
+        "omit": 2,
+        "ids": [
+          8000060,
+          8000061
+        ],
+        "plan": []
+      }
+    ]
+  },
+  {
+    "seed": 9,
+    "rot": 3,
+    "orientation": "up",
+    "target": [
+      [
+        6,
+        7
+      ],
+      [
+        7,
+        8
+      ],
+      [
+        5,
+        8
+      ]
+    ],
+    "shadow": [
+      [
+        5.836129032258064,
+        8.951048739387893
+      ],
+      [
+        6.836129032258064,
+        9.951048739387893
+      ],
+      [
+        4.836129032258064,
+        9.951048739387893
+      ]
+    ],
+    "full": [
+      {
+        "from": [
+          6,
+          7
+        ],
+        "to": [
+          6,
+          9
+        ],
+        "kind": "GROUP_TRANSLATE",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          7,
+          8
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "GROUP_TRANSLATE",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          5,
+          8
+        ],
+        "to": [
+          5,
+          10
+        ],
+        "kind": "GROUP_TRANSLATE",
+        "pivot": null,
+        "topPivot": null
+      }
+    ],
+    "independent": [
+      {
+        "from": [
+          6,
+          7
+        ],
+        "to": [
+          6,
+          9
+        ],
+        "kind": "FREE_FALL",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          7,
+          8
+        ],
+        "to": [
+          7,
+          10
+        ],
+        "kind": "FREE_FALL",
+        "pivot": null,
+        "topPivot": null
+      },
+      {
+        "from": [
+          5,
+          8
+        ],
+        "to": [
+          5,
+          10
+        ],
+        "kind": "FREE_FALL",
+        "pivot": null,
+        "topPivot": null
+      }
+    ],
+    "pairs": [
+      {
+        "omit": 0,
+        "ids": [
+          8000091,
+          8000092
+        ],
+        "plan": [
+          {
+            "from": [
+              7,
+              8
+            ],
+            "to": [
+              7,
+              10
+            ],
+            "kind": "GROUP_TRANSLATE",
+            "pivot": null,
+            "topPivot": null
+          },
+          {
+            "from": [
+              5,
+              8
+            ],
+            "to": [
+              5,
+              10
+            ],
+            "kind": "GROUP_TRANSLATE",
+            "pivot": null,
+            "topPivot": null
+          }
+        ]
+      },
+      {
+        "omit": 1,
+        "ids": [
+          8000090,
+          8000092
+        ],
+        "plan": []
+      },
+      {
+        "omit": 2,
+        "ids": [
+          8000090,
+          8000091
+        ],
+        "plan": []
+      }
+    ]
+  }
+]
