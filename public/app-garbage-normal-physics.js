@@ -9,7 +9,7 @@
 (function installGarbageNormalPhysics(){
     if(typeof window==="undefined"||window.__hexGarbageNormalPhysics)return;
     window.__hexGarbageNormalPhysics=true;
-    window.__hexGarbageRuntimeVersion="normal-v2";
+    window.__hexGarbageRuntimeVersion="normal-v3";
 
     const NORMAL_GARBAGE_INTERVAL=0.5;
     const NORMAL_GARBAGE_SETTLE_TOL=0.06;
@@ -277,7 +277,27 @@
         for(const q of boardEntries(g)){
             delete q.ball.garbagePhaseFrozen;
             delete q.ball.garbageBubbleHold;
-            if(q.v){delete q.v.garbageLocalCollisionHeld;delete q.v.garbageQueueHeld;delete q.v.garbageSweepBlocked;}
+            delete q.ball.garbageSpawnHold;
+            delete q.ball.equilibriumLocked;
+            if(q.ball.isGarbage){
+                // Once the complete incoming batch has reached a quiescent board,
+                // every garbage ball is no longer an in-flight attack member: it
+                // is ordinary accumulated pile.  Mark this boundary explicitly so
+                // later post-clear arc binding may use garbage balls as real
+                // supports instead of treating them as stale transient obstacles.
+                q.ball.garbagePileSettled=true;
+                q.ball.garbageInitialRestReached=true;
+                q.ball.fixedGarbage=false;
+                hexPhysClearGroupBall(q.ball);
+                q.ball.rigid=false;
+            }
+            if(q.v){
+                delete q.v.garbageLocalCollisionHeld;
+                delete q.v.garbageQueueHeld;
+                delete q.v.garbageSweepBlocked;
+                q.v.vy=0;
+                q.v.motionSpeed=0;
+            }
         }
         g.activeGarbagePacks=[];
         g._pileFlowBallById=null;
@@ -295,4 +315,5 @@
     window.__hexGarbageAirbornePacketsDisabled=true;
     window.__hexGarbagePredictiveQueueDisabled=true;
     window.__hexGarbageExistingPileFrozenUntilDone=true;
+    window.__hexGarbageFinalizesIntoAccumulatedPile=true;
 })();
