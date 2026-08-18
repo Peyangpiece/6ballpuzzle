@@ -8,13 +8,13 @@ evalmachine.<anonymous>:4598
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage chain froze despite remaining gravity: {"type":1,"frame":222,"id":14,"cell":[2,7],"visual":[2,7],"path":[],"proposal":{"to":[1,8],"kind":"ROLL_LEFT","pivot":[3,8],"topPivot":null},"nearby":[{"id":22,"garbage":true,"frozen":false,"cell":[3,6],"visual":[3,6],"d":1,"path":[]},{"id":24,"garbage":true,"frozen":false,"cell":[4,7],"visual":[4,7],"d":1,"path":[]},{"id":16,"garbage":true,"frozen":false,"cell":[3,8],"visual":[3,8],"d":1,"path":[]}]}
+Error: finished garbage still had downward/open-gap move: {"type":1,"id":14,"cell":[2,7],"to":[1,8],"kind":"ROLL_LEFT","pivot":[3,8],"topPivot":null}
     at expect (evalmachine.<anonymous>:4598:34)
-    at evalmachine.<anonymous>:4639:4
+    at evalmachine.<anonymous>:4654:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-chain-settle.js:68:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-chain-settle.js:72:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
