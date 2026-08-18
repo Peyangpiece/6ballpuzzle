@@ -19,7 +19,6 @@ function relSignature(pack){
 {
  const g=createEngine(93001);let id=900000;
  function put(x,y,c=0){const b={id:id++,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};g.board[y][x]=b;setVis(g,b,x,y,0);return b;}
- // One raised pile contact below the left member. Other members still have air.
  put(5,7,0);put(4,8,1);put(6,8,2);put(3,9,3);put(7,9,4);
  const pack={
    type:"PYRAMID",seq:91,pat:[[0,0],[2,0],[-1,1],[1,1],[-2,2],[0,2]],
@@ -32,7 +31,6 @@ function relSignature(pack){
  for(let i=0;i<pack.pat.length;i++)first=Math.min(first,hexGarbageBallContactY(g,pack,i));
  expect(Number.isFinite(first),"rigid fixture has no contact");
 
- // Immediately before contact, the packet must still be one unchanged rigid shape.
  pack.y=first-0.01;
  const sig0=relSignature(pack);
  const pre=materializeGarbageContactsThrough(g,pack,first-0.01);
@@ -42,8 +40,6 @@ function relSignature(pack){
  const sig1=relSignature(pack);
  expect(sig0.length===sig1.length&&sig0.every((d,i)=>close(d,sig1[i])),"airborne garbage relative distances changed before contact");
 
- // Even if a physics frame overshoots, the rigid body itself stops exactly at
- // the earliest physical contact. Splitting is permitted only from this point.
  const released=materializeGarbageContactsThrough(g,pack,first+0.75);
  expect(pack._pileContactStarted===true,"first pile contact did not unlock splitting");
  expect(close(pack.y,first,2e-6),"rigid garbage overshot its first pile contact: "+JSON.stringify({first,y:pack.y}));
@@ -52,14 +48,13 @@ function relSignature(pack){
  expect(pack.pat.length>0,"isolated first contact incorrectly dissolved entire shape in one overshoot frame");
 }
 
-// Full runtime: each generated garbage packet keeps exact shape distances for
-// every sampled frame until its first accumulated-pile/floor contact.
 for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
  const g=createEngine(93010+type.length);g.garbShapes=[type];prepareGarbageBatch(g);
  const p=g.garbagePlans[0];
  let baseline=null,guard=0;
  while(!p._pileContactStarted&&guard++<720){
    updateGarbagePacks(g,PHYSICS_FRAME);
+   if(p._pileContactStarted)break;
    if(p._started&&p.pat.length>1){
      const sig=relSignature(p);
      if(!baseline)baseline=sig;
