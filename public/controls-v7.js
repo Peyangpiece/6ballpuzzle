@@ -5,10 +5,6 @@
  * - short tap in the play area: rotate toward the tapped half
  * - short tap in the bottom drop zone: instant drop
  * - one-finger long press in the lower half: fast fall only while held
- *
- * The previous revision accidentally changed drop / fast-fall to two-finger
- * gestures and, because this file disables App's legacy pointer listeners, that
- * made the shipped mobile controls disagree with the intended game controls.
  */
 (function installHexControlsV7(){
     if(typeof document==="undefined"||window.__hexControlsV7Installed)return;
@@ -32,16 +28,17 @@
     const TAP_MOVE_TOL=20;
     const DRAG_START_TOL=4;
     const DRAG_AXIS_RATIO=.60;
+    // Real touch contacts wander a few pixels even when the finger is intended
+    // to stay still. Do not cancel lower-half long press on that sensor jitter.
+    // A deliberate swipe still takes over immediately once it is unambiguous.
+    const HOLD_JITTER_TOL=18;
+    const HOLD_DRAG_COMMIT_TOL=22;
 
     const isCanvas=e=>e?.target?.tagName==="CANVAS";
     const player=()=>{
         const list=window.__hexEnginesV7||[];
         for(let i=list.length-1;i>=0;i--){
             const g=list[i];
-            // CPU boards and NET mirror boards never own local touch. The
-            // newest remaining local-human engine owns this canvas even while
-            // READY; if it is not PLAYING yet, input is disabled instead of
-            // leaking into an older match that is still left in PLAYING.
             if(!g||g.ai||g.state==="NET")continue;
             return g.state==="PLAYING"&&g.piece?g:null;
         }
@@ -60,7 +57,10 @@
 
     function instantVerticalDrop(g){
         if(!validGame(g))return false;
-        stopFast(g);hardDrop(g);return true;
+        stopFast(g);
+        const beforeState=g.state,beforePiece=g.piece,beforeId=g.nextId;
+        const ok=hardDrop(g);
+        return ok===true||g.state!==beforeState||g.piece!==beforePiece||g.nextId!==beforeId;
     }
     window.__hexInstantDropV7=instantVerticalDrop;
 
@@ -82,8 +82,6 @@
         const g=player();if(!validGame(g))return;
         consume(e);try{Sfx.init();}catch(_){}
 
-        // Multi-touch has no gameplay command.  Cancel the current gesture so
-        // an accidental second contact can never trigger drop/fast-fall.
         if(pointers.size){resetAll("multi-touch-cancel");return;}
 
         const p=point(e,e.target);
@@ -103,7 +101,7 @@
             rec.holdTimer=setTimeout(()=>{
                 const live=pointers.get(rec.id);
                 if(live!==rec||!rec.fastEligible||rec.dragActive||!validGame(rec.g))return;
-                rec.longActive=true;rec.tapEligible=false;
+                rec.longActive=true;rec.tapEligible=false;rec.holdTimer=null;
                 if(!rec.g.fastForward)emit(rec.g,{t:"fast"});
                 rec.g.fastForward=true;
             },HOLD_MS);
@@ -121,8 +119,16 @@
             if(dist>TAP_MOVE_TOL){rec.tapEligible=false;clearHold(rec);}
             return;
         }
+
+        const elapsed=performance.now()-rec.downAt;
+        // Lower-half hold and horizontal drag share one finger. During the
+        // long-press decision window, ignore only tiny sensor drift. A clear
+        // horizontal trace (>22 virtual px) still becomes drag immediately.
+        if(rec.fastEligible&&!rec.dragActive&&elapsed<HOLD_MS&&dist<=HOLD_JITTER_TOL)return;
+
         if(!rec.dragActive){
-            const horizontalEnough=Math.abs(dx)>=DRAG_START_TOL&&Math.abs(dx)>=Math.abs(dy)*DRAG_AXIS_RATIO;
+            const threshold=rec.fastEligible&&elapsed<HOLD_MS?HOLD_DRAG_COMMIT_TOL:DRAG_START_TOL;
+            const horizontalEnough=Math.abs(dx)>=threshold&&Math.abs(dx)>=Math.abs(dy)*DRAG_AXIS_RATIO;
             if(horizontalEnough)beginDrag(rec);
             else if(dist>TAP_MOVE_TOL){rec.tapEligible=false;clearHold(rec);return;}
         }
@@ -131,12 +137,21 @@
 
     const finish=(e,cancelled)=>{
         const rec=pointers.get(e.pointerId);if(!rec)return;
-        consume(e);pointers.delete(rec.id);clearHold(rec);releaseCapture(rec);
+        consume(e);
+        // Some mobile browsers deliver the final coordinate only on pointerup.
+        // Fold it into tap/drag classification before removing the pointer.
+        try{const p=point(e,rec.canvas);rec.lastX=p.x;rec.lastY=p.y;}catch(_){}
+        pointers.delete(rec.id);clearHold(rec);releaseCapture(rec);
         const g=rec.g,wasLong=rec.longActive;
         if(wasLong)stopFast(g);
 
         if(g&&rec.dragActive){
-            if(Number.isFinite(g.freeX))g.pieceVX=g.freeX;
+            if(Number.isFinite(g.freeX)){
+                // Keep the exact off-grid X. Active vertical legality is
+                // continuous; only lock() performs the final lattice handoff.
+                setFreeX(g,g.freeX);
+                g.pieceVX=g.freeX;
+            }
             g.dragging=false;
         }
 
@@ -156,7 +171,10 @@
         }
         for(const g of engines){
             stopFast(g);
-            if(g.piece&&Number.isFinite(g.freeX))g.pieceVX=g.freeX;
+            if(g.piece&&Number.isFinite(g.freeX)){
+                setFreeX(g,g.freeX);
+                g.pieceVX=g.freeX;
+            }
             g.dragging=false;
         }
         pointers.clear();
