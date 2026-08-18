@@ -26,12 +26,18 @@
         return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);
     }
 
-    function isUsablePileSupport(ball){
+    function isUsablePileSupport(ball,reason="pile_flow"){
         if(!ball)return false;
         if(!ball.isGarbage)return true;
-        // A de-rigidified incoming garbage ball is not accumulated pile until
-        // its first landing has fully settled (the settle-state gate contract).
-        return ball.garbagePileSettled===true;
+        if(ball.garbagePileSettled===true)return true;
+        // Defensive compatibility for boards produced by an older garbage
+        // finalizer. A clear can only run after the GARBAGE phase has ended, so
+        // a quiescent garbage ball encountered during clear_support_loss is an
+        // accumulated pile support even if the historical settled marker is
+        // missing. Never apply this fallback to an airborne/frozen attack ball.
+        return reason==="clear_support_loss"&&
+            !ball.garbagePhaseFrozen&&!ball.garbageBubbleHold&&
+            !(Array.isArray(ball.fallPath)&&ball.fallPath.length);
     }
 
     function ballLogicalCell(g,ball){
@@ -50,11 +56,11 @@
         return false;
     }
 
-    function supportAtHistoricalPivot(g,moving,px,py){
+    function supportAtHistoricalPivot(g,moving,px,py,reason="pile_flow"){
         let best=null;
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
             const ball=valid(x,y)?g.board[y][x]:null;
-            if(!ball||ball===moving||!isUsablePileSupport(ball))continue;
+            if(!ball||ball===moving||!isUsablePileSupport(ball,reason))continue;
             let rank=99;
             if(x===px&&y===py)rank=0;
             else if(pathTouchesPoint(ball,px,py))rank=1;
@@ -71,8 +77,8 @@
         return best?.ball||null;
     }
 
-    function bindSupport(g,ball,seg,pivot){
-        const support=supportAtHistoricalPivot(g,ball,pivot[0],pivot[1]);
+    function bindSupport(g,ball,seg,pivot,reason="pile_flow"){
+        const support=supportAtHistoricalPivot(g,ball,pivot[0],pivot[1],reason);
         if(!support)return false;
         seg.pivot=[pivot[0],pivot[1]];
         seg.followSupportIds=[support.id];
@@ -94,7 +100,7 @@
         // its final logical cell and only retains the old pivot in fallPath.
         if(seg.pivot){
             const d0=physicalDist(seg.from,seg.pivot),d1=physicalDist(seg.to,seg.pivot);
-            if(Math.abs(d0-1)<=ARC_EPS&&Math.abs(d1-1)<=ARC_EPS)bindSupport(g,ball,seg,seg.pivot);
+            if(Math.abs(d0-1)<=ARC_EPS&&Math.abs(d1-1)<=ARC_EPS)bindSupport(g,ball,seg,seg.pivot,reason);
             return;
         }
 
@@ -112,10 +118,11 @@
         for(const pivot of pivots){
             if(!valid(pivot[0],pivot[1]))continue;
             if(Math.abs(physicalDist(seg.from,pivot)-1)>ARC_EPS||Math.abs(physicalDist(seg.to,pivot)-1)>ARC_EPS)continue;
-            if(bindSupport(g,ball,seg,pivot))return;
+            if(bindSupport(g,ball,seg,pivot,reason))return;
         }
     };
 
     // Diagnostics used by the regression suite.
     window.__hexBindPileArcSegment=(g,ball,seg)=>repairPileFlowSegmentGeometry(g,ball,seg,"clear_support_loss");
+    window.__hexPostClearGarbageSupportArc=true;
 })();
