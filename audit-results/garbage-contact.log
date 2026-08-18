@@ -8,13 +8,13 @@ garbage swept pile-tunnel guard PASS
 accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
-evalmachine.<anonymous>:4462
+evalmachine.<anonymous>:4476
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: some garbage members never registered on the lattice: [[4,2]]
-    at expect (evalmachine.<anonymous>:4462:34)
-    at evalmachine.<anonymous>:4521:1
+    at expect (evalmachine.<anonymous>:4476:34)
+    at evalmachine.<anonymous>:4535:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
