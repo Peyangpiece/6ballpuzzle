@@ -1,1 +1,1 @@
-quick allow logical pivots app75 32
+quick remaining pivot trace 33
