@@ -1,1 +1,1 @@
-run focused diagnoses 10 exact rng contacts
+run focused diagnoses 11 harddrop convergence
