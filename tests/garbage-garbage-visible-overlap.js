@@ -31,7 +31,7 @@ function visibleGarbage(g,lead=0){
    pathLen:Array.isArray(b.fallPath)?b.fallPath.length:0,
    seq:Number(seg?.pileFlowOriginalSeq||seg?.motionSeq||0),
    seg:seg?{from:seg.from,to:seg.to,kind:seg.kind,pileFlow:!!seg.pileFlow,start:seg.pileFlowStart,end:seg.pileFlowEnd}:null,
-   flags:{pairBlocked:!!v.garbagePairBlocked,pairBlocks:v.garbagePairBlockCount||0,pairSeparated:!!v.garbagePairSeparated,pairSepCount:v.garbagePairSeparateCount||0,hardSeparated:!!v.garbageHardSeparated,hardSepCount:v.garbageHardSeparateCount||0,contactClamped:!!v.garbageHardContactClamped,contactClampCount:v.garbageHardContactClampCount||0,sweepBlocked:!!v.garbageSweepBlocked,sweepBlocks:v.garbageSweepBlockCount||0,pileFlow:!!v.pileFlow}
+   flags:{pairBlocked:!!v.garbagePairBlocked,pairBlocks:v.garbagePairBlockCount||0,pairSeparated:!!v.garbagePairSeparated,pairSepCount:v.garbagePairSeparateCount||0,hardSeparated:!!v.garbageHardSeparated,hardSepCount:v.garbageHardSeparateCount||0,contactClamped:!!v.garbageHardContactClamped,contactClampCount:v.garbageHardContactClampCount||0,queueHeld:!!v.garbageQueueHeld,sweepBlocked:!!v.garbageSweepBlocked,sweepBlocks:v.garbageSweepBlockCount||0,pileFlow:!!v.pileFlow}
   });
  }
  for(const pack of g.activeGarbagePacks||[]){
@@ -61,7 +61,9 @@ expect(window.__hexGarbageVisibleOverlapGuard===true,"garbage render overlap gua
 expect(window.__hexGarbageHardSeparation===true,"garbage hard-separation guard is not installed");
 let worstActual={d:Infinity},worstRender={d:Infinity};
 for(let variant=0;variant<3;variant++)for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
- const g=createEngine(99500+variant*17+type.length);buildPile(g,variant);g.garbShapes=[type];prepareGarbageBatch(g);
+ const g=createEngine(99500+variant*17+type.length);
+ g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;
+ buildPile(g,variant);g.garbShapes=[type];prepareGarbageBatch(g);
  for(let frame=0;frame<1800;frame++){
   updateGarbagePacks(g,PHYSICS_FRAME);
   updateVisuals(g,PHYSICS_FRAME);
