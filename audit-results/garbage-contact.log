@@ -1,7 +1,7 @@
 garbage airborne pass-through + continuous pile contact PASS
 garbage airborne rigidity until first pile contact PASS
-gridified garbage diagnostic {"totalUp":0,"upWorst":null,"min":0.9999999990293273,"worst":{"type":"HEXAGON","frame":132,"d":0.9999999990293273,"a":{"id":3,"logical":[0,11],"visual":[1.294791157140247,9.957772310660669],"path":[]},"b":{"id":2,"logical":[2,11],"visual":[2.155769857781451,11],"path":[]}},"pileMin":null,"pileWorst":null}
-garbage queued-motion overlap diagnostic PASS {"min":0.9999999990168355,"worst":{"step":1211,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990168355,"pair":[{"id":10,"logical":[5,10],"visual":[5.6478352473129085,9.149186570838365],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
+gridified garbage diagnostic {"totalUp":0,"upWorst":null,"min":0.9999999999999993,"worst":{"type":"HEXAGON","frame":176,"d":0.9999999999999993,"a":{"id":6,"logical":[5,10],"visual":[5.315305938876452,9.915073882290882],"path":[]},"b":{"id":2,"logical":[6,11],"visual":[6,11],"path":[]}},"pileMin":null,"pileWorst":null}
+garbage queued-motion overlap diagnostic PASS {"min":0.999999999999998,"worst":{"step":767,"state":"RESOLVING","phase":"SETTLE","min":0.999999999999998,"pair":[{"id":4,"logical":[9,8],"visual":[9.2832670686211,7.921993521188763],"garbage":false,"path":[]},{"id":6,"logical":[8,9],"visual":[8.2832670686211,8.92199352118876],"garbage":false,"path":[]}]}}
 garbage final-position + pre-existing-pile gate PASS
 technique-aware CPU levels PASS {"hex3":75.2136,"hex4":247.13040000000004,"hex5":737.9064000000001,"pyr5":583.57332,"move":{"x":5,"y":10,"rot":3}}
 garbage swept pile-tunnel guard PASS
