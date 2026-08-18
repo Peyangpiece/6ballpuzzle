@@ -1,0 +1,996 @@
+HARD_DROP_STALL [
+  {
+    "seed": 1,
+    "state": "GAMEOVER",
+    "phase": "CHECK",
+    "pending": 0,
+    "near": true,
+    "illegal": false,
+    "legal": true,
+    "watch": {
+      "lastSig": "",
+      "repeats": 0,
+      "steps": 0,
+      "fallbacks": 0
+    },
+    "balls": [
+      {
+        "id": 3000061,
+        "l": [
+          16,
+          -11
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000062,
+        "l": [
+          10,
+          -9
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000060,
+        "l": [
+          14,
+          -9
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 1,
+        "l": [
+          1,
+          10
+        ],
+        "v": [
+          1.7070967764599319,
+          9.99999994992263
+        ],
+        "path": [],
+        "hold": {
+          "x": 1.7070967741935483,
+          "y": 10,
+          "ax": 1,
+          "ay": 10
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3,
+        "l": [
+          0,
+          11
+        ],
+        "v": [
+          0.7070967198966734,
+          11
+        ],
+        "path": [],
+        "hold": {
+          "x": 0.7070967741935484,
+          "y": 11,
+          "ax": 0,
+          "ay": 11
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 2,
+        "l": [
+          2,
+          11
+        ],
+        "v": [
+          2.70709682622404,
+          11
+        ],
+        "path": [],
+        "hold": {
+          "x": 2.7070967741935483,
+          "y": 11,
+          "ax": 2,
+          "ay": 11
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000063,
+        "l": [
+          18,
+          11
+        ],
+        "v": [
+          18,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      }
+    ]
+  },
+  {
+    "seed": 3,
+    "state": "GAMEOVER",
+    "phase": "CHECK",
+    "pending": 0,
+    "near": true,
+    "illegal": false,
+    "legal": true,
+    "watch": {
+      "lastSig": "",
+      "repeats": 0,
+      "steps": 0,
+      "fallbacks": 0
+    },
+    "balls": [
+      {
+        "id": 3000183,
+        "l": [
+          4,
+          -15
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 1,
+        "l": [
+          1,
+          10
+        ],
+        "v": [
+          2.739354840976061,
+          9.99999994992263
+        ],
+        "path": [],
+        "hold": {
+          "x": 2.7393548387096773,
+          "y": 10,
+          "ax": 1,
+          "ay": 10
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3,
+        "l": [
+          0,
+          11
+        ],
+        "v": [
+          1.7393547844128023,
+          11
+        ],
+        "path": [],
+        "hold": {
+          "x": 1.7393548387096776,
+          "y": 11,
+          "ax": 0,
+          "ay": 11
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 2,
+        "l": [
+          2,
+          11
+        ],
+        "v": [
+          3.739354890740169,
+          11
+        ],
+        "path": [],
+        "hold": {
+          "x": 3.7393548387096773,
+          "y": 11,
+          "ax": 2,
+          "ay": 11
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000181,
+        "l": [
+          6,
+          11
+        ],
+        "v": [
+          5.999999850061036,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000185,
+        "l": [
+          8,
+          11
+        ],
+        "v": [
+          7.99999995,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000180,
+        "l": [
+          10,
+          11
+        ],
+        "v": [
+          10.000000049969483,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000184,
+        "l": [
+          12,
+          11
+        ],
+        "v": [
+          12.000000149969484,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000182,
+        "l": [
+          16,
+          11
+        ],
+        "v": [
+          16,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      }
+    ]
+  },
+  {
+    "seed": 5,
+    "state": "GAMEOVER",
+    "phase": "CHECK",
+    "pending": 0,
+    "near": true,
+    "illegal": false,
+    "legal": true,
+    "watch": {
+      "lastSig": "",
+      "repeats": 0,
+      "steps": 0,
+      "fallbacks": 0
+    },
+    "balls": [
+      {
+        "id": 3000304,
+        "l": [
+          7,
+          -16
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000301,
+        "l": [
+          4,
+          -15
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000306,
+        "l": [
+          2,
+          -7
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000307,
+        "l": [
+          16,
+          -5
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000305,
+        "l": [
+          9,
+          -2
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 1,
+        "l": [
+          13,
+          10
+        ],
+        "v": [
+          11.212580647427673,
+          9.99999994992263
+        ],
+        "path": [],
+        "hold": {
+          "x": 11.21258064516129,
+          "y": 10,
+          "ax": 13,
+          "ay": 10
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000300,
+        "l": [
+          2,
+          11
+        ],
+        "v": [
+          2,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000302,
+        "l": [
+          8,
+          11
+        ],
+        "v": [
+          8,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3,
+        "l": [
+          12,
+          11
+        ],
+        "v": [
+          10.212580590864414,
+          11
+        ],
+        "path": [],
+        "hold": {
+          "x": 10.21258064516129,
+          "y": 11,
+          "ax": 12,
+          "ay": 11
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 2,
+        "l": [
+          14,
+          11
+        ],
+        "v": [
+          12.212580697191784,
+          11
+        ],
+        "path": [],
+        "hold": {
+          "x": 12.21258064516129,
+          "y": 11,
+          "ax": 14,
+          "ay": 11
+        },
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000303,
+        "l": [
+          16,
+          11
+        ],
+        "v": [
+          16,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      }
+    ]
+  },
+  {
+    "seed": 6,
+    "state": "GAMEOVER",
+    "phase": "CHECK",
+    "pending": 0,
+    "near": true,
+    "illegal": false,
+    "legal": true,
+    "watch": {
+      "lastSig": "",
+      "repeats": 0,
+      "steps": 0,
+      "fallbacks": 0
+    },
+    "balls": [
+      {
+        "id": 3000367,
+        "l": [
+          3,
+          -16
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000366,
+        "l": [
+          14,
+          -11
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000365,
+        "l": [
+          14,
+          -7
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000363,
+        "l": [
+          1,
+          -2
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 1,
+        "l": [
+          5,
+          10
+        ],
+        "v": [
+          4.999999926676694,
+          9.99999992759008
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 2,
+        "l": [
+          7,
+          10
+        ],
+        "v": [
+          7.000000035629773,
+          9.99999992045246
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000362,
+        "l": [
+          4,
+          11
+        ],
+        "v": [
+          3.9999998098774165,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3,
+        "l": [
+          6,
+          11
+        ],
+        "v": [
+          5.999999908250287,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000368,
+        "l": [
+          8,
+          11
+        ],
+        "v": [
+          8.00000000695403,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000361,
+        "l": [
+          10,
+          11
+        ],
+        "v": [
+          10.000000106305901,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000364,
+        "l": [
+          12,
+          11
+        ],
+        "v": [
+          12.000000206305902,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000360,
+        "l": [
+          18,
+          11
+        ],
+        "v": [
+          18,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      }
+    ]
+  },
+  {
+    "seed": 9,
+    "state": "GAMEOVER",
+    "phase": "CHECK",
+    "pending": 0,
+    "near": true,
+    "illegal": false,
+    "legal": true,
+    "watch": {
+      "lastSig": "",
+      "repeats": 0,
+      "steps": 0,
+      "fallbacks": 0
+    },
+    "balls": [
+      {
+        "id": 3000550,
+        "l": [
+          16,
+          -15
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000547,
+        "l": [
+          7,
+          -14
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000543,
+        "l": [
+          11,
+          -8
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000544,
+        "l": [
+          1,
+          -6
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000545,
+        "l": [
+          9,
+          -4
+        ],
+        "v": null,
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 1,
+        "l": [
+          6,
+          9
+        ],
+        "v": [
+          6.000000001241737,
+          8.999999874255202
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3,
+        "l": [
+          5,
+          10
+        ],
+        "v": [
+          4.999999950636105,
+          9.999999923961292
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 2,
+        "l": [
+          7,
+          10
+        ],
+        "v": [
+          7.0000000494724315,
+          9.99999992406983
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000546,
+        "l": [
+          2,
+          11
+        ],
+        "v": [
+          1.9999998802340182,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000542,
+        "l": [
+          4,
+          11
+        ],
+        "v": [
+          3.9999999802340183,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000541,
+        "l": [
+          8,
+          11
+        ],
+        "v": [
+          8.000000019090846,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000548,
+        "l": [
+          10,
+          11
+        ],
+        "v": [
+          10.000000119090846,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000540,
+        "l": [
+          14,
+          11
+        ],
+        "v": [
+          13.99999980633527,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000549,
+        "l": [
+          16,
+          11
+        ],
+        "v": [
+          15.999999903167636,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      },
+      {
+        "id": 3000551,
+        "l": [
+          18,
+          11
+        ],
+        "v": [
+          18,
+          11
+        ],
+        "path": [],
+        "hold": null,
+        "group": 0,
+        "size": 0,
+        "role": -1,
+        "rigid": false
+      }
+    ]
+  }
+]
