@@ -41,10 +41,12 @@ jobs:
           H=$?
           node tests/garbage-original-pile-grid.js >> audit-results/garbage-contact.log 2>&1
           I=$?
+          node tests/garbage-no-impact.js >> audit-results/garbage-contact.log 2>&1
+          J=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","continuousContact":%s,"airborneRigidity":%s,"monotoneAfterContact":%s,"overlap":%s,"settleState":%s,"aiTechnique":%s,"sweptTunnel":%s,"pileArc":%s,"originalPileGrid":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","continuousContact":%s,"airborneRigidity":%s,"monotoneAfterContact":%s,"overlap":%s,"settleState":%s,"aiTechnique":%s,"sweptTunnel":%s,"pileArc":%s,"originalPileGrid":%s,"noImpact":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
