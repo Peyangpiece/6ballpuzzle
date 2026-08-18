@@ -2,3 +2,4 @@ garbage airborne pass-through + continuous pile contact PASS
 garbage airborne rigidity until first pile contact PASS
 gridified garbage diagnostic {"totalUp":0,"upWorst":null,"min":0.9999999990293273,"worst":{"type":"HEXAGON","frame":132,"d":0.9999999990293273,"a":{"id":3,"logical":[0,11],"visual":[1.294791157140247,9.957772310660669],"path":[]},"b":{"id":2,"logical":[2,11],"visual":[2.155769857781451,11],"path":[]}},"pileMin":null,"pileWorst":null}
 garbage queued-motion overlap diagnostic PASS {"min":0.9999999990168355,"worst":{"step":1211,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990168355,"pair":[{"id":10,"logical":[5,10],"visual":[5.6478352473129085,9.149186570838365],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
+garbage final-position pile-state gate PASS
