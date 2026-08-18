@@ -13,7 +13,7 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +29,7 @@ jobs:
           node tests/diagnose-landing-anchor.js > audit-results/landing-anchor.log 2>&1 || true
           node tests/diagnose-harddrop-postcontact.js > audit-results/harddrop-postcontact.log 2>&1 || true
           node tests/harddrop-contact-convergence.js > audit-results/harddrop-convergence.log 2>&1 || true
+          node tests/diagnose-harddrop-stall.js > audit-results/harddrop-stall.log 2>&1 || true
           node tests/diagnose-performance-phases.js > audit-results/performance-phases.log 2>&1 || true
           node tests/ball-conservation-fast.js > audit-results/ball-conservation-fast.log 2>&1 || true
           cat audit-results/ball-loss.log
@@ -37,6 +38,7 @@ jobs:
           cat audit-results/landing-anchor.log
           cat audit-results/harddrop-postcontact.log
           cat audit-results/harddrop-convergence.log
+          cat audit-results/harddrop-stall.log
           cat audit-results/performance-phases.log
           cat audit-results/ball-conservation-fast.log
       - name: Store diagnosis
@@ -44,7 +46,7 @@ jobs:
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add audit-results/ball-loss.log audit-results/rigid-recoil.log audit-results/landing-smoke.log audit-results/landing-anchor.log audit-results/harddrop-postcontact.log audit-results/harddrop-convergence.log audit-results/performance-phases.log audit-results/ball-conservation-fast.log
+          git add audit-results/ball-loss.log audit-results/rigid-recoil.log audit-results/landing-smoke.log audit-results/landing-anchor.log audit-results/harddrop-postcontact.log audit-results/harddrop-convergence.log audit-results/harddrop-stall.log audit-results/performance-phases.log audit-results/ball-conservation-fast.log
           if ! git diff --cached --quiet; then git commit -m "Record focused physics diagnoses [skip ci]"; fi
           git pull --rebase origin main
           git push
