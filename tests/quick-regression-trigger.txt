@@ -1,1 +1,1 @@
-quick forced radius arc install app75 29
+quick radius arc install attempt trace 30
