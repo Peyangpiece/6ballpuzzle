@@ -40,6 +40,7 @@ jobs:
           E=$?
           node tests/garbage-diagonal-settle.js >> audit-results/garbage-contact.log 2>&1
           F=$?
+          node tests/garbage-chain-terrain2-diagnostic-v2.js >> audit-results/garbage-contact.log 2>&1
           node tests/garbage-chain-settle.js >> audit-results/garbage-contact.log 2>&1
           G=$?
 
