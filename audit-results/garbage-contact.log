@@ -7,21 +7,21 @@ garbage lower-diagonal before final settle PASS {"from":[2,1],"to":[1,2],"frozen
 terrain2 completion diagnostic {"done":313,"clock":2.61666666666666,"pileClock":2.61666666666666,"nextAt":1.8083333333333313,"plans":[{"seq":0,"type":"PYRAMID","started":true,"landed":true,"start":0.008333333333333333,"ids":[16,17,18,19,20,21]},{"seq":1,"type":"HEXAGON","started":true,"landed":true,"start":0.6083333333333336,"ids":[22,23,24,25,26,27]},{"seq":2,"type":"PYRAMID","started":true,"landed":true,"start":1.2083333333333315,"ids":[28,29,30,31,32,33]}],"garbLeft":0,"pending":0,"nearly":true,"legal":false,"nextReady":[],"rawSafe":[],"active":[]}
 garbage chain-free dense settle PASS [{"type":1,"done":309,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999990338789},{"type":2,"done":313,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999990083682},{"type":3,"done":335,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999999999987},{"type":4,"done":336,"spawned":18,"maxGlobalStall":0,"minDistance":0.999999999265017}]
 post-garbage internal + secondary-clear collapse PASS
-evalmachine.<anonymous>:196
- if(p.topPivot){const pv=normPoint(...p.topPivot),contact=[pv[0],pv[1]-1],fallLen=Math.max(0,contact[1]-a[1]),fallT=Math.sqrt(Math.max(0,2*fallLen/Math.max(.0001,GRAV)));let da=Math.atan2(z[1]-pv[1],z[0]-pv[0])+Math.PI/2;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const arcT=Math.abs(da)/Math.max(.0001,SLIDE_SPEED),total=Math.max(1e-9,fallT+arcT),cut=fallT/total;if(t<=cut&&cut>1e-9){const q=t/cut;return lerp2(a,contact,q*q);}const q=cut>=1-1e-9?1:(t-cut)/(1-cut),ang=-Math.PI/2+da*Math.max(0,Math.min(1,q));return[pv[0]+Math.cos(ang),pv[1]+Math.sin(ang)];}
-                                                                                                                                                                  ^
+evalmachine.<anonymous>:1585
+function expect(value,message){if(!value)throw new Error(message);}
+                                         ^
 
-ReferenceError: GRAV is not defined
-    at proposalPointAt (evalmachine.<anonymous>:196:163)
-    at proposalPointAt (evalmachine.<anonymous>:1225:16)
-    at proposalPointAt (evalmachine.<anonymous>:1221:22)
-    at evalmachine.<anonymous>:1523:21
+Error: outer support vacancy was not immediately filled
+    at expect (evalmachine.<anonymous>:1585:48)
+    at evalmachine.<anonymous>:1699:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
     at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/wall-gap-regression.js:164:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
 game-over former-garbage fade PASS
