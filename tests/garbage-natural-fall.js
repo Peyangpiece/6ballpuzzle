@@ -21,6 +21,7 @@ function densePile(g,variant){
 }
 function safeDown(g,q){
  if(!Array.isArray(q.b.fallPath)||!q.b.fallPath.length)return false;
+ if(__hexdropGarbageMotionQueue(g).queued.has(q.b.id))return false;
  const seg=q.b.fallPath[0],to=seg?.to;
  if(!Array.isArray(to)||to[1]<=q.v.y+0.03)return false;
  const floor=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H;
@@ -30,7 +31,7 @@ function safeDown(g,q){
 }
 
 expect(window.__hexNaturalGarbageFall===true,"natural garbage fall override missing");
-expect(__hexdropGarbageMotionQueue(createEngine(1)).queued.size===0,"global garbage queue still active");
+expect(window.__hexGarbageLocalConflictQueue===true,"local garbage conflict queue missing");
 
 let globalMaxStall=0,globalConcurrent=0,globalMin=Infinity;
 for(const [variant,type] of [[0,"PYRAMID"],[1,"HEXAGON"],[1,"STRAIGHT"]]){
