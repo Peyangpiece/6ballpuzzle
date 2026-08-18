@@ -53,7 +53,8 @@ hardDrop=function(g){
     const before=g?.nextId;
     __hex75HardDropBeforeRadiusArc(g);
     if(!g||!Number.isFinite(before))return;
-    hex74InstallRigidContactArc(g,[before,before+1,before+2]);
+    const ids=[before,before+1,before+2],installed=hex74InstallRigidContactArc(g,ids);
+    g._hex75InstallAttempt={before,ids,installed,paths:ids.map(id=>{const q=hex74FindById(g,id),s=q?.b?.fallPath?.[0];return{id,found:!!q,kind:s?.kind||null,arc:!!s?._hexHardDropRigidArc};})};
 };
 
 hexMotionDuration=function(seg,state={vy:0,speed:0}){
