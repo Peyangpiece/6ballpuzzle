@@ -24,13 +24,21 @@ function visibleGarbage(g,lead=0){
    const p=pileFlowPositionAt(g,b,(g.pileFlowClock||0)+lead,0,null,memo);
    if(Number.isFinite(p?.[0])&&Number.isFinite(p?.[1])){px=p[0];py=Math.max(v.y,p[1]);}
   }
-  pts.push({kind:"board",id:b.id,x:px,y:py});
+  const seg=Array.isArray(b.fallPath)&&b.fallPath.length?b.fallPath[0]:null;
+  pts.push({
+   kind:"board",id:b.id,x:px,y:py,logical:[x,y],settled:b.garbagePileSettled===true,
+   original:g.garbageOriginalPileIds instanceof Set&&g.garbageOriginalPileIds.has(b.id),
+   pathLen:Array.isArray(b.fallPath)?b.fallPath.length:0,
+   seq:Number(seg?.pileFlowOriginalSeq||seg?.motionSeq||0),
+   seg:seg?{from:seg.from,to:seg.to,kind:seg.kind,pileFlow:!!seg.pileFlow,start:seg.pileFlowStart,end:seg.pileFlowEnd}:null,
+   flags:{pairBlocked:!!v.garbagePairBlocked,pairBlocks:v.garbagePairBlockCount||0,pairSeparated:!!v.garbagePairSeparated,pairSepCount:v.garbagePairSeparateCount||0,hardSeparated:!!v.garbageHardSeparated,hardSepCount:v.garbageHardSeparateCount||0,contactClamped:!!v.garbageHardContactClamped,contactClampCount:v.garbageHardContactClampCount||0,sweepBlocked:!!v.garbageSweepBlocked,sweepBlocks:v.garbageSweepBlockCount||0,pileFlow:!!v.pileFlow}
+  });
  }
  for(const pack of g.activeGarbagePacks||[]){
   if(!pack||pack.landed||!pack._started)continue;
   for(let i=0;i<pack.pat.length;i++){
    const q=pack.pat[i],dx=q[0],dy=q[1];
-   pts.push({kind:"pack",id:"p"+pack.seq+":"+i,x:pack.ax+dx,y:pack.y+dy});
+   pts.push({kind:"pack",id:"p"+pack.seq+":"+i,x:pack.ax+dx,y:pack.y+dy,packHeld:!!pack._garbagePairHeld,packHoldCount:pack._garbagePairHoldCount||0});
   }
  }
  return pts;
