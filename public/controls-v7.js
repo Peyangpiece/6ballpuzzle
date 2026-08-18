@@ -5,6 +5,12 @@
  * - short tap in the play area: rotate toward the tapped half
  * - short tap in the bottom drop zone: instant drop
  * - one-finger long press in the lower half: fast fall only while held
+ *
+ * Release invariant:
+ * - sub-cell X belongs to the live drag only. After release/cancel/blur the
+ *   active piece must return to its current legal lattice anchor. Keeping an
+ *   off-grid freeX/pieceVX without an owning pointer can strand the rendered
+ *   piece between columns and make it appear frozen.
  */
 (function installHexControlsV7(){
     if(typeof document==="undefined"||window.__hexControlsV7Installed)return;
@@ -26,13 +32,18 @@
     const HOLD_MS=LONG_PRESS_MS;
     const TAP_MAX_MS=350;
     const TAP_MOVE_TOL=20;
+    const DROP_MOVE_TOL=48;
     const DRAG_START_TOL=4;
     const DRAG_AXIS_RATIO=.60;
-    // Real touch contacts wander a few pixels even when the finger is intended
-    // to stay still. Do not cancel lower-half long press on that sensor jitter.
-    // A deliberate swipe still takes over immediately once it is unambiguous.
-    const HOLD_JITTER_TOL=18;
+    // A long press should survive normal thumb drift. Horizontal intent still
+    // commits to a drag once it becomes clear.
+    const HOLD_JITTER_TOL=30;
     const HOLD_DRAG_COMMIT_TOL=22;
+    // A deliberate downward stroke is an immediate fast-fall command. This is
+    // additive to long press and makes fast fall robust on browsers that emit
+    // pointermove while the finger is being held.
+    const FAST_SWIPE_START=18;
+    const FAST_AXIS_RATIO=1.10;
 
     const isCanvas=e=>e?.target?.tagName==="CANVAS";
     const player=()=>{
@@ -55,17 +66,45 @@
     const releaseCapture=rec=>{try{if(rec?.canvas?.hasPointerCapture?.(rec.id))rec.canvas.releasePointerCapture(rec.id);}catch(_){};};
     const clearHold=rec=>{if(rec?.holdTimer){clearTimeout(rec.holdTimer);rec.holdTimer=null;}};
 
+    function settleReleasedDrag(g){
+        if(!g)return false;
+        g.dragging=false;
+        if(!validGame(g)){
+            g.freeX=null;
+            return false;
+        }
+        // setFreeX already moved logical piece.x whenever a midpoint was
+        // crossed. piece.x is therefore the reachable lattice anchor for this
+        // drag. Remove the fractional authority instead of preserving it after
+        // the pointer no longer exists.
+        g.freeX=null;
+        g.pieceVX=g.piece.x;
+        return true;
+    }
+    window.__hexSettleReleasedDragV7=settleReleasedDrag;
+
     function instantVerticalDrop(g){
         if(!validGame(g))return false;
         stopFast(g);
+        // Heal a stale fractional state from an interrupted prior gesture before
+        // issuing the discrete instant-drop command.
+        if(!g.dragging&&(Number.isFinite(g.freeX)||Math.abs((Number.isFinite(g.pieceVX)?g.pieceVX:g.piece.x)-g.piece.x)>1e-7))settleReleasedDrag(g);
         const beforeState=g.state,beforePiece=g.piece,beforeId=g.nextId;
         const ok=hardDrop(g);
         return ok===true||g.state!==beforeState||g.piece!==beforePiece||g.nextId!==beforeId;
     }
     window.__hexInstantDropV7=instantVerticalDrop;
 
+    function startFast(rec){
+        if(!rec||rec.dragActive||rec.longActive||!rec.fastEligible||!validGame(rec.g))return false;
+        rec.longActive=true;rec.tapEligible=false;clearHold(rec);
+        if(!rec.g.fastForward)emit(rec.g,{t:"fast"});
+        rec.g.fastForward=true;
+        return true;
+    }
+
     function beginDrag(rec){
-        if(!rec||rec.bottomPress||rec.dragActive||pointers.size!==1||!validGame(rec.g))return false;
+        if(!rec||rec.bottomPress||rec.dragActive||rec.longActive||pointers.size!==1||!validGame(rec.g))return false;
         rec.dragActive=true;rec.dragMoved=true;rec.tapEligible=false;clearHold(rec);
         rec.dragBaseX=currentX(rec.g);rec.g.dragging=true;rec.g.freeX=rec.dragBaseX;
         return true;
@@ -74,6 +113,7 @@
         if(!rec?.dragActive||!validGame(rec.g))return;
         const targetX=rec.dragBaseX+((rec.lastX-rec.startX)/ME.D)*2;
         setFreeX(rec.g,targetX);
+        if(Number.isFinite(rec.g.freeX))rec.g.pieceVX=rec.g.freeX;
     }
     window.__hexSingleSlideV7=true;
 
@@ -100,10 +140,8 @@
         if(rec.fastEligible){
             rec.holdTimer=setTimeout(()=>{
                 const live=pointers.get(rec.id);
-                if(live!==rec||!rec.fastEligible||rec.dragActive||!validGame(rec.g))return;
-                rec.longActive=true;rec.tapEligible=false;rec.holdTimer=null;
-                if(!rec.g.fastForward)emit(rec.g,{t:"fast"});
-                rec.g.fastForward=true;
+                if(live!==rec)return;
+                startFast(rec);
             },HOLD_MS);
         }
     };
@@ -115,22 +153,31 @@
         const dx=rec.lastX-rec.startX,dy=rec.lastY-rec.startY,dist=Math.hypot(dx,dy);
 
         if(rec.longActive)return;
+
+        if(!rec.bottomPress&&rec.fastEligible&&dy>=FAST_SWIPE_START&&Math.abs(dy)>=Math.abs(dx)*FAST_AXIS_RATIO){
+            if(startFast(rec))return;
+        }
+
         if(rec.bottomPress){
-            if(dist>TAP_MOVE_TOL){rec.tapEligible=false;clearHold(rec);}
+            // Instant drop is a discrete bottom-zone tap. Tolerate ordinary
+            // thumb jitter instead of cancelling at the generic 20px threshold.
+            if(dist>DROP_MOVE_TOL)rec.tapEligible=false;
+            if(dist>HOLD_JITTER_TOL*2)clearHold(rec);
             return;
         }
 
         const elapsed=performance.now()-rec.downAt;
-        // Lower-half hold and horizontal drag share one finger. During the
-        // long-press decision window, ignore only tiny sensor drift. A clear
-        // horizontal trace (>22 virtual px) still becomes drag immediately.
         if(rec.fastEligible&&!rec.dragActive&&elapsed<HOLD_MS&&dist<=HOLD_JITTER_TOL)return;
 
         if(!rec.dragActive){
             const threshold=rec.fastEligible&&elapsed<HOLD_MS?HOLD_DRAG_COMMIT_TOL:DRAG_START_TOL;
             const horizontalEnough=Math.abs(dx)>=threshold&&Math.abs(dx)>=Math.abs(dy)*DRAG_AXIS_RATIO;
             if(horizontalEnough)beginDrag(rec);
-            else if(dist>TAP_MOVE_TOL){rec.tapEligible=false;clearHold(rec);return;}
+            else if(dist>TAP_MOVE_TOL){
+                rec.tapEligible=false;
+                if(dist>HOLD_JITTER_TOL*2)clearHold(rec);
+                return;
+            }
         }
         updateDrag(rec);
     };
@@ -138,26 +185,17 @@
     const finish=(e,cancelled)=>{
         const rec=pointers.get(e.pointerId);if(!rec)return;
         consume(e);
-        // Some mobile browsers deliver the final coordinate only on pointerup.
-        // Fold it into tap/drag classification before removing the pointer.
         try{const p=point(e,rec.canvas);rec.lastX=p.x;rec.lastY=p.y;}catch(_){}
         pointers.delete(rec.id);clearHold(rec);releaseCapture(rec);
         const g=rec.g,wasLong=rec.longActive;
         if(wasLong)stopFast(g);
 
-        if(g&&rec.dragActive){
-            if(Number.isFinite(g.freeX)){
-                // Keep the exact off-grid X. Active vertical legality is
-                // continuous; only lock() performs the final lattice handoff.
-                setFreeX(g,g.freeX);
-                g.pieceVX=g.freeX;
-            }
-            g.dragging=false;
-        }
+        if(g&&rec.dragActive)settleReleasedDrag(g);
 
         const elapsed=performance.now()-rec.downAt;
         const dist=Math.hypot(rec.lastX-rec.startX,rec.lastY-rec.startY);
-        if(!cancelled&&!wasLong&&!rec.dragActive&&rec.tapEligible&&elapsed<=TAP_MAX_MS&&dist<=TAP_MOVE_TOL&&validGame(g)){
+        const moveTol=rec.bottomPress?DROP_MOVE_TOL:TAP_MOVE_TOL;
+        if(!cancelled&&!wasLong&&!rec.dragActive&&rec.tapEligible&&elapsed<=TAP_MAX_MS&&dist<=moveTol&&validGame(g)){
             if(rec.bottomPress)instantVerticalDrop(g);
             else rotate(g,rec.half>0?1:-1);
         }
@@ -171,11 +209,7 @@
         }
         for(const g of engines){
             stopFast(g);
-            if(g.piece&&Number.isFinite(g.freeX)){
-                setFreeX(g,g.freeX);
-                g.pieceVX=g.freeX;
-            }
-            g.dragging=false;
+            settleReleasedDrag(g);
         }
         pointers.clear();
         window.__hexControlsV7LastReset={reason,at:performance.now()};
