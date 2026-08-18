@@ -1,1 +1,1 @@
-run focused diagnoses 6 app68 fixed reporter
+run focused diagnoses 7 physical contacts
