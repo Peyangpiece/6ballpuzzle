@@ -1,1 +1,1 @@
-run focused diagnoses 15 full pile visuals convergence
+run focused diagnoses 16 app71+app72
