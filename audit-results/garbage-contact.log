@@ -4,3 +4,20 @@ gridified garbage diagnostic {"totalUp":0,"upWorst":null,"min":0.999999999029327
 garbage queued-motion overlap diagnostic PASS {"min":0.9999999990168355,"worst":{"step":1211,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990168355,"pair":[{"id":10,"logical":[5,10],"visual":[5.6478352473129085,9.149186570838365],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
 garbage final-position pile-state gate PASS
 technique-aware CPU levels PASS {"hex3":75.2136,"hex4":247.13040000000004,"hex5":737.9064000000001,"pyr5":583.57332,"move":{"x":5,"y":10,"rot":3}}
+evalmachine.<anonymous>:4029
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: tangent arc lost surface contact: {"d":0.8660254037844386,"v":{"x":5,"y":5,"vy":0,"sq":0,"pileFlow":true,"motionSpeed":5},"sv":{"x":5,"y":6,"vy":0,"sq":0}}
+    at expect (evalmachine.<anonymous>:4029:34)
+    at evalmachine.<anonymous>:4072:2
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-swept-tunnel.js:61:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
