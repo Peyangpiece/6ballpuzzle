@@ -1,0 +1,16 @@
+const fs=require("fs"),vm=require("vm");
+const runtime=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js","app-garbage-normal-physics.js","app-garbage-presentation.js","app-garbage-zero-rigidity.js","app-garbage-deep-settle.js","app-garbage-simultaneous-motion.js"].map(n=>fs.readFileSync(`${__dirname}/../public/${n}`,"utf8")).join("\n");
+const checks=String.raw`
+function put(g,x,y,c=0){if(!valid(x,y)||g.board[y][x])return null;const b=mkBall(g,c);g.board[y][x]=b;noteBoardCell(g.board,y,b);setVis(g,b,x,y,0);return b;}
+function entries(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b)a.push({b,x,y,v:g.vis.get(b.id)});}return a;}
+const g=createEngine(72002);
+for(let x=0;x<W2;x++)if(valid(x,ROWS-1))put(g,x,ROWS-1,x%5);
+put(g,1,ROWS-2,1);put(g,3,ROWS-2,2);put(g,5,ROWS-2,3);put(g,3,ROWS-4,4);put(g,7,ROWS-2,0);
+g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;g.garbShapes=["PYRAMID","HEXAGON","PYRAMID"];g.garbLeft=0;prepareGarbageBatch(g);
+let done=-1;
+for(let frame=0;frame<4000;frame++){updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);updateGarbagePacks(g,PHYSICS_FRAME);if(garbageBatchDone(g)){done=frame;break;}}
+const gs=entries(g).filter(q=>q.b.isGarbage),active=gs.filter(q=>q.b.fallPath?.length).map(q=>({id:q.b.id,cell:[q.x,q.y],visual:[q.v.x,q.v.y],pathLen:q.b.fallPath.length,first:q.b.fallPath[0]&&{from:q.b.fallPath[0].from,to:q.b.fallPath[0].to,kind:q.b.fallPath[0].kind,start:q.b.fallPath[0].pileFlowStart,end:q.b.fallPath[0].pileFlowEnd,seq:q.b.fallPath[0].motionSeq},last:q.b.fallPath.at(-1)&&{to:q.b.fallPath.at(-1).to,end:q.b.fallPath.at(-1).pileFlowEnd}}));
+const rawSafe=[];for(const q of gs){if(q.b.fallPath?.length)continue;const p=hexPhysNaturalMotion(g.board,q.x,q.y);if(p&&p.ty>p.y&&!hexPhysPathHitsStationary(p,g.board,new Set([q.b.id])))rawSafe.push({id:q.b.id,from:[q.x,q.y],to:[p.tx,p.ty],kind:p.kind,pivot:p.pivot,topPivot:p.topPivot});}
+console.log("terrain2 completion diagnostic",JSON.stringify({done,clock:g.garbageClock,pileClock:g.pileFlowClock,nextAt:g.garbageNextBallAt,plans:(g.garbagePlans||[]).map(p=>({seq:p.seq,type:p.type,started:!!p._started,landed:!!p.landed,start:p.actualStartTime,ids:p.ballIds})),garbLeft:g.garbLeft,pending:pendingFallPathCount(g),nearly:nearlySettled(g,.06),legal:hasLegalGravityMove(g.board),nextReady:window.__hexGarbageNextReadyGravityEvent(g,true).map(p=>({id:p.ball?.id,to:[p.tx,p.ty],kind:p.kind,fallback:!!p.garbageRawGravityFallback})),rawSafe,active}));
+`;
+vm.runInNewContext(runtime+checks,{React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,Image:function(){this.complete=false;this.naturalWidth=0;},Math,Map,Set,WeakMap,Array,Number,Object,String,Boolean,JSON,Date,setTimeout(){return 0},clearTimeout(){},performance:{now(){return 0}},localStorage:{getItem(){return null},setItem(){}},document:{getElementById(){return null}},ResizeObserver:function(){this.observe=()=>{};this.disconnect=()=>{};}},{timeout:120000});
