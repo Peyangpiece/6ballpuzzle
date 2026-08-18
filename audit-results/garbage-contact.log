@@ -9,30 +9,30 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-evalmachine.<anonymous>:4924
+evalmachine.<anonymous>:4938
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.9843576934021326,"a":{"kind":"board","id":23,"x":18,"y":7,"logical":[16,9],"settled":true,"pathLen":2,"seq":43},"b":{"kind":"board","id":22,"x":16.045677401105337,"y":7.137190200924941,"logical":[18,9],"settled":false,"pathLen":2,"seq":41}}
-    at expect (evalmachine.<anonymous>:4924:34)
-    at evalmachine.<anonymous>:4982:3
+Error: garbage actual overlap: {"variant":0,"type":"HEXAGON","frame":125,"queued":[17,15],"d":0.9569642878355681,"a":{"kind":"board","id":17,"x":3.9974109488663365,"y":7.058735285671906,"logical":[3,8],"settled":false,"pathLen":1,"seq":11,"seg":{"from":[3.9974109488663365,7.058735285671906],"to":[3,8],"kind":"FREE_FALL","pileFlow":true,"start":1.0499999999999987,"end":1.212249806551038}},"b":{"kind":"board","id":18,"x":5,"y":8,"logical":[5,8],"settled":true,"pathLen":0,"seq":0,"seg":null}}
+    at expect (evalmachine.<anonymous>:4938:34)
+    at evalmachine.<anonymous>:5000:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:79:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:83:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-evalmachine.<anonymous>:4924
+evalmachine.<anonymous>:4938
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":16,"visual":[7.001045997648304,6.8452994616207485],"logical":[9,10],"path":{"from":[7,6.8452994616207485],"to":[8,7],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":2,"pileFlowStart":1.1166666666666651,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":1.146392748396277,"garbageGridEntryHandoff":true}}
-    at expect (evalmachine.<anonymous>:4924:34)
-    at evalmachine.<anonymous>:4963:7
+Error: garbage overlap during natural fall: {"type":"HEXAGON","variant":1,"frame":120,"d":0.9673668141775533,"a":20,"b":17}
+    at expect (evalmachine.<anonymous>:4938:34)
+    at evalmachine.<anonymous>:4985:4
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
