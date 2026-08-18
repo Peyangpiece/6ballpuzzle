@@ -1,1 +1,1 @@
-{"sha":"bda5999e530d91ed625651d9efe7869f3d32c089","status":"pass","continuousContact":0,"airborneRigidity":0,"monotoneAfterContact":0,"overlap":0,"settleState":0}
+{"sha":"f4f59950fabaf7b789c4b83729fc475b0df7f0ac","status":"fail","continuousContact":0,"airborneRigidity":0,"monotoneAfterContact":0,"overlap":0,"settleState":0,"aiTechnique":1}
