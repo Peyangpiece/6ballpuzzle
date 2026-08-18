@@ -1,20 +1,28 @@
 /* HEXDROP hard-drop post-contact continuity.
  *
- * A guide/contact pose may be a stable continuous position between bookkeeping
- * lattice centres. Once SETTLE has accepted that pose, promote the temporary
- * app-68 hold to a persistent continuous rest instead of leaving a stale hold
- * flag forever. If support later disappears, the first real fallPath is
- * rebased from that exact rest point.
+ * The landing guide is the exact physical contact pose.  Two details matter at
+ * the active-piece -> pile hand-off:
+ *   1) a stable fractional contact must remain at that exact pose instead of
+ *      snapping to a bookkeeping lattice centre;
+ *   2) when the next logical rigid translation connects two tangent poses
+ *      around the same support, the visual path must follow the support circle.
+ *      A straight chord between those tangent endpoints cuts through the
+ *      support and forces the contact solver to deform/recoil the triplet.
  *
- * Hard-dropped balls also carry downward impact momentum. Final visual contact
- * correction must never make those three balls visibly recoil upward from the
- * contact pose; downward and lateral pile motion remain unrestricted.
+ * This layer keeps the 3-ball body rigid and uses one common arc translation
+ * whenever the rebased hard-drop chord would penetrate a settled support.
  */
 const __hex74HardDropBeforeContinuity=hardDrop;
 const __hex74UpdateVisualsBeforeContinuity=updateVisuals;
 const __hex74StepBeforeContinuity=stepEngine;
 const __hex74NearlySettledBeforeContinuity=nearlySettled;
 const __hex74RenderMobilityBeforeContinuity=typeof hexRenderMobility==="function"?hexRenderMobility:null;
+const __hex74LiveBatchPointAtBeforeContinuity=typeof liveBatchPointAt==="function"?liveBatchPointAt:null;
+const __hex74MotionDurationBeforeContinuity=typeof hexMotionDuration==="function"?hexMotionDuration:null;
+
+const HEX74_CONTACT_MIN_DIST=0.9998;
+const HEX74_TANGENT_EPS=0.025;
+const HEX74_ARC_SAMPLES=48;
 
 function hex74EachBall(g,fn){
     if(!g?.board)return;
@@ -28,93 +36,128 @@ function hex74FindById(g,id){
     return out;
 }
 function hex74StableContactMarker(b){return b?.hardDropContactHold||b?._hexHardDropContinuousRest||null;}
-function hex74Tagged(b){return !!b&&Number.isFinite(b._hexHardDropNoUpY);}
-function hex74VisualItems(g){
-    const a=[];hex74EachBall(g,(ball,x,y)=>{const v=g.vis.get(ball.id);if(v&&Number.isFinite(v.x)&&Number.isFinite(v.y))a.push({ball,v,x,y});});return a;
+function hex74Dist(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
+function hex74ArcPoint(meta,t){
+    t=Math.max(0,Math.min(1,t));
+    const a=meta.a0+meta.da*t,p=meta.pivot;
+    return[p[0]+Math.cos(a)/.5,p[1]+Math.sin(a)/HEX_ROW_H];
 }
-function hex74ClampX(x){return Math.max(0,Math.min(W2-1,x));}
-
-/* The normal visual contact solver is free to use a tiny upward projection to
- * remove penetration.  Re-applying only the Y coordinate afterwards was the
- * source of the remaining hard-drop overlap: the solver had already stopped
- * because the pair was tangent, then the one-axis clamp put the pair back
- * inside one another.  Resolve any clamp-created penetration with directions
- * that can never move a hard-dropped centre upward: horizontal first, then
- * downward only when a wall leaves no horizontal room. */
-function hex74ResolveNoUpOverlaps(g){
-    const H=HEX_ROW_H,EPS=1.000001;
-    let changed=false;
-    for(let pass=0;pass<32;pass++){
-        let any=false;const a=hex74VisualItems(g);
-        for(let i=0;i<a.length;i++)for(let j=i+1;j<a.length;j++){
-            const A=a[i],B=a[j],ta=hex74Tagged(A.ball),tb=hex74Tagged(B.ball);
-            if(!ta&&!tb)continue;
-            let dxp=(B.v.x-A.v.x)*.5,dyp=(B.v.y-A.v.y)*H,d=Math.hypot(dxp,dyp);
-            if(d>=EPS-1e-8)continue;
-
-            // Prefer horizontal separation. This preserves monotonic downward
-            // motion and is exactly the degree of freedom left by the reference
-            // contact pose when a floor/support prevents vertical motion.
-            if(Math.abs(dyp)<EPS-1e-9){
-                const req=Math.sqrt(Math.max(0,EPS*EPS-dyp*dyp)),need=Math.max(0,(req-Math.abs(dxp))/.5);
-                if(need>1e-9){
-                    let side=Math.sign(B.v.x-A.v.x);
-                    if(!side)side=Math.sign(B.x-A.x)||1;
-                    let rem=need;
-                    const roomA=side>0?A.v.x:W2-1-A.v.x;
-                    const roomB=side>0?W2-1-B.v.x:B.v.x;
-                    if(ta&&tb){
-                        const ma=Math.min(rem*.5,Math.max(0,roomA)),mb=Math.min(rem*.5,Math.max(0,roomB));
-                        A.v.x=hex74ClampX(A.v.x-side*ma);B.v.x=hex74ClampX(B.v.x+side*mb);rem-=ma+mb;
-                        if(rem>1e-9){const ea=Math.min(rem,Math.max(0,(side>0?A.v.x:W2-1-A.v.x)));A.v.x=hex74ClampX(A.v.x-side*ea);rem-=ea;}
-                        if(rem>1e-9){const eb=Math.min(rem,Math.max(0,(side>0?W2-1-B.v.x:B.v.x)));B.v.x=hex74ClampX(B.v.x+side*eb);rem-=eb;}
-                    }else if(ta){
-                        const m=Math.min(rem,Math.max(0,roomA));A.v.x=hex74ClampX(A.v.x-side*m);rem-=m;
-                        if(rem>1e-9){const n=Math.min(rem,Math.max(0,roomB));B.v.x=hex74ClampX(B.v.x+side*n);rem-=n;}
-                    }else{
-                        const m=Math.min(rem,Math.max(0,roomB));B.v.x=hex74ClampX(B.v.x+side*m);rem-=m;
-                        if(rem>1e-9){const n=Math.min(rem,Math.max(0,roomA));A.v.x=hex74ClampX(A.v.x-side*n);rem-=n;}
-                    }
-                }
-            }
-
-            dxp=(B.v.x-A.v.x)*.5;dyp=(B.v.y-A.v.y)*H;d=Math.hypot(dxp,dyp);
-            if(d<EPS-1e-8&&Math.abs(dxp)<EPS-1e-9){
-                const reqY=Math.sqrt(Math.max(0,EPS*EPS-dxp*dxp)),needY=Math.max(0,(reqY-Math.abs(dyp))/H);
-                if(needY>1e-9){
-                    // Downward-only fallback. Prefer the visually lower centre;
-                    // never lift either hard-dropped centre to make room.
-                    const lower=A.v.y>=B.v.y?A:B,other=lower===A?B:A;
-                    let room=(ROWS-1)-lower.v.y,m=Math.min(needY,Math.max(0,room));
-                    lower.v.y+=m;
-                    if(m<needY-1e-9&&!hex74Tagged(other)){
-                        room=(ROWS-1)-other.v.y;const n=Math.min(needY-m,Math.max(0,room));other.v.y+=n;
-                    }
-                }
-            }
-            const nd=hexPhysDist(A.v.x,A.v.y,B.v.x,B.v.y);
-            if(nd>d+1e-9){any=true;changed=true;}
+function hex74ShortestArc(from,to,pivot){
+    const a0=Math.atan2((from[1]-pivot[1])*HEX_ROW_H,(from[0]-pivot[0])*.5);
+    const a1=Math.atan2((to[1]-pivot[1])*HEX_ROW_H,(to[0]-pivot[0])*.5);
+    let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
+    return{a0,da};
+}
+function hex74ObstacleItems(g,exclude){
+    const out=[];
+    hex74EachBall(g,(ball,x,y)=>{
+        if(exclude.has(ball.id))return;
+        const v=g.vis.get(ball.id);
+        if(v&&Number.isFinite(v.x)&&Number.isFinite(v.y))out.push({ball,p:[v.x,v.y]});
+        else out.push({ball,p:[x,y]});
+    });
+    return out;
+}
+function hex74RigidLinearSafe(members,obstacles){
+    const maxY=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H;
+    for(let k=0;k<=32;k++){
+        const t=k/32;
+        for(const m of members){
+            const s=m.seg.from,e=m.seg.to,p=[s[0]+(e[0]-s[0])*t,s[1]+(e[1]-s[1])*t];
+            if(p[0]<-1e-7||p[0]>W2-1+1e-7||p[1]>maxY+1e-7)return false;
+            for(const o of obstacles)if(hex74Dist(p,o.p)<HEX74_CONTACT_MIN_DIST)return false;
         }
-        if(!any)break;
     }
-    return changed;
+    return true;
+}
+function hex74RigidArcSafe(meta,members,obstacles){
+    const maxY=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H,lead0=meta.leaderFrom;
+    for(let k=0;k<=HEX74_ARC_SAMPLES;k++){
+        const t=k/HEX74_ARC_SAMPLES,lead=hex74ArcPoint(meta,t),dx=lead[0]-lead0[0],dy=lead[1]-lead0[1];
+        // Reference contact never rebounds upward after an instant drop.
+        if(dy<-1e-7)return false;
+        for(const m of members){
+            const p=[m.seg.from[0]+dx,m.seg.from[1]+dy];
+            if(p[0]<-1e-7||p[0]>W2-1+1e-7||p[1]>maxY+1e-7)return false;
+            for(const o of obstacles)if(hex74Dist(p,o.p)<HEX74_CONTACT_MIN_DIST)return false;
+        }
+    }
+    return true;
+}
+function hex74InstallRigidContactArc(g,ids){
+    const idSet=new Set(ids),members=ids.map(id=>hex74FindById(g,id)).filter(Boolean).map(q=>({ball:q.b,seg:q.b.fallPath?.[0]}));
+    if(members.length!==3)return false;
+    const gid=members[0].ball.motionGroupId;
+    if(!gid||members.some(m=>m.ball.motionGroupId!==gid||!m.ball.rigid||!m.seg?.from||!m.seg?.to||m.seg.pivot||m.seg.topPivot))return false;
+    if(members.some(m=>m.seg.kind!=="GROUP_SLOPE_TRANSLATE"))return false;
+
+    // All three members of a rigid translation must have the same displacement.
+    const d0=[members[0].seg.to[0]-members[0].seg.from[0],members[0].seg.to[1]-members[0].seg.from[1]];
+    if(members.some(m=>Math.abs((m.seg.to[0]-m.seg.from[0])-d0[0])>1e-6||Math.abs((m.seg.to[1]-m.seg.from[1])-d0[1])>1e-6))return false;
+
+    const obstacles=hex74ObstacleItems(g,idSet);
+    if(hex74RigidLinearSafe(members,obstacles))return false;
+
+    let best=null;
+    for(const leader of members){
+        const s=leader.seg.from,e=leader.seg.to;
+        for(const o of obstacles){
+            // The support must be stationary during this immediate hand-off.
+            if(Array.isArray(o.ball.fallPath)&&o.ball.fallPath.length)continue;
+            const ds=hex74Dist(s,o.p),de=hex74Dist(e,o.p);
+            if(Math.abs(ds-1)>HEX74_TANGENT_EPS||Math.abs(de-1)>HEX74_TANGENT_EPS)continue;
+            const mid=[(s[0]+e[0])*.5,(s[1]+e[1])*.5];
+            if(hex74Dist(mid,o.p)>=Math.min(ds,de)-1e-7)continue;
+            const arc=hex74ShortestArc(s,e,o.p);
+            if(Math.abs(arc.da)<1e-7)continue;
+            const meta={pivot:[...o.p],leaderFrom:[...s],leaderTo:[...e],a0:arc.a0,da:arc.da,groupId:gid,supportId:o.ball.id};
+            if(!hex74RigidArcSafe(meta,members,obstacles))continue;
+            const score=Math.abs(arc.da);
+            if(!best||score<best.score)best={meta,score};
+        }
+    }
+    if(!best)return false;
+    for(const m of members)m.seg._hexHardDropRigidArc=best.meta;
+    return true;
+}
+
+if(__hex74LiveBatchPointAtBeforeContinuity){
+    liveBatchPointAt=function(batch,member,t,states,memo=new Map(),stack=new Set()){
+        const meta=member?.seg?._hexHardDropRigidArc;
+        if(meta){
+            const id=member.cell.id;if(memo?.has(id))return memo.get(id);
+            const lead=hex74ArcPoint(meta,t),dx=lead[0]-meta.leaderFrom[0],dy=lead[1]-meta.leaderFrom[1];
+            const out=[member.seg.from[0]+dx,member.seg.from[1]+dy];
+            if(memo)memo.set(id,out);
+            return out;
+        }
+        return __hex74LiveBatchPointAtBeforeContinuity(batch,member,t,states,memo,stack);
+    };
+}
+if(__hex74MotionDurationBeforeContinuity){
+    hexMotionDuration=function(seg,state={vy:0,speed:0}){
+        const meta=seg?._hexHardDropRigidArc;
+        if(meta){
+            state.speed=SLIDE_SPEED;
+            const endA=meta.a0+meta.da,dir=Math.sign(meta.da||1);
+            state.vy=Math.max(0,dir*SLIDE_SPEED*Math.cos(endA)/HEX_ROW_H);
+            return Math.max(1/120,Math.abs(meta.da)/Math.max(.0001,SLIDE_SPEED));
+        }
+        return __hex74MotionDurationBeforeContinuity(seg,state);
+    };
 }
 
 hardDrop=function(g){
     const before=g?.nextId;
     __hex74HardDropBeforeContinuity(g);
     if(!g||!Number.isFinite(before))return;
-    for(let id=before;id<before+3;id++){
-        const q=hex74FindById(g,id);if(!q)continue;
-        const v=g.vis.get(id);if(!v)continue;
-        q.b._hexHardDropNoUpY=v.y;
-        q.b._hexHardDropContactX=v.x;
-        q.b._hexHardDropContactY=v.y;
-    }
+    const ids=[before,before+1,before+2];
+    hex74InstallRigidContactArc(g,ids);
 };
 
 if(__hex74RenderMobilityBeforeContinuity){
-    // hexRenderMobility's canonical signature is (game, visualItem).
+    // Stable fractional contacts are already collision-safe landing-guide poses.
+    // Keep them immobile until logical pile physics produces a real path.
     hexRenderMobility=function(g,q){
         if(hex74StableContactMarker(q?.ball))return 0;
         return __hex74RenderMobilityBeforeContinuity(g,q);
@@ -138,8 +181,7 @@ nearlySettled=function(g,tol){
 };
 
 updateVisuals=function(g,dt){
-    // A later logical move releases a stable contact rest and starts rendering
-    // from the exact physical position rather than from the lattice centre.
+    // If support later disappears, continue from the exact continuous rest.
     hex74EachBall(g,(b,x,y)=>{
         const rest=b._hexHardDropContinuousRest;if(!rest)return;
         const path=Array.isArray(b.fallPath)?b.fallPath:null;
@@ -161,54 +203,22 @@ updateVisuals=function(g,dt){
 
 stepEngine=function(g,dt){
     if(!g)return __hex74StepBeforeContinuity(g,dt);
-    const prevY=new Map();
-    hex74EachBall(g,(b)=>{if(hex74Tagged(b)){const v=g.vis.get(b.id);if(v)prevY.set(b.id,v.y);}});
-
     const result=__hex74StepBeforeContinuity(g,dt);
-
     hex74EachBall(g,(b,x,y)=>{
         const v=g.vis.get(b.id);if(!v)return;
-        const hold=b.hardDropContactHold;
-        const path=Array.isArray(b.fallPath)?b.fallPath:null;
-
-        // A hard-drop pose with no logical movement is already a valid physical
-        // contact pose (it came directly from the landing guide). Preserve both
-        // coordinates, not just Y. This avoids undoing a collision solver's Y
-        // correction while leaving its compensating X correction behind.
+        const hold=b.hardDropContactHold,path=Array.isArray(b.fallPath)?b.fallPath:null;
+        // A pathless guide pose is itself the valid physical rest. Restore both
+        // axes as a pair; never apply a one-axis correction after contact solve.
         if(hold&&(!path||!path.length)){
             v.x=hold.x;v.y=hold.y;v.vy=0;v.motionSpeed=0;
         }
-
-        // SETTLE has accepted this fractional contact and advanced to CHECK (or
-        // beyond). Convert the temporary hold to a normal continuous rest.
         if(hold&&(!path||!path.length)&&(g.state!=="RESOLVING"||g.phase!=="SETTLE")){
             b._hexHardDropContinuousRest={x:hold.x,y:hold.y,ax:x,ay:y};
             delete b.hardDropContactHold;
         }
-
         const rest=b._hexHardDropContinuousRest;
         if(rest&&x===rest.ax&&y===rest.ay&&(!path||!path.length)){
             v.x=rest.x;v.y=rest.y;v.vy=0;v.motionSpeed=0;
-        }
-
-        if(hex74Tagged(b)){
-            const py=prevY.get(b.id),floor=Number.isFinite(py)?py:b._hexHardDropNoUpY;
-            if(v.y<floor-1e-9){v.y=floor;if(Number.isFinite(v.vy)&&v.vy<0)v.vy=0;}
-            b._hexHardDropNoUpY=Math.max(b._hexHardDropNoUpY,v.y);
-        }
-    });
-
-    // The no-up constraint is applied after the legacy solver, so repair only
-    // contacts touched by those tagged hard-drop balls with horizontal/downward
-    // motion. This preserves both invariants in the same final frame: no recoil
-    // and no overlap.
-    hex74ResolveNoUpOverlaps(g);
-
-    hex74EachBall(g,(b)=>{
-        if(!hex74Tagged(b))return;
-        const path=Array.isArray(b.fallPath)?b.fallPath:null;
-        if((g.state!=="RESOLVING"||g.phase!=="SETTLE")&&(!path||!path.length)){
-            delete b._hexHardDropNoUpY;delete b._hexHardDropContactX;delete b._hexHardDropContactY;
         }
     });
     return result;
