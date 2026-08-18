@@ -1,1 +1,1 @@
-run focused diagnoses 7 physical contacts
+run focused diagnoses 8 aligned physical contacts
