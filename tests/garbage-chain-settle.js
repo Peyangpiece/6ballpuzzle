@@ -19,49 +19,53 @@ function terrain(g,type){
  if(type===3){put(g,11,ROWS-2,1);put(g,9,ROWS-2,2);put(g,7,ROWS-2,3);put(g,9,ROWS-4,4);put(g,5,ROWS-2,0);}
  if(type===4){put(g,3,ROWS-2,1);put(g,7,ROWS-2,2);put(g,11,ROWS-2,3);put(g,5,ROWS-4,4);put(g,9,ROWS-4,0);}
 }
-function nearby(g,q){
- return entries(g).filter(z=>z.b.id!==q.b.id).map(z=>({
-  id:z.b.id,garbage:!!z.b.isGarbage,frozen:!!z.b.garbagePhaseFrozen,
-  cell:[z.x,z.y],visual:[z.v.x,z.v.y],d:phys([q.v.x,q.v.y],[z.v.x,z.v.y]),
-  path:Array.isArray(z.b.fallPath)&&z.b.fallPath.length?z.b.fallPath.slice(0,2).map(s=>({from:s.from,to:s.to,kind:s.kind,pivot:s.pivot,topPivot:s.topPivot})):[]
- })).filter(z=>z.d<1.35).sort((a,b)=>a.d-b.d).slice(0,6);
+function stateOf(gs){
+ const m=new Map();for(const q of gs)m.set(q.b.id,{cell:[q.x,q.y],visual:[q.v.x,q.v.y],path:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0});return m;
 }
+function changed(prev,now){
+ if(!prev)return true;
+ if(prev.size!==now.size)return true;
+ for(const[id,n]of now){const p=prev.get(id);if(!p)return true;if(p.cell[0]!==n.cell[0]||p.cell[1]!==n.cell[1]||p.path!==n.path||phys(p.visual,n.visual)>1e-6)return true;}
+ return false;
+}
+function rawDown(g,q){if(Array.isArray(q.b.fallPath)&&q.b.fallPath.length)return null;const p=hexPhysNaturalMotion(g.board,q.x,q.y);return p&&p.ty>p.y?p:null;}
 expect(window.__hexGarbageNoChainFreeze===true,"chain-free garbage settle layer missing");
 expect(window.__hexGarbageMovingPeersAreSimultaneous===true,"simultaneous moving-garbage layer missing");
+expect(window.__hexGarbageUnitLocalTimeline===true,"unit-local ordinary timeline missing");
+expect(window.__hexGarbageDeepSettleUsesCanonicalEventResolver===true,"canonical deep settle resolver missing");
 const reports=[];
 for(let type=1;type<=4;type++){
  const g=createEngine(72000+type);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;terrain(g,type);
  g.garbShapes=["PYRAMID","HEXAGON","PYRAMID"];g.garbLeft=0;
  const original=new Map(entries(g).map(q=>[q.b.id,{x:q.x,y:q.y,vx:q.v.x,vy:q.v.y}]));
  prepareGarbageBatch(g);
- const last=new Map(),stall=new Map();let done=-1,minDistance=Infinity,maxStall=0,spawned=0;
- for(let frame=0;frame<3200;frame++){
+ let prevState=null,globalStall=0,maxGlobalStall=0,done=-1,minDistance=Infinity,spawned=0;
+ for(let frame=0;frame<4000;frame++){
   updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);updateGarbagePacks(g,PHYSICS_FRAME);
-  for(const [id,o] of original){const q=entries(g).find(z=>z.b.id===id);expect(q,"original pile disappeared "+id);expect(q.x===o.x&&q.y===o.y,"original pile logical move during attack");expect(Math.abs(q.v.x-o.vx)<1e-8&&Math.abs(q.v.y-o.vy)<1e-8,"original pile visual move during attack");expect(q.b.garbagePhaseFrozen===true,"original pile lost freeze during attack");}
+  for(const[id,o]of original){const q=entries(g).find(z=>z.b.id===id);expect(q,"original pile disappeared "+id);expect(q.x===o.x&&q.y===o.y,"original pile logical move during attack");expect(Math.abs(q.v.x-o.vx)<1e-8&&Math.abs(q.v.y-o.vy)<1e-8,"original pile visual move during attack");expect(q.b.garbagePhaseFrozen===true,"original pile lost freeze during attack");}
   const gs=entries(g).filter(q=>q.b.isGarbage&&!original.has(q.b.id));spawned=Math.max(spawned,gs.length);
-  for(const q of gs){
-   expect(!q.b.garbagePhaseFrozen,"current-batch garbage was promoted into frozen snapshot: "+q.b.id);
-   const prev=last.get(q.b.id),now=[q.v.x,q.v.y],d=prev?phys(prev,now):Infinity;
-   const path=Array.isArray(q.b.fallPath)&&q.b.fallPath.length>0;
-   const p=path?null:hexPhysNaturalMotion(g.board,q.x,q.y);
-   const shouldProgress=path||!!(p&&p.ty>p.y);
-   let s=stall.get(q.b.id)||0;
-   if(shouldProgress&&prev&&d<1e-6)s++;else s=0;
-   stall.set(q.b.id,s);maxStall=Math.max(maxStall,s);
-   expect(s<72,"garbage chain froze despite remaining gravity: "+JSON.stringify({type,frame,id:q.b.id,cell:[q.x,q.y],visual:now,path:q.b.fallPath||[],proposal:p&&{to:[p.tx,p.ty],kind:p.kind,pivot:p.pivot,topPivot:p.topPivot},nearby:nearby(g,q)}));
-   last.set(q.b.id,now);
-  }
+  for(const q of gs)expect(!q.b.garbagePhaseFrozen,"current-batch garbage was promoted into frozen snapshot: "+q.b.id);
   for(let i=0;i<gs.length;i++)for(let j=i+1;j<gs.length;j++){const d=phys([gs[i].v.x,gs[i].v.y],[gs[j].v.x,gs[j].v.y]);minDistance=Math.min(minDistance,d);expect(d>=HEX_MIN_DIST-9e-4,"garbage overlap in chain settle stress: "+JSON.stringify({type,frame,d,a:gs[i].b.id,b:gs[j].b.id}));}
+
+  const now=stateOf(gs),progress=changed(prevState,now);prevState=now;
+  const hasPath=gs.some(q=>Array.isArray(q.b.fallPath)&&q.b.fallPath.length);
+  const raw=gs.map(q=>({q,p:rawDown(g,q)})).filter(z=>z.p);
+  const accepted=typeof window.__hexGarbageCanonicalReadyEvent==="function"?window.__hexGarbageCanonicalReadyEvent(g,true):[];
+  const unfinished=hasPath||raw.length>0||accepted.length>0||(g.garbagePlans||[]).some(p=>!p._started);
+  if(unfinished&&!progress)globalStall++;else globalStall=0;
+  maxGlobalStall=Math.max(maxGlobalStall,globalStall);
+  expect(globalStall<72,"whole garbage system chain-froze with remaining gravity: "+JSON.stringify({type,frame,raw:raw.slice(0,8).map(z=>({id:z.q.b.id,cell:[z.q.x,z.q.y],to:[z.p.tx,z.p.ty],kind:z.p.kind,pivot:z.p.pivot,topPivot:z.p.topPivot})),accepted:(accepted||[]).map(p=>({id:p.ball?.id,from:[p.x,p.y],to:[p.tx,p.ty],kind:p.kind,follow:p.followSupportIds||[]})),active:gs.filter(q=>q.b.fallPath?.length).slice(0,8).map(q=>({id:q.b.id,cell:[q.x,q.y],visual:[q.v.x,q.v.y],seg:q.b.fallPath[0]}))}));
   if(garbageBatchDone(g)){done=frame;break;}
  }
  expect(done>=0,"garbage batch never completed on terrain "+type);
  expect(spawned>=12,"too few garbage balls spawned on terrain "+type+": "+spawned);
- for(const q of entries(g).filter(z=>z.b.isGarbage&&!original.has(z.b.id))){
+ const finalGarbage=entries(g).filter(z=>z.b.isGarbage&&!original.has(z.b.id));
+ for(const q of finalGarbage){
   expect(!(Array.isArray(q.b.fallPath)&&q.b.fallPath.length),"finished garbage retained fallPath: "+q.b.id);
   const p=hexPhysNaturalMotion(g.board,q.x,q.y);
-  expect(!p||p.ty<=p.y,"finished garbage still had downward space: "+JSON.stringify({type,id:q.b.id,cell:[q.x,q.y],to:p&&[p.tx,p.ty],kind:p&&p.kind}));
+  expect(!p||p.ty<=p.y,"finished garbage still had downward/open-gap move: "+JSON.stringify({type,id:q.b.id,cell:[q.x,q.y],to:p&&[p.tx,p.ty],kind:p&&p.kind,pivot:p&&p.pivot,topPivot:p&&p.topPivot}));
  }
- reports.push({type,done,spawned,maxStall,minDistance});
+ reports.push({type,done,spawned,maxGlobalStall,minDistance});
 }
 console.log("garbage chain-free dense settle PASS",JSON.stringify(reports));
 `;
