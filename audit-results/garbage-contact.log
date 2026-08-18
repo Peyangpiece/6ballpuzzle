@@ -13,13 +13,13 @@ evalmachine.<anonymous>:5065
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: later garbage entering the same intermediate cell was not locally queued
+Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"local":[25,32,24,16,27,28,29,31,30,23],"d":0.932142083550077,"a":{"kind":"board","id":23,"x":18,"y":7.073277955594567,"logical":[16,9],"settled":true,"pathLen":2,"seq":42,"seg":{"from":[18,7],"to":[17,8],"kind":"ROLL_LEFT","pileFlow":false}},"b":{"kind":"board","id":22,"x":16.41435962596084,"y":7.63934628477909,"logical":[18,9],"settled":false,"pathLen":2,"seq":40,"seg":{"from":[16,7],"to":[17,8],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":0.9583333333333324,"end":1.0114320923756654}}}
     at expect (evalmachine.<anonymous>:5065:34)
-    at evalmachine.<anonymous>:5114:2
+    at evalmachine.<anonymous>:5109:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:83:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:64:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
