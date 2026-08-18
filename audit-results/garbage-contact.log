@@ -1,0 +1,20 @@
+garbage airborne pass-through + continuous pile contact PASS
+gridified garbage diagnostic {"totalUp":1,"upWorst":{"type":"HEXAGON","frame":151,"id":6,"prev":9.041328207125442,"now":9.000063686399725,"delta":0.041264520725716736,"logical":[1,10],"path":[]},"min":0.9999999999999987,"worst":{"type":"HEXAGON","frame":155,"d":0.9999999999999987,"a":{"id":5,"logical":[3,10],"visual":[3.5163865132697163,9.879565858628515],"path":[]},"b":{"id":1,"logical":[4,11],"visual":[4,11],"path":[]}},"pileMin":null,"pileWorst":null}
+evalmachine.<anonymous>:3670
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: gridified garbage moved upward: {"type":"HEXAGON","frame":151,"id":6,"prev":9.041328207125442,"now":9.000063686399725,"delta":0.041264520725716736,"logical":[1,10],"path":[]}
+    at expect (evalmachine.<anonymous>:3670:34)
+    at evalmachine.<anonymous>:3699:1
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-gridified-motion-diagnostic.js:42:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+garbage queued-motion overlap diagnostic PASS {"min":0.9999999990698493,"worst":{"step":1203,"state":"RESOLVING","phase":"GARBAGE","min":0.9999999990698493,"pair":[{"id":10,"logical":[5,10],"visual":[5.94128156293775,9.020354611167344],"garbage":true,"path":[]},{"id":4,"logical":[7,10],"visual":[7,10],"garbage":false,"path":[]}]}}
