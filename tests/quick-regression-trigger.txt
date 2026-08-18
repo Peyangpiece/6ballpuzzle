@@ -1,1 +1,1 @@
-quick radius arc install attempt trace 30
+quick install-time arc rejection trace 31
