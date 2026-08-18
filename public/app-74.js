@@ -1,12 +1,12 @@
 /* HEXDROP hard-drop post-contact continuity.
  *
  * A guide/contact pose may be a stable continuous position between bookkeeping
- * lattice centres.  Once SETTLE has accepted that pose, promote the temporary
+ * lattice centres. Once SETTLE has accepted that pose, promote the temporary
  * app-68 hold to a persistent continuous rest instead of leaving a stale hold
- * flag forever.  If support later disappears, the first real fallPath is
+ * flag forever. If support later disappears, the first real fallPath is
  * rebased from that exact rest point.
  *
- * Hard-dropped balls also carry downward impact momentum.  Final visual contact
+ * Hard-dropped balls also carry downward impact momentum. Final visual contact
  * correction must never make those three balls visibly recoil upward from the
  * contact pose; downward and lateral pile motion remain unrestricted.
  */
@@ -41,9 +41,12 @@ hardDrop=function(g){
 };
 
 if(__hex74RenderMobilityBeforeContinuity){
-    hexRenderMobility=function(ball,v){
-        if(hex74StableContactMarker(ball))return 0;
-        return __hex74RenderMobilityBeforeContinuity(ball,v);
+    // hexRenderMobility's canonical signature is (game, visualItem). The prior
+    // revision treated the first argument as a ball, so the stable-contact test
+    // never matched and final overlap projection could move the held contact.
+    hexRenderMobility=function(g,q){
+        if(hex74StableContactMarker(q?.ball))return 0;
+        return __hex74RenderMobilityBeforeContinuity(g,q);
     };
 }
 
