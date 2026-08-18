@@ -112,6 +112,53 @@
         }
     }
 
+    function chooseQueuedMover(a,b,queued){
+        const qa=queued.has(a.ball.id),qb=queued.has(b.ball.id);
+        if(qa&&!qb)return a;
+        if(qb&&!qa)return b;
+        if(!qa&&!qb)return null;
+        if(seq(a)!==seq(b))return seq(a)>seq(b)?a:b;
+        return a.ball.id>b.ball.id?a:b;
+    }
+
+    function separateHeldPair(g,a,b,queued){
+        const hardA=immutable(g,a)||resting(a),hardB=immutable(g,b)||resting(b);
+        if(hardA&&hardB)return false;
+
+        let mover=null,other=null;
+        if(hardA&&!hardB){mover=b;other=a;}
+        else if(hardB&&!hardA){mover=a;other=b;}
+        else{
+            mover=chooseQueuedMover(a,b,queued);
+            if(!mover)return false;
+            other=mover===a?b:a;
+        }
+
+        // A locally queued ball is still physically movable for penetration
+        // correction. First rewind to the last safe point; unlike the old
+        // fixedA&&fixedB escape hatch, never leave an overlap behind merely
+        // because both objects are currently held by different constraints.
+        if(clampToPreviousContact(g,mover,other))return true;
+
+        let need=requiredHorizontal(a,b);
+        if(need>1e-10)need-=pushOut(mover,other,need);
+        if(distance(a,b)>=MIN-5e-7)return true;
+
+        // If two queued (non-resting) members are wall-blocked, let the other
+        // queued member yield as a last resort. Settled/original pile balls are
+        // never moved by this fallback.
+        if(!hardA&&!hardB){
+            const second=mover===a?b:a;
+            if(!immutable(g,second)&&!resting(second)){
+                need=requiredHorizontal(a,b);
+                if(need>1e-10)pushOut(second,mover,need);
+                if(distance(a,b)>=MIN-5e-7)return true;
+                if(clampToPreviousContact(g,second,mover))return true;
+            }
+        }
+        return distance(a,b)>=MIN-5e-7;
+    }
+
     function hardSeparate(g){
         const list=items(g);if(list.length<2)return;
         const queued=(typeof __hexdropGarbageMotionQueue==="function"?__hexdropGarbageMotionQueue(g).queued:new Set());
@@ -125,11 +172,16 @@
                     a.v.x=a.x;a.v.y=a.y;b.v.x=b.x;b.v.y=b.y;continue;
                 }
 
-                const fixedA=immutable(g,a)||resting(a)||queued.has(a.ball.id);
-                const fixedB=immutable(g,b)||resting(b)||queued.has(b.ball.id);
-                if(fixedA&&fixedB)continue;
-                let need=requiredHorizontal(a,b);if(need<=1e-10)continue;
+                const hardA=immutable(g,a)||resting(a),hardB=immutable(g,b)||resting(b);
+                const queuedA=queued.has(a.ball.id),queuedB=queued.has(b.ball.id);
+                const fixedA=hardA||queuedA,fixedB=hardB||queuedB;
 
+                if(fixedA&&fixedB){
+                    separateHeldPair(g,a,b,queued);
+                    continue;
+                }
+
+                let need=requiredHorizontal(a,b);if(need<=1e-10)continue;
                 let first,second;
                 if(fixedA){first=b;second=null;}
                 else if(fixedB){first=a;second=null;}
