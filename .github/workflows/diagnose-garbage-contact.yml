@@ -5,6 +5,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   diagnose:
     runs-on: ubuntu-latest
@@ -13,5 +16,30 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Diagnose STRAIGHT individual contacts
-        run: node tests/garbage-straight-contact-diagnostic.js
+      - name: Run reference pile-contact audits
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          : > audit-results/garbage-contact.log
+
+          node tests/garbage-airborne-pass-through.js >> audit-results/garbage-contact.log 2>&1
+          A=$?
+          node tests/garbage-gridified-motion-diagnostic.js >> audit-results/garbage-contact.log 2>&1
+          B=$?
+          node tests/garbage-overlap-frame-diagnostic.js >> audit-results/garbage-contact.log 2>&1
+          C=$?
+
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","continuousContact":%s,"pileNoTunnel":%s,"overlap":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" > audit-results/garbage-contact.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/garbage-contact.log audit-results/garbage-contact.json
+          git commit -m 'Record garbage pile-contact audit [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+          cat audit-results/garbage-contact.log
+          test "$STATUS" = pass
