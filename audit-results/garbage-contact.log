@@ -4,13 +4,13 @@ accumulated pile support-arc motion PASS
 technique-aware CPU levels PASS {"hex3":75.2136,"hex4":247.13040000000004,"hex5":737.9064000000001,"pyr5":583.57332,"move":{"x":5,"y":10,"rot":3}}
 garbage post-split rigidity zero PASS {"plan":[{"id":2,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":3,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":4,"kind":"ROLL_RIGHT","bundle":0,"size":0}],"support":1}
 garbage lower-diagonal before final settle PASS {"from":[2,1],"to":[1,2],"frozen":[8,1],"kind":"ROLL_LEFT","pivot":[3,2],"topPivot":null}
-evalmachine.<anonymous>:4690
+evalmachine.<anonymous>:4650
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage chain froze despite remaining gravity: {"type":1,"frame":158,"id":14,"cell":[2,7],"visual":[3.910721929969946,5.031586643670586],"path":[{"from":[4,5],"to":[3,6],"pivot":[5,6],"topPivot":null,"movingSupportId":0,"followSupportIds":[],"kind":"FOLLOW_RESOLVED_ARC","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageResolvedFollowSupport":true,"garbageIndependentAfterSplit":true},{"from":[3,6],"to":[2,7],"pivot":[4,7],"topPivot":null,"movingSupportId":0,"followSupportIds":[],"kind":"FOLLOW_RESOLVED_ARC","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"garbageResolvedFollowSupport":true,"garbageIndependentAfterSplit":true}],"proposal":null,"nearby":[{"id":16,"garbage":true,"frozen":false,"cell":[3,8],"visual":[5,6],"d":1,"path":[{"from":[5,6],"to":[4,7],"kind":"FOLLOW_RESOLVED_ARC","pivot":[6,7],"topPivot":null},{"from":[4,7],"to":[3,8],"kind":"ROLL_LEFT","pivot":[5,8],"topPivot":null}]},{"id":15,"garbage":true,"frozen":false,"cell":[0,9],"visual":[2.910721929969946,6.031586643670586],"d":1,"path":[{"from":[3,6],"to":[2,7],"kind":"FOLLOW_RESOLVED_ARC","pivot":[4,7],"topPivot":null},{"from":[2,7],"to":[2,7.845299461620749],"kind":"FREE_FALL_TO_SUPPORT","pivot":null,"topPivot":null}]},{"id":24,"garbage":true,"frozen":false,"cell":[4,7],"visual":[5,4.0631732778253635],"d":1.0000000069114272,"path":[{"from":[5,4],"to":[5,6],"kind":"FREE_FALL","pivot":null,"topPivot":null},{"from":[5,6],"to":[5,6.8452994616207485],"kind":"FREE_FALL_TO_SUPPORT","pivot":null,"topPivot":null}]}]}
-    at expect (evalmachine.<anonymous>:4690:34)
-    at evalmachine.<anonymous>:4731:4
+Error: garbage chain froze despite remaining gravity: {"type":1,"frame":222,"id":16,"cell":[3,8],"visual":[3,8],"path":[],"proposal":{"to":[4,9],"kind":"ROLL_RIGHT","pivot":[2,9],"topPivot":null},"nearby":[{"id":22,"garbage":true,"frozen":false,"cell":[2,7],"visual":[2,7],"d":1,"path":[]},{"id":24,"garbage":true,"frozen":false,"cell":[4,7],"visual":[4,7],"d":1,"path":[]},{"id":14,"garbage":true,"frozen":false,"cell":[1,8],"visual":[1,8],"d":1,"path":[]},{"id":13,"garbage":false,"frozen":true,"cell":[5,8],"visual":[5,8],"d":1,"path":[]},{"id":18,"garbage":true,"frozen":false,"cell":[2,9],"visual":[2,9],"d":1,"path":[]}]}
+    at expect (evalmachine.<anonymous>:4650:34)
+    at evalmachine.<anonymous>:4691:4
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
