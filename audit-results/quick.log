@@ -39,6 +39,25 @@ HARD_DROP_CONVERGENCE {
             3
           ],
           "installed": false,
+          "diag": {
+            "ids": [
+              1,
+              2,
+              3
+            ],
+            "reason": "member-shape",
+            "memberCount": 3,
+            "gid": 5,
+            "kinds": [
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE"
+            ],
+            "sameDisp": null,
+            "linearSafe": null,
+            "candidates": [],
+            "movingSupports": []
+          },
           "paths": [
             {
               "id": 1,
@@ -204,6 +223,25 @@ HARD_DROP_CONVERGENCE {
             3
           ],
           "installed": false,
+          "diag": {
+            "ids": [
+              1,
+              2,
+              3
+            ],
+            "reason": "member-shape",
+            "memberCount": 3,
+            "gid": 7,
+            "kinds": [
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE"
+            ],
+            "sameDisp": null,
+            "linearSafe": null,
+            "candidates": [],
+            "movingSupports": []
+          },
           "paths": [
             {
               "id": 1,
@@ -311,6 +349,25 @@ HARD_DROP_CONVERGENCE {
             3
           ],
           "installed": false,
+          "diag": {
+            "ids": [
+              1,
+              2,
+              3
+            ],
+            "reason": "member-shape",
+            "memberCount": 3,
+            "gid": 8,
+            "kinds": [
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE"
+            ],
+            "sameDisp": null,
+            "linearSafe": null,
+            "candidates": [],
+            "movingSupports": []
+          },
           "paths": [
             {
               "id": 1,
@@ -485,6 +542,25 @@ HARD_DROP_CONVERGENCE {
             3
           ],
           "installed": false,
+          "diag": {
+            "ids": [
+              1,
+              2,
+              3
+            ],
+            "reason": "member-shape",
+            "memberCount": 3,
+            "gid": 11,
+            "kinds": [
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE"
+            ],
+            "sameDisp": null,
+            "linearSafe": null,
+            "candidates": [],
+            "movingSupports": []
+          },
           "paths": [
             {
               "id": 1,
@@ -959,6 +1035,25 @@ HARD_DROP_CONVERGENCE {
             3
           ],
           "installed": false,
+          "diag": {
+            "ids": [
+              1,
+              2,
+              3
+            ],
+            "reason": "member-shape",
+            "memberCount": 3,
+            "gid": 12,
+            "kinds": [
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE",
+              "GROUP_SLOPE_TRANSLATE"
+            ],
+            "sameDisp": null,
+            "linearSafe": null,
+            "candidates": [],
+            "movingSupports": []
+          },
           "paths": [
             {
               "id": 1,
