@@ -9,13 +9,13 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-evalmachine.<anonymous>:4842
+evalmachine.<anonymous>:4921
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage actual overlap: {"variant":1,"type":"PYRAMID","frame":107,"local":[16],"d":0.951819178782511,"a":{"kind":"board","id":17,"x":4.864853310574717,"y":4.866206727235014,"logical":[4,7],"settled":false,"pathLen":2,"seq":24,"seg":{"from":[5,4.8452994616207485],"to":[4,5],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"start":0.8916666666666659,"end":0.9213927483962778}},"b":{"kind":"pack","id":"p0:0","x":4,"y":5.8452994616207485}}
-    at expect (evalmachine.<anonymous>:4842:34)
-    at evalmachine.<anonymous>:4886:3
+Error: garbage actual overlap: {"variant":2,"type":"PYRAMID","frame":158,"local":[18],"d":0.9789594160192937,"a":{"kind":"board","id":18,"x":3.9764371551410838,"y":7.03636707274404,"logical":[3,8],"settled":false,"pathLen":1,"seq":57,"seg":{"from":[4,7],"to":[3,8],"kind":"ROLL_LEFT","pileFlow":true,"start":1.3247820322441766,"end":1.4914486989108433}},"b":{"kind":"pack","id":"p3:0","x":5,"y":8}}
+    at expect (evalmachine.<anonymous>:4921:34)
+    at evalmachine.<anonymous>:4965:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -26,13 +26,13 @@ Error: garbage actual overlap: {"variant":1,"type":"PYRAMID","frame":107,"local"
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-evalmachine.<anonymous>:4842
+evalmachine.<anonymous>:4921
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage never moved concurrently: {"type":"PYRAMID","variant":0,"maxConcurrent":1,"maxStall":0}
-    at expect (evalmachine.<anonymous>:4842:34)
-    at evalmachine.<anonymous>:4893:2
+Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":165,"id":15,"local":[19,18],"visual":[4,5.845992852066117],"logical":[5,10],"path":{"from":[4,5],"to":[4,7],"pivot":null,"topPivot":null,"movingSupportId":0,"followSupportIds":[],"kind":"FREE_FALL","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"pileFlowOriginalSeq":2,"pileFlow":true,"pileFlowEntry":false,"pileFlowReason":"garbage_pile_contact","pileFlowStart":1.2798972424970827,"pileFlowDuration":0.24453183164286196,"pileFlowEnd":1.5244290741399447,"garbageImmediateSchedule":true,"garbageGridMotion":true}}
+    at expect (evalmachine.<anonymous>:4921:34)
+    at evalmachine.<anonymous>:4961:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
