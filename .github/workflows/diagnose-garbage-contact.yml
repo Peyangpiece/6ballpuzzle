@@ -49,10 +49,12 @@ jobs:
           I=$?
           node tests/gameover-garbage-fade.js >> audit-results/garbage-contact.log 2>&1
           J=$?
+          node tests/garbage-render-overlap-guard.js >> audit-results/garbage-contact.log 2>&1
+          K=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"wallGapRegression":%s,"gameoverGarbageFade":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ] && [ "$K" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"wallGapRegression":%s,"gameoverGarbageFade":%s,"garbageRenderOverlap":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" "$K" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
