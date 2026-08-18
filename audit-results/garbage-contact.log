@@ -9,13 +9,13 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":57,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-evalmachine.<anonymous>:4904
+evalmachine.<anonymous>:4903
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":115,"d":0.9941159789063667,"a":{"kind":"board","id":16,"x":16,"y":7,"logical":[15,10],"settled":false,"pathLen":2,"seq":100005,"seg":{"from":[16,7],"to":[16,9],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":0.9666666666666657,"end":1.2452838759642684}},"b":{"kind":"board","id":15,"x":17.987424448221123,"y":7.03271279403546,"logical":[17,10],"settled":false,"pathLen":2,"seq":100002,"seg":{"from":[18,7],"to":[17,8],"kind":"ROLL_LEFT","pileFlow":true,"start":0.9583333333333324,"end":1.1249999999999991}}}
-    at expect (evalmachine.<anonymous>:4904:34)
-    at evalmachine.<anonymous>:4940:3
+    at expect (evalmachine.<anonymous>:4903:34)
+    at evalmachine.<anonymous>:4939:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -26,13 +26,13 @@ Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":115,"d":0.
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-evalmachine.<anonymous>:4904
+evalmachine.<anonymous>:4903
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: unsupported garbage froze in air: {"type":"HEXAGON","variant":1,"frame":121,"id":18,"visual":[6,7],"logical":[8,9],"path":{"from":[6,7],"to":[7,8],"pivot":[5,8],"topPivot":null,"movingSupportId":0,"followSupportIds":[],"kind":"ROLL_RIGHT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"pileFlowOriginalSeq":100004,"pileFlow":true,"pileFlowReason":"garbage_pile_contact","pileFlowEntry":false,"_pileNominalDuration":0.16666666666666666,"pileFlowStart":1.0166666666666655,"pileFlowDuration":0.16666666666666666,"pileFlowEnd":1.1833333333333322,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":false,"garbageRealCollisionDelay":true,"garbageRealCollisionDelayCount":7,"garbageRealCollisionBlockerId":17}}
-    at expect (evalmachine.<anonymous>:4904:34)
-    at evalmachine.<anonymous>:4953:7
+    at expect (evalmachine.<anonymous>:4903:34)
+    at evalmachine.<anonymous>:4952:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
