@@ -30,14 +30,16 @@ jobs:
 
           node tests/garbage-normal-physics.js >> audit-results/garbage-contact.log 2>&1
           A=$?
-          node tests/pile-arc-motion.js >> audit-results/garbage-contact.log 2>&1
+          node tests/garbage-presentation.js >> audit-results/garbage-contact.log 2>&1
           B=$?
-          node tests/ai-technique-levels.js >> audit-results/garbage-contact.log 2>&1
+          node tests/pile-arc-motion.js >> audit-results/garbage-contact.log 2>&1
           C=$?
+          node tests/ai-technique-levels.js >> audit-results/garbage-contact.log 2>&1
+          D=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"pileArc":%s,"aiTechnique":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
