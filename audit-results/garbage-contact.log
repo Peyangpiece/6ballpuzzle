@@ -9,13 +9,13 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-evalmachine.<anonymous>:4894
+evalmachine.<anonymous>:4899
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":117,"d":0.9983216258316364,"a":{"kind":"board","id":26,"x":12.9872320813339,"y":6.007048958006178,"logical":[12,9],"settled":false,"pathLen":2,"seq":100035,"seg":{"from":[13,6],"to":[13,8],"kind":"FREE_FALL","pileFlow":true,"start":0.9912032033425752,"end":1.269820412640178}},"b":{"kind":"board","id":17,"x":13.999476393732337,"y":7.0006863376086,"logical":[13,10],"settled":false,"pathLen":2,"seq":100008,"seg":{"from":[14,7],"to":[14,9],"kind":"FREE_FALL","pileFlow":true,"start":0.9833333745112779,"end":1.2619505838088807}}}
-    at expect (evalmachine.<anonymous>:4894:34)
-    at evalmachine.<anonymous>:4930:3
+    at expect (evalmachine.<anonymous>:4899:34)
+    at evalmachine.<anonymous>:4935:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -26,13 +26,13 @@ Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":117,"d":0.
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-evalmachine.<anonymous>:4894
+evalmachine.<anonymous>:4899
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: unsupported garbage froze in air: {"type":"HEXAGON","variant":1,"frame":190,"id":19,"visual":[2,7.511321128701201],"logical":[1,8],"path":{"from":[2,7],"to":[1,8],"pivot":null,"topPivot":[2,9],"movingSupportId":0,"followSupportIds":[],"kind":"ROLL_LEFT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"pileFlowOriginalSeq":100007,"pileFlow":true,"pileFlowReason":"garbage_pile_contact","pileFlowEntry":false,"_pileNominalDuration":0.23376922038491138,"pileFlowStart":1.4559541680194703,"pileFlowDuration":0.23376922038491138,"pileFlowEnd":1.6897233884043816,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":false}}
-    at expect (evalmachine.<anonymous>:4894:34)
-    at evalmachine.<anonymous>:4943:7
+Error: unsupported garbage froze in air: {"type":"HEXAGON","variant":1,"frame":190,"id":19,"visual":[2,7.511321128701201],"logical":[1,8],"path":{"from":[2,7],"to":[1,8],"pivot":null,"topPivot":[2,9],"movingSupportId":0,"followSupportIds":[],"kind":"ROLL_LEFT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"pileFlowOriginalSeq":100007,"pileFlow":true,"pileFlowReason":"garbage_pile_contact","pileFlowEntry":false,"_pileNominalDuration":0.23376922038491138,"pileFlowStart":1.4559541680194703,"pileFlowDuration":0.23376922038491138,"pileFlowEnd":1.6897233884043816,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":false,"garbageSweepBlockerId":21,"garbageSweepBlockCount":74}}
+    at expect (evalmachine.<anonymous>:4899:34)
+    at evalmachine.<anonymous>:4948:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
