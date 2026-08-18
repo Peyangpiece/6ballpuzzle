@@ -9,4 +9,20 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-garbage-to-garbage visible overlap guard PASS {"actual":{"d":0.9999999990094732,"a":{"kind":"board","id":15,"x":2.1397016918271037,"y":7.423985139945905,"logical":[2,9],"settled":false,"original":false,"pathLen":1,"seq":33,"seg":{"from":[2,7],"to":[2,9],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":1.1491820322142694,"end":1.236852207223596},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":false,"pairSepCount":0,"hardSeparated":true,"hardSepCount":635,"contactClamped":false,"contactClampCount":0,"queueHeld":true,"sweepBlocked":true,"sweepBlocks":5,"pileFlow":true}},"b":{"kind":"board","id":16,"x":4,"y":7,"logical":[5,10],"settled":false,"original":false,"pathLen":2,"seq":34,"seg":{"from":[4,7],"to":[4,9],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":1.3249999999999984,"end":1.412670175009325},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":false,"pairSepCount":0,"hardSeparated":false,"hardSepCount":0,"contactClamped":false,"contactClampCount":0,"queueHeld":true,"sweepBlocked":false,"sweepBlocks":0,"pileFlow":true}},"variant":1,"type":"STRAIGHT","frame":138},"render":{"d":0.9999999990094732,"a":{"kind":"board","id":15,"x":2.1397016918271037,"y":7.423985139945905,"logical":[2,9],"settled":false,"original":false,"pathLen":1,"seq":33,"seg":{"from":[2,7],"to":[2,9],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":1.1491820322142694,"end":1.236852207223596},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":false,"pairSepCount":0,"hardSeparated":true,"hardSepCount":635,"contactClamped":false,"contactClampCount":0,"queueHeld":true,"sweepBlocked":true,"sweepBlocks":5,"pileFlow":true}},"b":{"kind":"board","id":16,"x":4,"y":7,"logical":[5,10],"settled":false,"original":false,"pathLen":2,"seq":34,"seg":{"from":[4,7],"to":[4,9],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":1.3249999999999984,"end":1.412670175009325},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":false,"pairSepCount":0,"hardSeparated":false,"hardSepCount":0,"contactClamped":false,"contactClampCount":0,"queueHeld":true,"sweepBlocked":false,"sweepBlocks":0,"pileFlow":true}},"variant":1,"type":"STRAIGHT","frame":138}}
+evalmachine.<anonymous>:4842
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.9583532725176913,"a":{"kind":"board","id":23,"x":18,"y":7.100459204221669,"logical":[16,9],"settled":true,"pathLen":2,"seq":44},"b":{"kind":"board","id":22,"x":16.088268075050475,"y":7.020782718961467,"logical":[18,9],"settled":false,"pathLen":2,"seq":42}}
+    at expect (evalmachine.<anonymous>:4842:34)
+    at evalmachine.<anonymous>:4897:3
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:76:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
