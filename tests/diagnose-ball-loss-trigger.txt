@@ -1,1 +1,1 @@
-run focused diagnoses 12 app71 quiescent contact
+run focused diagnoses 13 app71 + performance phases
