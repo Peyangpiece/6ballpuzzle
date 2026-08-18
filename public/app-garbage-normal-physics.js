@@ -9,6 +9,7 @@
 (function installGarbageNormalPhysics(){
     if(typeof window==="undefined"||window.__hexGarbageNormalPhysics)return;
     window.__hexGarbageNormalPhysics=true;
+    window.__hexGarbageRuntimeVersion="normal-v1";
 
     const NORMAL_GARBAGE_INTERVAL=0.5;
     const NORMAL_GARBAGE_SETTLE_TOL=0.06;
