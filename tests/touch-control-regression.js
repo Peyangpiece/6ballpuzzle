@@ -53,8 +53,8 @@ function fresh(seed=777){
 }
 function boardBalls(g){const out=[];for(let y=-16;y<12;y++)for(let x=0;x<19;x++){const b=g.board[y]?.[x];if(b)out.push({b,x,y,v:g.vis.get(b.id)});}return out;}
 
-// Bottom-zone one-finger tap must physically reach the landing shadow, not just
-// flip the engine state to RESOLVING.
+// A bottom-zone single-finger tap must physically reach the landing shadow, not
+// merely change the state to RESOLVING.
 {
   const g=fresh(),cv=canvas();
   const shadow=ctx.landingShadowVisualCells(g).map(q=>[q[0],q[1]]);
@@ -69,13 +69,13 @@ function boardBalls(g){const out=[];for(let y=-16;y<12;y++)for(let x=0;x<19;x++)
   }
 }
 
-// Lower-half long press must survive normal touch jitter and actually make the
-// fall clock advance at the configured fast multiplier.
+// A lower-half one-finger long press must survive ordinary touch jitter and
+// actually advance the fall clock at the configured fast multiplier.
 {
   const g=fresh(778),cv=canvas();
   dispatch('pointerdown',ev(2,cv,640,500));
   nowMs+=80;
-  dispatch('pointermove',ev(2,cv,648,503)); // harmless finger jitter
+  dispatch('pointermove',ev(2,cv,648,503));
   assert(fireLastTimer(),'lower-half press lost its long-press timer to touch jitter');
   assert(g.fastForward===true,'one-finger long press did not enable fast fall');
   const before=g.dropT;
@@ -98,11 +98,13 @@ function boardBalls(g){const out=[];for(let y=-16;y<12;y++)for(let x=0;x<19;x++)
   dispatch('pointerup',ev(3,cv,593,230));
 }
 
-// Releasing a fractional-X piece above an asymmetric support must never leave
-// the rendered triplet frozen between lattice columns. It either keeps moving
-// downward continuously or reaches lock within the normal contact window.
+// Reproduce the reported freeze at the actual transition: put the active
+// triplet immediately above an asymmetric support, slide it between columns,
+// then release. It must keep its fractional X, continue monotonically to the
+// circle contact, and lock within the normal contact window.
 {
   const g=fresh(780),cv=canvas();
+  g.piece={...g.piece,y:8};g.pieceVY=8;g.dropT=0;g.lockT=0;
   ctx.__touchSeedBall(g,10,11,900001);
   dispatch('pointerdown',ev(4,cv,560,230));
   dispatch('pointermove',ev(4,cv,584,230));
@@ -119,7 +121,7 @@ function boardBalls(g){const out=[];for(let y=-16;y<12;y++)for(let x=0;x<19;x++)
     maxSame=Math.max(maxSame,same);last=y;
   }
   assert(maxSame<=14,'fractional-X release froze between lattice cells');
-  assert(g.state!=='PLAYING'||!g.piece,'fractional-X release never reached a legal lock');
+  assert(g.state!=='PLAYING'||!g.piece,'fractional-X release never reached a legal lock near contact');
 }
 
 // An accidental second finger must never itself trigger hard drop / fast fall.
@@ -140,7 +142,7 @@ function boardBalls(g){const out=[];for(let y=-16;y<12;y++)for(let x=0;x<19;x++)
   assert(g.fastForward===false,'pointercancel left fast fall active');
 }
 
-// During the NEW match READY phase, an older PLAYING engine must never receive
+// During a NEW match READY phase, an older PLAYING engine must never receive
 // input. The newest local human engine owns the canvas even before PLAYING.
 {
   const old=fresh(783),oldPiece={...old.piece};
