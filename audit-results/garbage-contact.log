@@ -6,3 +6,4 @@ garbage final-position + pre-existing-pile gate PASS
 technique-aware CPU levels PASS {"hex3":75.2136,"hex4":247.13040000000004,"hex5":737.9064000000001,"pyr5":583.57332,"move":{"x":5,"y":10,"rot":3}}
 garbage swept pile-tunnel guard PASS
 accumulated pile support-arc motion PASS
+garbage original-pile -> lattice motion PASS
