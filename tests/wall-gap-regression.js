@@ -47,7 +47,7 @@ expect(window.__hexFloorAdjacentGapAllowed===false,"floor-gap policy is not stri
 // intentional HEXAGON exception. A ring whose two lower members sit directly on
 // the floor must keep resolving instead of freezing a floor-adjacent cavity.
 {
-  const b=newBoard(),cx=8,cy=ROWS-2;
+  const b=newBoard(),cx=9,cy=ROWS-2;
   placeHexagonRing(b,cx,cy,250);
   expect(!isBalancedHexagonCenterHole(b,cx,cy),"floor-supported HEXAGON gap was incorrectly preserved");
   expect(!ballInBalancedHexagonRing(b,cx-2,cy),"floor-supported ring still received the no-gravity exemption");
