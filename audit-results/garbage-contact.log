@@ -9,13 +9,13 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-evalmachine.<anonymous>:4862
+evalmachine.<anonymous>:4778
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.9579519424102624,"a":{"kind":"board","id":23,"x":18,"y":7.121404208293766,"logical":[16,9],"settled":true,"original":false,"pathLen":2,"seq":44,"seg":{"from":[18,7],"to":[17,8],"kind":"ROLL_LEFT","pileFlow":false},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":false,"pairSepCount":0,"hardSeparated":false,"hardSepCount":0,"contactClamped":false,"contactClampCount":0,"sweepBlocked":false,"sweepBlocks":0,"pileFlow":false}},"b":{"kind":"board","id":22,"x":16.092158708237594,"y":7.020031461599971,"logical":[18,9],"settled":false,"original":false,"pathLen":2,"seq":42,"seg":{"from":[16,7],"to":[17,8],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":0.9583333333333324,"end":1.0114320923756654},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":true,"pairSepCount":96,"hardSeparated":true,"hardSepCount":256,"contactClamped":false,"contactClampCount":0,"sweepBlocked":true,"sweepBlocks":1,"pileFlow":true}}}
-    at expect (evalmachine.<anonymous>:4862:34)
-    at evalmachine.<anonymous>:4923:3
+Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.9579439760765022,"a":{"kind":"board","id":23,"x":18,"y":7.121404208293766,"logical":[16,9],"settled":true,"original":false,"pathLen":2,"seq":44,"seg":{"from":[18,7],"to":[17,8],"kind":"ROLL_LEFT","pileFlow":false},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":false,"pairSepCount":0,"hardSeparated":false,"hardSepCount":0,"contactClamped":false,"contactClampCount":0,"sweepBlocked":false,"sweepBlocks":0,"pileFlow":false}},"b":{"kind":"board","id":22,"x":16.092174708237597,"y":7.020031461599971,"logical":[18,9],"settled":false,"original":false,"pathLen":2,"seq":42,"seg":{"from":[16,7],"to":[17,8],"kind":"FOLLOW_SUPPORT","pileFlow":true,"start":0.9583333333333324,"end":1.0114320923756654},"flags":{"pairBlocked":false,"pairBlocks":0,"pairSeparated":false,"pairSepCount":0,"hardSeparated":true,"hardSepCount":256,"contactClamped":false,"contactClampCount":0,"sweepBlocked":true,"sweepBlocks":1,"pileFlow":true}}}
+    at expect (evalmachine.<anonymous>:4778:34)
+    at evalmachine.<anonymous>:4839:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
