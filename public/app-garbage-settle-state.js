@@ -12,6 +12,7 @@
     window.__hexGarbageSettleState=true;
 
     const POS_EPS=0.012;
+    const REST_SPEED_EPS=0.02;
 
     function garbageLogicalCell(g,id){
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -28,7 +29,20 @@
         if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))return false;
         if(Math.abs(v.x-x)>POS_EPS||Math.abs(v.y-y)>POS_EPS)return false;
         if(v._pendingPathComplete)return false;
-        if(v.pileFlow)return false;
+        if(Math.abs(v.vy||0)>REST_SPEED_EPS||Math.abs(v.motionSpeed||0)>REST_SPEED_EPS)return false;
+
+        // pileFlow is a rendering/scheduling flag, not a physical state. A
+        // swept-collision block can leave it true after the last segment has
+        // already been consumed. If there is no fallPath, the rendered centre is
+        // on the final logical cell, and velocity is zero, the motion is over.
+        // Clear the stale flag here so the garbage can become accumulated pile.
+        if(v.pileFlow){
+            v.pileFlow=false;
+            v.vy=0;
+            v.motionSpeed=0;
+            delete v.garbageSweepBlocked;
+            delete v.garbageFreeFlightHandoff;
+        }
         return true;
     }
 
