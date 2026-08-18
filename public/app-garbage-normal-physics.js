@@ -9,7 +9,7 @@
 (function installGarbageNormalPhysics(){
     if(typeof window==="undefined"||window.__hexGarbageNormalPhysics)return;
     window.__hexGarbageNormalPhysics=true;
-    window.__hexGarbageRuntimeVersion="normal-v1";
+    window.__hexGarbageRuntimeVersion="normal-v2";
 
     const NORMAL_GARBAGE_INTERVAL=0.5;
     const NORMAL_GARBAGE_SETTLE_TOL=0.06;
@@ -29,6 +29,21 @@
         const ball=valid(x,y)?board[y][x]:null;
         if(ball?.garbagePhaseFrozen)return null;
         return ordinaryNaturalMotion(board,x,y,ignore);
+    };
+
+    // FOLLOW_SUPPORT propagation is constructed after the direct natural-motion
+    // proposal. Therefore a frozen pile ball must also be absent from the
+    // candidate set itself; otherwise a moving support can re-create a proposal
+    // for that frozen ball. Frozen balls remain in board occupancy, so incoming
+    // balls still collide with and rest on them normally.
+    const ordinaryContactEntries=hexPhysContactEntries;
+    hexPhysContactEntries=function(board,excluded=new Set()){
+        const blocked=new Set(excluded||[]);
+        for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?board[y][x]:null;
+            if(ball?.garbagePhaseFrozen)blocked.add(ball.id);
+        }
+        return ordinaryContactEntries(board,blocked);
     };
 
     // Garbage metadata must not create a special HEXAGON-hole exemption. Mixed
