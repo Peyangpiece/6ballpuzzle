@@ -9,14 +9,30 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-garbage-to-garbage visible overlap guard PASS {"actual":{"d":0.9999999738916187,"a":{"kind":"board","id":17,"x":2.294793669591733,"y":8.396601769397918,"logical":[2,9],"settled":false,"pathLen":2,"seq":5,"seg":{"from":[4,7],"to":[3,8],"kind":"ROLL_LEFT","pileFlow":true,"start":0.9833333333333323,"end":1.1047273040430772}},"b":{"kind":"board","id":13,"x":1.9613482079094222,"y":9.535140879429779,"logical":[1,10],"settled":false,"pathLen":1,"seq":2,"seg":{"from":[2,9],"to":[1,10],"kind":"ROLL_LEFT","pileFlow":false}},"variant":0,"type":"PYRAMID","frame":124},"render":{"d":0.9999999738916187,"a":{"kind":"board","id":17,"x":2.294793669591733,"y":8.396601769397918,"logical":[2,9],"settled":false,"pathLen":2,"seq":5,"seg":{"from":[4,7],"to":[3,8],"kind":"ROLL_LEFT","pileFlow":true,"start":0.9833333333333323,"end":1.1047273040430772}},"b":{"kind":"board","id":13,"x":1.9613482079094222,"y":9.535140879429779,"logical":[1,10],"settled":false,"pathLen":1,"seq":2,"seg":{"from":[2,9],"to":[1,10],"kind":"ROLL_LEFT","pileFlow":false}},"variant":0,"type":"PYRAMID","frame":124}}
-evalmachine.<anonymous>:4918
+evalmachine.<anonymous>:4868
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: unsupported garbage froze in air: {"type":"HEXAGON","variant":1,"frame":167,"id":21,"local":[],"visual":[3.013880795952268,6.810524410400194],"logical":[2,7],"path":{"from":[3,6],"to":[2,7],"pivot":null,"topPivot":null,"movingSupportId":20,"followSupportIds":[20],"kind":"FOLLOW_SUPPORT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"pileFlowOriginalSeq":11,"pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","pileFlowStart":1.3519225605411507,"pileFlowDuration":0.05309875904233317,"pileFlowEnd":1.4050213195834835,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":true,"garbageGridMotion":true,"garbageRealCollisionDelay":true,"garbageRealCollisionDelayCount":5,"garbageRealCollisionBlockerId":20}}
-    at expect (evalmachine.<anonymous>:4918:34)
-    at evalmachine.<anonymous>:4966:7
+Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":165,"local":[32,31,23,24,17],"d":0.9936706665777317,"a":{"kind":"board","id":19,"x":9.054448217500171,"y":9.978167768092128,"logical":[9,10],"settled":false,"pathLen":1,"seq":41,"seg":{"from":[10,9],"to":[9,10],"kind":"ROLL_LEFT","pileFlow":false}},"b":{"kind":"board","id":18,"x":11.041429756271455,"y":10,"logical":[11,10],"settled":false,"pathLen":1,"seq":40,"seg":{"from":[12,9],"to":[11,10],"kind":"ROLL_LEFT","pileFlow":false}}}
+    at expect (evalmachine.<anonymous>:4868:34)
+    at evalmachine.<anonymous>:4912:3
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-garbage-visible-overlap.js:64:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+evalmachine.<anonymous>:4868
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: unsupported garbage froze in air: {"type":"HEXAGON","variant":1,"frame":129,"id":21,"local":[],"visual":[3.000002689947033,6.0000349980773136],"logical":[2,7],"path":{"from":[3,6],"to":[2,7],"pivot":null,"topPivot":null,"movingSupportId":20,"followSupportIds":[20],"kind":"FOLLOW_SUPPORT","motionSeq":0,"continuousChain":true,"groupSize":0,"bundleId":0,"pileFlowOriginalSeq":100013,"pileFlow":true,"pileFlowReason":"garbage_pile_contact","pileFlowEntry":false,"_pileNominalDuration":0.05309875904233317,"pileFlowStart":1.0833300931177716,"pileFlowDuration":0.05309875904233317,"pileFlowEnd":1.1364288521601047,"garbageImmediateSchedule":true,"garbageImmediateFirstSegment":false,"garbageRealCollisionDelay":true,"garbageRealCollisionDelayCount":8,"garbageRealCollisionBlockerId":20}}
+    at expect (evalmachine.<anonymous>:4868:34)
+    at evalmachine.<anonymous>:4916:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
