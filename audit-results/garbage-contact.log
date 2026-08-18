@@ -9,13 +9,13 @@ accumulated pile support-arc motion PASS
 garbage original-pile -> lattice motion PASS
 pre-existing pile ignores all garbage impact PASS
 garbage stacks on pre-existing pile and becomes pile PASS {"restFrame":51,"garbage":[{"id":12,"cell":[1,10]},{"id":13,"cell":[7,10]},{"id":14,"cell":[9,10]},{"id":15,"cell":[3,10]},{"id":16,"cell":[6,9]},{"id":17,"cell":[2,9]}]}
-evalmachine.<anonymous>:4692
+evalmachine.<anonymous>:4712
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.9891040976769951,"a":{"kind":"board","id":17,"x":6.245913912108441,"y":7.1079341546022405},"b":{"kind":"board","id":18,"x":8.224122107462431,"y":7.1079341546022405}}
-    at expect (evalmachine.<anonymous>:4692:34)
-    at evalmachine.<anonymous>:4744:3
+Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.9571143225594609,"a":{"kind":"board","id":23,"x":18,"y":7.039053906712153},"b":{"kind":"board","id":22,"x":16.086027175047114,"y":7.0209861533405284}}
+    at expect (evalmachine.<anonymous>:4712:34)
+    at evalmachine.<anonymous>:4764:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
