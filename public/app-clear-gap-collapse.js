@@ -1,21 +1,18 @@
-/* Post-clear vacancy collapse invariant.
+/* Post-clear accumulated-pile compaction invariant.
  *
- * Once a cleared ball is removed from the board it must stop acting as support
- * immediately.  Two edge cases used to leave a visible hole in an accumulated
- * pile even though a safe downward move still existed:
+ * Balanced gaps are context-sensitive:
+ *   - During ordinary landing/SETTLE, a genuinely balanced HEXAGON may keep its
+ *     centre hole. This preserves the reference behaviour for a normal ball
+ *     landing onto an already stable pile.
+ *   - During clear_support_loss, the connected pile region that is actually
+ *     collapsing may NOT finish with an internal hole merely because its
+ *     transient geometry happens to look like a balanced HEXAGON.
  *
- *  1) the contact resolver can replace a ball's own safe ROLL with a
- *     FOLLOW_SUPPORT proposal and later reject the whole coupled proposal;
- *  2) a centre cell that has just been cleared can accidentally look like an
- *     intentional balanced HEXAGON hole and suppress ordinary gravity.
- *
- * This layer is deliberately scoped to clear_support_loss.  It first lets the
- * canonical resolver drain every normal event, then, only when that resolver is
- * fully stalled, accepts one swept-safe raw natural move.  A HEXAGON-hole lock
- * is bypassed only when the hole centre is one of the cells removed by the
- * current clear.  Therefore legitimate pre-existing HEXAGON formations keep
- * their reference behaviour, while a newly-created internal vacancy cannot
- * remain as a false support gap.
+ * The ordinary global HEXAGON rule is never changed.  Instead this layer tracks
+ * only the support-loss component touched by the current clear.  If a member of
+ * that component becomes part of a balanced ring while the pile is collapsing,
+ * the ring exemption is bypassed for that collapse only, and only by using the
+ * ordinary single-ball natural-motion + swept-collision checks.
  */
 (function installPostClearGapCollapse(){
     if(typeof window==="undefined"||window.__hexPostClearGapCollapse)return;
@@ -37,34 +34,103 @@
         return out;
     }
 
-    function isMemberOfJustClearedBalancedRing(g,x,y,cleared){
-        if(!cleared?.size)return false;
-        for(const [dx,dy] of RING_OFFSETS){
-            const cx=x-dx,cy=y-dy;
-            if(!cleared.has(cx+","+cy))continue;
-            if(!valid(cx,cy)||g.board[cy][cx]!==null)continue;
-            if(typeof isBalancedHexagonCenterHole==="function"&&isBalancedHexagonCenterHole(g.board,cx,cy))return true;
+    function boardEntries(g){
+        const out=[];
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            if(ball)out.push({ball,x,y});
         }
-        return false;
+        return out;
     }
 
-    function rawClearProposal(g,x,y,cleared){
+    function ringMembersAt(g,cx,cy){
+        if(!valid(cx,cy)||g.board[cy][cx]!==null)return null;
+        const out=[];
+        for(const [dx,dy] of RING_OFFSETS){
+            const x=cx+dx,y=cy+dy;
+            if(!valid(x,y)||!g.board[y][x])return null;
+            out.push(g.board[y][x]);
+        }
+        return out;
+    }
+
+    function expandCollapseAffected(g,cleared,affected){
+        let changed=true;
+        while(changed){
+            changed=false;
+
+            // Any ball that already received a path during this clear is part of
+            // the collapsing component even if its current supports later become
+            // balanced again.
+            for(const {ball} of boardEntries(g)){
+                if(affected.has(ball.id))continue;
+                if(Array.isArray(ball.fallPath)&&ball.fallPath.length){
+                    affected.add(ball.id);changed=true;
+                }
+            }
+
+            // Propagate support loss upward.  Direct-below is included because it
+            // can be the obstacle/pivot that determines a topPivot roll.
+            for(const {ball,x,y} of boardEntries(g)){
+                if(affected.has(ball.id))continue;
+                const deps=[[x-1,y+1],[x+1,y+1],[x,y+2]];
+                let touchesCollapse=false;
+                for(const [sx,sy] of deps){
+                    if(cleared.has(sx+","+sy)){touchesCollapse=true;break;}
+                    if(!valid(sx,sy))continue;
+                    const support=g.board[sy][sx];
+                    if(support&&affected.has(support.id)){touchesCollapse=true;break;}
+                }
+                if(touchesCollapse){affected.add(ball.id);changed=true;}
+            }
+
+            // A transient HEXAGON formed by moving members is one physical
+            // collapse structure.  Once one ring member belongs to the collapse,
+            // all six members are treated as collapse-affected; otherwise the
+            // untouched balanced-hole rule could freeze the remaining members.
+            for(let cy=boardScanMin(g.board);cy<ROWS;cy++)for(let cx=0;cx<W2;cx++){
+                if(!valid(cx,cy)||g.board[cy][cx]!==null)continue;
+                const ring=ringMembersAt(g,cx,cy);if(!ring)continue;
+                const collapseRing=cleared.has(cx+","+cy)||ring.some(ball=>affected.has(ball.id));
+                if(!collapseRing)continue;
+                for(const ball of ring)if(!affected.has(ball.id)){affected.add(ball.id);changed=true;}
+            }
+        }
+        return affected;
+    }
+
+    function initialCollapseAffected(g,cleared){
+        const affected=new Set();
+        // Seed from cells whose support/obstacle was explicitly removed.
+        for(const {ball,x,y} of boardEntries(g)){
+            const deps=[[x-1,y+1],[x+1,y+1],[x,y+2]];
+            if(deps.some(([sx,sy])=>cleared.has(sx+","+sy)))affected.add(ball.id);
+        }
+        return expandCollapseAffected(g,cleared,affected);
+    }
+
+    function rawClearProposal(g,x,y,affected){
         const ball=valid(x,y)?g.board[y][x]:null;
         if(!ball||ball.garbagePhaseFrozen||ball.motionGroupId)return null;
 
         let p=hexPhysNaturalMotion(g.board,x,y);
-        if(!p&&isMemberOfJustClearedBalancedRing(g,x,y,cleared)){
-            // A non-null ignore set disables only the balanced-hole early return;
-            // an empty set changes no occupancy/support result.
+        const balancedCollapseMember=
+            !p&&affected.has(ball.id)&&
+            typeof ballInBalancedHexagonRing==="function"&&
+            ballInBalancedHexagonRing(g.board,x,y);
+        if(balancedCollapseMember){
+            // Passing a non-null ignore set disables only the intentional-ring
+            // early return.  The empty set ignores no occupancy, so the exact
+            // ordinary destination, supports and collision geometry are kept.
             p=hexPhysNaturalMotion(g.board,x,y,new Set());
-            if(p)p.clearVacancyHexBypass=true;
+            if(p)p.clearCollapseHexBypass=true;
         }
         if(!p||p.ty<=p.y||!valid(p.tx,p.ty))return null;
         const target=g.board[p.ty][p.tx];
         if(target&&target!==ball)return null;
 
-        // The fallback is allowed only when the exact ordinary trajectory is
-        // collision-safe with every other current board ball held stationary.
+        // Never force a packing move.  The no-gap rule means "keep resolving
+        // every safe gravity move", not teleporting through another ball.
         if(hexPhysPathHitsStationary(p,g.board,new Set([ball.id])))return null;
         p.bundleId=0;
         p.groupSize=0;
@@ -72,10 +138,10 @@
         return p;
     }
 
-    function nextRawClearFallback(g,cleared){
+    function nextRawClearFallback(g,affected){
         for(let y=ROWS-1;y>=boardScanMin(g.board);y--){
             for(let x=0;x<W2;x++){
-                const p=rawClearProposal(g,x,y,cleared);
+                const p=rawClearProposal(g,x,y,affected);
                 if(p)return p;
             }
         }
@@ -84,22 +150,34 @@
 
     function drainClearSupportLoss(g,cleared){
         let fallbacks=0;
-        // Always exhaust canonical motion before considering a raw fallback.
+        const affected=initialCollapseAffected(g,cleared);
+
+        // Canonical motion always has priority.  It is allowed to create a
+        // transient balanced ring; refreshCollapseAffected then marks that ring
+        // as part of the collapse before the fallback check.
         settleAll(g.board);
+        expandCollapseAffected(g,cleared,affected);
+
         for(let guard=0;guard<MAX_CLEAR_FALLBACK_EVENTS;guard++){
-            const p=nextRawClearFallback(g,cleared);
+            const p=nextRawClearFallback(g,affected);
             if(!p)break;
+            affected.add(p.ball.id);
             clearBoardEquilibriumLocks(g.board);
             if(!hexPhysApplyEvent(g.board,[p]))break;
             fallbacks++;
-            // The one raw move may unlock a large normal cascade; let the
-            // canonical resolver consume that entire cascade before retrying.
+
+            // One safe raw move can unlock a full normal cascade.  Drain that
+            // cascade first, then widen the affected support component and only
+            // then inspect for another transient gap.
             settleAll(g.board);
+            expandCollapseAffected(g,cleared,affected);
         }
-        return fallbacks;
+        return{fallbacks,affectedCount:affected.size};
     }
 
     prepareContinuousPileFlow=function(g,reason="pile_flow"){
+        // Ordinary landing/SETTLE never enters this branch, so balanced HEXAGON
+        // holes remain legal there exactly as before.
         if(reason!=="clear_support_loss")return basePrepareContinuousPileFlow(g,reason);
 
         normalizeAllNonActivePileBalls(g);
@@ -108,17 +186,24 @@
 
         const before=physicsSignature(g);
         const cleared=clearedVacancyKeys(g);
-        const fallbacks=drainClearSupportLoss(g,cleared);
+        const drained=drainClearSupportLoss(g,cleared);
         const after=physicsSignature(g);
         const tagged=markPileFlowPaths(g,reason);
         const moved=before!==after||tagged.segments>0;
         if(moved)g.ver++;
 
-        g._lastClearGapFallbackMoves=fallbacks;
+        g._lastClearGapFallbackMoves=drained.fallbacks;
         g._lastClearVacancyCount=cleared.size;
-        return{moved,...tagged,clearGapFallbackMoves:fallbacks};
+        g._lastClearCollapseAffectedCount=drained.affectedCount;
+        return{
+            moved,...tagged,
+            clearGapFallbackMoves:drained.fallbacks,
+            clearCollapseAffectedCount:drained.affectedCount
+        };
     };
 
-    window.__hexPostClearGapCollapseVersion="clear-gap-v1";
+    window.__hexPostClearGapCollapseVersion="clear-gap-v2";
     window.__hexPostClearGapCollapseInstalled=true;
+    window.__hexOrdinaryBalancedHexagonGapAllowed=true;
+    window.__hexCollapseBalancedHexagonGapAllowed=false;
 })();
