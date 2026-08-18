@@ -5,7 +5,8 @@ const runtime=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
   "app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
   "app-garbage-contact.js","app-garbage-rigidity.js","app-garbage-settle-state.js",
-  "app-garbage-no-impact.js","app-garbage-sweep-guard.js","app-garbage-visible-overlap.js"
+  "app-garbage-no-impact.js","app-garbage-sweep-guard.js","app-garbage-visible-overlap.js",
+  "app-garbage-hard-separation.js"
 ].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const checks=String.raw`
@@ -49,6 +50,7 @@ function buildPile(g,variant){
 }
 
 expect(window.__hexGarbageVisibleOverlapGuard===true,"garbage render overlap guard is not installed");
+expect(window.__hexGarbageHardSeparation===true,"garbage hard-separation guard is not installed");
 let worstActual={d:Infinity},worstRender={d:Infinity};
 for(let variant=0;variant<3;variant++)for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
  const g=createEngine(99500+variant*17+type.length);buildPile(g,variant);g.garbShapes=[type];prepareGarbageBatch(g);
