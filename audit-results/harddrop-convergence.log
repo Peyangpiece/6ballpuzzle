@@ -1,15 +1,1034 @@
-/home/runner/work/6ballpuzzle/6ballpuzzle/tests/harddrop-contact-convergence.js:16
-
-
-
-SyntaxError: Unexpected end of input
-    at wrapSafe (node:internal/modules/cjs/loader:1713:18)
-    at Module._compile (node:internal/modules/cjs/loader:1755:20)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-
-Node.js v22.23.2
+HARD_DROP_CONVERGENCE {
+  "failures": [
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 1,
+      "d": 0.9837016606044584,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 1,
+      "d": 0.9087532337953215,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 2,
+      "d": 0.9851187145399665,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 2,
+      "d": 0.9121348527411174,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 3,
+      "d": 0.9871304718106257,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 3,
+      "d": 0.9191836669346785,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 4,
+      "d": 0.9895934384744016,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 4,
+      "d": 0.9297364577499141,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 5,
+      "d": 0.992349843235426,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 5,
+      "d": 0.9433784041771061,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 6,
+      "d": 0.9952448794112702,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 6,
+      "d": 0.9594569502552992,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 7,
+      "d": 0.998147099425889,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 7,
+      "d": 0.9771531304769772,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 9,
+      "step": 8,
+      "d": 0.9955997697450178,
+      "a": 3,
+      "b": 3000542,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 3,
+      "step": 1,
+      "d": 0.998679312977729,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 3,
+      "step": 1,
+      "d": 0.9927479810380844,
+      "a": 2,
+      "b": 3000183,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 3,
+      "step": 2,
+      "d": 0.9994055089599296,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 3,
+      "step": 2,
+      "d": 0.9968999528324622,
+      "a": 2,
+      "b": 3000183,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 1,
+      "d": 0.9232468836846895,
+      "a": 3,
+      "b": 3000300,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 1,
+      "d": 0.9257169067579001,
+      "a": 2,
+      "b": 3000301,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 2,
+      "d": 0.9270086776481242,
+      "a": 3,
+      "b": 3000300,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 2,
+      "d": 0.9318712707327166,
+      "a": 2,
+      "b": 3000301,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 3,
+      "d": 0.9341070786914011,
+      "a": 3,
+      "b": 3000300,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 3,
+      "d": 0.9407595769062997,
+      "a": 2,
+      "b": 3000301,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 4,
+      "d": 0.9444213557733867,
+      "a": 3,
+      "b": 3000300,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 4,
+      "d": 0.9518353457152613,
+      "a": 2,
+      "b": 3000301,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 5,
+      "d": 0.9575803583361593,
+      "a": 3,
+      "b": 3000300,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 5,
+      "d": 0.9644052907116257,
+      "a": 2,
+      "b": 3000301,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 6,
+      "d": 0.9730325026692621,
+      "a": 3,
+      "b": 3000300,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 6,
+      "d": 0.9780215410655735,
+      "a": 2,
+      "b": 3000301,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 7,
+      "d": 0.9900250308100453,
+      "a": 3,
+      "b": 3000300,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 5,
+      "step": 7,
+      "d": 0.9920522627951783,
+      "a": 2,
+      "b": 3000301,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 2,
+      "d": 0.984541858548097,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 3,
+      "d": 0.998898531834795,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 3,
+      "d": 0.9710720057352418,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 4,
+      "d": 0.9969032634676499,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 4,
+      "d": 0.9583899796970339,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 5,
+      "d": 0.9949256665397233,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 5,
+      "d": 0.9469721914062516,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 6,
+      "d": 0.9930553990902825,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 6,
+      "d": 0.9373459586746435,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 7,
+      "d": 0.9913988253367465,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 7,
+      "d": 0.9300634335436733,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 8,
+      "d": 0.9900764713333812,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 8,
+      "d": 0.9256600228400993,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 9,
+      "d": 0.9892180203889421,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 9,
+      "d": 0.9245951540987094,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 10,
+      "d": 0.9896308791335368,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 10,
+      "d": 0.9271067470595828,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 11,
+      "d": 0.9912717619930067,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 11,
+      "d": 0.9331211337165228,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 12,
+      "d": 0.993386949375632,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 12,
+      "d": 0.9425376365679361,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 13,
+      "d": 0.9958361050797233,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 13,
+      "d": 0.955012519830341,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 14,
+      "d": 0.9984783892228715,
+      "a": 1,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 14,
+      "d": 0.9699763564987138,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 15,
+      "d": 0.998674504992929,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 15,
+      "d": 0.986688977978475,
+      "a": 3000671,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 11,
+      "step": 16,
+      "d": 0.9988272836939021,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 1,
+      "d": 0.9982360538438231,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 1,
+      "d": 0.9850988408901028,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 2,
+      "d": 0.9962520425930461,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 2,
+      "d": 0.9697022627075167,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 3,
+      "d": 0.9940645157661909,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 3,
+      "d": 0.9540661353376179,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 4,
+      "d": 0.9917052681766362,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 4,
+      "d": 0.9385245631566871,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 5,
+      "d": 0.9892239025154701,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 5,
+      "d": 0.9234972051147168,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 6,
+      "d": 0.9866896118578865,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 6,
+      "d": 0.9094910794063656,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 7,
+      "d": 0.9841920768774557,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 7,
+      "d": 0.897094397654366,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 8,
+      "d": 0.9818414388089789,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 8,
+      "d": 0.8869585910773423,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 9,
+      "d": 0.9797672448164014,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 9,
+      "d": 0.8797636760430119,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 10,
+      "d": 0.9781157699790479,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 10,
+      "d": 0.8761613968754824,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 11,
+      "d": 0.9770441312050354,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 11,
+      "d": 0.8766915957489234,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 12,
+      "d": 0.9767085155175076,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 12,
+      "d": 0.8816730781687896,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 13,
+      "d": 0.9772440105460276,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 13,
+      "d": 0.8910852407330248,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 14,
+      "d": 0.9787372129245285,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 14,
+      "d": 0.9044816071651759,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 15,
+      "d": 0.9822387883510804,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 15,
+      "d": 0.9968636902221127,
+      "a": 3,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 15,
+      "d": 0.9204553103318597,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 16,
+      "d": 0.9874395780248124,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 16,
+      "d": 0.9977808969253382,
+      "a": 3,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 16,
+      "d": 0.9378145051238895,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 17,
+      "d": 0.9923674110116711,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 17,
+      "d": 0.9988568404162073,
+      "a": 3,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 17,
+      "d": 0.9564998955301364,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 18,
+      "d": 0.996576804328806,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 18,
+      "d": 0.9996257449354844,
+      "a": 3,
+      "b": 2,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 18,
+      "d": 0.9759010471931767,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 19,
+      "d": 0.999874603954714,
+      "a": 1,
+      "b": 3,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    },
+    {
+      "type": "visual-overlap",
+      "seed": 17,
+      "step": 19,
+      "d": 0.9954288032725822,
+      "a": 2,
+      "b": 3001024,
+      "state": "RESOLVING",
+      "phase": "SETTLE"
+    }
+  ]
+}
