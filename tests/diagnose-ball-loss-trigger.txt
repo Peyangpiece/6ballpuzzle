@@ -1,1 +1,1 @@
-run focused diagnoses 16 app71+app72
+run focused diagnoses 17 app74 hard-drop continuity
