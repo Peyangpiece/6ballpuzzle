@@ -1,16 +1,15 @@
 /* Final garbage-side boundary convergence after the complete physics frame.
  *
- * Normal accumulated-pile centres remain authoritative (app-59). A continuous
- * rest garbage ball may be displaced by a moving normal pile ball, and that
- * displacement can propagate through a dense garbage contact chain. One local
- * 72-pass solve is usually enough, but seed-7 proves that a long chain can still
- * end the frame slightly inside the numerical one-diameter boundary.
+ * This layer predates app-64.  Its original fallback measured the final
+ * garbage-related contact distance and could invoke the global final solver up
+ * to four extra times.  app-64 now owns the stronger final invariant: it runs
+ * the global solve once and then a dedicated 64-pass unilateral garbage solver
+ * that preserves monotone Y and synchronises continuous-rest authority.
  *
- * Do NOT re-enable normal-pile projection. Instead, after app-61 has finished
- * the whole frame transaction, measure only garbage-related contacts. If a real
- * penetration remains, run the same garbage-side solver up to four additional
- * times. Normal pile centres stay fixed; only garbage/rest centres yield and
- * app-51 persists their new continuous resting coordinates.
+ * Therefore, on the current production stack, repeating the old app-62 global
+ * solve is both redundant and expensive.  Keep the legacy fallback available
+ * for builds without app-64, but delegate entirely to app-64 when that final
+ * solver is present.
  */
 const HEX_GARBAGE_FRAME_SAFE_DIST=1-1e-7;
 const HEX_GARBAGE_FRAME_EXTRA_SOLVES=4;
@@ -22,6 +21,7 @@ function hexGarbageFrameMinDistance(g){
     const pairs=buckets&&typeof hexFinalPairs==="function"?hexFinalPairs(items,buckets):[];
     let min=Infinity;
     for(const [a,b] of pairs){
+        if(!a.ball?.isGarbage&&!b.ball?.isGarbage)continue;
         const d=hexPhysDist(a.v.x,a.v.y,b.v.x,b.v.y);
         if(d<min)min=d;
     }
@@ -33,6 +33,13 @@ const __hexStepBeforeGarbageBoundaryConvergence=stepEngine;
 stepEngine=function(g,dt){
     const result=__hexStepBeforeGarbageBoundaryConvergence(g,dt);
     if(!g||g.state!=="RESOLVING")return result;
+
+    // app-64 is loaded after this file in the production stack. At runtime its
+    // dedicated final garbage solver is therefore available and is the single
+    // authority for end-of-frame garbage convergence. Do not run the obsolete
+    // four global solves before it.
+    if(typeof hex64ResolveFinalGarbageContacts==="function")return result;
+
     let min=hexGarbageFrameMinDistance(g);
     for(let i=0;i<HEX_GARBAGE_FRAME_EXTRA_SOLVES&&min<HEX_GARBAGE_FRAME_SAFE_DIST;i++){
         hexEnforceFinalVisualNonOverlap(g);
