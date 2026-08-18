@@ -1,1 +1,1 @@
-quick local hard drop anchor repair 39
+quick straight hard drop handoff 40
