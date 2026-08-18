@@ -1,1 +1,1 @@
-run focused diagnoses 21 overlap frame trace
+run focused diagnoses 22 visual progress trace
