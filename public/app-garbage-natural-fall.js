@@ -4,11 +4,9 @@
  * They must NOT be serialized globally by motion sequence: that freezes every
  * later member in mid-air even when nothing physically supports or blocks it.
  *
- * At the same time, two scheduled lattice paths can occasionally converge on
- * the same intermediate cell. Those specific paths must not run together.
- * Build a LOCAL conflict queue instead: unrelated garbage paths advance
- * concurrently, while only the later member of a genuinely colliding pair is
- * held. Existing swept/contact guards remain the final physical authority.
+ * Two scheduled paths can still converge on the same intermediate cell. Only
+ * those genuinely conflicting paths are locally ordered. Independent paths use
+ * the per-ball scheduler and begin immediately when their own route is safe.
  */
 (function installNaturalGarbageFall(){
     if(typeof window==="undefined"||window.__hexNaturalGarbageFall)return;
@@ -24,18 +22,7 @@
         if(Number.isFinite(b)&&b>0)return b;
         return 0;
     }
-    function physDist(a,b){
-        return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);
-    }
-    function supportIds(seg){
-        const ids=[];
-        if(Array.isArray(seg?.followSupportIds))ids.push(...seg.followSupportIds);
-        if(Number.isFinite(Number(seg?.movingSupportId)))ids.push(Number(seg.movingSupportId));
-        return ids;
-    }
-    function causallyRelated(a,b){
-        return supportIds(a.seg).includes(b.ball.id)||supportIds(b.seg).includes(a.ball.id);
-    }
+    function physDist(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
     function simplePoint(seg,q){
         if(typeof pileFlowPoint==="function"){
             const p=pileFlowPoint(seg,q);
@@ -45,40 +32,32 @@
         if(!Array.isArray(f)||!Array.isArray(t))return null;
         return [f[0]+(t[0]-f[0])*q,f[1]+(t[1]-f[1])*q];
     }
-    function sameDestination(a,b){
-        return Array.isArray(a?.to)&&Array.isArray(b?.to)&&physDist(a.to,b.to)<1e-7;
-    }
+    function sameDestination(a,b){return Array.isArray(a?.to)&&Array.isArray(b?.to)&&physDist(a.to,b.to)<1e-7;}
     function endpointSwap(a,b){
         return Array.isArray(a?.from)&&Array.isArray(a?.to)&&Array.isArray(b?.from)&&Array.isArray(b?.to)&&
             physDist(a.to,b.from)<1e-7&&physDist(b.to,a.from)<1e-7;
     }
 
     function scheduledConflict(g,a,b){
-        if(!a?.seg||!b?.seg||causallyRelated(a,b))return false;
+        if(!a?.seg||!b?.seg)return false;
+        // Same-cell convergence is always a conflict, including support/follower
+        // pairs. This exact case caused the previous garbage-to-garbage overlap.
         if(sameDestination(a.seg,b.seg)||endpointSwap(a.seg,b.seg))return true;
 
         const as=a.seg,bs=b.seg,now=Math.max(0,g?.pileFlowClock||0);
-        const a0=Number(as.pileFlowStart),a1=Number(as.pileFlowEnd);
-        const b0=Number(bs.pileFlowStart),b1=Number(bs.pileFlowEnd);
+        const a0=Number(as.pileFlowStart),a1=Number(as.pileFlowEnd),b0=Number(bs.pileFlowStart),b1=Number(bs.pileFlowEnd);
         if(Number.isFinite(a0)&&Number.isFinite(a1)&&Number.isFinite(b0)&&Number.isFinite(b1)){
             const lo=Math.max(now,a0,b0),hi=Math.min(a1,b1);
             if(hi>lo+1e-10){
-                const memo=new Map();
                 for(let i=0;i<=TIME_SAMPLES;i++){
                     const t=lo+(hi-lo)*(i/TIME_SAMPLES);
-                    const pa=pileFlowPositionAt(g,a.ball,t,0,null,memo);
-                    const pb=pileFlowPositionAt(g,b.ball,t,0,null,memo);
+                    const pa=pileFlowPositionAt(g,a.ball,t),pb=pileFlowPositionAt(g,b.ball,t);
                     if(Array.isArray(pa)&&Array.isArray(pb)&&physDist(pa,pb)<CONFLICT_MIN)return true;
                 }
-                return false;
             }
-            // Non-overlapping absolute schedules are already safely ordered.
             return false;
         }
 
-        // Some freshly rebuilt hand-off segments can briefly lack absolute
-        // timing. Detect only true geometric crossings/convergence here; do not
-        // serialize merely because the sequence numbers differ.
         for(let i=0;i<=GEOM_SAMPLES;i++){
             const q=i/GEOM_SAMPLES,pa=simplePoint(as,q),pb=simplePoint(bs,q);
             if(pa&&pb&&physDist(pa,pb)<CONFLICT_MIN)return true;
@@ -99,13 +78,10 @@
     }
 
     __hexdropGarbageMotionQueue=function(g){
-        const list=entries(g),queued=new Set();
-        let minSeq=Infinity;
+        const list=entries(g),queued=new Set();let minSeq=Infinity;
         for(const e of list)if(e.seq>0)minSeq=Math.min(minSeq,e.seq);
-
         for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
-            const a=list[i],b=list[j];
-            if(!scheduledConflict(g,a,b))continue;
+            const a=list[i],b=list[j];if(!scheduledConflict(g,a,b))continue;
             let later;
             if(a.seq>0&&b.seq>0&&a.seq!==b.seq)later=a.seq>b.seq?a:b;
             else if(a.seq!==b.seq)later=a.seq>b.seq?a:b;
@@ -115,6 +91,20 @@
         return {minSeq,queued};
     };
 
+    // The core routes garbage contact through the wave scheduler, which inserts
+    // a sequence-wide delay even for completely independent balls. For garbage
+    // contact only, use the collision-aware per-ball scheduler used by natural
+    // pile collapse. Each first segment therefore attempts to start at the
+    // current pileFlowClock and is delayed only when its own route is unsafe.
+    const baseScheduleFreshPileFlow=scheduleFreshPileFlow;
+    scheduleFreshPileFlow=function(g,fresh,reason="pile_flow"){
+        if(reason==="garbage_pile_contact"&&Array.isArray(fresh)&&fresh.some(q=>q?.ball?.isGarbage)){
+            return scheduleFreshPileFlowPerBall(g,fresh);
+        }
+        return baseScheduleFreshPileFlow(g,fresh,reason);
+    };
+
     window.__hexGarbageGlobalQueueDisabled=false;
     window.__hexGarbageLocalConflictQueue=true;
+    window.__hexGarbagePerBallScheduler=true;
 })();
