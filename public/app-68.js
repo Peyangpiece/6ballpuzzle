@@ -4,6 +4,7 @@
  * row upward before the first resolving frame.
  */
 const __hexLockBeforeHardDropContact = lock;
+const __hexHardDropBeforeContact = hardDrop;
 
 function hexHardDropContactAnchor(g,target,pose){
     if(!g||!target||!Array.isArray(pose)||pose.length!==3)return null;
@@ -93,7 +94,7 @@ lock=function(g,vy=2){
 hardDrop=function(g){
     if(g.state!=="PLAYING"||!g.piece||g.hardDropAnim)return;
     const shadow=landingShadowVisualCells(g);
-    if(!shadow||shadow.length!==3)return;
+    if(!shadow||shadow.length!==3)return __hexHardDropBeforeContact(g);
     const target=dropPiece(g.board,g.piece),base=pieceCells(target);
     const dx=shadow[0][0]-base[0][0],contactFrac=shadow[0][1]-base[0][1];
     armHardDropImpact(g,target,dx,contactFrac);
