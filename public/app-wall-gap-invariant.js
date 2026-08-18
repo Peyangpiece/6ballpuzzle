@@ -24,6 +24,7 @@
     const baseContactEntries=hexPhysContactEntries;
     const baseProposalPointAt=proposalPointAt;
     const baseLiveBatchPointAt=typeof liveBatchPointAt==="function"?liveBatchPointAt:null;
+    const basePileFlowPointForBall=typeof pileFlowPointForBall==="function"?pileFlowPointForBall:null;
 
     function wallSideAt(x,y){
         const lv=valid(x-1,y+1),rv=valid(x+1,y+1);
@@ -91,12 +92,16 @@
     proposalPointAt=function(p,t){
         if(p?.kind==="WALL_COMPACT_FOLLOW"&&p.followProposal){
             const sp=proposalPointAt(p.followProposal,t);
-            return wallEnvelopePoint([p.x,p.y],[p.tx,p.ty],[(sp[0]/0.5),(sp[1]-BOARD_TOP_CENTER_N)/HEX_ROW_H],t)
-                .map((v,i)=>i===0?latticeRealX(v):cellCenterYNorm(v));
+            const latticeSupport=[sp[0]/0.5,(sp[1]-BOARD_TOP_CENTER_N)/HEX_ROW_H];
+            const out=wallEnvelopePoint([p.x,p.y],[p.tx,p.ty],latticeSupport,t);
+            return[latticeRealX(out[0]),cellCenterYNorm(out[1])];
         }
         return baseProposalPointAt(p,t);
     };
 
+    // Ordinary SETTLE uses liveBatchPointAt. Keep its visual path identical to
+    // the collision preview above so there is no frame in which the side cavity
+    // reappears after the logical board has already compacted.
     if(baseLiveBatchPointAt){
         liveBatchPointAt=function(batch,member,t,states,memo=new Map(),stack=new Set()){
             if(member?.seg?.kind==="WALL_COMPACT_FOLLOW"){
@@ -115,7 +120,29 @@
         };
     }
 
-    window.__hexWallGapInvariantVersion="wall-gap-v2";
+    // Post-clear collapse converts fallPath segments to scheduled pileFlow.
+    // Preserve the SAME wall-contact envelope there as well; otherwise the
+    // pileFlow renderer would reinterpret the segment as an ordinary support arc
+    // and could briefly reopen the wall gap even though SETTLE was fixed.
+    if(basePileFlowPointForBall){
+        pileFlowPointForBall=function(g,ball,seg,q,t,depth=0,seen=null){
+            if(seg?.kind==="WALL_COMPACT_FOLLOW"&&ball){
+                const sid=seg.followSupportIds?.[0],support=sid?pileFlowBallById(g,sid):null;
+                if(support&&support!==ball){
+                    const nextSeen=new Set(seen||[]);
+                    if(!nextSeen.has(ball.id)){
+                        nextSeen.add(ball.id);
+                        const sp=pileFlowPositionAt(g,support,t,depth+1,nextSeen);
+                        return wallEnvelopePoint(seg.from,seg.to,sp,q);
+                    }
+                }
+            }
+            return basePileFlowPointForBall(g,ball,seg,q,t,depth,seen);
+        };
+    }
+
+    window.__hexWallGapInvariantVersion="wall-gap-v3";
     window.__hexWallGapAllowed=false;
     window.__hexWallCompactFollowEnabled=true;
+    window.__hexWallPileFlowEnvelopeEnabled=true;
 })();
