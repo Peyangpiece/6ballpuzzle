@@ -20,28 +20,31 @@ function phys(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
 
 expect(window.__hexGarbageFinalizesIntoAccumulatedPile===true,"garbage finalizer marker missing");
 expect(window.__hexPostClearGarbageSupportArc===true,"post-clear garbage support arc adapter missing");
+expect(window.__hexPostClearDynamicVacancyClosure===true,"secondary-vacancy collapse closure missing");
 
-// Stable pre-clear geometry near the floor:
+// Two-stage support-loss chain near the floor:
 //
-//            upper garbage (8,9)
-//        removed (7,10)   right garbage support (9,10)
-//        floor 6,11   floor 8,11   floor 10,11
+//                 top (9,8)
+//          upper (8,9)   shoulder (10,9)
+//      removed (7,10)  right (9,10)  far (11,10)
+//      floor 6,11  8,11  10,11  12,11
 //
-// Before the clear the upper ball has two supports. After (7,10) disappears it
-// must roll into that exact vacancy around the remaining garbage support.
+// Clearing 7,10 first moves upper into that cell. That move itself vacates 8,9,
+// so top must immediately continue into 8,9 instead of leaving a SECONDARY gap.
 {
   const g=createEngine(730041);g.state="RESOLVING";g.phase="GARBAGE";
+  const top=asGarbage(put(g,9,8,3));
   const upper=asGarbage(put(g,8,9,2));
+  const shoulder=asGarbage(put(g,10,9,4));
   const removed=put(g,7,10,3);
   const right=asGarbage(put(g,9,10,1));
+  const far=asGarbage(put(g,11,10,2));
   const floorL=asGarbage(put(g,6,11,4));
   const floorM=asGarbage(put(g,8,11,0));
   const floorR=asGarbage(put(g,10,11,1));
-  const garbage=[upper,right,floorL,floorM,floorR];
+  const floorRR=asGarbage(put(g,12,11,2));
+  const garbage=[top,upper,shoulder,right,far,floorL,floorM,floorR,floorRR];
 
-  // Incoming garbage intentionally starts without the accumulated-pile marker.
-  // Finishing the garbage phase must establish that marker for every surviving
-  // garbage ball and remove every transient freeze/hold state.
   upper.garbagePhaseFrozen=true;
   right.garbageBubbleHold=true;
   finishGarbageVisuals(g);
@@ -57,31 +60,40 @@ expect(window.__hexPostClearGarbageSupportArc===true,"post-clear garbage support
   g.board[10][7]=null;
   clearBoardEquilibriumLocks(g.board);
 
-  const start=[g.vis.get(upper.id).x,g.vis.get(upper.id).y];
+  const upperStart=[g.vis.get(upper.id).x,g.vis.get(upper.id).y];
+  const topStart=[g.vis.get(top.id).x,g.vis.get(top.id).y];
   const flow=prepareContinuousPileFlow(g,"clear_support_loss");
   expect(flow.moved,"post-garbage clear produced no collapse motion");
-  expect(g.board[10][7]===upper,"cleared internal vacancy remained open instead of being filled");
+  expect(g.board[10][7]===upper,"original cleared vacancy remained open instead of being filled");
+  expect(g.board[9][8]===top,"secondary vacancy created by pile movement remained open");
   expect(!hasLegalGravityMove(g.board),"post-clear board still had an unresolved legal gravity move");
-  expect(Array.isArray(upper.fallPath)&&upper.fallPath.length>0,"collapsed garbage ball received no visual fall path");
+  expect(flow.clearDynamicVacancyCount>g._lastClearVacancyCount,"collapse did not track movement-created vacancies");
+  expect(g._lastClearCollapseVacancies instanceof Set&&g._lastClearCollapseVacancies.has("8,9"),"upper ball origin was not retained as a secondary vacancy");
 
-  const seg=upper.fallPath.find(s=>s?.to&&s.to[0]===7&&s.to[1]===10);
-  expect(seg,"collapse path did not include the cleared vacancy");
-  expect(seg.pileFlow===true,"post-clear garbage collapse was not converted to continuous pile flow");
-  expect(Array.isArray(seg.pivot)&&seg.pivot[0]===9&&seg.pivot[1]===10,"collapse lost the real garbage pivot");
-  expect((seg.followSupportIds||[]).includes(right.id),"settled garbage support was not bound to the collapse arc");
+  const upperSeg=upper.fallPath.find(s=>s?.to&&s.to[0]===7&&s.to[1]===10);
+  const topSeg=top.fallPath.find(s=>s?.to&&s.to[0]===8&&s.to[1]===9);
+  expect(upperSeg,"collapse path did not include the original cleared vacancy");
+  expect(topSeg,"secondary collapse path did not fill the vacated support cell");
+  expect(upperSeg.pileFlow===true&&topSeg.pileFlow===true,"multi-stage collapse was not converted to continuous pile flow");
+  expect(Array.isArray(upperSeg.pivot)&&upperSeg.pivot[0]===9&&upperSeg.pivot[1]===10,"upper collapse lost the real garbage pivot");
+  expect((upperSeg.followSupportIds||[]).includes(right.id),"settled garbage support was not bound to the first collapse arc");
+  expect(Array.isArray(topSeg.pivot)&&topSeg.pivot[0]===10&&topSeg.pivot[1]===9,"secondary collapse lost the shoulder pivot");
+  expect((topSeg.followSupportIds||[]).includes(shoulder.id),"secondary collapse was not bound to its real support");
 
-  let movedVisual=false;
-  for(let frame=0;frame<240&&Array.isArray(upper.fallPath)&&upper.fallPath.length;frame++){
+  let upperMoved=false,topMoved=false;
+  for(let frame=0;frame<360&&(upper.fallPath.length||top.fallPath.length);frame++){
     updateVisuals(g,PHYSICS_FRAME);
-    const v=g.vis.get(upper.id);
-    if(v&&phys(start,[v.x,v.y])>1e-4)movedVisual=true;
+    const uv=g.vis.get(upper.id),tv=g.vis.get(top.id);
+    if(uv&&phys(upperStart,[uv.x,uv.y])>1e-4)upperMoved=true;
+    if(tv&&phys(topStart,[tv.x,tv.y])>1e-4)topMoved=true;
   }
-  const end=g.vis.get(upper.id);
-  expect(movedVisual,"garbage pile collapse stayed visually frozen after support loss");
-  expect(end&&Math.abs(end.x-7)<0.01&&Math.abs(end.y-10)<0.01,"collapsed garbage ball did not visually fill the vacancy");
+  const upperEnd=g.vis.get(upper.id),topEnd=g.vis.get(top.id);
+  expect(upperMoved&&topMoved,"multi-stage pile collapse stayed visually staged/frozen");
+  expect(upperEnd&&Math.abs(upperEnd.x-7)<0.01&&Math.abs(upperEnd.y-10)<0.01,"upper ball did not visually fill the original vacancy");
+  expect(topEnd&&Math.abs(topEnd.x-8)<0.01&&Math.abs(topEnd.y-9)<0.01,"top ball did not visually fill the secondary vacancy");
 }
 
-console.log("post-garbage internal-clear collapse PASS");
+console.log("post-garbage internal + secondary-clear collapse PASS");
 `;
 
 vm.runInNewContext(runtime+checks,{
