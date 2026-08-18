@@ -1,1 +1,1 @@
-run focused diagnoses 14 stall + performance trace
+run focused diagnoses 15 full pile visuals convergence
