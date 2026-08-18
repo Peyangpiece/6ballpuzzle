@@ -1,1 +1,1 @@
-run focused diagnoses 24 rigid support arc app74
+run focused diagnoses 25 protect safe rigid pose app74
