@@ -123,7 +123,7 @@ for(const [x,y,label] of [[0,7,"left odd"],[18,7,"right odd"],[1,6,"left even"],
   const edgeSeg=edge.fallPath?.find(s=>s?.to&&s.to[0]===0&&s.to[1]===9);
   const topSeg=top.fallPath?.find(s=>s?.to&&s.to[0]===1&&s.to[1]===8);
   const supportSeg=outerSupport.fallPath?.find(s=>s?.from&&s.from[0]===0&&s.from[1]===9);
-  expect(edgeSeg?.kind==="WALL_EDGE_CHAIN_FOLLOW","edge pileFlow lost alternating wall-follow kind");
+  expect(edgeSeg?.kind==="WALL_VACANCY_FOLLOW","edge wall filler was not synchronized to the support vacating its target");
   expect(topSeg,"secondary wall filler path missing from pileFlow");
   expect(topSeg?.kind==="WALL_VACANCY_FOLLOW","secondary wall filler was not bound to the ball vacating its target");
   expect(edgeSeg.wallFlowSynchronized===true,"edge wall flow was not synchronized to its support");
