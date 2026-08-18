@@ -1,10 +1,13 @@
 /* Natural post-contact garbage fall.
  *
- * After first real pile/floor contact, garbage members are independent balls.
- * Unsupported members fall concurrently. Only a collision that is CLOSING in
- * the next physics frame may hold the later member, and the hold freezes only
- * its schedule. Coordinates are never invented here; app-garbage-hard-separation
- * owns the single continuous first-contact clamp along each ball's real path.
+ * A garbage formation is one rigid airborne packet ONLY until the first member
+ * actually touches the pre-existing pile/floor. At that exact event rigidity is
+ * released: every still-airborne sibling becomes its own one-ball packet and
+ * continues from the same absolute free-fall time/velocity. Unsupported members
+ * then fall concurrently; only an imminent real collision may pause one member.
+ *
+ * app-17's legacy whole-packet visual queue is disabled. Coordinates are never
+ * invented here; board-ball penetration is clamped by the continuous swept guard.
  */
 (function installNaturalGarbageFall(){
     if(typeof window==="undefined"||window.__hexNaturalGarbageFall)return;
@@ -91,6 +94,81 @@
     const baseScheduleFreshPileFlow=scheduleFreshPileFlow;
     scheduleFreshPileFlow=function(g,fresh,reason="pile_flow"){if(reason==="garbage_pile_contact"&&Array.isArray(fresh)&&fresh.some(q=>q?.ball?.isGarbage))return scheduleGarbageImmediately(g,fresh);return baseScheduleFreshPileFlow(g,fresh,reason);};
 
+    function clearChildFrameMetadata(p){
+        delete p._collisionFrameFromY;delete p._collisionFrameToY;delete p._collisionFrameClock;delete p._collisionFrameDt;
+        delete p._garbagePairHeld;delete p._garbagePairHoldY;delete p._garbagePairHoldCount;
+        delete p.contactY;
+    }
+
+    function releaseRemainingPacket(g,pack){
+        if(!pack||pack._rigidityReleasedAfterFirstContact)return;
+        pack._rigidityReleasedAfterFirstContact=true;
+        pack.straightAtomic=false;
+        if(!Array.isArray(pack.pat)||pack.pat.length<=1){
+            pack.totalBalls=Math.max(1,pack.pat?.length||1);
+            pack.landedCount=0;
+            return;
+        }
+
+        const slots=pack.pat.map(q=>[q[0],q[1]]),colors=Array.isArray(pack.colors)?pack.colors.slice():[];
+        const template={...pack};
+        const first=slots[0];
+        pack.pat=[[first[0],first[1]]];
+        pack.colors=[colors[0]];
+        pack.totalBalls=1;
+        pack.landedCount=0;
+        pack.straightAtomic=false;
+        clearChildFrameMetadata(pack);
+
+        const pending=g._garbageSplitChildren||(g._garbageSplitChildren=[]);
+        for(let i=1;i<slots.length;i++){
+            const q=slots[i];
+            const child={
+                ...template,
+                pat:[[q[0],q[1]]],
+                colors:[colors[i]],
+                seq:g.garbageSeq++,
+                totalBalls:1,
+                landedCount:0,
+                entryBalls:[],
+                landed:false,
+                _started:true,
+                _splitChild:true,
+                _splitParentSeq:pack.seq,
+                _rigidityReleasedAfterFirstContact:true,
+                straightAtomic:false
+            };
+            clearChildFrameMetadata(child);
+            g.garbagePlans.push(child);
+            pending.push(child);
+        }
+        pack._splitChildCount=(pack._splitChildCount||0)+(slots.length-1);
+    }
+
+    // The final materializer (after all earlier garbage wrappers) is intercepted
+    // here. The contacted member is already removed from pack.pat by the base
+    // function, so every remaining slot can be split without duplicating it.
+    const baseMaterializeGarbageBallAtContact=materializeGarbageBallAtContact;
+    materializeGarbageBallAtContact=function(g,pack,index,contactAnchorY){
+        const firstContact=!!pack&&!pack._rigidityReleasedAfterFirstContact&&(pack.landedCount||0)===0;
+        const ok=baseMaterializeGarbageBallAtContact(g,pack,index,contactAnchorY);
+        if(ok&&firstContact)releaseRemainingPacket(g,pack);
+        return ok;
+    };
+
+    const baseUpdateGarbagePacks=updateGarbagePacks;
+    updateGarbagePacks=function(g,dt){
+        const out=baseUpdateGarbagePacks(g,dt);
+        const pending=g._garbageSplitChildren;
+        if(Array.isArray(pending)&&pending.length){
+            for(const child of pending){
+                if(!child.landed&&!g.activeGarbagePacks.includes(child))g.activeGarbagePacks.push(child);
+            }
+            pending.length=0;
+        }
+        return out;
+    };
+
     const baseUpdateVisuals=updateVisuals;
     updateVisuals=function(g,dt){
         const before=localConflictQueue(g).queued,previous=previousLocalQueue.get(g)||new Set();
@@ -107,5 +185,6 @@
     window.__hexGarbageLocalConflictQueue=true;
     window.__hexGarbagePerBallScheduler=true;
     window.__hexGarbageImmediateScheduler=true;
+    window.__hexGarbagePacketSplitOnContact=true;
     window.__hexGarbageLocalConflictIds=function(g){return localConflictQueue(g).queued;};
 })();
