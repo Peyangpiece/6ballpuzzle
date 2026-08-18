@@ -1,14 +1,15 @@
 /* Garbage full-gravity finalization invariant.
  *
- * Incoming garbage uses the canonical ordinary-ball gravity proposal. A newly
- * arrived garbage ball is never considered finally settled while ANY legal
- * downward ordinary move remains: FREE_FALL, ROLL_LEFT, ROLL_RIGHT or
- * FLOOR_DROP. This prevents one contact with the pre-existing pile from
- * freezing a whole chain of incoming balls above newly opened space.
+ * Incoming garbage remains ordinary ball physics. The only special rule is the
+ * freeze boundary: balls present before the current GARBAGE batch are kinematic
+ * until the batch ends; balls created by this batch are never added to that
+ * frozen snapshot, even after temporarily resting.
  *
- * Freeze scope stays snapshot-based. Only balls that existed when the current
- * GARBAGE batch began (garbageFrozenPileIds) are kinematic. Garbage created by
- * this batch is never added to that set, even after it has temporarily rested.
+ * A temporary rest is NOT final while the canonical ordinary event resolver can
+ * move one or more ready incoming balls downward. We deliberately use
+ * hexPhysResolveEvent rather than a one-ball shortcut so target conflicts,
+ * simultaneous support loss, sweeps, pivots and linked support motion are the
+ * same as normal pile settling.
  */
 (function installGarbageDeepSettle(){
     if(typeof window==="undefined"||window.__hexGarbageDeepSettle)return;
@@ -16,19 +17,11 @@
 
     const ARRIVE_TOL=0.045;
 
-    function frozenSnapshot(g){
-        return g?.garbageFrozenPileIds instanceof Set?g.garbageFrozenPileIds:null;
-    }
-    function isOriginalFrozen(g,ball){
-        const ids=frozenSnapshot(g);
-        return !!ball&&!!ids&&ids.has(ball.id);
-    }
+    function frozenSnapshot(g){return g?.garbageFrozenPileIds instanceof Set?g.garbageFrozenPileIds:null;}
+    function isOriginalFrozen(g,ball){const ids=frozenSnapshot(g);return !!ball&&!!ids&&ids.has(ball.id);}
     function boardEntries(g){
         const out=[];
         if(!g?.board)return out;
-        // Bottom-up: when a lower incoming ball vacates a support cell, the ball
-        // above can be reconsidered in the same physics frame without allowing
-        // the same ball to take two logical steps (the first step adds fallPath).
         for(let y=ROWS-1;y>=boardScanMin(g.board);y--)for(let x=0;x<W2;x++){
             const ball=valid(x,y)?g.board[y][x]:null;
             if(ball)out.push({ball,x,y,v:g.vis.get(ball.id)});
@@ -36,87 +29,71 @@
         return out;
     }
     function enforceFreezeBoundary(g){
-        const ids=frozenSnapshot(g);
-        if(!ids)return;
+        const ids=frozenSnapshot(g);if(!ids)return;
         for(const q of boardEntries(g)){
-            if(ids.has(q.ball.id)){
-                q.ball.garbagePhaseFrozen=true;
-                continue;
-            }
-            if(q.ball.isGarbage){
-                // A ball from the current attack is always live gravity matter.
-                delete q.ball.garbagePhaseFrozen;
-                delete q.ball.equilibriumLocked;
-            }
+            if(ids.has(q.ball.id)){q.ball.garbagePhaseFrozen=true;continue;}
+            if(q.ball.isGarbage){delete q.ball.garbagePhaseFrozen;delete q.ball.equilibriumLocked;}
         }
     }
     function visuallyAtLogicalCell(q){
-        return !q.v||(
-            Math.abs(q.v.x-q.x)<=ARRIVE_TOL&&
-            Math.abs(q.v.y-q.y)<=ARRIVE_TOL
-        );
+        return !q.v||(Math.abs(q.v.x-q.x)<=ARRIVE_TOL&&Math.abs(q.v.y-q.y)<=ARRIVE_TOL);
     }
-    function ordinaryContinuation(g,q){
-        if(!q?.ball?.isGarbage||isOriginalFrozen(g,q.ball)||q.ball.garbagePhaseFrozen)return null;
-        if(Array.isArray(q.ball.fallPath)&&q.ball.fallPath.length)return null;
-        if(!visuallyAtLogicalCell(q))return null;
+    function readyIncoming(g,q){
+        return !!q?.ball?.isGarbage&&!isOriginalFrozen(g,q.ball)&&!q.ball.garbagePhaseFrozen&&
+            !(Array.isArray(q.ball.fallPath)&&q.ball.fallPath.length)&&visuallyAtLogicalCell(q);
+    }
+    function markUnsettled(ball){
+        if(!ball)return;
+        delete ball.garbagePileSettled;
+        delete ball.garbageInitialRestReached;
+        delete ball.equilibriumLocked;
+        ball.rigid=false;ball.motionGroupId=0;ball.motionGroupSize=0;
+    }
 
-        const p=hexPhysNaturalMotion(g.board,q.x,q.y);
-        if(!p)return null;
-        const dx=p.tx-q.x,dy=p.ty-q.y;
-        // Gravity may be vertical (two doubled-y rows), diagonal (one row) or
-        // the bottom parity bridge. Never finalize while any downward move exists.
-        if(dy<=0)return null;
-        const canonicalKind=p.kind||"";
-        if(!["FREE_FALL","ROLL_LEFT","ROLL_RIGHT","FLOOR_DROP"].includes(canonicalKind)){
-            // FOLLOW_SUPPORT and other canonical downward proposals may appear
-            // after a support starts moving. They are still legal gravity if the
-            // target is lower; preserve them rather than inventing a special rule.
-            if(!(p.ty>p.y))return null;
+    // The ordinary resolver has no explicit `excludedIds` argument. Re-use the
+    // existing frozen-ball exclusion already installed by the normal-garbage
+    // adapter: only for the duration of this resolver call, mark incoming balls
+    // that are still animating/not yet at their logical cell as temporarily
+    // blocked. Their real frozen state is restored immediately afterward.
+    function withBusyIncomingBlocked(g,fn){
+        const changed=[];
+        for(const q of boardEntries(g)){
+            if(!q.ball.isGarbage||isOriginalFrozen(g,q.ball))continue;
+            if(readyIncoming(g,q))continue;
+            changed.push([q.ball,q.ball.garbagePhaseFrozen===true]);
+            q.ball.garbagePhaseFrozen=true;
         }
+        try{return fn();}
+        finally{
+            for(const[ball,wasFrozen]of changed){if(wasFrozen)ball.garbagePhaseFrozen=true;else delete ball.garbagePhaseFrozen;}
+            enforceFreezeBoundary(g);
+        }
+    }
 
-        // Re-use the canonical swept-path safety test. The supporting pivot of a
-        // roll is already exempted by hexPhysPathHitsStationary itself.
-        if(typeof hexPhysPathHitsStationary==="function"&&
-           hexPhysPathHitsStationary(p,g.board,new Set([q.ball.id])))return null;
-        return p;
-    }
-    function markUnsettledIfMovable(g,q){
-        const p=ordinaryContinuation(g,q);
-        if(!p)return null;
-        delete q.ball.garbagePileSettled;
-        delete q.ball.garbageInitialRestReached;
-        delete q.ball.equilibriumLocked;
-        q.ball.rigid=false;
-        q.ball.motionGroupId=0;
-        q.ball.motionGroupSize=0;
-        return p;
-    }
-    function hasOpenGravityContinuation(g){
-        if(!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"))return false;
+    function canonicalReadyEvent(g,preview=false){
+        if(!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"))return[];
         enforceFreezeBoundary(g);
-        for(const q of boardEntries(g))if(markUnsettledIfMovable(g,q))return true;
-        return false;
+        const readyIds=new Set(boardEntries(g).filter(q=>readyIncoming(g,q)).map(q=>q.ball.id));
+        if(!readyIds.size)return[];
+        const accepted=withBusyIncomingBlocked(g,()=>hexPhysResolveEvent(g.board,preview));
+        return (accepted||[]).filter(p=>readyIds.has(p?.ball?.id)&&p.ty>p.y);
     }
+
+    function hasOpenGravityContinuation(g){return canonicalReadyEvent(g,true).length>0;}
+
     function continueGravity(g){
         if(!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"))return 0;
-        enforceFreezeBoundary(g);
-        let moved=0;
-        const entries=boardEntries(g);
-        for(const q of entries){
-            if(g.board[q.y]?.[q.x]!==q.ball)continue;
-            const p=markUnsettledIfMovable(g,q);
-            if(!p)continue;
-            if(hexPhysApplyEvent(g.board,[p])){
-                moved++;
-                g.ver++;
-            }
-        }
-        return moved;
+        const accepted=canonicalReadyEvent(g,false);
+        if(!accepted.length)return 0;
+        for(const p of accepted)markUnsettled(p.ball);
+        const moved=hexPhysApplyEvent(g.board,accepted);
+        if(moved){g.ver++;g.stateT=0;return accepted.length;}
+        return 0;
     }
 
-    // Re-evaluate each incoming ball immediately after its own visual segment is
-    // complete. Do not wait for unrelated garbage balls to finish animating.
+    // Re-evaluate ready incoming balls after every garbage update. A lower ball
+    // can therefore vacate a support and release the ball above on the next
+    // 120 Hz frame without waiting for unrelated units to finish animating.
     const baseUpdateGarbagePacks=updateGarbagePacks;
     updateGarbagePacks=function(g,dt){
         enforceFreezeBoundary(g);
@@ -126,9 +103,8 @@
         return r;
     };
 
-    // The attack cannot finish while any current-batch garbage ball can still
-    // descend under the ordinary solver. This also prevents unsupported internal
-    // holes from being accepted as a finished pile.
+    // Never end the attack while the ordinary event resolver still has a legal
+    // downward event for any visually-ready current-batch garbage member.
     const baseGarbageBatchDone=garbageBatchDone;
     garbageBatchDone=function(g){
         if(hasOpenGravityContinuation(g))return false;
@@ -142,4 +118,5 @@
     window.__hexGarbageHasOpenGravity=hasOpenGravityContinuation;
     window.__hexGarbageFrozenScopeIsPreBatchSnapshot=true;
     window.__hexGarbageNoChainFreeze=true;
+    window.__hexGarbageDeepSettleUsesCanonicalEventResolver=true;
 })();
