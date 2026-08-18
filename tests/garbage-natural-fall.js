@@ -19,15 +19,28 @@ function densePile(g,variant){
  const extra=variant===0?[[3,ROWS-2],[7,ROWS-2],[5,ROWS-4]]:[[1,ROWS-2],[5,ROWS-2],[9,ROWS-2],[4,ROWS-3],[6,ROWS-3]];
  for(let i=0;i<extra.length;i++)put(g,extra[i][0],extra[i][1],(i+2)%5);
 }
-function safeDown(g,q){
+function actualPathCanAdvance(g,q){
  if(!Array.isArray(q.b.fallPath)||!q.b.fallPath.length)return false;
  if(window.__hexGarbageLocalConflictIds(g).has(q.b.id))return false;
- const seg=q.b.fallPath[0],to=seg?.to;
- if(!Array.isArray(to)||to[1]<=q.v.y+0.03)return false;
- const floor=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H;
- if(q.v.y>=floor-0.03)return false;
- const ny=Math.min(to[1],q.v.y+0.045);
- return visualPointSafe(g,q.b.id,q.v.x,ny,HEX_MIN_DIST-1e-5);
+ const seg=q.b.fallPath[0],now=Math.max(0,g.pileFlowClock||0),start=Number(seg?.pileFlowStart),end=Number(seg?.pileFlowEnd);
+ if(!Array.isArray(seg?.to))return false;
+ // A future start caused by a measured real collision is legitimate contact
+ // waiting. Any other future start remains eligible for the freeze detector.
+ if(Number.isFinite(start)&&start>now+1e-7&&seg.garbageRealCollisionDelay)return false;
+ let sampleT;
+ if(Number.isFinite(start)&&Number.isFinite(end)){
+   const base=Math.max(now,start),span=Math.max(1e-5,Math.min(PHYSICS_FRAME*.25,(end-base)*.15));
+   sampleT=Math.min(end,base+span);
+ }else sampleT=now+PHYSICS_FRAME*.25;
+ const next=pileFlowPositionAt(g,q.b,sampleT);
+ if(!Array.isArray(next)||!Number.isFinite(next[0])||!Number.isFinite(next[1]))return false;
+ if(next[1]<q.v.y-1e-7)return false;
+ if(physical([q.v.x,q.v.y],next)<1e-4){
+   // If the path is scheduled in the future for no real-collision reason, it
+   // still SHOULD have started and is therefore a freeze candidate.
+   return Number.isFinite(start)&&start>now+1e-7&&!seg.garbageRealCollisionDelay;
+ }
+ return visualPointSafe(g,q.b.id,next[0],next[1],HEX_MIN_DIST-1e-5);
 }
 
 expect(window.__hexNaturalGarbageFall===true,"natural garbage fall override missing");
@@ -48,7 +61,7 @@ for(const [variant,type] of [[0,"PYRAMID"],[1,"HEXAGON"],[1,"STRAIGHT"]]){
    if(p){
     expect(q.v.y>=p[1]-1e-7,"garbage moved upward: "+JSON.stringify({type,variant,frame,id:q.b.id,from:p,to:now}));
     const moved=physical(p,now);if(moved>0.001)concurrent++;
-    if(safeDown(g,q)&&moved<1e-5){
+    if(actualPathCanAdvance(g,q)&&moved<1e-5){
       const n=(stall.get(q.b.id)||0)+1;stall.set(q.b.id,n);maxStall=Math.max(maxStall,n);
       expect(n<=6,"unsupported garbage froze in air: "+JSON.stringify({type,variant,frame,id:q.b.id,local:[...window.__hexGarbageLocalConflictIds(g)],visual:now,logical:[q.x,q.y],path:q.b.fallPath?.[0]}));
     }else stall.set(q.b.id,0);
