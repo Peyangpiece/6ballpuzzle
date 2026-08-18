@@ -1066,8 +1066,8 @@ PERFORMANCE_AUDIT {
     {
       "seed": 1,
       "frames": 1920,
-      "maxMs": 33,
-      "avgMs": 3.193,
+      "maxMs": 34,
+      "avgMs": 3.317,
       "maxCounts": {
         "step": 1081,
         "ms": 6,
@@ -1085,8 +1085,8 @@ PERFORMANCE_AUDIT {
     {
       "seed": 7,
       "frames": 1920,
-      "maxMs": 34,
-      "avgMs": 3.291,
+      "maxMs": 41,
+      "avgMs": 3.453,
       "maxCounts": {
         "step": 995,
         "ms": 5,
@@ -1104,11 +1104,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 19,
       "frames": 1920,
-      "maxMs": 11,
-      "avgMs": 3.309,
+      "maxMs": 13,
+      "avgMs": 3.479,
       "maxCounts": {
         "step": 980,
-        "ms": 4,
+        "ms": 5,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1123,11 +1123,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 37,
       "frames": 1920,
-      "maxMs": 12,
-      "avgMs": 3.221,
+      "maxMs": 17,
+      "avgMs": 3.384,
       "maxCounts": {
         "step": 985,
-        "ms": 4,
+        "ms": 5,
         "resolve": 3,
         "relax": 1,
         "final": 6,
