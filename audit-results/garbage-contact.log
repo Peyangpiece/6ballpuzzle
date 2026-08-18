@@ -30,13 +30,13 @@ evalmachine.<anonymous>:5065
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":16,"visual":[7.001045997648304,6.8452994616207485],"logical":[9,10],"path":{"from":[7,6.8452994616207485],"to":[8,7],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":2,"pileFlowStart":0.9583333333333324,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":0.9880594150629443,"garbageImmediateSchedule":true,"garbageGridEntryHandoff":true}}
+Error: unsupported garbage froze in air: {"type":"STRAIGHT","variant":1,"frame":126,"id":20,"local":[17,19],"visual":[8,7.8452994616207485],"logical":[9,8],"path":{"from":[8,7.8452994616207485],"to":[9,8],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":0,"pileFlowStart":1.058333332891816,"pileFlowDuration":0.026081993792441006,"pileFlowEnd":1.084415326684257,"garbageImmediateSchedule":true,"garbageGridEntryHandoff":true}}
     at expect (evalmachine.<anonymous>:5065:34)
-    at evalmachine.<anonymous>:5104:7
+    at evalmachine.<anonymous>:5105:7
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-natural-fall.js:69:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-natural-fall.js:70:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
