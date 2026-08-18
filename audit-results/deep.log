@@ -2,7 +2,7 @@ AI_STATE_CASE {"seed":1,"level":1,"alive":true,"state":"RESOLVING","phase":"GARB
 AI_STATE_CASE {"seed":1,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":1,"maxPieceAge":1.317,"bugs":0}
 AI_STATE_CASE {"seed":1,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":1,"maxPieceAge":1.242,"bugs":0}
 AI_STATE_CASE {"seed":1,"level":4,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":1,"maxPieceAge":1.242,"bugs":0}
-AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":3,"maxPieceAge":1.108,"bugs":0}
+AI_STATE_CASE {"seed":1,"level":5,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":2,"maxPieceAge":0.925,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":1,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":1,"maxPieceAge":1.225,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":2,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":1,"maxPieceAge":1.85,"bugs":0}
 AI_STATE_CASE {"seed":2,"level":3,"alive":true,"state":"RESOLVING","phase":"GARBAGE","spawnCount":1,"maxPieceAge":1.3,"bugs":0}
@@ -23,17 +23,17 @@ PERFORMANCE_AUDIT {
     {
       "seed": 1,
       "frames": 1920,
-      "maxMs": 33,
-      "avgMs": 3.3,
+      "maxMs": 32,
+      "avgMs": 3.814,
       "maxCounts": {
         "step": 846,
         "ms": 5,
         "resolve": 3,
         "relax": 1,
-        "final": 2,
+        "final": 1,
         "rests": 8,
         "rawRelax": 3,
-        "rawFinal": 3,
+        "rawFinal": 4,
         "state": "RESOLVING",
         "phase": "GARBAGE"
       },
@@ -43,16 +43,16 @@ PERFORMANCE_AUDIT {
       "seed": 7,
       "frames": 1920,
       "maxMs": 28,
-      "avgMs": 3.388,
+      "avgMs": 3.969,
       "maxCounts": {
         "step": 760,
-        "ms": 1,
+        "ms": 2,
         "resolve": 3,
         "relax": 1,
-        "final": 2,
+        "final": 1,
         "rests": 8,
         "rawRelax": 3,
-        "rawFinal": 3,
+        "rawFinal": 4,
         "state": "RESOLVING",
         "phase": "GARBAGE"
       },
@@ -61,17 +61,17 @@ PERFORMANCE_AUDIT {
     {
       "seed": 19,
       "frames": 1920,
-      "maxMs": 10,
-      "avgMs": 3.409,
+      "maxMs": 11,
+      "avgMs": 3.993,
       "maxCounts": {
         "step": 745,
-        "ms": 1,
+        "ms": 2,
         "resolve": 3,
         "relax": 1,
-        "final": 2,
+        "final": 1,
         "rests": 8,
         "rawRelax": 3,
-        "rawFinal": 3,
+        "rawFinal": 4,
         "state": "RESOLVING",
         "phase": "GARBAGE"
       },
@@ -80,17 +80,17 @@ PERFORMANCE_AUDIT {
     {
       "seed": 37,
       "frames": 1920,
-      "maxMs": 16,
-      "avgMs": 3.291,
+      "maxMs": 12,
+      "avgMs": 3.889,
       "maxCounts": {
         "step": 750,
-        "ms": 1,
+        "ms": 2,
         "resolve": 3,
         "relax": 1,
-        "final": 2,
+        "final": 1,
         "rests": 8,
         "rawRelax": 3,
-        "rawFinal": 3,
+        "rawFinal": 4,
         "state": "RESOLVING",
         "phase": "GARBAGE"
       },
