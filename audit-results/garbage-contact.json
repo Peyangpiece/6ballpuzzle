@@ -1,1 +1,1 @@
-{"sha":"d53703ff303c923598cc44754dff133de9622c90","status":"pass","garbageNormalPhysics":0,"garbagePresentation":0,"pileArc":0,"aiTechnique":0,"garbageZeroRigidity":0,"garbageDiagonalSettle":0}
+{"sha":"22ba935c54fd4249048423a54c6f9fb930905ff8","status":"fail","garbageNormalPhysics":0,"garbagePresentation":0,"pileArc":0,"aiTechnique":0,"garbageZeroRigidity":0,"garbageDiagonalSettle":0,"garbageChainSettle":1}
