@@ -8,13 +8,13 @@ evalmachine.<anonymous>:4456
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: finished garbage still had downward/open-gap move: {"type":1,"id":16,"cell":[3,8],"raw":{"to":[4,9],"kind":"ROLL_RIGHT","pivot":[2,9],"topPivot":null},"contactProposal":{"to":[4,9],"kind":"ROLL_RIGHT","pivot":[2,9],"follow":[]},"pathSafe":false,"blockers":[{"id":13,"garbage":false,"frozen":true,"cell":[5,8],"min":0.7320508075688771,"minT":0.5},{"id":19,"garbage":true,"frozen":false,"cell":[5,10],"min":0.9999999999999986,"minT":1},{"id":25,"garbage":true,"frozen":false,"cell":[6,9],"min":0.9999999999999991,"minT":1},{"id":11,"garbage":false,"frozen":true,"cell":[3,10],"min":0.9999999999999993,"minT":1},{"id":24,"garbage":true,"frozen":false,"cell":[4,7],"min":1.0001189829212327,"minT":0.010416666666666666},{"id":14,"garbage":true,"frozen":false,"cell":[1,8],"min":1.0094319509909442,"minT":0.010416666666666666},{"id":22,"garbage":true,"frozen":false,"cell":[2,7],"min":1.0094908883596148,"minT":0.010416666666666666}],"canonical":[]}
+Error: garbage batch never completed on terrain 2
     at expect (evalmachine.<anonymous>:4456:34)
-    at evalmachine.<anonymous>:4511:3
+    at evalmachine.<anonymous>:4508:2
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-chain-settle.js:71:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-chain-settle.js:73:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
