@@ -1,0 +1,537 @@
+PERFORMANCE_PHASE_TRACE {
+  "compact": [
+    {
+      "step": 830,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 831,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 832,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 833,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 834,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 835,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 836,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 837,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 838,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 839,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 840,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 841,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 842,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 843,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 844,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 845,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 846,
+      "events": [
+        "REST@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 847,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 848,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 849,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 850,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 851,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 852,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 853,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 854,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 855,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 856,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 857,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 858,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    },
+    {
+      "step": 859,
+      "events": [
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@UPDATE_VISUALS",
+        "REST@UPDATE_VISUALS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@RESOLVE_CONTACTS",
+        "REST@RESOLVE_CONTACTS",
+        "RELAX@UPDATE_GARBAGE_PACKS",
+        "FINAL@STEP",
+        "FINAL@STEP",
+        "FINAL@STEP"
+      ]
+    }
+  ],
+  "rawCount": 599
+}
