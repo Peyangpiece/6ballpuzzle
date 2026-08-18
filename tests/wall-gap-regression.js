@@ -54,6 +54,7 @@ for(const [x,y,label] of [[0,7,"left"],[18,7,"right"]]){
   const b=newBoard();
   const wall=put(b,0,ROWS-3,401);
   const support=put(b,1,ROWS-2,402);
+  support.momentumX=1;support.rollDir=1;support.subCellBias=1;
   const proposals=hexPhysContactEntries(b,new Set());
   const wp=proposals.find(p=>p.ball===wall),sp=proposals.find(p=>p.ball===support);
   expect(sp&&sp.tx===2&&sp.ty===ROWS-1,"inner support did not floor-pack inward as expected");
