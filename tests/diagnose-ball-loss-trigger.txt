@@ -1,1 +1,1 @@
-run focused diagnoses 9 postcontact motion
+run focused diagnoses 10 exact rng contacts
