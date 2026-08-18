@@ -1,9 +1,10 @@
 /* Garbage-to-garbage continuous frame clamp.
  *
- * Never repair penetration by inventing a new horizontal position. Each visual
- * frame already has a collision-safe start and a proposed end produced by the
- * actual fall/arc path. If two garbage balls would enter each other during that
- * 120 Hz interval, stop their real trajectories at the first tangent instead.
+ * Never repair penetration by inventing a new horizontal position. If two
+ * independent garbage balls would enter each other during a 120 Hz interval,
+ * stop their REAL trajectories at first tangent. Explicit follower/support
+ * pairs are excluded because pileFlowPointForBall already enforces their exact
+ * tangent relation; clamping them again creates artificial mid-air sticking.
  */
 (function installGarbageHardSeparation(){
     if(typeof window==="undefined"||window.__hexGarbageHardSeparation)return;
@@ -14,6 +15,12 @@
     function pointAt(a,b,t){return[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
     function boardItems(g){const out=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const ball=valid(x,y)?g.board[y][x]:null,v=ball&&g.vis.get(ball.id);if(ball?.isGarbage&&v&&Number.isFinite(v.x)&&Number.isFinite(v.y))out.push({ball,v,x,y});}return out;}
     function hardStationary(g,q){if(g?.garbageOriginalPileIds instanceof Set&&g.garbageOriginalPileIds.has(q.ball.id))return true;return q.ball.garbagePileSettled===true&&(!Array.isArray(q.ball.fallPath)||q.ball.fallPath.length===0);}
+    function firstSeg(ball){return Array.isArray(ball?.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;}
+    function follows(seg,id){
+        if(Number(seg?.movingSupportId)===id)return true;
+        return Array.isArray(seg?.followSupportIds)&&seg.followSupportIds.includes(id);
+    }
+    function causalSupportPair(a,b){return follows(firstSeg(a.ball),b.ball.id)||follows(firstSeg(b.ball),a.ball.id);}
     function scheduleShift(ball,delay){
         if(!(delay>1e-10))return;
         const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
@@ -33,13 +40,15 @@
         }
         return null;
     }
-    function movementStart(q,before){const p=before.get(q.ball.id);if(p)return p;const seg=Array.isArray(q.ball.fallPath)&&q.ball.fallPath.length?q.ball.fallPath[0]:null;if(Array.isArray(seg?.from)&&Number.isFinite(seg.from[0])&&Number.isFinite(seg.from[1]))return[seg.from[0],seg.from[1]];return[q.v.x,q.v.y];}
+    function movementStart(q,before){const p=before.get(q.ball.id);if(p)return p;const seg=firstSeg(q.ball);if(Array.isArray(seg?.from)&&Number.isFinite(seg.from[0])&&Number.isFinite(seg.from[1]))return[seg.from[0],seg.from[1]];return[q.v.x,q.v.y];}
     function clampGarbageFrame(g,before,dt){
         const list=boardItems(g);if(list.length<2)return;
         for(let pass=0;pass<20;pass++){
             let changed=false;
             for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
-                const a=list[i],b=list[j],a1=[a.v.x,a.v.y],b1=[b.v.x,b.v.y],a0=movementStart(a,before),b0=movementStart(b,before),hardA=hardStationary(g,a),hardB=hardStationary(g,b);
+                const a=list[i],b=list[j];
+                if(causalSupportPair(a,b))continue;
+                const a1=[a.v.x,a.v.y],b1=[b.v.x,b.v.y],a0=movementStart(a,before),b0=movementStart(b,before),hardA=hardStationary(g,a),hardB=hardStationary(g,b);
                 if(hardA&&hardB)continue;
                 const sa=hardA?a1:a0,sb=hardB?b1:b0,t=firstUnsafeFraction(sa,a1,sb,b1);if(t===null)continue;
                 changed=true;const lost=Math.max(0,1-t)*Math.max(0,dt||0);
