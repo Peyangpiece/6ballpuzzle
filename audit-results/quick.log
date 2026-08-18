@@ -24,6 +24,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -111,6 +117,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          7,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -140,6 +152,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -169,6 +187,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          7,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -198,6 +222,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -227,6 +257,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          7,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -256,6 +292,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -285,6 +327,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          7,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -314,6 +362,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -343,6 +397,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          7,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -372,6 +432,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -401,6 +467,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          7,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -430,6 +502,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -459,6 +537,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          7,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -488,6 +572,12 @@ HARD_DROP_CONVERGENCE {
           9
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          8,
+          9
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 11,
@@ -517,6 +607,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -624,6 +720,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -653,6 +755,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -682,6 +790,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -711,6 +825,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -740,6 +860,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -769,6 +895,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -798,6 +930,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -827,6 +965,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -856,6 +1000,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -885,6 +1035,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -914,6 +1070,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -943,6 +1105,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -972,6 +1140,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -1001,6 +1175,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -1030,6 +1210,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -1059,6 +1245,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -1088,6 +1280,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -1117,6 +1315,12 @@ HARD_DROP_CONVERGENCE {
           10
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          9,
+          10
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
@@ -1146,6 +1350,12 @@ HARD_DROP_CONVERGENCE {
           11
         ],
         "kind": "GROUP_SLOPE_TRANSLATE",
+        "pivot": [
+          10,
+          11
+        ],
+        "topPivot": null,
+        "virtualPivot": false,
         "arc": null,
         "pathN": 1,
         "protect": 12,
