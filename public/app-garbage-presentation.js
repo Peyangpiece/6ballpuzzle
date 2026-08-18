@@ -36,8 +36,19 @@
         }
         return out;
     }
-    function garbageEntries(g){return boardEntries(g).filter(q=>q.ball?.isGarbage);}
-    function findBallById(g,id){for(const q of boardEntries(g))if(q.ball.id===id)return q.ball;return null;}
+    function garbageEntries(g){
+        if(typeof window.__hexGetGarbagePhaseBallCache==="function")
+            return window.__hexGetGarbagePhaseBallCache(g).garbage;
+        return boardEntries(g).filter(q=>q.ball?.isGarbage);
+    }
+    function findBallById(g,id){
+        if(typeof window.__hexGetGarbagePhaseBallCache==="function"){
+            const ball=window.__hexGetGarbagePhaseBallCache(g).byId.get(id);
+            if(ball)return ball;
+        }
+        for(const q of boardEntries(g))if(q.ball.id===id)return q.ball;
+        return null;
+    }
 
     function findSpawnAnchor(g,pat,preferredAx){
         const minX=Math.min(...pat.map(([x])=>x)),maxX=Math.max(...pat.map(([x])=>x));
@@ -71,6 +82,8 @@
         g.board[y][x]=ball;
         noteBoardCell(g.board,y,ball);
         setVis(g,ball,x,y,RELEASE_INITIAL_VY);
+        if(typeof window.__hexInvalidateGarbagePhaseBallCache==="function")
+            window.__hexInvalidateGarbagePhaseBallCache(g);
         const v=g.vis.get(ball.id);
         if(v){
             v.motionSpeed=RELEASE_INITIAL_VY;
@@ -216,4 +229,5 @@
 
     window.__hexGarbageTopPivotExpandedForIndependentUnits=false;
     window.__hexGarbageFollowSupportResolvedForIndependentUnits=false;
+    window.__hexGarbagePresentationUsesPhaseCache=true;
 })();
