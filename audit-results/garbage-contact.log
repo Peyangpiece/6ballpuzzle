@@ -8,3 +8,4 @@ terrain2 completion diagnostic {"done":313,"clock":2.61666666666666,"pileClock":
 garbage chain-free dense settle PASS [{"type":1,"done":309,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999990338789},{"type":2,"done":313,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999990083682},{"type":3,"done":335,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999999999987},{"type":4,"done":336,"spawned":18,"maxGlobalStall":0,"minDistance":0.999999999265017}]
 post-garbage internal-clear collapse PASS
 wall + floor gap regression PASS
+game-over former-garbage fade PASS
