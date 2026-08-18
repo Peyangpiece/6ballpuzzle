@@ -5,22 +5,7 @@ HARD_DROP_CONVERGENCE {
   "failures": []
 }
 GARBAGE_BALL_INTERVAL_REGRESSION PASS {"expanded":19,"starts":[0.008333333333333333,1.2083333333333333,1.7266666666666666,2.4466666666666663,2.9549999999999996],"minGap":0.5083333333333333}
-/home/runner/work/6ballpuzzle/6ballpuzzle/tests/touch-control-regression.js:41
-function assert(cond,msg){if(!cond)throw new Error(msg);}
-                                   ^
-
-Error: fractional-X release never reached a legal lock
-    at assert (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/touch-control-regression.js:41:42)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/touch-control-regression.js:122:3)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at node:internal/main/run_main_module:36:49
-
-Node.js v22.23.2
+TOUCH_CONTROL_REGRESSION PASS
 ATTACK_CONSERVATION_AUDIT {
   "stats": {},
   "bugs": []
