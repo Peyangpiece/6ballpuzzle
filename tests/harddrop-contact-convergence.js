@@ -24,6 +24,12 @@ function arm(g,seed){
   const range=legalXRange(g),f=((seed%31)+.37)/31;
   setFreeX(g,range[0]+(range[1]-range[0])*f);updateVisuals(g,PHYSICS_FRAME);
   const shadow=landingShadowVisualCells(g);if(!shadow)return null;
+  const target=dropPiece(g.board,g.piece),base=pieceCells(target),anchor=hexHardDropContactAnchor(g,target,shadow);
+  g._hexTestHardDropArm={
+    shadow:shadow.map(v=>[v[0],v[1]]),
+    target:{x:target.x,y:target.y,rot:target.rot,cells:base.map(c=>[c[0],c[1]])},
+    anchor:anchor?{x:anchor.q.x,y:anchor.q.y,rot:anchor.q.rot,ox:anchor.ox,oy:anchor.oy,noUp:anchor.noUp,localX:anchor.localX,dist:anchor.dist,dy:anchor.dy,dx:anchor.dx,cells:pieceCells(anchor.q).map(c=>[c[0],c[1]])}:null
+  };
   const before=g.nextId;hardDrop(g);
   return{shadow,before,tracked:new Set([before,before+1,before+2])};
 }
@@ -85,9 +91,9 @@ function releaseDiag(g,tracked){
 function arcDebug(g,tracked){
   const memberQs=visuals(g).filter(q=>tracked.has(q.b.id)).sort((a,b)=>a.b.id-b.b.id);
   const members=memberQs.map(q=>({id:q.b.id,ball:q.b,seg:q.b.fallPath?.[0]}));
-  if(members.length!==3)return{memberCount:members.length,installAttempt:g._hex75InstallAttempt||null,release:releaseDiag(g,tracked)};
+  if(members.length!==3)return{arm:g._hexTestHardDropArm||null,memberCount:members.length,installAttempt:g._hex75InstallAttempt||null,release:releaseDiag(g,tracked)};
   const ids=new Set(members.map(m=>m.id)),obs=visuals(g).filter(q=>!ids.has(q.b.id));
-  const base={installAttempt:g._hex75InstallAttempt||null,gid:members[0].ball.motionGroupId,kinds:members.map(m=>m.seg?.kind),sameDisp:null,linearSafe:null,candidates:[],release:releaseDiag(g,tracked)};
+  const base={arm:g._hexTestHardDropArm||null,installAttempt:g._hex75InstallAttempt||null,gid:members[0].ball.motionGroupId,kinds:members.map(m=>m.seg?.kind),sameDisp:null,linearSafe:null,candidates:[],release:releaseDiag(g,tracked)};
   if(members.every(m=>m.seg?.from&&m.seg?.to)){
     const d0=[members[0].seg.to[0]-members[0].seg.from[0],members[0].seg.to[1]-members[0].seg.from[1]];
     base.sameDisp=members.every(m=>Math.abs((m.seg.to[0]-m.seg.from[0])-d0[0])<1e-6&&Math.abs((m.seg.to[1]-m.seg.from[1])-d0[1])<1e-6);
