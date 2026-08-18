@@ -1,7 +1,7 @@
 /* Wall-side no-gap invariant.
  *
  * The visible wall edge alternates between x=0/1 on the left and x=18/17 on
- * the right.  Earlier wall compaction only detected rows where one lower
+ * the right. Earlier wall compaction only detected rows where one lower
  * diagonal was outside the board, so every other wall row could still expose a
  * cavity while an accumulated-pile support moved inward.
  *
@@ -9,6 +9,9 @@
  * makes wall-adjacent support chains continuous on BOTH row parities:
  *
  *  - an actually open wall column falls straight down;
+ *  - a normal ball balanced on a real support with both diagonals open prefers
+ *    the diagonal that is an actual wall cell, so an opposing residual momentum
+ *    cannot peel it back toward the interior and leave the wall pocket open;
  *  - when an inward lower support moves away, the wall ball descends against its
  *    exact contact envelope;
  *  - when the OUTER lower wall support moves inward, the upper wall ball takes
@@ -60,7 +63,7 @@
     }
 
     // Keep a follower tangent to a support that is simultaneously moving from
-    // supportFrom to supportTo.  This is the physically correct continuous path
+    // supportFrom to supportTo. This is the physically correct continuous path
     // for alternating-parity wall compaction: start and end are both adjacent
     // hex centres, and the relative contact angle rotates while the support moves.
     function wallTangentFollowPoint(from,to,supportFrom,supportTo,supportNow,t){
@@ -82,6 +85,34 @@
         return !valid(outer[0],outer[1])||hexPhysEmpty(board,outer[0],outer[1],ignore);
     }
 
+    // Normal balls can arrive one cell in from a side wall with a real ball
+    // directly below and both lower diagonals open. Core gravity resolves that
+    // symmetric fork by residual momentum (or a left-biased fallback), which can
+    // send the ball back toward the interior even though one diagonal is the
+    // exposed physical wall cell. In this exact wall-packing fork, prefer the
+    // open wall cell. The path is still the ordinary one-ball roll around the
+    // real direct support; only the tie-break direction is made wall-compact.
+    function normalBallWallPackMotion(board,x,y,ball,ignore){
+        if(!ball||ball.isGarbage||wallSideAt(x,y)||touchesFloorRow(y))return null;
+        const dy=y+2;if(!valid(x,dy))return null;
+        const support=board[dy][x];
+        if(!support||(ignore&&ignore.has(support.id)))return null;
+        if(!hexPhysEmpty(board,x-1,y+1,ignore)||!hexPhysEmpty(board,x+1,y+1,ignore))return null;
+        const choices=[];
+        for(const dx of[-1,1]){
+            const tx=x+dx,ty=y+1;
+            if(valid(tx,ty)&&wallSideAt(tx,ty)&&hexPhysEmpty(board,tx,ty,ignore))choices.push({dx,tx,ty});
+        }
+        if(choices.length!==1)return null;
+        const q=choices[0];
+        return{
+            x,y,tx:q.tx,ty:q.ty,ball,
+            kind:q.dx<0?"ROLL_LEFT":"ROLL_RIGHT",
+            pivot:null,topPivot:[x,dy],followSupportIds:[],
+            wallPack:true,normalWallPack:true
+        };
+    }
+
     hexPhysNaturalMotion=function(board,x,y,ignore=null){
         const ball=valid(x,y)?board[y][x]:null;
         if(ball&&!touchesFloorRow(y)&&!ball.garbageBubbleHold){
@@ -89,6 +120,8 @@
             if(inward&&valid(x,y+2)&&hexPhysEmpty(board,x,y+2,ignore)&&lowerOpenForWallDrop(board,x,y,inward,ignore)){
                 return{x,y,tx:x,ty:y+2,ball,kind:"WALL_DROP",pivot:null,topPivot:null,followSupportIds:[]};
             }
+            const packed=normalBallWallPackMotion(board,x,y,ball,ignore);
+            if(packed)return packed;
         }
         return baseNaturalMotion(board,x,y,ignore);
     };
@@ -250,10 +283,11 @@
         };
     }
 
-    window.__hexWallGapInvariantVersion="wall-gap-v4";
+    window.__hexWallGapInvariantVersion="wall-gap-v5-normal-pack";
     window.__hexWallGapAllowed=false;
     window.__hexWallCompactFollowEnabled=true;
     window.__hexWallAlternatingParityCompaction=true;
     window.__hexWallDynamicVacancyClosure=true;
     window.__hexWallPileFlowEnvelopeEnabled=true;
+    window.__hexNormalBallWallPacking=true;
 })();
