@@ -1066,11 +1066,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 1,
       "frames": 1920,
-      "maxMs": 21,
-      "avgMs": 1.841,
+      "maxMs": 33,
+      "avgMs": 3.193,
       "maxCounts": {
         "step": 1081,
-        "ms": 3,
+        "ms": 6,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1085,11 +1085,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 7,
       "frames": 1920,
-      "maxMs": 15,
-      "avgMs": 1.879,
+      "maxMs": 34,
+      "avgMs": 3.291,
       "maxCounts": {
         "step": 995,
-        "ms": 3,
+        "ms": 5,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1104,11 +1104,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 19,
       "frames": 1920,
-      "maxMs": 7,
-      "avgMs": 1.872,
+      "maxMs": 11,
+      "avgMs": 3.309,
       "maxCounts": {
         "step": 980,
-        "ms": 3,
+        "ms": 4,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1123,11 +1123,11 @@ PERFORMANCE_AUDIT {
     {
       "seed": 37,
       "frames": 1920,
-      "maxMs": 6,
-      "avgMs": 1.777,
+      "maxMs": 12,
+      "avgMs": 3.221,
       "maxCounts": {
         "step": 985,
-        "ms": 3,
+        "ms": 4,
         "resolve": 3,
         "relax": 1,
         "final": 6,
@@ -1148,8 +1148,375 @@ SETTLE_AUDIT {
 }
 LANDING_AUDIT {
   "cases": 120,
-  "bugs": [],
-  "stats": {}
+  "bugs": [
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 9,
+      "d": 0.9837016606044584,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 9,
+      "d": 0.9087532337953215,
+      "a": 3,
+      "b": 3000542
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 12,
+      "d": 0.9995724622384929,
+      "a": 1,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 12,
+      "d": 0.9851792854625828,
+      "a": 3000728,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 13,
+      "d": 0.9997031569682916,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 13,
+      "d": 0.9982755615310286,
+      "a": 3000782,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 17,
+      "d": 0.9982360538438231,
+      "a": 1,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 17,
+      "d": 0.9850988408901028,
+      "a": 2,
+      "b": 3001024
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 21,
+      "d": 0.9987873244422628,
+      "a": 1,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 21,
+      "d": 0.992102313387597,
+      "a": 2,
+      "b": 3001268
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 25,
+      "d": 0.9982028471140523,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 25,
+      "d": 0.9852680960027418,
+      "a": 3001501,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 29,
+      "d": 0.9990075514860705,
+      "a": 3001747,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 29,
+      "d": 0.9827542059266008,
+      "a": 3001747,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 33,
+      "d": 0.9985771984906441,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 33,
+      "d": 0.99039049194662,
+      "a": 3001983,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 35,
+      "d": 0.993107993548998,
+      "a": 3,
+      "b": 3002107
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 35,
+      "d": 0.9933009671022864,
+      "a": 2,
+      "b": 3002104
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 39,
+      "d": 0.9964491569107862,
+      "a": 1,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 39,
+      "d": 0.9785393741159103,
+      "a": 2,
+      "b": 3002351
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 42,
+      "d": 0.932215540183407,
+      "a": 3,
+      "b": 3002522
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 44,
+      "d": 0.9874174193164724,
+      "a": 3,
+      "b": 3002656
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 54,
+      "d": 0.9938234960296325,
+      "a": 3,
+      "b": 3003246
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 55,
+      "d": 0.9998947861310964,
+      "a": 1,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 55,
+      "d": 0.9994008630671148,
+      "a": 2,
+      "b": 3003304
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 56,
+      "d": 0.998881307540301,
+      "a": 1,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 56,
+      "d": 0.9848097335087648,
+      "a": 3003362,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 57,
+      "d": 0.8791228889614312,
+      "a": 3,
+      "b": 3003429
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 57,
+      "d": 0.8833867042571671,
+      "a": 2,
+      "b": 3003430
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 59,
+      "d": 0.9990428679382813,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 59,
+      "d": 0.9942771458960532,
+      "a": 3,
+      "b": 3003545
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 63,
+      "d": 0.9984782446671467,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 63,
+      "d": 0.9895081952518836,
+      "a": 3003783,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 65,
+      "d": 0.9991508806384883,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 65,
+      "d": 0.9947438190318668,
+      "a": 3003901,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 66,
+      "d": 0.9947417016920579,
+      "a": 3,
+      "b": 3003962
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 69,
+      "d": 0.9670656080027321,
+      "a": 3,
+      "b": 3004148
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 69,
+      "d": 0.9660801819078405,
+      "a": 2,
+      "b": 3004150
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 72,
+      "d": 0.9868145700798208,
+      "a": 3004328,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 79,
+      "d": 0.9982251183748627,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 79,
+      "d": 0.9866661495059958,
+      "a": 3004742,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 85,
+      "d": 0.9985936549627898,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 85,
+      "d": 0.9916089079569232,
+      "a": 3,
+      "b": 3005105
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 87,
+      "d": 0.9991069112022398,
+      "a": 1,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 87,
+      "d": 0.9944404813670091,
+      "a": 2,
+      "b": 3005228
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 101,
+      "d": 0.9478986888191051,
+      "a": 3006072,
+      "b": 1
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 109,
+      "d": 0.9994048165849896,
+      "a": 1,
+      "b": 2
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 109,
+      "d": 0.9964266859445384,
+      "a": 3006541,
+      "b": 3
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 111,
+      "d": 0.9678313157627152,
+      "a": 3,
+      "b": 3006663
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 111,
+      "d": 0.9668711677221756,
+      "a": 2,
+      "b": 3006666
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 117,
+      "d": 0.9582836509978027,
+      "a": 3,
+      "b": 3007032
+    },
+    {
+      "type": "post-harddrop-overlap",
+      "seed": 117,
+      "d": 0.959534666656944,
+      "a": 2,
+      "b": 3007023
+    }
+  ],
+  "stats": {
+    "post-harddrop-overlap": 52
+  }
 }
 RENDERED_GUIDE_AUDIT {
   "cases": 120,
