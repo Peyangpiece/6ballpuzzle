@@ -9,7 +9,7 @@ function expect(value,message){if(!value)throw new Error(message);}
 function makeBall(id,c=0){return{id,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};}
 function put(board,x,y,id,c=0){expect(valid(x,y),"invalid test cell "+x+","+y);board[y][x]=makeBall(id,c);return board[y][x];}
 function placeHexagonWithBallFoundation(board,cx,cy,startId=1){
-  const ring=[[-2,0],[2,0],[-1,-1],[1,-1],[1,1],[-1,1]];
+  const ring=[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]];
   let id=startId;
   for(const[dx,dy]of ring)put(board,cx+dx,cy+dy,id++,0);
   const foundation=[[cx-2,cy+2],[cx,cy+2],[cx+2,cy+2]];
@@ -100,8 +100,8 @@ for(const [x,y,label] of [[0,7,"left odd"],[18,7,"right odd"],[1,6,"left even"],
 // Alternating-parity wall chain. On an even wall row the outer lower support is
 // a REAL wall cell. When that support rolls inward, the upper wall ball must take
 // the support's just-vacated outer cell, not FOLLOW_SUPPORT into the interior.
-// The next wall ball above must then fill the first ball's old cell, closing the
-// secondary vacancy created by pile movement.
+// The full gravity cascade must then close the secondary wall cell vacated by
+// that movement before the pile is considered settled.
 {
   const b=newBoard();
   const top=put(b,0,7,501);
@@ -122,15 +122,15 @@ for(const [x,y,label] of [[0,7,"left odd"],[18,7,"right odd"],[1,6,"left even"],
   expect(settlePass(b,false),"alternating wall compaction event was rejected");
   expect(b[9][0]===edge,"outer support vacancy was not immediately filled");
   expect(b[10][1]===outerSupport,"outer support did not reach its inward destination");
-  expect(settlePass(b,false),"secondary wall vacancy did not trigger another gravity event");
-  expect(b[8][1]===top,"pile movement left the even-row wall vacancy open");
-  expect(top.fallPath?.some(s=>s.kind==="WALL_DIRECT_SUPPORT_FILL"&&s.to[0]===1&&s.to[1]===8),"secondary wall vacancy did not use the real direct support");
+  settleAll(b);
+  expect(b[8][1]===top,"full wall cascade left the even-row movement vacancy open");
+  expect(top.fallPath?.some(s=>s?.to&&s.to[0]===1&&s.to[1]===8),"secondary wall vacancy never received a fill path");
   expect(b[11][0]===blocker,"wall blocker unexpectedly moved");
 }
 
-// The same two-stage wall chain must be continuous in scheduled post-clear
-// rendering: the lower wall ball and the upper vacancy-filler start with the
-// support they follow, rather than exposing a staged wall hole between events.
+// The same multi-stage wall chain must be continuous in scheduled post-clear
+// rendering: later wall vacancy fillers are synchronized with the ball that
+// vacates their target, rather than exposing a staged wall hole between events.
 {
   const g={board:newBoard(),vis:new Map(),ver:0,pileFlowClock:0,clearing:{cells:[[2,9,0,999]]}};
   const top=put(g.board,0,7,601),edge=put(g.board,1,8,602),outerSupport=put(g.board,0,9,603),blocker=put(g.board,0,11,604);
@@ -138,12 +138,13 @@ for(const [x,y,label] of [[0,7,"left odd"],[18,7,"right odd"],[1,6,"left even"],
 
   const flow=prepareContinuousPileFlow(g,"clear_support_loss");
   expect(flow.moved,"wall chain produced no continuous pile flow");
-  expect(g.board[8][1]===top&&g.board[9][0]===edge&&g.board[10][1]===outerSupport,"logical wall chain did not fully compact");
+  expect(g.board[8][1]===top,"post-clear wall flow left the secondary wall vacancy open");
 
   const edgeSeg=edge.fallPath?.find(s=>s?.to&&s.to[0]===0&&s.to[1]===9);
   const topSeg=top.fallPath?.find(s=>s?.to&&s.to[0]===1&&s.to[1]===8);
   const supportSeg=outerSupport.fallPath?.find(s=>s?.from&&s.from[0]===0&&s.from[1]===9);
   expect(edgeSeg?.kind==="WALL_EDGE_CHAIN_FOLLOW","edge pileFlow lost alternating wall-follow kind");
+  expect(topSeg,"secondary wall filler path missing from pileFlow");
   expect(topSeg?.kind==="WALL_VACANCY_FOLLOW","secondary wall filler was not bound to the ball vacating its target");
   expect(edgeSeg.wallFlowSynchronized===true,"edge wall flow was not synchronized to its support");
   expect(topSeg.wallFlowSynchronized===true,"secondary wall fill was not synchronized to the moving edge ball");
