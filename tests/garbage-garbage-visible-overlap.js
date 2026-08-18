@@ -26,7 +26,9 @@ function visibleGarbage(g,lead=0){
   }
   const seg=Array.isArray(b.fallPath)&&b.fallPath.length?b.fallPath[0]:null;
   pts.push({kind:"board",id:b.id,x:px,y:py,logical:[x,y],settled:b.garbagePileSettled===true,
-   pathLen:Array.isArray(b.fallPath)?b.fallPath.length:0,seq:Number(seg?.pileFlowOriginalSeq||seg?.motionSeq||0)});
+   pathLen:Array.isArray(b.fallPath)?b.fallPath.length:0,seq:Number(seg?.pileFlowOriginalSeq||seg?.motionSeq||0),
+   seg:seg?{from:seg.from,to:seg.to,kind:seg.kind,pileFlow:!!seg.pileFlow,start:seg.pileFlowStart,end:seg.pileFlowEnd,
+    follow:seg.followSupportIds,movingSupportId:seg.movingSupportId}:null});
  }
  for(const pack of g.activeGarbagePacks||[]){
   if(!pack||pack.landed||!pack._started)continue;
@@ -47,6 +49,7 @@ function buildPile(g,variant){
 expect(window.__hexGarbageVisibleOverlapGuard===true,"garbage render overlap guard is not installed");
 expect(window.__hexGarbageHardSeparation===true,"garbage hard-separation guard is not installed");
 expect(window.__hexGarbageLocalConflictQueue===true,"local garbage conflict queue is not installed");
+expect(window.__hexGarbageImmediateScheduler===true,"immediate garbage scheduler is not installed");
 {
  const qg=createEngine(99491);qg.state="RESOLVING";qg.phase="GARBAGE";
  const a=put(qg,4,7,0),b=put(qg,8,7,1);a.isGarbage=b.isGarbage=true;
@@ -68,8 +71,9 @@ for(let variant=0;variant<3;variant++)for(const type of ["PYRAMID","HEXAGON","ST
   updateGarbagePacks(g,PHYSICS_FRAME);updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);window.__hexRefreshGarbagePileState(g);
   const actual=minPair(visibleGarbage(g,0));if(actual.d<worstActual.d)worstActual={...actual,variant,type,frame};
   const render=minPair(visibleGarbage(g,PHYSICS_FRAME));if(render.d<worstRender.d)worstRender={...render,variant,type,frame};
-  expect(actual.d>=HEX_MIN_DIST-5e-4,"garbage actual overlap: "+JSON.stringify({variant,type,frame,...actual}));
-  expect(render.d>=HEX_MIN_DIST-5e-4,"garbage visible overlap: "+JSON.stringify({variant,type,frame,...render}));
+  const queued=[...__hexdropGarbageMotionQueue(g).queued];
+  expect(actual.d>=HEX_MIN_DIST-5e-4,"garbage actual overlap: "+JSON.stringify({variant,type,frame,queued,...actual}));
+  expect(render.d>=HEX_MIN_DIST-5e-4,"garbage visible overlap: "+JSON.stringify({variant,type,frame,queued,...render}));
   if(garbageBatchDone(g))break;
  }
 }
