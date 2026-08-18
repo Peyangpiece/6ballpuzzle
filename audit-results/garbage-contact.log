@@ -26,3 +26,20 @@ Error: garbage actual overlap: {"variant":1,"type":"STRAIGHT","frame":114,"d":0.
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
+evalmachine.<anonymous>:4842
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: unsupported garbage froze in air: {"type":"PYRAMID","variant":0,"frame":114,"id":16,"visual":[7.001045997648304,6.8452994616207485],"logical":[9,10],"path":{"from":[7,6.8452994616207485],"to":[8,7],"kind":"GARBAGE_PILE_CONTACT_HANDOFF","pileFlow":true,"pileFlowEntry":true,"pileFlowReason":"garbage_pile_contact","motionSeq":0,"pileFlowOriginalSeq":2,"pileFlowStart":1.1166666666666651,"pileFlowDuration":0.0297260817296119,"pileFlowEnd":1.146392748396277,"garbageGridEntryHandoff":true}}
+    at expect (evalmachine.<anonymous>:4842:34)
+    at evalmachine.<anonymous>:4880:7
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-natural-fall.js:68:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
