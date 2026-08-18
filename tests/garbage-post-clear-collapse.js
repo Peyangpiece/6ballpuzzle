@@ -81,7 +81,7 @@ expect(window.__hexPostClearDynamicVacancyClosure===true,"secondary-vacancy coll
   expect((topSeg.followSupportIds||[]).includes(shoulder.id),"secondary collapse was not bound to its real support");
 
   let upperMoved=false,topMoved=false;
-  for(let frame=0;frame<360&&(upper.fallPath.length||top.fallPath.length);frame++){
+  for(let frame=0;frame<360&&((upper.fallPath?.length||0)||(top.fallPath?.length||0));frame++){
     updateVisuals(g,PHYSICS_FRAME);
     const uv=g.vis.get(upper.id),tv=g.vis.get(top.id);
     if(uv&&phys(upperStart,[uv.x,uv.y])>1e-4)upperMoved=true;
