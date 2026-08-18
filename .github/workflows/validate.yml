@@ -23,9 +23,10 @@ jobs:
         run: |
           cat \
             public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
-            public/app-05.js public/app-06.js public/app-07.js public/app-08.js \
-            public/app-09.js public/app-10.js public/app-14.js public/app-15.js \
-            public/app-16.js public/app-17.js public/controls-v7.js > /tmp/hexdrop-runtime.js
+            public/app-05.js public/app-06.js public/app-07.js public/app-pile-arc.js \
+            public/app-clear-gap-collapse.js public/app-08.js public/app-09.js public/app-10.js \
+            public/app-14.js public/app-15.js public/app-16.js public/app-17.js \
+            public/app-garbage-normal-physics.js public/controls-v7.js > /tmp/hexdrop-runtime.js
           node --check /tmp/hexdrop-runtime.js
       - name: Check floor parity regression
         run: |
@@ -50,6 +51,10 @@ jobs:
           console.log('floor parity regression PASS');
           EOF
           node /tmp/floor-test.js
+      - name: Check wall-gap regression
+        run: node tests/wall-gap-regression.js
+      - name: Check post-garbage clear-collapse regression
+        run: node tests/garbage-post-clear-collapse.js
       - name: Check airborne garbage pass-through
         run: node tests/garbage-airborne-pass-through.js
       - name: Check rigidity and garbage regressions
@@ -109,6 +114,8 @@ jobs:
           test -f public/index.html
           test -f public/manifest.webmanifest
           test -f wrangler.jsonc
+          test -f public/app-clear-gap-collapse.js
+          test -f tests/garbage-post-clear-collapse.js
           grep -q 'hexPhysNaturalMotion' public/app-02.js
           grep -q 'hexPhysPlanGroup' public/app-02.js
           grep -q 'FLOOR_DROP' public/app-02.js
@@ -116,6 +123,8 @@ jobs:
           grep -q 'hexPhysResolveEvent' public/app-03.js
           grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.5' public/app-06.js
           grep -q 'prepareContinuousPileFlow' public/app-07.js
+          grep -q '__hexGarbageFinalizesIntoAccumulatedPile' public/app-garbage-normal-physics.js
+          grep -q '__hexPostClearGarbageSupportArc' public/app-pile-arc.js
           grep -q 'manifest.webmanifest' public/index.html
           grep -q 'loadCurrentGameBuild' public/index.html
           grep -q 'Date.now().toString(36)' public/index.html
