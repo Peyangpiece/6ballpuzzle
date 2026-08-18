@@ -41,11 +41,20 @@ function relSignature(pack){
  expect(sig0.length===sig1.length&&sig0.every((d,i)=>close(d,sig1[i])),"airborne garbage relative distances changed before contact");
 
  const released=materializeGarbageContactsThrough(g,pack,first+0.75);
- expect(pack._pileContactStarted===true,"first pile contact did not unlock splitting");
+ expect(pack._pileContactStarted===true,"first pile contact did not unlock lattice handoff");
  expect(close(pack.y,first,2e-6),"rigid garbage overshot its first pile contact: "+JSON.stringify({first,y:pack.y}));
- expect(released>=1,"first contacting garbage member did not hand off");
+ expect(released>=1,"first contact did not hand any garbage member to the lattice");
  expect(pack.pat.length<6,"contact did not release any member");
- expect(pack.pat.length>0,"isolated first contact incorrectly dissolved entire shape in one overshoot frame");
+
+ // Any member that cannot enter the lattice on the first contact frame must be
+ // held at the original contact anchor; a later free-flight desiredY must never
+ // drag the unresolved remainder through the accumulated pile.
+ if(pack.pat.length){
+   const remain=pack.pat.length;
+   materializeGarbageContactsThrough(g,pack,first+4);
+   expect(pack.pat.length<=remain,"post-contact retry recreated garbage members");
+   expect(close(pack.y,first,2e-6),"unresolved post-contact garbage continued below the pile contact anchor");
+ }
 }
 
 for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
@@ -62,6 +71,7 @@ for(const type of ["PYRAMID","HEXAGON","STRAIGHT"]){
    }
  }
  expect(p._pileContactStarted||p.landed,type+" never reached first rigid contact");
+ if(p._pileContactStarted&&p.pat.length)expect(close(p.y,p._pileContactAnchorY,2e-6),type+" unresolved members crossed first-contact anchor");
 }
 
 console.log("garbage airborne rigidity until first pile contact PASS");
