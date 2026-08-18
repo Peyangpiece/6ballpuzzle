@@ -4,7 +4,7 @@ const runtime=[
   "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
   "app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js",
   "app-17.js","app-garbage-normal-physics.js","app-garbage-presentation.js",
-  "app-garbage-zero-rigidity.js","app-garbage-deep-settle.js"
+  "app-garbage-zero-rigidity.js","app-garbage-deep-settle.js","app-garbage-simultaneous-motion.js"
 ].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 const checks=String.raw`
 function expect(v,m){if(!v)throw new Error(m);}
@@ -27,6 +27,7 @@ function nearby(g,q){
  })).filter(z=>z.d<1.35).sort((a,b)=>a.d-b.d).slice(0,6);
 }
 expect(window.__hexGarbageNoChainFreeze===true,"chain-free garbage settle layer missing");
+expect(window.__hexGarbageMovingPeersAreSimultaneous===true,"simultaneous moving-garbage layer missing");
 const reports=[];
 for(let type=1;type<=4;type++){
  const g=createEngine(72000+type);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;terrain(g,type);
