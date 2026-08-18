@@ -1,1 +1,1 @@
-run focused diagnoses 13 app71 + performance phases
+run focused diagnoses 14 stall + performance trace
