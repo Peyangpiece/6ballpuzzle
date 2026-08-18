@@ -1,13 +1,10 @@
 /* Natural post-contact garbage fall.
  *
  * After first real pile/floor contact, garbage members are independent balls.
- * They must NOT be serialized globally by motion sequence: that freezes every
- * later member in mid-air even when nothing physically supports or blocks it.
- *
- * Only a collision that is imminent in the next physics frame may hold a ball.
- * Future collisions are handled when they become imminent. When a local hold is
- * released, its schedule is rebased to NOW so an unsupported ball resumes on the
- * same frame instead of waiting out time accumulated while it was blocked.
+ * Unsupported members fall concurrently. Only a collision imminent in the next
+ * physics frame may hold the later member, and that hold freezes its SCHEDULE,
+ * not its rendered snapshot. This bypasses app-17's legacy visual queue restore,
+ * which was the direct cause of large garbage clusters hanging in mid-air.
  */
 (function installNaturalGarbageFall(){
     if(typeof window==="undefined"||window.__hexNaturalGarbageFall)return;
@@ -16,7 +13,7 @@
     const CONFLICT_MIN=Math.max(0.9990,HEX_MIN_DIST-2e-5);
     const TIME_SAMPLES=16;
     const HORIZON=Math.max(1/120,(typeof PHYSICS_FRAME==="number"?PHYSICS_FRAME:1/120)*1.15);
-    const previousQueueByEngine=new WeakMap();
+    const previousLocalQueue=new WeakMap();
 
     function segmentSeq(seg){
         const a=Number(seg?.pileFlowOriginalSeq),b=Number(seg?.motionSeq);
@@ -31,11 +28,22 @@
             physDist(a.to,b.from)<1e-7&&physDist(b.to,a.from)<1e-7;
     }
     function startsWithinHorizon(seg,now){
-        const s=Number(seg?.pileFlowStart);
-        return !Number.isFinite(s)||s<=now+HORIZON+1e-10;
+        const s=Number(seg?.pileFlowStart);return !Number.isFinite(s)||s<=now+HORIZON+1e-10;
     }
 
-    function scheduledConflict(g,a,b){
+    function motionEntries(g){
+        const out=[];
+        if(!g||g.state!=="RESOLVING"||g.phase!=="GARBAGE")return out;
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
+            if(!ball?.isGarbage||!seg?.from||!seg?.to)continue;
+            out.push({ball,seg,seq:segmentSeq(seg)});
+        }
+        return out;
+    }
+
+    function imminentConflict(g,a,b){
         if(!a?.seg||!b?.seg)return false;
         const now=Math.max(0,g?.pileFlowClock||0),as=a.seg,bs=b.seg;
         if((sameDestination(as,bs)||endpointSwap(as,bs))&&startsWithinHorizon(as,now)&&startsWithinHorizon(bs,now))return true;
@@ -51,23 +59,11 @@
         return false;
     }
 
-    function entries(g){
-        const out=[];
-        if(!g||g.state!=="RESOLVING"||g.phase!=="GARBAGE")return out;
-        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-            const ball=valid(x,y)?g.board[y][x]:null;
-            const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
-            if(!ball?.isGarbage||!seg?.from||!seg?.to)continue;
-            out.push({ball,seg,seq:segmentSeq(seg)});
-        }
-        return out;
-    }
-
-    __hexdropGarbageMotionQueue=function(g){
-        const list=entries(g),queued=new Set();let minSeq=Infinity;
+    function localConflictQueue(g){
+        const list=motionEntries(g),queued=new Set();let minSeq=Infinity;
         for(const e of list)if(e.seq>0)minSeq=Math.min(minSeq,e.seq);
         for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
-            const a=list[i],b=list[j];if(!scheduledConflict(g,a,b))continue;
+            const a=list[i],b=list[j];if(!imminentConflict(g,a,b))continue;
             let later;
             if(a.seq>0&&b.seq>0&&a.seq!==b.seq)later=a.seq>b.seq?a:b;
             else if(a.seq!==b.seq)later=a.seq>b.seq?a:b;
@@ -75,7 +71,48 @@
             queued.add(later.ball.id);
         }
         return {minSeq,queued};
-    };
+    }
+
+    // Disable app-17's legacy visual snapshot/restore queue completely. Local
+    // conflicts are handled below by schedule-only pauses.
+    __hexdropGarbageMotionQueue=function(){return{minSeq:Infinity,queued:new Set()};};
+
+    function boardBallById(g,id){
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const b=valid(x,y)?g.board[y][x]:null;if(b?.id===id)return b;
+        }
+        return null;
+    }
+    function shiftPath(path,delta){
+        if(!Array.isArray(path)||Math.abs(delta)<=1e-12)return;
+        for(const seg of path){
+            if(!seg?.pileFlow)continue;
+            if(Number.isFinite(seg.pileFlowStart))seg.pileFlowStart+=delta;
+            if(Number.isFinite(seg.pileFlowEnd))seg.pileFlowEnd+=delta;
+        }
+    }
+    function pauseLocalSchedules(g,ids,dt){
+        if(!ids?.size||!(dt>0))return;
+        for(const id of ids){
+            const ball=boardBallById(g,id),path=Array.isArray(ball?.fallPath)?ball.fallPath:null;
+            if(!path?.length)continue;
+            shiftPath(path,dt);
+            const v=g.vis.get(id);if(v){v.vy=0;v.motionSpeed=0;v.garbageLocalCollisionHeld=true;}
+        }
+    }
+    function resumeIdsNow(g,ids){
+        if(!ids?.size)return;
+        const clock=Math.max(0,g?.pileFlowClock||0);
+        for(const id of ids){
+            const ball=boardBallById(g,id),path=Array.isArray(ball?.fallPath)?ball.fallPath:null,seg=path?.[0];
+            if(!seg?.pileFlow)continue;
+            if(Number.isFinite(seg.pileFlowStart)&&seg.pileFlowStart>clock+1e-9){
+                shiftPath(path,clock-seg.pileFlowStart);
+                seg.garbageQueueResumeRebased=true;
+            }
+            const v=g.vis.get(id);if(v){delete v.garbageLocalCollisionHeld;delete v.garbageQueueHeld;v.motionSpeed=Math.max(v.motionSpeed||0,0.0001);}
+        }
+    }
 
     function scheduleGarbageImmediately(g,fresh){
         if(!Array.isArray(fresh)||!fresh.length)return;
@@ -89,38 +126,11 @@
             seg.garbageImmediateSchedule=true;
         }
     }
-
     const baseScheduleFreshPileFlow=scheduleFreshPileFlow;
     scheduleFreshPileFlow=function(g,fresh,reason="pile_flow"){
         if(reason==="garbage_pile_contact"&&Array.isArray(fresh)&&fresh.some(q=>q?.ball?.isGarbage))return scheduleGarbageImmediately(g,fresh);
         return baseScheduleFreshPileFlow(g,fresh,reason);
     };
-
-    function boardBallById(g,id){
-        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-            const b=valid(x,y)?g.board[y][x]:null;if(b?.id===id)return b;
-        }
-        return null;
-    }
-    function resumeReleasedLocalHolds(g,current){
-        const previous=previousQueueByEngine.get(g)||new Set(),clock=Math.max(0,g?.pileFlowClock||0);
-        for(const id of previous){
-            if(current.has(id))continue;
-            const ball=boardBallById(g,id),path=Array.isArray(ball?.fallPath)?ball.fallPath:null,seg=path?.[0];
-            if(!seg?.pileFlow||!Number.isFinite(seg.pileFlowStart)||!Number.isFinite(seg.pileFlowEnd))continue;
-            if(seg.pileFlowStart>clock+1e-9){
-                const shift=clock-seg.pileFlowStart;
-                for(const s of path){
-                    if(!s?.pileFlow)continue;
-                    if(Number.isFinite(s.pileFlowStart))s.pileFlowStart+=shift;
-                    if(Number.isFinite(s.pileFlowEnd))s.pileFlowEnd+=shift;
-                }
-                seg.garbageQueueResumeRebased=true;
-            }
-            const v=g.vis.get(id);if(v){delete v.garbageQueueHeld;v.motionSpeed=Math.max(v.motionSpeed||0,0.0001);}
-        }
-        previousQueueByEngine.set(g,new Set(current));
-    }
 
     function finalGarbageProjection(g){
         const list=[];
@@ -132,35 +142,30 @@
             if(g?.garbageOriginalPileIds instanceof Set&&g.garbageOriginalPileIds.has(q.ball.id))return true;
             return q.ball.garbagePileSettled===true&&(!Array.isArray(q.ball.fallPath)||q.ball.fallPath.length===0);
         };
-        const queue=__hexdropGarbageMotionQueue(g).queued;
+        const conflicts=localConflictQueue(g).queued;
         const moveAway=(q,o,n)=>{
             if(!(n>0))return 0;
             let dir=Math.sign(q.v.x-o.v.x);if(!dir)dir=Math.sign(q.x-o.x)||1;
-            const room=Math.max(0,(dir>0?(W2-1)-q.v.x:q.v.x)*.5);
-            if(room<=1e-10)return 0;
+            const room=Math.max(0,(dir>0?(W2-1)-q.v.x:q.v.x)*.5);if(room<=1e-10)return 0;
             const take=Math.min(n,room);q.v.x+=dir*(take/.5);return take;
         };
-        for(let pass=0;pass<48;pass++){
+        for(let pass=0;pass<64;pass++){
             let changed=false;
             for(let i=0;i<list.length;i++)for(let j=i+1;j<list.length;j++){
-                const a=list[i],b=list[j];
-                const dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H,d=Math.hypot(dx,dy);
-                if(d>=1-1e-9)continue;
-                changed=true;
+                const a=list[i],b=list[j],dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H,d=Math.hypot(dx,dy);
+                if(d>=1-1e-9)continue;changed=true;
                 const ha=isHard(a),hb=isHard(b);if(ha&&hb)continue;
                 const targetX=Math.abs(dy)<1?Math.sqrt(Math.max(0,1-dy*dy)):0;
-                let need=Math.max(0,targetX-Math.abs(dx))+2e-6;
-                let first,second;
-                if(ha){first=b;second=null;}
-                else if(hb){first=a;second=null;}
+                let need=Math.max(0,targetX-Math.abs(dx))+3e-6,first,second;
+                if(ha){first=b;second=null;}else if(hb){first=a;second=null;}
                 else{
-                    const qa=queue.has(a.ball.id),qb=queue.has(b.ball.id);
+                    const qa=conflicts.has(a.ball.id),qb=conflicts.has(b.ball.id);
                     if(qa!==qb)first=qa?a:b;
                     else first=segmentSeq(a.ball.fallPath?.[0])>=segmentSeq(b.ball.fallPath?.[0])?a:b;
                     second=first===a?b:a;
                 }
                 need-=moveAway(first,first===a?b:a,need);
-                if(need>1e-8&&second&&!isHard(second))need-=moveAway(second,second===a?b:a,need);
+                if(need>1e-8&&second&&!isHard(second))moveAway(second,second===a?b:a,need);
             }
             if(!changed)break;
         }
@@ -168,10 +173,16 @@
 
     const baseUpdateVisuals=updateVisuals;
     updateVisuals=function(g,dt){
-        const current=__hexdropGarbageMotionQueue(g).queued;
-        resumeReleasedLocalHolds(g,current);
+        const before=localConflictQueue(g).queued,previous=previousLocalQueue.get(g)||new Set();
+        const released=new Set([...previous].filter(id=>!before.has(id)));
+        resumeIdsNow(g,released);
+        pauseLocalSchedules(g,before,Math.max(0,dt||0));
         const out=baseUpdateVisuals(g,dt);
         finalGarbageProjection(g);
+        const after=localConflictQueue(g).queued;
+        const releasedDuringFrame=new Set([...before].filter(id=>!after.has(id)));
+        resumeIdsNow(g,releasedDuringFrame);
+        previousLocalQueue.set(g,new Set(after));
         return out;
     };
     const baseResolveVisualContacts=resolveVisualContacts;
@@ -179,9 +190,10 @@
     const baseUpdateGarbagePacks=updateGarbagePacks;
     updateGarbagePacks=function(g,dt){const out=baseUpdateGarbagePacks(g,dt);finalGarbageProjection(g);return out;};
 
-    window.__hexGarbageGlobalQueueDisabled=false;
+    window.__hexGarbageGlobalQueueDisabled=true;
     window.__hexGarbageLocalConflictQueue=true;
     window.__hexGarbagePerBallScheduler=true;
     window.__hexGarbageImmediateScheduler=true;
+    window.__hexGarbageLocalConflictIds=function(g){return localConflictQueue(g).queued;};
     window.__hexFinalGarbageProjection=finalGarbageProjection;
 })();
