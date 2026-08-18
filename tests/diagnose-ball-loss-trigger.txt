@@ -1,1 +1,1 @@
-run focused diagnoses 11 harddrop convergence
+run focused diagnoses 12 app71 quiescent contact
