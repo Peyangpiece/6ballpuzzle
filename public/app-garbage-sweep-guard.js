@@ -1,10 +1,11 @@
 /* Garbage swept-collision guard.
  *
  * Scheduled pileFlow bypasses the generic visual clamp, so guard the complete
- * 120 Hz path against every NON-SUPPORT obstacle. A pivot/topPivot or explicit
- * movingSupportId/followSupportIds identifies the ball that this analytic path
- * is intentionally tangent to; treating that same support as a generic blocker
- * creates a repeated stop at the exact contact point.
+ * 120 Hz path against stationary pile obstacles. Moving/unsettled garbage is
+ * deliberately NOT treated as a fixed obstacle here: moving-vs-moving garbage
+ * contact is solved later by app-garbage-hard-separation with BOTH real frame
+ * trajectories available. Treating one moving garbage ball as fixed caused the
+ * reported repeated mid-air freeze.
  */
 (function installGarbageSweepGuard(){
     if(typeof window==="undefined"||window.__hexGarbageSweepGuard)return;
@@ -26,6 +27,13 @@
         return out;
     }
     function isSettledPileBall(ball){if(!ball)return false;if(!ball.isGarbage)return true;return ball.garbagePileSettled===true;}
+    function isDynamicGarbage(g,ball){
+        if(!ball?.isGarbage)return false;
+        if(g?.garbageOriginalPileIds instanceof Set&&g.garbageOriginalPileIds.has(ball.id))return false;
+        const moving=Array.isArray(ball.fallPath)&&ball.fallPath.length>0;
+        if(moving)return true;
+        return ball.garbagePileSettled!==true;
+    }
     function activeSeg(cell){return Array.isArray(cell?.fallPath)&&cell.fallPath.length?cell.fallPath[0]:null;}
     function explicitSupport(seg,other){
         if(!seg||!other)return false;
@@ -54,7 +62,8 @@
     }
     function firstSweptCollision(g,cell,t0,t1){
         if(!(t1>t0+1e-12))return null;
-        const obstacles=boardBalls(g).filter(b=>b!==cell);if(!obstacles.length)return null;
+        const obstacles=boardBalls(g).filter(b=>b!==cell&&!isDynamicGarbage(g,b));
+        if(!obstacles.length)return null;
         let lastSafe=t0;
         for(let i=1;i<=SWEEP_SAMPLES;i++){
             const t=t0+(t1-t0)*(i/SWEEP_SAMPLES),hit=collisionAt(g,cell,t,obstacles);
@@ -91,10 +100,6 @@
         const safePos=pileFlowPositionAt(g,cell,collision.safeT),oldY=Number.isFinite(v.y)?v.y:safePos[1];
         v.x=safePos[0];v.y=Math.max(oldY,safePos[1]);v.vy=0;v.motionSpeed=0;v.pileFlow=true;v.garbageSweepBlocked=true;v.garbageSweepBlockCount=(v.garbageSweepBlockCount||0)+1;
         v.garbageSweepBlockerId=collision.blocker?.id;
-        v.garbageSweepSafeT=collision.safeT;
-        v.garbageSweepHitT=collision.hitT;
-        seg.garbageSweepBlockerId=collision.blocker?.id;
-        seg.garbageSweepBlockCount=(seg.garbageSweepBlockCount||0)+1;
         const delay=Math.max(1e-9,now-collision.safeT);shiftRemainingSchedule(path,delay);
         if(tryTangentReroute(g,cell,v,collision.blocker,[v.x,v.y]))v.garbageSweepBlocked=false;
         return true;
