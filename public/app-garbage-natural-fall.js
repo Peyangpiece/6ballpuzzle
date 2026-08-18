@@ -5,8 +5,9 @@
  * later member in mid-air even when nothing physically supports or blocks it.
  *
  * Two scheduled paths can still converge on the same intermediate cell. Only
- * those genuinely conflicting paths are locally ordered. Independent paths use
- * the per-ball scheduler and begin immediately when their own route is safe.
+ * those genuinely conflicting paths are locally ordered. Independent paths are
+ * scheduled from the current clock immediately and runtime swept collision is
+ * responsible for stopping them at the first real contact.
  */
 (function installNaturalGarbageFall(){
     if(typeof window==="undefined"||window.__hexNaturalGarbageFall)return;
@@ -40,8 +41,6 @@
 
     function scheduledConflict(g,a,b){
         if(!a?.seg||!b?.seg)return false;
-        // Same-cell convergence is always a conflict, including support/follower
-        // pairs. This exact case caused the previous garbage-to-garbage overlap.
         if(sameDestination(a.seg,b.seg)||endpointSwap(a.seg,b.seg))return true;
 
         const as=a.seg,bs=b.seg,now=Math.max(0,g?.pileFlowClock||0);
@@ -91,15 +90,29 @@
         return {minSeq,queued};
     };
 
-    // The core routes garbage contact through the wave scheduler, which inserts
-    // a sequence-wide delay even for completely independent balls. For garbage
-    // contact only, use the collision-aware per-ball scheduler used by natural
-    // pile collapse. Each first segment therefore attempts to start at the
-    // current pileFlowClock and is delayed only when its own route is unsafe.
+    function scheduleGarbageImmediately(g,fresh){
+        if(!Array.isArray(fresh)||!fresh.length)return;
+        preparePileFlowDurations(g,fresh);
+        const clock=Math.max(0,g?.pileFlowClock||0);
+        for(const {ball,seg} of fresh){
+            const duration=Math.max(1/120,seg?._pileNominalDuration||1/120);
+            const start=pileFlowPreviousEnd(ball,seg,clock);
+            if(typeof pileFlowAttachCausalSupports==="function")pileFlowAttachCausalSupports(g,ball,seg,start,duration);
+            seg.pileFlowStart=start;
+            seg.pileFlowDuration=duration;
+            seg.pileFlowEnd=start+duration;
+            seg.garbageImmediateSchedule=true;
+        }
+    }
+
+    // Do not pre-delay garbage contact paths because another ball may collide
+    // with them later in the predicted future. Start now, then let the 120 Hz
+    // swept collision guards stop/reroute at the actual first contact. Only
+    // subsequent segments of the SAME ball wait for their own previous end.
     const baseScheduleFreshPileFlow=scheduleFreshPileFlow;
     scheduleFreshPileFlow=function(g,fresh,reason="pile_flow"){
         if(reason==="garbage_pile_contact"&&Array.isArray(fresh)&&fresh.some(q=>q?.ball?.isGarbage)){
-            return scheduleFreshPileFlowPerBall(g,fresh);
+            return scheduleGarbageImmediately(g,fresh);
         }
         return baseScheduleFreshPileFlow(g,fresh,reason);
     };
@@ -107,4 +120,5 @@
     window.__hexGarbageGlobalQueueDisabled=false;
     window.__hexGarbageLocalConflictQueue=true;
     window.__hexGarbagePerBallScheduler=true;
+    window.__hexGarbageImmediateScheduler=true;
 })();
