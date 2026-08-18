@@ -1,1 +1,1 @@
-run focused diagnoses 23 no-up contact solve app74
+run focused diagnoses 24 rigid support arc app74
