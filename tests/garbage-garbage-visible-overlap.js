@@ -6,7 +6,7 @@ const runtime=[
   "app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js","app-17.js",
   "app-garbage-contact.js","app-garbage-rigidity.js","app-garbage-settle-state.js",
   "app-garbage-no-impact.js","app-garbage-sweep-guard.js","app-garbage-visible-overlap.js",
-  "app-garbage-hard-separation.js","app-garbage-natural-fall.js"
+  "app-garbage-hard-separation.js","app-garbage-natural-fall.js","app-garbage-post-resolve.js"
 ].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
 
 const checks=String.raw`
@@ -36,6 +36,7 @@ function buildPile(g,variant){
 }
 expect(window.__hexGarbageLocalConflictQueue===true,"local garbage conflict queue is not installed");
 expect(window.__hexGarbageGlobalQueueDisabled===true,"legacy visual garbage queue is still active");
+expect(window.__hexGarbagePostResolveClamp===true,"post-resolve garbage clamp is not installed");
 expect(typeof window.__hexGarbageLocalConflictIds==="function","local garbage conflict API missing");
 {
  const qg=createEngine(99491);qg.state="RESOLVING";qg.phase="GARBAGE";
