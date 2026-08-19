@@ -26,7 +26,7 @@ let cases=0;
 // momentum deliberately points AWAY from the wall. Normal and garbage balls,
 // both sides and both row parities must still choose the physical wall cell.
 for(const y of[8,9])for(const side of[-1,1])for(const garbage of[false,true]){
-  const b=newBoard(),ty=y+1,targetX=wallX(side,ty),x=targetX-side;
+  const b=newBoard(),ty=y+1,targetX=wallX(side,ty),x=targetX+side;
   const q=put(b,x,y,1000+cases,1,garbage),support=put(b,x,y+2,2000+cases,2,false);
   q.momentumX=-side;q.rollDir=-side;q.subCellBias=-side;
   const p=hexPhysNaturalMotion(b,x,y);
