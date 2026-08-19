@@ -69,7 +69,7 @@ jobs:
         run: node tests/run-movement-fidelity-100.js
 
       - name: Run 100-pass garbage fidelity
-        run: node tests/garbage-fidelity-100.js
+        run: node tests/run-garbage-fidelity-100.js
 
       - name: Run weighted 1000-pass reference fidelity
         run: node tests/run-reference-fidelity-1000.js
