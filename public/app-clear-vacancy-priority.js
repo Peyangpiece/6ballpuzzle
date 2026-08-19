@@ -71,13 +71,30 @@
     // forks also prefer filling the actual support-loss chain.
     hexPhysApplyEvent=function(board,accepted){
         const vacancies=vacancySet(board);
+        const priority=[];
         if(vacancies&&Array.isArray(accepted)){
             for(const p of accepted){
                 if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)||!valid(p.x,p.y))continue;
                 vacancies.add(key(p.x,p.y));
+                if(p.clearVacancyPriority)priority.push(p);
             }
         }
-        return baseApplyEvent(board,accepted);
+        const out=baseApplyEvent(board,accepted);
+        // hexPhysAppendSegment deliberately copies only canonical motion fields.
+        // Re-attach this diagnostic tag to the accepted segment so regressions
+        // can prove that the vacancy branch, not stale momentum, won the fork.
+        for(const p of priority){
+            const path=Array.isArray(p.ball?.fallPath)?p.ball.fallPath:[];
+            for(let i=path.length-1;i>=0;i--){
+                const seg=path[i];
+                if(seg?.to&&seg.to[0]===p.tx&&seg.to[1]===p.ty){
+                    seg.clearVacancyPriority=true;
+                    seg.clearVacancyTarget=p.clearVacancyTarget||key(p.tx,p.ty);
+                    break;
+                }
+            }
+        }
+        return out;
     };
 
     prepareContinuousPileFlow=function(g,reason="pile_flow"){
