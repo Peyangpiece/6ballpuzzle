@@ -10,3 +10,4 @@ post-garbage internal + secondary-clear collapse PASS
 wall + floor + normal-ball + dynamic wall-vacancy regression PASS
 game-over former-garbage fade PASS
 garbage render overlap guard PASS
+upward normal triangle contact-side 2+1 split PASS
