@@ -14,6 +14,7 @@ permissions:
   contents: write
 
 # One-shot recovery path after the full regression gate has already passed.
+# The current full gate is green; this commit intentionally re-triggers only this audio path.
 jobs:
   deploy:
     runs-on: ubuntu-latest
