@@ -1,0 +1,41 @@
+name: Diagnose Clear Vacancy Priority
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: clear-vacancy-priority-audit
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run post-clear vacancy priority regression
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          node tests/clear-vacancy-priority.js > audit-results/clear-vacancy-priority.log 2>&1
+          RC=$?
+          if [ "$RC" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","clearVacancyPriority":%s}\n' "$GITHUB_SHA" "$STATUS" "$RC" > audit-results/clear-vacancy-priority.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/clear-vacancy-priority.log audit-results/clear-vacancy-priority.json
+          git commit -m 'Record clear vacancy priority audit [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+          cat audit-results/clear-vacancy-priority.log
+          test "$STATUS" = pass
