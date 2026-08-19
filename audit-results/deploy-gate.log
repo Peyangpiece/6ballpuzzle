@@ -53,7 +53,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2377,
+  pid: 2163,
   stdout: null,
   stderr: null
 }
@@ -95,23 +95,23 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2392,
+  pid: 2178,
   stdout: null,
   stderr: null
 }
 
 Node.js v22.23.2
-evalmachine.<anonymous>:3453
+evalmachine.<anonymous>:6077
 function expect(value,message){if(!value)throw new Error(message);}
                                          ^
 
-Error: visual balls overlapped: min=0.9998812910864792 worst={"seed":1,"step":3252,"state":"RESOLVING","phase":"GARBAGE","pair":[{"id":52,"x":13,"y":6,"logicalX":13,"logicalY":6,"path":[],"group":0,"garbage":true},{"id":54,"x":14.98815214250424,"y":5.875767095991903,"logicalX":15,"logicalY":6,"path":[{"from":[14,5],"to":[15,6],"kind":"FOLLOW_SUPPORT","motionSeq":610,"pileFlow":false}],"group":0,"garbage":true}]}
-    at expect (evalmachine.<anonymous>:3453:48)
-    at evalmachine.<anonymous>:3558:1
+Error: visual balls overlapped: min=0.9967829647076917 worst={"seed":19,"step":6837,"state":"RESOLVING","phase":"SETTLE","pair":[{"id":79,"x":2.986718321126174,"y":8,"logicalX":3,"logicalY":8,"path":[{"from":[2,7],"to":[3,8],"kind":"ROLL_RIGHT","motionSeq":0,"pileFlow":true}],"group":0,"garbage":true},{"id":45,"x":1.9996493696715036,"y":9,"logicalX":2,"logicalY":9,"path":[{"from":[1,8],"to":[2,9],"kind":"ROLL_RIGHT","motionSeq":0,"pileFlow":true}],"group":0,"garbage":true}]}
+    at expect (evalmachine.<anonymous>:6077:48)
+    at evalmachine.<anonymous>:6182:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js:122:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js:119:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
@@ -127,7 +127,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
     at wrappedFn (node:internal/errors:537:14)
     at checkExecSyncError (node:child_process:916:11)
     at Object.execFileSync (node:child_process:952:15)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-overlap-regressions.js:19:6)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-overlap-regressions.js:21:6)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
@@ -136,7 +136,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2407,
+  pid: 2193,
   stdout: null,
   stderr: null
 }
