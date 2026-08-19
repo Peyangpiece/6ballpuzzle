@@ -14,3 +14,4 @@ upward normal triangle contact-side 2+1 split PASS
 runtime static-board performance guards PASS {"staticContactSkips":1,"colliders":6}
 Super Strong learned multi-technique strategy PASS {"immediateTurn":1,"nextTurn":2,"fastFollow":1,"slowFollow":2,"dualSecondary":4,"act":0.1}
 Super Strong technique-first + speed-second PASS {"think":0.12,"act":0.065,"strongThink":0.28,"strongAct":0.1,"primary":"technique"}
+Super Strong grandmaster strategy PASS {"eta1":2.0491803278688523,"eta3":5.333596204087567,"eta6":10.33333501266249,"near":2.389180327868852,"far":5.673596204087567,"think":0.12,"act":0.065}
