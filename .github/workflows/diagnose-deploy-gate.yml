@@ -1,0 +1,60 @@
+name: Diagnose Deploy Gate
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-gate-audit
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run remaining production deploy gates
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          : > audit-results/deploy-gate.log
+
+          node tests/physics-regressions.js >> audit-results/deploy-gate.log 2>&1
+          A=$?
+          node tests/garbage-airborne-pass-through.js >> audit-results/deploy-gate.log 2>&1
+          B=$?
+          node tests/run-movement-fidelity-100.js >> audit-results/deploy-gate.log 2>&1
+          C=$?
+          node tests/garbage-fidelity-100.js >> audit-results/deploy-gate.log 2>&1
+          D=$?
+          node tests/run-reference-fidelity-1000.js >> audit-results/deploy-gate.log 2>&1
+          E=$?
+          node tests/run-reference-convergence-3000.js >> audit-results/deploy-gate.log 2>&1
+          F=$?
+          node tests/run-overlap-regressions.js >> audit-results/deploy-gate.log 2>&1
+          G=$?
+          node tests/clear-vacancy-priority.js >> audit-results/deploy-gate.log 2>&1
+          H=$?
+
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","physics":%s,"airborne":%s,"movement100":%s,"garbage100":%s,"reference1000":%s,"convergence3000":%s,"overlap":%s,"clearVacancy":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" > audit-results/deploy-gate.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/deploy-gate.log audit-results/deploy-gate.json
+          git commit -m 'Record deploy gate audit [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+          cat audit-results/deploy-gate.log
+          test "$STATUS" = pass
