@@ -1,10 +1,10 @@
-/* 6ball brand + gameplay BGM adapter.
+/* 6ball brand + menu audio + gameplay BGM adapter.
  * UI/audio only: no board, physics, collision, timing or AI code is touched.
  */
 (function install6ballBrandAndGameplayBgm(){
     if(typeof window==="undefined"||window.__sixBallBrandInstalled)return;
     window.__sixBallBrandInstalled=true;
-    window.__sixBallBrandVersion="6ball-brand-v1";
+    window.__sixBallBrandVersion="6ball-brand-v2";
     window.__sixBallAppName="6ball";
 
     // Replace the old visible product name at React element creation time.
@@ -56,16 +56,49 @@
         };
     }
 
-    // This is the official MP3 corresponding to the user-supplied
-    // maou_bgm_cyber44.mp3. The SHA below records the uploaded reference bytes
-    // used during this implementation so the selected track cannot drift by
-    // filename/name confusion.
+    // Every menu button uses the exact uploaded confirmation sound.
+    const MENU_CONFIRM_SRC="assets/menu-confirm-42.mp3";
+    const MENU_CONFIRM_SHA256="97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e";
+    const MenuClick={
+        pool:null,
+        cursor:0,
+        init(){
+            if(this.pool||typeof Audio==="undefined")return;
+            this.pool=Array.from({length:4},()=>{
+                const a=new Audio(MENU_CONFIRM_SRC);
+                a.preload="auto";
+                return a;
+            });
+        },
+        volume(){
+            if(typeof Sfx!=="undefined"&&Number.isFinite(Sfx._menuVolume))return Math.max(0,Math.min(1,Sfx._menuVolume));
+            try{
+                const raw=Number(localStorage.getItem("hexdrop_sfx_volume"));
+                if(Number.isFinite(raw))return Math.max(0,Math.min(1,raw/100));
+            }catch(_){}
+            return .85;
+        },
+        play(){
+            this.init();
+            if(!this.pool||!this.pool.length)return;
+            const a=this.pool[this.cursor++%this.pool.length];
+            try{a.pause();a.currentTime=0;}catch(_){}
+            a.volume=this.volume();
+            try{const p=a.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}catch(_){}
+        }
+    };
+    window.MenuClick=MenuClick;
+    window.__sixBallMenuClickSource=MENU_CONFIRM_SRC;
+    window.__sixBallMenuClickUploadedSha256=MENU_CONFIRM_SHA256;
+    window.__sixBallMenuClickAllButtons=true;
+
+    // This is the official MP3 corresponding to the selected Cyber44 track.
     const CYBER44_SRC="https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3";
     const UPLOADED_SHA256="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
     const Bgm={
         audio:null,
         wanted:false,
-        unlocked:false,
+        primed:false,
         volume:Number.isFinite(window.__hexBgmVolume)?window.__hexBgmVolume:.70,
         init(){
             if(this.audio)return this.audio;
@@ -73,38 +106,49 @@
             const a=new Audio();
             a.preload="auto";
             a.loop=true;
-            a.volume=Math.max(0,Math.min(1,this.volume));
+            a.volume=0;
             a.src=CYBER44_SRC;
             this.audio=a;
             return a;
         },
         setVolume(v){
             this.volume=Math.max(0,Math.min(1,Number(v)||0));
-            if(this.audio)this.audio.volume=this.volume;
+            if(this.audio&&this.wanted)this.audio.volume=this.volume;
         },
-        unlock(){
-            const a=this.init();if(!a||this.unlocked)return;
-            const wasMuted=a.muted;a.muted=true;
+        // Browser autoplay policies require media playback to originate from a
+        // trusted user action. A menu button click starts the SAME audio element
+        // silently and keeps it alive; entering GAME only raises its volume.
+        // This removes the previous race where MutationObserver called play()
+        // after the user gesture had already ended.
+        prime(){
+            const a=this.init();
+            if(!a||this.wanted)return;
+            a.muted=false;
+            a.volume=0;
+            if(!a.paused){this.primed=true;return;}
             try{
                 const p=a.play();
-                if(p&&typeof p.then==="function")p.then(()=>{
-                    a.pause();a.currentTime=0;a.muted=wasMuted;this.unlocked=true;
-                    if(this.wanted)this.start(false);
-                }).catch(()=>{a.muted=wasMuted;});
-                else{a.pause();a.currentTime=0;a.muted=wasMuted;this.unlocked=true;}
-            }catch(_){a.muted=wasMuted;}
+                this.primed=true;
+                if(p&&typeof p.catch==="function")p.catch(()=>{this.primed=false;});
+            }catch(_){this.primed=false;}
         },
         start(restart=true){
             const a=this.init();if(!a)return;
-            this.wanted=true;a.muted=false;a.volume=this.volume;
+            this.wanted=true;
+            a.muted=false;
             if(restart){try{a.currentTime=0;}catch(_){}}
-            try{const p=a.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}catch(_){}
+            a.volume=this.volume;
+            if(a.paused){
+                try{const p=a.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}catch(_){}
+            }
         },
         pause(){if(this.audio)this.audio.pause();},
         stop(){
             this.wanted=false;
+            this.primed=false;
             if(!this.audio)return;
             this.audio.pause();
+            this.audio.volume=0;
             try{this.audio.currentTime=0;}catch(_){}
         }
     };
@@ -112,10 +156,10 @@
     window.__sixBallGameplayBgmSource=CYBER44_SRC;
     window.__sixBallGameplayBgmUploadedSha256=UPLOADED_SHA256;
     window.__sixBallGameplayBgmLoop=true;
-    window.__sixBallGameplayBgmVersion="cyber44-v1";
+    window.__sixBallGameplayBgmPrimedFromMenu=true;
+    window.__sixBallGameplayBgmVersion="cyber44-v2-primed";
 
-    // The game screen uniquely owns the top-right resign button. Watching that
-    // UI state keeps music game-only without touching App/gameplay state code.
+    // The game screen uniquely owns the top-right resign button.
     let wasGame=false,observer=null;
     function gameIsVisible(){
         const root=document.getElementById("root");if(!root)return false;
@@ -134,8 +178,28 @@
         observer.observe(root,{childList:true,subtree:true});
         syncGameplayMusic();
     }
-    document.addEventListener("pointerdown",()=>Bgm.unlock(),{capture:true,passive:true});
-    document.addEventListener("keydown",()=>Bgm.unlock(),{capture:true});
+
+    // Native capture runs before React's menu onClick, so the confirmation SE
+    // and silent BGM prime are both guaranteed to begin inside the user's click.
+    document.addEventListener("click",(e)=>{
+        const target=e.target&&typeof e.target.closest==="function"?e.target.closest("button"):null;
+        if(!target||gameIsVisible())return;
+        MenuClick.play();
+        Bgm.prime();
+    },{capture:true});
+
+    // Two legacy Settings actions explicitly emitted the old generic "move"
+    // sound. Suppress only that menu-only call so every menu button is the
+    // uploaded confirmation sound while gameplay movement SE remains intact.
+    if(typeof Sfx!=="undefined"&&typeof Sfx.play==="function"&&!Sfx.__sixBallMenuClickBridge){
+        const baseSfxPlay=Sfx.play.bind(Sfx);
+        Sfx.__sixBallMenuClickBridge=true;
+        Sfx.play=function(ev,vol){
+            if(!gameIsVisible()&&ev&&ev.t==="move")return;
+            return baseSfxPlay(ev,vol);
+        };
+    }
+
     document.addEventListener("visibilitychange",()=>{
         if(document.hidden)Bgm.pause();
         else if(wasGame)Bgm.start(false);
