@@ -1,8 +1,10 @@
 const fs=require('fs');
+const crypto=require('crypto');
 function expect(v,m){if(!v)throw new Error(m);}
 const brand=fs.readFileSync('public/app-brand-bgm.js','utf8');
 const index=fs.readFileSync('public/index.html','utf8');
 const manifest=JSON.parse(fs.readFileSync('public/manifest.webmanifest','utf8'));
+const menuAudio=fs.readFileSync('public/assets/menu-confirm-42.mp3');
 new Function(brand);
 expect(manifest.name==='6ball'&&manifest.short_name==='6ball','installed app name is not 6ball');
 expect(index.includes('<title>6ball</title>'),'document title is not 6ball');
@@ -14,11 +16,20 @@ expect(brand.includes('window.__sixBallUsesGameBallAssets=true'),'game-ball menu
 expect(brand.includes('src:BALL_SRC[ci]'),'menu illustration is not using gameplay BALL_SRC assets');
 const gameplay=fs.readFileSync('public/app-10.js','utf8');
 for(const s of ['ball-red.png','ball-blue.png','ball-green.png','ball-yellow.png','ball-purple.png'])expect(gameplay.includes(s),`missing gameplay ball asset ${s}`);
+const menuHash=crypto.createHash('sha256').update(menuAudio).digest('hex');
+expect(menuHash==='97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e','menu button audio differs from uploaded file');
+expect(brand.includes('assets/menu-confirm-42.mp3'),'uploaded menu button audio is not wired');
+expect(brand.includes('window.__sixBallMenuClickAllButtons=true'),'all-menu-button sound marker missing');
+expect(brand.includes('e.target.closest("button")'),'menu click bridge is not attached to all buttons');
+expect(brand.includes('MenuClick.play();')&&brand.includes('Bgm.prime();'),'menu click must play supplied SE and prime BGM in the same user action');
+expect(brand.includes('ev.t==="move"'),'legacy menu move sound is not suppressed');
 expect(brand.includes('https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3'),'Cyber44 gameplay source missing');
 expect(brand.includes('4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532'),'uploaded Cyber44 reference hash missing');
 expect(brand.includes('a.loop=true'),'gameplay BGM must loop');
-expect(brand.includes('if(game&&!wasGame)Bgm.start(true)'),'BGM must start only on entering gameplay');
+expect(brand.includes('a.volume=0;')&&brand.includes('prime(){'),'BGM is not silently primed under user activation');
+expect(brand.includes('if(game&&!wasGame)Bgm.start(true)'),'BGM must start on entering gameplay');
 expect(brand.includes('else if(!game&&wasGame)Bgm.stop()'),'BGM must stop when leaving gameplay');
+expect(brand.includes('window.__sixBallGameplayBgmPrimedFromMenu=true'),'BGM autoplay-race fix marker missing');
 expect(brand.includes('BGM：魔王魂 / 森田交一『サイバー44』'),'music credit missing from settings');
 expect(!brand.includes('stepEngine(')&&!brand.includes('settlePass(')&&!brand.includes('SLIDE_SPEED')&&!brand.includes('GRAV='),'brand/BGM adapter must not alter gameplay physics');
-console.log('6ball brand + gameplay BGM regression PASS');
+console.log('6ball brand + menu click + gameplay BGM regression PASS',JSON.stringify({menuHash}));
