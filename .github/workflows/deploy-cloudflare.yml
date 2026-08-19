@@ -23,6 +23,15 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Stage exact Cyber44 gameplay BGM
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/assets
+          curl -fL --retry 4 --retry-delay 2 'https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3' -o public/assets/maoudamashii_bgm_cyber44.mp3
+          test "$(stat -c%s public/assets/maoudamashii_bgm_cyber44.mp3)" -gt 900000
+          echo '4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532  public/assets/maoudamashii_bgm_cyber44.mp3' | sha256sum -c -
+
       - name: Run physics regressions
         run: node tests/physics-regressions.js
 
@@ -58,6 +67,9 @@ jobs:
 
       - name: Run immersive menu UI regression
         run: node tests/menu-ui-regression.js
+
+      - name: Run 6ball brand and gameplay BGM regression
+        run: node tests/brand-bgm.js
 
       - name: Run every-cleared-ball disappearance FX regression
         run: node tests/clear-all-ball-fx.js
