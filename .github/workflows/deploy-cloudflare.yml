@@ -23,6 +23,23 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Stage exact uploaded menu confirmation sound
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            public/assets/menu-confirm-42.b64.00 \
+            public/assets/menu-confirm-42.b64.01 \
+            public/assets/menu-confirm-42.b64.02 \
+            public/assets/menu-confirm-42.b64.03 \
+            public/assets/menu-confirm-42.b64.tail \
+            public/assets/menu-confirm-42.b64.tail \
+            public/assets/menu-confirm-42.b64.tail \
+            public/assets/menu-confirm-42.b64.tail \
+            | base64 --decode > public/assets/menu-confirm-42.mp3
+          echo '97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e  public/assets/menu-confirm-42.mp3' | sha256sum -c -
+          test "$(stat -c%s public/assets/menu-confirm-42.mp3)" -eq 32256
+
       - name: Run physics regressions
         run: node tests/physics-regressions.js
 
@@ -59,7 +76,7 @@ jobs:
       - name: Run immersive menu UI regression
         run: node tests/menu-ui-regression.js
 
-      - name: Run 6ball brand and gameplay BGM regression
+      - name: Run 6ball brand, menu sound and gameplay BGM regression
         run: node tests/brand-bgm.js
 
       - name: Run every-cleared-ball disappearance FX regression
