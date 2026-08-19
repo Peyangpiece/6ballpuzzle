@@ -53,10 +53,12 @@ jobs:
           K=$?
           node tests/up-convex-split-side.js >> audit-results/garbage-contact.log 2>&1
           L=$?
+          node tests/runtime-performance-guards.js >> audit-results/garbage-contact.log 2>&1
+          M=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ] && [ "$K" -eq 0 ] && [ "$L" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"wallGapRegression":%s,"gameoverGarbageFade":%s,"garbageRenderOverlap":%s,"upConvexSplitSide":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" "$K" "$L" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ] && [ "$K" -eq 0 ] && [ "$L" -eq 0 ] && [ "$M" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"wallGapRegression":%s,"gameoverGarbageFade":%s,"garbageRenderOverlap":%s,"upConvexSplitSide":%s,"runtimePerformance":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" "$K" "$L" "$M" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
