@@ -3,7 +3,6 @@ function expect(v,m){if(!v)throw new Error(m);}
 const brand=fs.readFileSync('public/app-brand-bgm.js','utf8');
 const index=fs.readFileSync('public/index.html','utf8');
 const manifest=JSON.parse(fs.readFileSync('public/manifest.webmanifest','utf8'));
-const deploy=fs.readFileSync('.github/workflows/deploy-cloudflare.yml','utf8');
 new Function(brand);
 expect(manifest.name==='6ball'&&manifest.short_name==='6ball','installed app name is not 6ball');
 expect(index.includes('<title>6ball</title>'),'document title is not 6ball');
@@ -13,16 +12,13 @@ expect(index.includes('"app-menu-ui.js","app-brand-bgm.js","app-16.js"'),'brand/
 expect(brand.includes('v==="HEXDROP"?"6ball":v'),'visible old app name is not bridged to 6ball');
 expect(brand.includes('window.__sixBallUsesGameBallAssets=true'),'game-ball menu art marker missing');
 expect(brand.includes('src:BALL_SRC[ci]'),'menu illustration is not using gameplay BALL_SRC assets');
-for(const s of ['ball-red.png','ball-blue.png','ball-green.png','ball-yellow.png','ball-purple.png']){
-  const gameplay=fs.readFileSync('public/app-10.js','utf8');
-  expect(gameplay.includes(s),`missing gameplay ball asset ${s}`);
-}
-expect(brand.includes('assets/maoudamashii_bgm_cyber44.mp3'),'Cyber44 local gameplay source missing');
+const gameplay=fs.readFileSync('public/app-10.js','utf8');
+for(const s of ['ball-red.png','ball-blue.png','ball-green.png','ball-yellow.png','ball-purple.png'])expect(gameplay.includes(s),`missing gameplay ball asset ${s}`);
+expect(brand.includes('https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3'),'Cyber44 gameplay source missing');
+expect(brand.includes('4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532'),'uploaded Cyber44 reference hash missing');
 expect(brand.includes('a.loop=true'),'gameplay BGM must loop');
 expect(brand.includes('if(game&&!wasGame)Bgm.start(true)'),'BGM must start only on entering gameplay');
 expect(brand.includes('else if(!game&&wasGame)Bgm.stop()'),'BGM must stop when leaving gameplay');
 expect(brand.includes('BGM：魔王魂 / 森田交一『サイバー44』'),'music credit missing from settings');
-expect(deploy.includes("https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3"),'deploy does not stage supplied Cyber44 file');
-expect(deploy.includes('4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532'),'deploy does not verify exact uploaded audio hash');
 expect(!brand.includes('stepEngine(')&&!brand.includes('settlePass(')&&!brand.includes('SLIDE_SPEED')&&!brand.includes('GRAV='),'brand/BGM adapter must not alter gameplay physics');
 console.log('6ball brand + gameplay BGM regression PASS');
