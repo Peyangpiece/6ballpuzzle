@@ -85,7 +85,7 @@ jobs:
 
       - name: Deploy 6ballpuzzle
         id: cloudflare_deploy
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -97,36 +97,39 @@ jobs:
         if: always()
         shell: bash
         env:
-          PRODUCTION_URL: https://6ballpuzzle.hrk-6888.workers.dev
+          WRANGLER_DEPLOYMENT_URL: ${{ steps.cloudflare_deploy.outputs.deployment-url }}
+          DEPLOY_OUTCOME: ${{ steps.cloudflare_deploy.outcome }}
+          FALLBACK_PRODUCTION_URL: https://6ballpuzzle.hrk-6888.workers.dev
         run: |
           set +e
           mkdir -p audit-results
+          PRODUCTION_URL="${WRANGLER_DEPLOYMENT_URL:-$FALLBACK_PRODUCTION_URL}"
           verified=0
           observed=""
-          for attempt in $(seq 1 20); do
-            observed="$(curl -fsSL "${PRODUCTION_URL}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
-            if [ "$observed" = "$GITHUB_SHA" ]; then
-              verified=1
-              break
-            fi
-            sleep 3
-          done
-          if [ "$verified" -eq 1 ]; then
-            STATUS=pass
-          else
-            STATUS=fail
+          if [ "$DEPLOY_OUTCOME" = "success" ]; then
+            for attempt in $(seq 1 20); do
+              observed="$(curl -fsSL "${PRODUCTION_URL%/}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
+              if [ "$observed" = "$GITHUB_SHA" ]; then
+                verified=1
+                break
+              fi
+              sleep 3
+            done
           fi
-          printf '{"sha":"%s","status":"%s","productionUrl":"%s","observedSha":"%s"}\n' "$GITHUB_SHA" "$STATUS" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-deploy.json
+          if [ "$verified" -eq 1 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","deployOutcome":"%s","productionUrl":"%s","observedSha":"%s"}\n' "$GITHUB_SHA" "$STATUS" "$DEPLOY_OUTCOME" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-deploy.json
           rm -f public/deploy-sha.txt
           test "$STATUS" = pass
 
       - name: Record Cloudflare production verification
         if: always()
         shell: bash
+        env:
+          DEPLOY_OUTCOME: ${{ steps.cloudflare_deploy.outcome }}
         run: |
           if [ ! -f audit-results/cloudflare-deploy.json ]; then
             mkdir -p audit-results
-            printf '{"sha":"%s","status":"fail","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-deploy.json
+            printf '{"sha":"%s","status":"fail","deployOutcome":"%s","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "$DEPLOY_OUTCOME" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-deploy.json
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
