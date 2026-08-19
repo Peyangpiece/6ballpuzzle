@@ -34,7 +34,7 @@ jobs:
           B=$?
           node tests/run-movement-fidelity-100.js >> audit-results/deploy-gate.log 2>&1
           C=$?
-          node tests/garbage-fidelity-100.js >> audit-results/deploy-gate.log 2>&1
+          node tests/run-garbage-fidelity-100.js >> audit-results/deploy-gate.log 2>&1
           D=$?
           node tests/run-reference-fidelity-1000.js >> audit-results/deploy-gate.log 2>&1
           E=$?
