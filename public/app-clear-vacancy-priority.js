@@ -1,20 +1,17 @@
-/* Post-clear vacancy priority.
+/* Post-clear vacancy conservation.
  *
- * A clear can expose a symmetric fork: a settled pile ball has two legal lower
- * choices and one of them is the cell that was actually cleared (or was vacated
- * by an earlier collapse move). Normal momentum and wall/floor tie-breaks are
- * useful during ordinary landing, but in this clear-support-loss context they
- * can choose the OTHER open diagonal and recreate a hole in the pile.
+ * A pile collapse is a vacancy migration, not a source of new internal holes.
+ * When a ball disappears, the cleared lattice cells become the only live
+ * vacancies in that support-loss chain. A collapsing ball may fill one of those
+ * live vacancies; its own origin then becomes the next live vacancy. Therefore
+ * the number of live collapse vacancies must never increase while the pile is
+ * rearranging. The vacancy should migrate upward/outward until it reaches the
+ * pile surface instead of branching into a second hole.
  *
- * Keep the normal motion solver everywhere else. During clear_support_loss
- * only, remember the original cleared cells plus every subsequent motion origin.
- * If a directly supported ball has exactly one open lower diagonal in that
- * vacancy history, choose that canonical unit-radius roll. The same rule now
- * covers the row immediately above the floor: there is no y+2 support cell on
- * that row, so choose the historical vacancy before the ordinary FLOOR_DROP
- * momentum/packing tie-break. This is still the canonical one-step floor drop;
- * no teleport, speed, collision, gravity, garbage cadence, or ordinary landing
- * rule is changed.
+ * This adapter is active ONLY during prepareContinuousPileFlow(...,
+ * "clear_support_loss"). Ordinary landing, active pieces, gravity constants,
+ * slide speed, collision geometry, garbage cadence and intentional normal
+ * HEXAGON behaviour are unchanged.
  */
 (function installClearVacancyPriority(){
     if(typeof window==="undefined"||window.__hexClearVacancyPriority)return;
@@ -24,13 +21,18 @@
     const baseNaturalMotion=hexPhysNaturalMotion;
     const baseApplyEvent=hexPhysApplyEvent;
     const basePrepareContinuousPileFlow=prepareContinuousPileFlow;
-    const VACANCY_PROP="__hexClearCollapseVacancies";
+    const LIVE_PROP="__hexClearCollapseVacancies";
+    const HISTORY_PROP="__hexClearCollapseVacancyHistory";
+    const INITIAL_PROP="__hexClearCollapseInitialVacancyCount";
+    const MAX_PROP="__hexClearCollapseMaxVacancyCount";
 
-    function vacancySet(board){
-        const s=board?.[VACANCY_PROP];
-        return s instanceof Set?s:null;
-    }
     function key(x,y){return x+","+y;}
+    function liveSet(board){const s=board?.[LIVE_PROP];return s instanceof Set?s:null;}
+    function historySet(board){const s=board?.[HISTORY_PROP];return s instanceof Set?s:null;}
+    function isEmptyCell(board,x,y,ignore=null){return valid(x,y)&&hexPhysEmpty(board,x,y,ignore);}
+    function isLiveVacancy(board,vacancies,x,y,ignore=null){
+        return !!vacancies&&vacancies.has(key(x,y))&&isEmptyCell(board,x,y,ignore);
+    }
     function activeSupport(board,x,y,ignore){
         if(!valid(x,y))return null;
         const ball=board[y][x];
@@ -38,70 +40,122 @@
         if(ignore&&ignore.has(ball.id))return null;
         return ball;
     }
-    function vacancyRoll(board,x,y,ball,ignore){
-        const vacancies=vacancySet(board);
-        if(!vacancies||!ball||ball.garbageBubbleHold||touchesFloorRow(y))return null;
 
+    // Only a ball whose lower support neighbourhood touches a CURRENTLY EMPTY
+    // live vacancy belongs to the causal collapse chain. Historical vacancies
+    // that have already been filled must not keep pulling later balls around.
+    function causedByLiveVacancy(board,vacancies,x,y,ignore=null){
+        if(!vacancies)return false;
+        return [[x-1,y+1],[x+1,y+1],[x,y+2]].some(([vx,vy])=>
+            isLiveVacancy(board,vacancies,vx,vy,ignore)
+        );
+    }
+
+    function annotatePriority(p,target,floor=false){
+        if(!p)return null;
+        p.clearVacancyPriority=true;
+        p.clearFloorVacancyPriority=!!floor;
+        p.clearVacancyTarget=key(target[0],target[1]);
+        p.clearVacancyConserved=true;
+        return p;
+    }
+
+    // Symmetric direct-support/floor forks need an explicit vacancy-directed
+    // tie-break because the ordinary solver is intentionally allowed to follow
+    // residual momentum. We change only WHICH already-legal lower cell wins.
+    function vacancyForkMotion(board,x,y,ball,ignore){
+        const vacancies=liveSet(board);
+        if(!vacancies||!ball||ball.garbageBubbleHold||touchesFloorRow(y))return null;
         const left=[x-1,y+1],right=[x+1,y+1];
-        if(!hexPhysEmpty(board,left[0],left[1],ignore)||!hexPhysEmpty(board,right[0],right[1],ignore))return null;
+        if(!isEmptyCell(board,left[0],left[1],ignore)||!isEmptyCell(board,right[0],right[1],ignore))return null;
 
         const candidates=[];
-        if(valid(left[0],left[1])&&vacancies.has(key(left[0],left[1])))candidates.push({dir:-1,to:left});
-        if(valid(right[0],right[1])&&vacancies.has(key(right[0],right[1])))candidates.push({dir:1,to:right});
+        if(isLiveVacancy(board,vacancies,left[0],left[1],ignore))candidates.push({dir:-1,to:left});
+        if(isLiveVacancy(board,vacancies,right[0],right[1],ignore))candidates.push({dir:1,to:right});
         if(candidates.length!==1)return null;
-
         const q=candidates[0];
 
-        // The row directly above the physical floor has no valid (x,y+2)
-        // support cell. The core solver already treats both open floor diagonals
-        // as a legal downward FLOOR_DROP. In a clear collapse, choose the one
-        // that is the actual cleared/vacated cell before residual momentum or
-        // floor-packing heuristics can send the ball to the opposite side.
         if(y+1===ROWS-1){
-            return{
+            return annotatePriority({
                 x,y,tx:q.to[0],ty:q.to[1],ball,
-                kind:"FLOOR_DROP",pivot:null,topPivot:null,followSupportIds:[],
-                clearVacancyPriority:true,
-                clearFloorVacancyPriority:true,
-                clearVacancyTarget:key(q.to[0],q.to[1])
-            };
+                kind:"FLOOR_DROP",pivot:null,topPivot:null,followSupportIds:[]
+            },q.to,true);
         }
 
         const supportY=y+2,support=activeSupport(board,x,supportY,ignore);
         if(!support)return null;
-        return{
+        return annotatePriority({
             x,y,tx:q.to[0],ty:q.to[1],ball,
             kind:q.dir<0?"ROLL_LEFT":"ROLL_RIGHT",
-            pivot:null,topPivot:[x,supportY],followSupportIds:[],
-            clearVacancyPriority:true,
-            clearVacancyTarget:key(q.to[0],q.to[1])
-        };
+            pivot:null,topPivot:[x,supportY],followSupportIds:[]
+        },q.to,false);
     }
 
     hexPhysNaturalMotion=function(board,x,y,ignore=null){
+        const vacancies=liveSet(board);
+        if(!vacancies)return baseNaturalMotion(board,x,y,ignore);
+
         const ball=valid(x,y)?board[y][x]:null;
-        const priority=vacancyRoll(board,x,y,ball,ignore);
-        if(priority)return priority;
-        return baseNaturalMotion(board,x,y,ignore);
+        const fork=vacancyForkMotion(board,x,y,ball,ignore);
+        if(fork)return fork;
+
+        const p=baseNaturalMotion(board,x,y,ignore);
+        if(!p)return null;
+        const causal=causedByLiveVacancy(board,vacancies,x,y,ignore);
+        if(!causal)return p;
+
+        // A support-loss move that participates in the vacancy chain may only
+        // move INTO an existing live vacancy. Otherwise its origin would become
+        // an additional hole while the old vacancy stayed open.
+        if(isLiveVacancy(board,vacancies,p.tx,p.ty,ignore)){
+            return annotatePriority(p,[p.tx,p.ty],p.kind==="FLOOR_DROP");
+        }
+        return null;
     };
 
-    // Every accepted collapse move creates a new vacancy at its origin. Add it
-    // to the SAME live Set before the next resolver event so second/third-stage
-    // forks also prefer filling the actual support-loss chain.
+    function bundleKey(p){return p?.bundleId?"g:"+p.bundleId:"b:"+(p?.ball?.id||0);}
+
     hexPhysApplyEvent=function(board,accepted){
-        const vacancies=vacancySet(board);
-        const priority=[];
-        if(vacancies&&Array.isArray(accepted)){
-            for(const p of accepted){
-                if(!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)||!valid(p.x,p.y))continue;
-                vacancies.add(key(p.x,p.y));
-                if(p.clearVacancyPriority)priority.push(p);
-            }
+        const vacancies=liveSet(board);
+        if(!vacancies||!Array.isArray(accepted)||!accepted.length)return baseApplyEvent(board,accepted);
+        const history=historySet(board);
+
+        // Resolver group plans can bypass independent natural-motion selection.
+        // Reject the whole bundle if a member is causally falling because of a
+        // live vacancy but would land somewhere else and branch the hole.
+        const blockedBundles=new Set();
+        const pre=[];
+        for(const p of accepted){
+            if(!p||!p.ball)continue;
+            const targetLive=isLiveVacancy(board,vacancies,p.tx,p.ty,null);
+            const causal=targetLive||causedByLiveVacancy(board,vacancies,p.x,p.y,null);
+            pre.push({p,targetLive,causal});
+            if(causal&&!targetLive)blockedBundles.add(bundleKey(p));
         }
-        const out=baseApplyEvent(board,accepted);
-        // hexPhysAppendSegment deliberately copies only canonical motion fields.
-        // Re-attach this diagnostic tag to the accepted segment so regressions
-        // can prove that the vacancy branch, not stale momentum, won the fork.
+        const allowed=accepted.filter(p=>!blockedBundles.has(bundleKey(p)));
+        if(!allowed.length)return false;
+
+        const allowedSet=new Set(allowed.map(p=>p.ball?.id));
+        const tracked=pre.filter(q=>allowedSet.has(q.p.ball?.id));
+        const out=baseApplyEvent(board,allowed);
+        if(!out)return out;
+
+        const priority=[];
+        for(const q of tracked){
+            const p=q.p;
+            if(board[p.ty]?.[p.tx]!==p.ball)continue;
+            if(q.targetLive||q.causal){
+                if(q.targetLive)vacancies.delete(key(p.tx,p.ty));
+                vacancies.add(key(p.x,p.y));
+                if(history)history.add(key(p.x,p.y));
+            }
+            if(p.clearVacancyPriority)priority.push(p);
+        }
+
+        board[MAX_PROP]=Math.max(Number(board[MAX_PROP])||0,vacancies.size);
+
+        // hexPhysAppendSegment copies canonical motion fields only. Re-attach
+        // diagnostics to prove the accepted route filled the live vacancy.
         for(const p of priority){
             const path=Array.isArray(p.ball?.fallPath)?p.ball.fallPath:[];
             for(let i=path.length-1;i>=0;i--){
@@ -110,6 +164,7 @@
                     seg.clearVacancyPriority=true;
                     seg.clearFloorVacancyPriority=!!p.clearFloorVacancyPriority;
                     seg.clearVacancyTarget=p.clearVacancyTarget||key(p.tx,p.ty);
+                    seg.clearVacancyConserved=true;
                     break;
                 }
             }
@@ -117,32 +172,70 @@
         return out;
     };
 
+    function vacancyHasBallAbove(board,x,y){
+        return [[x-1,y-1],[x+1,y-1],[x,y-2]].some(([ax,ay])=>
+            valid(ax,ay)&&!!board[ay]?.[ax]
+        );
+    }
+
     prepareContinuousPileFlow=function(g,reason="pile_flow"){
         if(reason!=="clear_support_loss"||!g?.board)return basePrepareContinuousPileFlow(g,reason);
 
-        const prior=g.board[VACANCY_PROP];
-        const vacancies=new Set();
+        const priorLive=g.board[LIVE_PROP];
+        const priorHistory=g.board[HISTORY_PROP];
+        const priorInitial=g.board[INITIAL_PROP];
+        const priorMax=g.board[MAX_PROP];
+        const vacancies=new Set(),history=new Set();
         const cells=g?.clearing?.cells;
         if(Array.isArray(cells))for(const cell of cells){
             if(!Array.isArray(cell)||cell.length<2)continue;
             const x=Number(cell[0]),y=Number(cell[1]);
-            if(Number.isFinite(x)&&Number.isFinite(y)&&valid(x,y))vacancies.add(key(x,y));
+            if(Number.isFinite(x)&&Number.isFinite(y)&&valid(x,y)&&!g.board[y][x]){
+                vacancies.add(key(x,y));history.add(key(x,y));
+            }
         }
-        g.board[VACANCY_PROP]=vacancies;
+        g.board[LIVE_PROP]=vacancies;
+        g.board[HISTORY_PROP]=history;
+        g.board[INITIAL_PROP]=vacancies.size;
+        g.board[MAX_PROP]=vacancies.size;
+
         try{
             const out=basePrepareContinuousPileFlow(g,reason);
-            g._lastClearPriorityVacancyCount=vacancies.size;
-            g._lastClearPriorityVacancies=new Set(vacancies);
+
+            // Defensive cleanup: a live-vacancy key is meaningful only while its
+            // cell is empty. A filled cell must never continue influencing later
+            // collapse decisions.
+            for(const k of [...vacancies]){
+                const [x,y]=k.split(",").map(Number);
+                if(valid(x,y)&&g.board[y][x])vacancies.delete(k);
+            }
+            const internal=[...vacancies].filter(k=>{
+                const [x,y]=k.split(",").map(Number);
+                return valid(x,y)&&!g.board[y][x]&&vacancyHasBallAbove(g.board,x,y);
+            });
+
+            g._lastClearPriorityVacancyCount=history.size;
+            g._lastClearPriorityVacancies=new Set(history);
+            g._lastClearLiveVacancies=new Set(vacancies);
+            g._lastClearInitialVacancyCount=Number(g.board[INITIAL_PROP])||0;
+            g._lastClearMaxLiveVacancyCount=Number(g.board[MAX_PROP])||0;
+            g._lastClearRemainingInternalVacancies=new Set(internal);
+            g._lastClearRemainingInternalVacancyCount=internal.length;
+            g._lastClearVacancyCountNeverIncreased=g._lastClearMaxLiveVacancyCount<=g._lastClearInitialVacancyCount;
             return out;
         }finally{
-            if(prior instanceof Set)g.board[VACANCY_PROP]=prior;
-            else delete g.board[VACANCY_PROP];
+            if(priorLive instanceof Set)g.board[LIVE_PROP]=priorLive;else delete g.board[LIVE_PROP];
+            if(priorHistory instanceof Set)g.board[HISTORY_PROP]=priorHistory;else delete g.board[HISTORY_PROP];
+            if(Number.isFinite(priorInitial))g.board[INITIAL_PROP]=priorInitial;else delete g.board[INITIAL_PROP];
+            if(Number.isFinite(priorMax))g.board[MAX_PROP]=priorMax;else delete g.board[MAX_PROP];
         }
     };
 
-    window.__hexClearVacancyPriorityVersion="clear-vacancy-v2";
+    window.__hexClearVacancyPriorityVersion="clear-vacancy-v3";
     window.__hexClearVacancyHistoryTracksMotionOrigins=true;
     window.__hexClearVacancyOverridesResidualMomentum=true;
     window.__hexClearVacancyOverridesWallTieBreak=true;
     window.__hexClearFloorVacancyPriority=true;
+    window.__hexClearVacancyLiveSet=true;
+    window.__hexClearCollapseNoNewGaps=true;
 })();
