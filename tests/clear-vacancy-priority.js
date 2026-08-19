@@ -26,7 +26,10 @@ function findBall(g,id){
 function expectConserved(g,label){
   expect(g._lastClearVacancyCountNeverIncreased===true,label+": live vacancy count increased during collapse");
   expect(g._lastClearMaxLiveVacancyCount<=g._lastClearInitialVacancyCount,label+": max live vacancies exceeded initial clear vacancies");
-  expect(g._lastClearRemainingInternalVacancyCount===0,label+": internal vacancy remained after collapse: "+JSON.stringify([...(g._lastClearRemainingInternalVacancies||[])]));
+  expect(g._lastClearInternalGapCountNeverIncreased===true,label+": topological internal-gap count increased during collapse");
+  expect(g._lastClearMaxInternalGapCount<=g._lastClearInitialInternalGapCount,label+": max internal gaps exceeded the post-clear starting count");
+  expect(g._lastClearFinalInternalGapCount<=g._lastClearInitialInternalGapCount,label+": final internal gaps increased");
+  expect(g._lastClearRemainingInternalVacancyCount===0,label+": causal internal vacancy remained after collapse: "+JSON.stringify([...(g._lastClearRemainingInternalVacancies||[])]));
 }
 function runFork(label,{x,y,vx,vy,supportX,supportY,stableCells,momentum}){
   const g=createEngine(91000+x+y);g.state="RESOLVING";g.phase="CLEAR";
@@ -44,6 +47,7 @@ function runFork(label,{x,y,vx,vy,supportX,supportY,stableCells,momentum}){
   expect(seg,label+": authored path did not target the cleared cell");
   expect(seg.clearVacancyPriority===true,label+": vacancy-priority branch was not used");
   expect(seg.clearVacancyConserved===true,label+": conserved-vacancy marker missing");
+  expect(seg.clearInternalGapGuard===true,label+": topological gap guard marker missing");
   expect(!hasLegalGravityMove(g.board),label+": board retained an unresolved gravity move");
   expectConserved(g,label);
 }
@@ -63,14 +67,17 @@ function runFloorFork(label,{x,vx,momentum}){
   expect(seg.clearVacancyPriority===true,label+": floor vacancy-priority branch was not used");
   expect(seg.clearFloorVacancyPriority===true,label+": floor-specific vacancy branch marker missing");
   expect(seg.clearVacancyConserved===true,label+": floor conserved-vacancy marker missing");
+  expect(seg.clearInternalGapGuard===true,label+": floor topological gap guard marker missing");
   expectConserved(g,label);
 }
 
 expect(window.__hexClearVacancyPriority===true,"clear vacancy priority adapter was not installed");
-expect(window.__hexClearVacancyPriorityVersion==="clear-vacancy-v3","clear vacancy priority version mismatch");
+expect(window.__hexClearVacancyPriorityVersion==="clear-vacancy-v4","clear vacancy priority version mismatch");
 expect(window.__hexClearFloorVacancyPriority===true,"floor-side clear vacancy priority missing");
 expect(window.__hexClearVacancyLiveSet===true,"live clear vacancy set missing");
 expect(window.__hexClearCollapseNoNewGaps===true,"no-new-gap collapse invariant missing");
+expect(window.__hexClearCollapseTopologicalGapGuard===true,"topological gap guard missing");
+expect(typeof window.__hexInternalGapCount==="function","internal gap counter missing");
 
 runFork("interior left vacancy",{x:8,y:9,vx:7,vy:10,supportX:8,supportY:11,stableCells:[[6,11]],momentum:1});
 runFork("interior right vacancy",{x:8,y:9,vx:9,vy:10,supportX:8,supportY:11,stableCells:[[10,11]],momentum:-1});
@@ -94,12 +101,14 @@ runFloorFork("floor right vacancy",{x:9,vx:10,momentum:-1});
   g.clearing={ids:new Set([removed.id]),cells:[[7,10,removed.c,removed.id]],waza:[],committed:true,ghosts:[]};
   g.board[10][7]=null;
   clearBoardEquilibriumLocks(g.board);
+  const initialGaps=window.__hexInternalGapCount(g.board);
   const flow=prepareContinuousPileFlow(g,"clear_support_loss");
   expect(flow.moved,"multi-stage: clear produced no motion");
   expect(g.board[10][7]===upper,"multi-stage: original vacancy was not filled");
   expect(g.board[9][8]===top,"multi-stage: secondary vacancy was not filled");
   expect(g._lastClearInitialVacancyCount===1,"multi-stage: expected one initial vacancy");
   expect(g._lastClearMaxLiveVacancyCount===1,"multi-stage: collapse branched one vacancy into multiple gaps");
+  expect(g._lastClearInitialInternalGapCount===initialGaps,"multi-stage: initial topological gap count changed before collapse");
   expectConserved(g,"multi-stage");
 }
 
