@@ -1,26 +1,5 @@
 physics regressions PASS
-node:fs:440
-    return binding.readFileUtf8(path, stringToFlags(options.flag));
-                   ^
-
-Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-garbage-contact.js'
-    at Object.readFileSync (node:fs:440:20)
-    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-airborne-pass-through.js:5:17
-    at Array.map (<anonymous>)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-airborne-pass-through.js:5:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-garbage-contact.js'
-}
-
-Node.js v22.23.2
+airborne garbage pass-through PASS
 movement fidelity 100/100 PASS
 evalmachine.<anonymous>:3453
 function expect(value,message){if(!value)throw new Error(message);}
@@ -39,19 +18,19 @@ Error: pass 2: garbage did not reach contact within the reference envelope
     at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
-evalmachine.<anonymous>:3454
+evalmachine.<anonymous>:6078
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: garbage 2: packet missed the reference contact envelope
-    at expect (evalmachine.<anonymous>:3454:34)
-    at evalmachine.<anonymous>:3546:45
-    at pass (evalmachine.<anonymous>:3455:34)
-    at evalmachine.<anonymous>:3534:23
+Error: pile 1: balanced hexagon hole was destroyed
+    at expect (evalmachine.<anonymous>:6078:34)
+    at evalmachine.<anonymous>:6149:3
+    at pass (evalmachine.<anonymous>:6079:34)
+    at evalmachine.<anonymous>:6141:23
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-fidelity-1000-production-frame.js:149:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-fidelity-1000-production-frame.js:146:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
 
@@ -65,7 +44,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
     at wrappedFn (node:internal/errors:537:14)
     at checkExecSyncError (node:child_process:916:11)
     at Object.execFileSync (node:child_process:952:15)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-fidelity-1000.js:18:6)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-fidelity-1000.js:20:6)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
@@ -74,21 +53,20 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2186,
+  pid: 2377,
   stdout: null,
   stderr: null
 }
 
 Node.js v22.23.2
 reference convergence round 1 1000/1000 PASS
-reference convergence round 2 2000/2000 PASS
-evalmachine.<anonymous>:3455
+evalmachine.<anonymous>:6079
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: round3 garbage contact 2
-    at expect (evalmachine.<anonymous>:3455:34)
-    at evalmachine.<anonymous>:3513:305
+Error: round2 garbage trajectory 3
+    at expect (evalmachine.<anonymous>:6079:34)
+    at evalmachine.<anonymous>:6126:162
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -117,7 +95,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2203,
+  pid: 2392,
   stdout: null,
   stderr: null
 }
@@ -158,7 +136,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2255,
+  pid: 2407,
   stdout: null,
   stderr: null
 }
