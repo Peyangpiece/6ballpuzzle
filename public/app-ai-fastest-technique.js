@@ -1,37 +1,38 @@
-/* Earliest-technique objective for Super Strong CPU.
+/* Learned Super Strong CPU strategy.
  *
- * "Strong" means reaching HEXAGON / PYRAMID in the fewest piece placements,
- * not moving the active piece faster.  Level 5 therefore uses a lexicographic
- * objective:
- *   1) technique on THIS piece always beats technique on NEXT;
- *   2) technique on NEXT always beats any non-technique line;
- *   3) if neither visible piece can trigger a technique, minimise the number of
- *      missing cells in the closest exact HEXAGON / PYRAMID construction;
- *   4) only then use attack amount / board quality as tie breakers.
+ * Strength is decision quality, not faster piece execution.  The three reference
+ * playthroughs show a repeatable plan:
+ *   1) fire HEXAGON / PYRAMID in the fewest piece placements;
+ *   2) among equally-fast activations, prefer the line whose post-clear board
+ *      reaches the NEXT technique sooner;
+ *   3) preserve a second-colour technique route, exploit natural clear/collapse
+ *      chains, and use off-colour balls as support without occupying reserved
+ *      technique cells;
+ *   4) attack amount and generic board quality are tie breakers after those goals.
  *
- * The current+NEXT tree is still exhaustive and deterministic.  Live gameplay
- * evaluates it in small main-thread slices so decision quality is not bought by
- * frame drops.  Level 5 uses the same rotation/move cadence as Level 4; its
- * strength comes from the choice of move, not faster execution.
+ * Current + NEXT legal placements remain exhaustive and deterministic.  When a
+ * technique fires on CURRENT, NEXT is still searched: this is intentional, since
+ * the observed strong play prepares the following technique before the first one
+ * has even been cleared.  Search stays time-sliced so this stronger judgement does
+ * not reintroduce frame stalls.
  */
 (function installFastestTechniqueCpu(){
     if(typeof window==="undefined"||window.__hexAiFastestTechnique)return;
     if(typeof bestMove!=="function"||typeof stepAI!=="function"||typeof enumerateMoves!=="function"||
-       !window.__hexAiSimulateDetailed||!window.__hexAiExactTechniqueScore)return;
+       !window.__hexAiExactTechniqueScore)return;
     window.__hexAiFastestTechnique=true;
 
     const baseBestMove=bestMove;
     const baseStepAI=stepAI;
-    const simulate=window.__hexAiSimulateDetailed;
     const fallbackExactScore=window.__hexAiExactTechniqueScore;
-    const SLICE_MS=.85;
-    const SLICE_MAX_SIMULATIONS=14;
+    const SLICE_MS=.78;
+    const SLICE_MAX_SIMULATIONS=12;
 
-    // Remove execution-speed advantage from Level 5.  Level 4 and Level 5 now
-    // manipulate the piece at the same cadence; only judgement is stronger.
+    // Level 5 does not gain strength from faster controls.  Its manipulation
+    // cadence is exactly Level 4; only the placement judgement is stronger.
     AI_PARAMS[5].think=AI_PARAMS[4].think;
     AI_PARAMS[5].act=AI_PARAMS[4].act;
-    AI_PARAMS[5].strengthBasis="earliest-technique";
+    AI_PARAMS[5].strengthBasis="learned-multi-technique";
 
     function pyramidPatterns(){
         const p=GARBAGE_SHAPES.PYRAMID;
@@ -46,10 +47,14 @@
             for(let ay=0;ay<ROWS;ay++)for(let ax=0;ax<W2;ax++){
                 const cells=pat.map(([dx,dy])=>[ax+dx,ay+dy]);
                 if(!cells.every(([x,y])=>valid(x,y)))continue;
-                const k=type+":"+cells.map(([x,y])=>x+","+y).sort().join("|");
+                const sorted=cells.map(([x,y])=>x+","+y).sort();
+                const k=type+":"+sorted.join("|");
                 if(targetSeen.has(k))continue;
                 targetSeen.add(k);
-                targets.push({type,cells});
+                targets.push({
+                    type,cells,cellSet:new Set(sorted),
+                    bottom:Math.max(...cells.map(([,y])=>y))
+                });
             }
         }
     }
@@ -61,32 +66,90 @@
     function techniqueCount(waza){return (waza?.HEXAGON||0)+(waza?.PYRAMID||0);}
     function unsafe(board){refreshBoardScanMin(board);return boardHasOverflow(board);}
 
-    // Exact construction distance in cells.  A mixed-colour target is invalid;
-    // otherwise each occupied same-colour target cell is real progress toward a
-    // six-ball technique.  This is used only when neither CURRENT nor NEXT can
-    // already fire a technique.
-    function constructionDistance(board){
-        let best=null;
-        for(const t of targets){
-            let color=null,matched=0,mixed=false;
-            for(const [x,y] of t.cells){
-                const v=board[y]?.[x];
-                if(v===null||v===undefined)continue;
-                const c=getC(v);matched++;
-                if(color===null)color=c;
-                else if(c!==color){mixed=true;break;}
-            }
-            if(mixed)continue;
-            const missing=6-matched;
-            const estimate=Math.ceil(missing/3);
-            const typeTie=t.type==="HEXAGON"?1:0;
-            const q={missing,estimate,matched,type:t.type,color,typeTie};
-            if(!best||q.estimate<best.estimate||
-               (q.estimate===best.estimate&&q.missing<best.missing)||
-               (q.estimate===best.estimate&&q.missing===best.missing&&q.typeTie>best.typeTie))best=q;
+    // Search simulation without the diagnostic pre-clear clone.  This is the same
+    // settle -> classify -> full instant resolution used by the technique AI, but
+    // avoids allocating a board image that the live planner never consumes.
+    function simulateSearch(cb,p){
+        const settled=cloneHexGrid(cb,v=>v);
+        for(const [x,y,c] of pieceCells(p)){
+            if(y<0||!valid(x,y)||settled[y][x]!==null)return null;
+            settled[y][x]=c;
         }
-        return best||{missing:6,estimate:2,matched:0,type:null,color:null,typeTie:0};
+        settleAll(settled);
+        const waza={HEXAGON:0,PYRAMID:0,STRAIGHT:0};
+        for(const grp of findGroups(settled)){
+            const w=classify(grp.cells);
+            if(w)waza[w]=(waza[w]||0)+1;
+        }
+        const res=resolveInstant(settled);
+        return {b:settled,pre:null,res,waza};
     }
+
+    // A reserved technique target may contain only one colour.  Off-colour balls
+    // are welcome as supports outside the six reserved cells, matching the play
+    // footage, but an off-colour ball inside the target invalidates that route.
+    // supportDebt estimates extra scaffolding needed for target cells that have
+    // neither an existing lower support nor a lower cell belonging to the target.
+    function targetProgress(board,t){
+        let color=null,matched=0,mixed=false;
+        const missingCells=[];
+        for(const [x,y] of t.cells){
+            const v=board[y]?.[x];
+            if(v===null||v===undefined){missingCells.push([x,y]);continue;}
+            const c=getC(v);matched++;
+            if(color===null)color=c;
+            else if(c!==color){mixed=true;break;}
+        }
+        if(mixed)return null;
+
+        let supportDebt=0;
+        for(const [x,y] of missingCells){
+            if(y>=ROWS-1)continue;
+            let supported=false;
+            for(const [nx,ny] of [[x-1,y+1],[x+1,y+1]]){
+                if(!valid(nx,ny))continue;
+                if(board[ny]?.[nx]!==null&&board[ny]?.[nx]!==undefined){supported=true;break;}
+                if(t.cellSet.has(nx+","+ny)){supported=true;break;}
+            }
+            if(!supported)supportDebt++;
+        }
+
+        const missing=6-matched;
+        const rawPieces=Math.ceil(missing/3);
+        const estimate=Math.max(rawPieces,Math.ceil((missing+supportDebt)/3));
+        return{
+            type:t.type,color,matched,missing,supportDebt,estimate,
+            typeTie:t.type==="HEXAGON"?1:0,bottom:t.bottom
+        };
+    }
+
+    function compareTarget(a,b){
+        if(!b)return-1;if(!a)return 1;
+        if(a.estimate!==b.estimate)return a.estimate-b.estimate;
+        if(a.supportDebt!==b.supportDebt)return a.supportDebt-b.supportDebt;
+        if(a.missing!==b.missing)return a.missing-b.missing;
+        if(a.matched!==b.matched)return b.matched-a.matched;
+        if(a.bottom!==b.bottom)return b.bottom-a.bottom;
+        if(a.typeTie!==b.typeTie)return b.typeTie-a.typeTie;
+        return 0;
+    }
+
+    function constructionProfile(board){
+        const options=[];
+        for(const t of targets){const q=targetProgress(board,t);if(q)options.push(q);}
+        options.sort(compareTarget);
+        const primary=options[0]||{type:null,color:null,matched:0,missing:6,supportDebt:0,estimate:2,typeTie:0,bottom:ROWS-1};
+        let secondary=null;
+        if(primary.color!==null){
+            secondary=options.find(q=>q.color!==null&&q.color!==primary.color)||null;
+        }
+        if(!secondary){
+            secondary={type:null,color:null,matched:0,missing:6,supportDebt:0,estimate:3,typeTie:0,bottom:ROWS-1};
+        }
+        return{primary,secondary};
+    }
+
+    function constructionDistance(board){return constructionProfile(board).primary;}
 
     function currentMeta(sim,next){
         return{
@@ -97,30 +160,53 @@
         };
     }
 
-    // Smaller cmp result = a is better.  Activation turn is absolute priority.
+    // Smaller comparison result means a is better.  Primary activation turn is
+    // absolute.  After that, the learned play style prefers the next technique's
+    // arrival, real chain/collapse value and a second-colour route before attack.
     function rankFromSims(meta,nextSim){
         const futureCount=techniqueCount(nextSim?.waza);
         const futureAttack=techniqueAttack(nextSim?.waza);
-        let turn,attack,progressBoard;
-        if(meta.nowCount>0){turn=1;attack=meta.nowAttack;progressBoard=meta.sim.b;}
-        else if(futureCount>0){turn=2;attack=futureAttack;progressBoard=nextSim.b;}
-        else{
+        let turn,attack=0,chain=0,followupTurns=99,followupAttack=0,continuationChain=0;
+        let progressBoard,profile;
+
+        if(meta.nowCount>0){
+            turn=1;attack=meta.nowAttack;chain=meta.sim?.res?.chain||0;
+            if(nextSim){
+                progressBoard=nextSim.b;
+                profile=constructionProfile(progressBoard);
+                if(futureCount>0){
+                    followupTurns=1;
+                    followupAttack=futureAttack;
+                    continuationChain=nextSim?.res?.chain||0;
+                }else{
+                    followupTurns=1+profile.primary.estimate;
+                }
+            }else{
+                progressBoard=meta.sim.b;
+                profile=constructionProfile(progressBoard);
+                followupTurns=profile.primary.estimate;
+            }
+        }else if(futureCount>0){
+            turn=2;attack=futureAttack;chain=nextSim?.res?.chain||0;
+            progressBoard=nextSim.b;
+            profile=constructionProfile(progressBoard);
+            followupTurns=profile.primary.estimate;
+        }else{
             progressBoard=nextSim?.b||meta.sim.b;
-            const d=constructionDistance(progressBoard);
-            // One current piece has been consumed; when NEXT was simulated two
-            // visible pieces have been consumed.  The estimate is only reached
-            // after proving that neither of those pieces can already activate.
-            turn=(nextSim?2:1)+d.estimate;
-            attack=0;
+            profile=constructionProfile(progressBoard);
+            turn=(nextSim?2:1)+profile.primary.estimate;
+            followupTurns=profile.secondary.estimate;
         }
-        const distance=constructionDistance(progressBoard);
+
+        if(!profile)profile=constructionProfile(progressBoard);
+        const p=profile.primary,s=profile.secondary;
         const fallback=fallbackExactScore(meta.sim,nextSim||null,meta.next||null);
         return{
-            turn,attack,
-            missing:distance.missing,
-            estimate:distance.estimate,
-            matched:distance.matched,
-            typeTie:distance.typeTie,
+            turn,followupTurns,chain,continuationChain,
+            attack,followupAttack,
+            estimate:p.estimate,missing:p.missing,matched:p.matched,supportDebt:p.supportDebt,typeTie:p.typeTie,
+            secondaryEstimate:s.estimate,secondaryMissing:s.missing,secondaryMatched:s.matched,secondarySupportDebt:s.supportDebt,
+            dualMatched:p.matched+s.matched*.5,
             fallback
         };
     }
@@ -128,10 +214,32 @@
     function compareRank(a,b){
         if(!b)return-1;if(!a)return 1;
         if(a.turn!==b.turn)return a.turn-b.turn;
-        if(a.attack!==b.attack)return b.attack-a.attack;
+
+        // Once the first technique is equally early, reproduce the learned
+        // preference for leaving the board ready to fire again.
+        if(a.followupTurns!==b.followupTurns)return a.followupTurns-b.followupTurns;
+        if(a.chain!==b.chain)return b.chain-a.chain;
+        if(a.continuationChain!==b.continuationChain)return b.continuationChain-a.continuationChain;
+
+        // For lines that still need construction, geometry/support debt is more
+        // meaningful than raw same-colour count alone.
         if(a.estimate!==b.estimate)return a.estimate-b.estimate;
+        if(a.supportDebt!==b.supportDebt)return a.supportDebt-b.supportDebt;
         if(a.missing!==b.missing)return a.missing-b.missing;
         if(a.matched!==b.matched)return b.matched-a.matched;
+
+        // Preserve another colour as a viable second technique instead of simply
+        // dumping it.  This is the dual-build behaviour visible in the recordings.
+        if(a.secondaryEstimate!==b.secondaryEstimate)return a.secondaryEstimate-b.secondaryEstimate;
+        if(a.secondarySupportDebt!==b.secondarySupportDebt)return a.secondarySupportDebt-b.secondarySupportDebt;
+        if(a.secondaryMissing!==b.secondaryMissing)return a.secondaryMissing-b.secondaryMissing;
+        if(a.secondaryMatched!==b.secondaryMatched)return b.secondaryMatched-a.secondaryMatched;
+        if(a.dualMatched!==b.dualMatched)return b.dualMatched-a.dualMatched;
+
+        // Attack is intentionally below activation/follow-up structure.  A smaller
+        // attack that enables the next technique sooner is the stronger line.
+        if(a.followupAttack!==b.followupAttack)return b.followupAttack-a.followupAttack;
+        if(a.attack!==b.attack)return b.attack-a.attack;
         if(a.typeTie!==b.typeTie)return b.typeTie-a.typeTie;
         if(a.fallback!==b.fallback)return b.fallback-a.fallback;
         return 0;
@@ -173,29 +281,32 @@
         while(!planner.done&&sims<maxSimulations){
             if(!planner.current){
                 if(planner.moveIndex>=planner.moves.length){finishPlanner(planner);break;}
-                const index=planner.moveIndex,m=planner.moves[index],sim=simulate(planner.cb,m);
+                const index=planner.moveIndex,m=planner.moves[index],sim=simulateSearch(planner.cb,m);
                 sims++;planner.simulations++;
                 if(!sim){planner.moveIndex++;continue;}
                 const meta=currentMeta(sim,planner.next),cur={index,m,sim,meta,nextMoves:null,nextIndex:0,bestRank:null,bestNext:null};
                 planner.current=cur;
 
-                // A technique on the current piece is unbeatable by any later
-                // activation turn.  Do not waste NEXT simulations on this move.
-                if(meta.nowCount>0){completeCandidate(planner,cur,rankFromSims(meta,null),null);continue;}
-
-                // Once ANY turn-1 line exists, non-immediate candidates cannot
-                // beat it, regardless of NEXT attack strength.
-                if(planner.bestKnownTurn===1){completeCandidate(planner,cur,rankFromSims(meta,null),null);continue;}
+                // If a turn-1 line already exists, a non-immediate current move can
+                // never beat it. Immediate lines are NOT pruned: each still searches
+                // NEXT so post-technique continuation can decide between them.
+                if(meta.nowCount===0&&planner.bestKnownTurn===1){
+                    completeCandidate(planner,cur,rankFromSims(meta,null),null);
+                    continue;
+                }
 
                 cur.nextMoves=planner.next?enumerateMoves(sim.b,planner.next):null;
-                if(!cur.nextMoves||!cur.nextMoves.length){completeCandidate(planner,cur,rankFromSims(meta,null),null);continue;}
+                if(!cur.nextMoves||!cur.nextMoves.length){
+                    completeCandidate(planner,cur,rankFromSims(meta,null),null);
+                    continue;
+                }
             }else{
                 const cur=planner.current;
                 if(cur.nextIndex>=cur.nextMoves.length){
                     completeCandidate(planner,cur,cur.bestRank||rankFromSims(cur.meta,null),cur.bestNext);
                     continue;
                 }
-                const nm=cur.nextMoves[cur.nextIndex++],ns=simulate(cur.sim.b,nm);
+                const nm=cur.nextMoves[cur.nextIndex++],ns=simulateSearch(cur.sim.b,nm);
                 sims++;planner.simulations++;
                 if(ns){
                     const r=rankFromSims(cur.meta,ns);
@@ -262,8 +373,9 @@
         ai.stuck=0;hardDrop(g);
     };
 
-    window.__hexAiFastestTechniqueVersion="fastest-technique-v1";
+    window.__hexAiFastestTechniqueVersion="fastest-technique-v2";
     window.__hexAiFastestConstructionDistance=constructionDistance;
+    window.__hexAiFastestConstructionProfile=constructionProfile;
     window.__hexAiFastestRankFromSims=rankFromSims;
     window.__hexAiFastestCompareRank=compareRank;
     window.__hexAiCreateFastestTechniquePlanner=createPlanner;
@@ -271,4 +383,7 @@
     window.__hexAiFastestTechniqueMoveSync=fastestMoveSync;
     window.__hexAiSuperStrongStrengthFromDecision=true;
     window.__hexAiSuperStrongEarliestActivationFirst=true;
+    window.__hexAiSuperStrongPostTechniqueForecast=true;
+    window.__hexAiSuperStrongDualTechniqueSetup=true;
+    window.__hexAiSuperStrongChainAware=true;
 })();
