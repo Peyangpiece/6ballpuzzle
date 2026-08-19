@@ -24,12 +24,16 @@ const prodFiles=[
   'app-pileflow-visual-tangency.js'
 ];
 const prodRuntime=prodFiles.map(name=>fs.readFileSync(path.join(__dirname,'../public',name),'utf8')).join('\n');
+const prodRuntimeB64=Buffer.from(prodRuntime,'utf8').toString('base64');
 const anchor='expect(results.length===1000,"expected 1000 passes, got "+results.length);';
 if(!source.includes(anchor))throw new Error('reference-fidelity-1000 final assertion changed; update runner explicitly');
+const contextNeedle='window:{},navigator:{},console,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date';
+if(!source.includes(contextNeedle))throw new Error('reference-fidelity-1000 context changed; update runner explicitly');
+source=source.replace(contextNeedle,'window:{},navigator:{},console,Buffer,Math,Map,Set,Array,Number,Object,String,Boolean,JSON,Date');
 
 const productionGarbageBlock=String.raw`
 // Modern 601-780: production ordinary-garbage physics, same 180-pass budget.
-eval(${JSON.stringify(prodRuntime)});
+eval(Buffer.from("__PROD_RUNTIME_B64__","base64").toString("utf8"));
 for(let i=0;i<180;i++)pass("garbage",i,()=>{
  const type=["PYRAMID","HEXAGON","STRAIGHT"][i%3],height=i%5,seed=40000+i;
  const g=createEngine(seed);flatBase(g,height,seed);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;g.garbShapes=[type];g.garbLeft=0;
@@ -64,7 +68,7 @@ for(let i=0;i<180;i++)pass("garbage",i,()=>{
  expect(pendingFallPathCount(g)===0,"garbage "+i+": pending production fallPath remained");
 });
 
-`;
+`.replace('__PROD_RUNTIME_B64__',prodRuntimeB64);
 source=source.replace(anchor,productionGarbageBlock+anchor);
 fs.writeFileSync(tmpPath,source);
 try{
