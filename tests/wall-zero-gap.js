@@ -90,7 +90,7 @@ for(const y of[6,7])for(const side of[-1,1])for(const garbage of[false,true]){
 // Scope guard: an interior symmetric fork remains the canonical momentum-based
 // decision and is not converted into a wall-specific move.
 {
-  const b=newBoard(),x=9,y=9,q=put(b,x,y,9101,1,false);put(b,x,11,9102,2,false);
+  const b=newBoard(),x=8,y=9,q=put(b,x,y,9101,1,false);put(b,x,11,9102,2,false);
   q.momentumX=1;q.rollDir=1;q.subCellBias=1;
   const p=hexPhysNaturalMotion(b,x,y);
   expect(p&&!p.wallZeroGap&&p.tx===x+1&&p.ty===y+1,"interior fork was changed by wall invariant");
