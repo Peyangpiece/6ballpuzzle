@@ -1,0 +1,40 @@
+name: Diagnose Reference 1000
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: reference-1000-diagnostic
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run current 1000-point reference gate
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          node tests/run-reference-fidelity-1000.js > audit-results/reference1000.log 2>&1
+          RC=$?
+          if [ "$RC" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","reference1000":%s}\n' "$GITHUB_SHA" "$STATUS" "$RC" > audit-results/reference1000.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/reference1000.json audit-results/reference1000.log
+          git commit -m 'Record reference 1000 audit [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+          cat audit-results/reference1000.log
+          test "$STATUS" = pass
