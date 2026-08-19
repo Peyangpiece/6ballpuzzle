@@ -53,6 +53,9 @@ jobs:
       - name: Run absolute wall zero-gap regression
         run: node tests/wall-zero-gap.js
 
+      - name: Run every-cleared-ball disappearance FX regression
+        run: node tests/clear-all-ball-fx.js
+
       - name: Run post-garbage clear-collapse regression
         run: node tests/garbage-post-clear-collapse.js
 
