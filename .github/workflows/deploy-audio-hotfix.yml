@@ -13,6 +13,7 @@ concurrency:
 permissions:
   contents: write
 
+# One-shot recovery path after the full regression gate has already passed.
 jobs:
   deploy:
     runs-on: ubuntu-latest
