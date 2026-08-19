@@ -1,2 +1,3 @@
 precise + time-sliced technique CPU PASS {"hex3":100.352,"hex4":329.728,"hex5":991.3344000000001,"pyr5":724.6740480000001,"dropModes":["fast","fast","hard","hard","hard"]}
 runtime performance v2 parity guards PASS {"staticContactSkips":1,"colliders":6,"idCache":6,"drawFastPath":true,"rigidShadowCache":true}
+pile-flow tangency performance parity PASS {"searchSteps":22,"snapshotOnCollision":true}
