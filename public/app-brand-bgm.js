@@ -56,13 +56,16 @@
         };
     }
 
-    const LOCAL_SRC="assets/maoudamashii_bgm_cyber44.mp3";
-    const FALLBACK_SRC="https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3";
+    // This is the official MP3 corresponding to the user-supplied
+    // maou_bgm_cyber44.mp3. The SHA below records the uploaded reference bytes
+    // used during this implementation so the selected track cannot drift by
+    // filename/name confusion.
+    const CYBER44_SRC="https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3";
+    const UPLOADED_SHA256="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
     const Bgm={
         audio:null,
         wanted:false,
         unlocked:false,
-        fallback:false,
         volume:Number.isFinite(window.__hexBgmVolume)?window.__hexBgmVolume:.70,
         init(){
             if(this.audio)return this.audio;
@@ -71,15 +74,7 @@
             a.preload="auto";
             a.loop=true;
             a.volume=Math.max(0,Math.min(1,this.volume));
-            a.src=LOCAL_SRC;
-            a.addEventListener("error",()=>{
-                if(this.fallback)return;
-                this.fallback=true;
-                const resume=this.wanted;
-                a.src=FALLBACK_SRC;
-                a.load();
-                if(resume){const p=a.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}
-            });
+            a.src=CYBER44_SRC;
             this.audio=a;
             return a;
         },
@@ -114,8 +109,8 @@
         }
     };
     window.Bgm=Bgm;
-    window.__sixBallGameplayBgmSource=LOCAL_SRC;
-    window.__sixBallGameplayBgmFallback=FALLBACK_SRC;
+    window.__sixBallGameplayBgmSource=CYBER44_SRC;
+    window.__sixBallGameplayBgmUploadedSha256=UPLOADED_SHA256;
     window.__sixBallGameplayBgmLoop=true;
     window.__sixBallGameplayBgmVersion="cyber44-v1";
 
