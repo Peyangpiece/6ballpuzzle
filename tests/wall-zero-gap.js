@@ -22,10 +22,10 @@ expect(window.__hexWallBothParitiesAlwaysPack===true,"both wall parities are not
 
 let cases=0;
 
-// One cell in from the boundary: both lower diagonals are open and residual
-// momentum deliberately points AWAY from the wall. Normal and garbage balls,
-// both sides and both row parities must still choose the physical wall cell.
-for(const y of[8,9])for(const side of[-1,1])for(const garbage of[false,true]){
+// One cell in from the boundary: on the parity where the lower diagonal is the
+// physical wall cell, residual momentum deliberately points AWAY from the wall.
+// Normal and garbage balls on both sides must still choose the wall cell.
+for(const y of[9])for(const side of[-1,1])for(const garbage of[false,true]){
   const b=newBoard(),ty=y+1,targetX=wallX(side,ty),x=targetX+side;
   const q=put(b,x,y,1000+cases,1,garbage),support=put(b,x,y+2,2000+cases,2,false);
   q.momentumX=-side;q.rollDir=-side;q.subCellBias=-side;
@@ -66,6 +66,19 @@ for(const y of[7,8])for(const side of[-1,1])for(const garbage of[false,true]){
   cases++;
 }
 
+// Fully open side-wall fall remains flush with the boundary on both parities and
+// for both ordinary and garbage metadata. This covers the complementary parity
+// where straight wall descent, rather than the direct-support fork, is physical.
+for(const y of[6,7])for(const side of[-1,1])for(const garbage of[false,true]){
+  const b=newBoard(),x=wallX(side,y),q=put(b,x,y,5000+cases,1,garbage);
+  const p=hexPhysNaturalMotion(b,x,y);
+  expect(p&&p.kind==="WALL_DROP","open wall fall lost wall compaction: "+JSON.stringify({y,side,garbage,p}));
+  expect(p.tx===x&&p.ty===y+2,"open wall fall moved away from boundary");
+  expect(hexPhysApplyEvent(b,[p]),"open wall drop event rejected");
+  expect(b[y+2][x]===q,"open wall drop did not remain flush with boundary");
+  cases++;
+}
+
 // Garbage still in an explicit spawn/bubble hold is intentionally immobile; the
 // new invariant must not bypass that pre-contact state.
 {
@@ -83,7 +96,7 @@ for(const y of[7,8])for(const side of[-1,1])for(const garbage of[false,true]){
   expect(p&&!p.wallZeroGap&&p.tx===x+1&&p.ty===y+1,"interior fork was changed by wall invariant");
 }
 
-expect(cases===16,"expected 16 absolute wall cases, got "+cases);
+expect(cases===20,"expected 20 absolute wall cases, got "+cases);
 console.log("absolute wall zero-gap regression PASS",JSON.stringify({cases}));
 `;
 
