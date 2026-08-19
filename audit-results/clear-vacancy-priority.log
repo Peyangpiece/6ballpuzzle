@@ -2,14 +2,14 @@ evalmachine.<anonymous>:2470
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: interior left vacancy: mover did not fill the cleared vacancy; ended at [6,11]
+Error: interior left vacancy: vacancy-priority branch was not used
     at expect (evalmachine.<anonymous>:2470:34)
-    at runFork (evalmachine.<anonymous>:2495:3)
-    at evalmachine.<anonymous>:2509:1
+    at runFork (evalmachine.<anonymous>:2499:3)
+    at evalmachine.<anonymous>:2510:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/clear-vacancy-priority.js:63:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/clear-vacancy-priority.js:65:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
