@@ -8,10 +8,13 @@
  *   5 超強い   : deterministic exhaustive current+NEXT search whose primary
  *                objective is producing HEXAGON / PYRAMID techniques.
  *
- * Level 5 never injects a random mistake.  Among legal survivable candidates it
- * evaluates every current placement and, when NEXT is known, every NEXT reply.
- * Technique attack (HEXAGON 36 / PYRAMID 24) dominates the objective, then
- * same-colour construction progress, then ordinary board quality breaks ties.
+ * Performance invariant:
+ *   - the exact level-5 search result is unchanged, but live gameplay computes
+ *     that exhaustive tree in small slices instead of one long main-thread burst;
+ *   - internal simulations keep only the post-resolution board, avoiding an
+ *     unused full-board pre-clear clone for every search node;
+ *   - current-move technique/safety metadata is computed once and reused for all
+ *     of that move's NEXT branches.
  */
 (function installTechniqueAwareCpu(){
     if(typeof window==="undefined"||window.__hexTechniqueAwareCpu)return;
@@ -29,6 +32,8 @@
     const TYPE_VALUE={PYRAMID:1,HEXAGON:1.42};
     const LEVEL_TECH_SCALE={1:0,2:.12,3:.42,4:1.02,5:2.0};
     const TECH_ATTACK={HEXAGON:WAZA.HEXAGON?.garbage||36,PYRAMID:WAZA.PYRAMID?.garbage||24};
+    const EXACT_SLICE_MS=1.15;
+    const EXACT_SLICE_MAX_SIMULATIONS=40;
 
     function pyramidPatterns(){
         const p=GARBAGE_SHAPES.PYRAMID;
@@ -57,6 +62,11 @@
     function techniquePotential(board,level=5,availableColors=null){
         const scale=LEVEL_TECH_SCALE[level]||0;
         if(scale<=0)return {score:0,best:null,second:null};
+        let availableCounts=null;
+        if(level>=4&&Array.isArray(availableColors)){
+            availableCounts=new Int8Array(COLORS.length);
+            for(const c of availableColors)if(Number.isInteger(c)&&c>=0&&c<availableCounts.length)availableCounts[c]++;
+        }
         let bestScore=0,secondScore=0,best=null,second=null;
         for(const pl of placements){
             let occupied=0,color=null,mixed=false;
@@ -71,8 +81,8 @@
             if(mixed||occupied===0)continue;
             let value=MATCH_VALUE[Math.min(6,occupied)]*TYPE_VALUE[pl.type];
             value*=1+Math.max(0,pl.bottom-(ROWS-5))*.025;
-            if(level>=4&&color!==null&&Array.isArray(availableColors)){
-                const avail=availableColors.reduce((n,c)=>n+(c===color?1:0),0);
+            if(availableCounts&&color!==null){
+                const avail=availableCounts[color]||0;
                 value*=1+avail*(level===5?.12:.06);
             }
             const target={type:pl.type,color,matched:occupied,cells:pl.cells,value};
@@ -91,18 +101,19 @@
         return out;
     }
 
-    function simulateDetailed(cb,p){
+    // Internal search nodes do not need a second full-board clone of the settled
+    // pre-clear position. The public diagnostic helper can request it explicitly.
+    function simulateDetailed(cb,p,keepPre=false){
         const settled=cloneHexGrid(cb,v=>v);
         for(const [x,y,c] of pieceCells(p)){
             if(y<0||!valid(x,y)||settled[y][x]!==null)return null;
             settled[y][x]=c;
         }
         settleAll(settled);
-        const preClear=cloneHexGrid(settled,v=>v);
-        const waza=immediateWaza(preClear);
-        const after=cloneHexGrid(settled,v=>v);
-        const res=resolveInstant(after);
-        return {b:after,pre:preClear,res,waza};
+        const waza=immediateWaza(settled);
+        const pre=keepPre?cloneHexGrid(settled,v=>v):null;
+        const res=resolveInstant(settled);
+        return {b:settled,pre,res,waza};
     }
 
     function wazaBonus(waza,level){
@@ -141,58 +152,122 @@
         return score;
     }
 
-    // Strict level-5 objective.  The large bands make actual HEXAGON/PYRAMID
-    // production dominate generic score.  Construction potential is consulted
-    // only after attack value over the known two-ply horizon has been maximised.
-    function exactTechniqueScore(sim,nextSim,knownNext){
-        if(!sim)return-1e18;
-        const nowAttack=techniqueAttackValue(sim.waza);
+    function exactCurrentMeta(sim,knownNext){
+        if(!sim)return null;
+        return{
+            sim,
+            knownNext,
+            nowAttack:techniqueAttackValue(sim.waza),
+            nowPotential:techniquePotential(sim.b,5,knownNext).score,
+            unsafeNow:boardUnsafe(sim.b)
+        };
+    }
+
+    function exactTechniqueScoreFromMeta(meta,nextSim){
+        if(!meta)return-1e18;
         const futureAttack=nextSim?techniqueAttackValue(nextSim.waza):0;
-        const nowPotential=techniquePotential(sim.b,5,knownNext).score;
         const futurePotential=nextSim?techniquePotential(nextSim.b,5,null).score:0;
-        const unsafeNow=boardUnsafe(sim.b),unsafeFuture=nextSim?boardUnsafe(nextSim.b):false;
-        const safety=(unsafeNow?-1:0)+(unsafeFuture?-.5:0);
+        const unsafeFuture=nextSim?boardUnsafe(nextSim.b):false;
+        const safety=(meta.unsafeNow?-1:0)+(unsafeFuture?-.5:0);
         const generic=nextSim
             ?legacyEvalBoard(nextSim.b,nextSim.res,5,()=>.5)
-            :legacyEvalBoard(sim.b,sim.res,5,()=>.5);
+            :legacyEvalBoard(meta.sim.b,meta.sim.res,5,()=>.5);
         return safety*1e15+
-            (nowAttack+futureAttack*.86)*1e9+
-            (nowPotential+futurePotential*.72)*1e4+
+            (meta.nowAttack+futureAttack*.86)*1e9+
+            (meta.nowPotential+futurePotential*.72)*1e4+
             generic;
     }
 
-    function bestExactTechniqueMove(board,colors,next){
-        const cb=toColors(board),moves=enumerateMoves(board,colors);
-        if(!moves.length)return null;
-        const candidates=[];
-        for(let index=0;index<moves.length;index++){
-            const m=moves[index],sim=simulateDetailed(cb,m);if(!sim)continue;
-            let bestNext=null,bestNextScore=-Infinity;
-            if(Array.isArray(next)){
-                const nextMoves=enumerateMoves(sim.b,next);
-                for(const nm of nextMoves){
-                    const ns=simulateDetailed(sim.b,nm);if(!ns)continue;
-                    const s=exactTechniqueScore(sim,ns,next);
-                    if(s>bestNextScore){bestNextScore=s;bestNext=ns;}
-                }
-            }
-            const score=bestNext?bestNextScore:exactTechniqueScore(sim,null,next);
-            candidates.push({m,sim,nextSim:bestNext,score,index});
-        }
-        if(!candidates.length)return moves[0];
+    // Strict level-5 objective. Actual HEXAGON/PYRAMID production dominates,
+    // then same-colour construction potential, then generic board quality.
+    function exactTechniqueScore(sim,nextSim,knownNext){
+        return exactTechniqueScoreFromMeta(exactCurrentMeta(sim,knownNext),nextSim);
+    }
 
-        // If at least one current move survives after all immediate resolution,
-        // never choose an overflowing current move merely for a construction gain.
-        const safe=candidates.filter(c=>!boardUnsafe(c.sim.b));
-        const pool=safe.length?safe:candidates;
+    function finishExactPlanner(planner){
+        if(planner.done)return planner.result;
+        if(!planner.candidates.length){
+            planner.result=planner.moves[0]||null;
+            planner.done=true;
+            return planner.result;
+        }
+        const safe=planner.candidates.filter(c=>!c.meta.unsafeNow);
+        const pool=safe.length?safe:planner.candidates;
         pool.sort((a,b)=>b.score-a.score||a.index-b.index);
-        return pool[0].m;
+        planner.result=pool[0].m;
+        planner.done=true;
+        return planner.result;
+    }
+
+    function createExactPlanner(board,colors,next){
+        const cb=toColors(board),moves=enumerateMoves(board,colors);
+        return{
+            cb,moves,next:Array.isArray(next)?next.slice():null,
+            moveIndex:0,current:null,candidates:[],done:false,result:null,
+            simulations:0,slices:0,lastSliceSimulations:0,maxSliceSimulations:0
+        };
+    }
+
+    function completeCurrentExactCandidate(planner,current){
+        const score=current.bestNext?current.bestNextScore:exactTechniqueScoreFromMeta(current.meta,null);
+        planner.candidates.push({m:current.m,sim:current.sim,nextSim:current.bestNext,score,index:current.index,meta:current.meta});
+        planner.moveIndex=current.index+1;
+        planner.current=null;
+    }
+
+    function performanceNow(){
+        if(typeof performance!=="undefined"&&performance&&typeof performance.now==="function")return performance.now();
+        return Date.now();
+    }
+
+    // Advance a deterministic prefix of the exact tree. The wall-clock budget is
+    // only a responsiveness guard; search order and final score are unchanged.
+    function advanceExactPlanner(planner,budgetMs=EXACT_SLICE_MS,maxSimulations=EXACT_SLICE_MAX_SIMULATIONS){
+        if(!planner||planner.done)return planner?.result||null;
+        const start=performanceNow();
+        let simulations=0;
+        planner.slices++;
+        while(!planner.done&&simulations<maxSimulations){
+            if(!planner.current){
+                if(planner.moveIndex>=planner.moves.length){finishExactPlanner(planner);break;}
+                const index=planner.moveIndex,m=planner.moves[index],sim=simulateDetailed(planner.cb,m,false);
+                simulations++;planner.simulations++;
+                if(!sim){planner.moveIndex++;continue;}
+                const meta=exactCurrentMeta(sim,planner.next);
+                const nextMoves=planner.next?enumerateMoves(sim.b,planner.next):null;
+                planner.current={index,m,sim,meta,nextMoves,nextIndex:0,bestNext:null,bestNextScore:-Infinity};
+                if(!nextMoves||!nextMoves.length)completeCurrentExactCandidate(planner,planner.current);
+            }else{
+                const cur=planner.current;
+                if(!cur.nextMoves||cur.nextIndex>=cur.nextMoves.length){completeCurrentExactCandidate(planner,cur);continue;}
+                const nm=cur.nextMoves[cur.nextIndex++],ns=simulateDetailed(cur.sim.b,nm,false);
+                simulations++;planner.simulations++;
+                if(ns){
+                    const s=exactTechniqueScoreFromMeta(cur.meta,ns);
+                    if(s>cur.bestNextScore){cur.bestNextScore=s;cur.bestNext=ns;}
+                }
+                if(cur.nextIndex>=cur.nextMoves.length)completeCurrentExactCandidate(planner,cur);
+            }
+            if(simulations>0&&performanceNow()-start>=budgetMs)break;
+        }
+        planner.lastSliceSimulations=simulations;
+        planner.maxSliceSimulations=Math.max(planner.maxSliceSimulations,simulations);
+        if(!planner.done&&planner.moveIndex>=planner.moves.length&&!planner.current)finishExactPlanner(planner);
+        return planner.done?planner.result:null;
+    }
+
+    function bestExactTechniqueMove(board,colors,next){
+        const planner=createExactPlanner(board,colors,next);
+        while(!planner.done)advanceExactPlanner(planner,Infinity,1e9);
+        return planner.result;
     }
 
     window.__hexAiTechniquePotential=(board,level=5,next=null)=>techniquePotential(board,level,next);
-    window.__hexAiSimulateDetailed=simulateDetailed;
+    window.__hexAiSimulateDetailed=(cb,p)=>simulateDetailed(cb,p,true);
     window.__hexAiExactTechniqueScore=exactTechniqueScore;
     window.__hexAiBestExactTechniqueMove=bestExactTechniqueMove;
+    window.__hexAiCreateExactPlanner=createExactPlanner;
+    window.__hexAiAdvanceExactPlanner=advanceExactPlanner;
 
     evalBoard=function(b,res,level,rnd=Math.random){
         const base=legacyEvalBoard(b,res,level,rnd);
@@ -213,7 +288,7 @@
         const beforePotential=techniquePotential(cb,level,colors).score;
         const scored=[];
         for(const m of moves){
-            const sim=simulateDetailed(cb,m);
+            const sim=simulateDetailed(cb,m,false);
             if(!sim)continue;
             const s=scoreDetailed(sim,level,beforePotential,next,rnd);
             scored.push({m,s,b:sim.b});
@@ -227,7 +302,7 @@
                 const nextBefore=techniquePotential(c.b,level,next).score;
                 let future=-1e12;
                 for(const mm of enumerateMoves(c.b,next)){
-                    const s2=simulateDetailed(c.b,mm);
+                    const s2=simulateDetailed(c.b,mm,false);
                     if(!s2)continue;
                     future=Math.max(future,scoreDetailed(s2,level,nextBefore,null,rnd));
                 }
@@ -239,12 +314,51 @@
         return scored[0].m;
     };
 
-    // Levels 1-2 intentionally do NOT use instant drop. They rotate/move toward
-    // the selected column, then hold the same fast-fall mode available to the
-    // player until contact. Level 3+ retain instant drop once aligned.
+    // Levels 1-2 intentionally do NOT use instant drop. Level 5 gets a dedicated
+    // time-sliced exact planner so exhaustive search cannot stall rendering.
     stepAI=function(g,dt){
         const ai=g?.ai;if(!ai)return;
         const level=Math.max(1,Math.min(5,Number(ai.level)||1)),P=AI_PARAMS[level];
+
+        if(level===5){
+            g.fastForward=false;
+            if(!g.piece||g.state!=="PLAYING"){ai._exactPlanner=null;return;}
+            if(ai.thinkT>0){ai.thinkT-=dt;return;}
+            if(!ai.target){
+                if(!ai._exactPlanner)ai._exactPlanner=createExactPlanner(g.board,g.piece.colors,g.queue[0]);
+                const target=advanceExactPlanner(ai._exactPlanner,EXACT_SLICE_MS,EXACT_SLICE_MAX_SIMULATIONS);
+                ai._lastExactPlannerStats={
+                    slices:ai._exactPlanner.slices,
+                    simulations:ai._exactPlanner.simulations,
+                    lastSliceSimulations:ai._exactPlanner.lastSliceSimulations,
+                    maxSliceSimulations:ai._exactPlanner.maxSliceSimulations,
+                    done:ai._exactPlanner.done
+                };
+                if(!target)return;
+                ai.target=target;ai._exactPlanner=null;ai.stuck=0;
+            }
+            const t=ai.target;
+            ai.actT-=dt;
+            if(ai.actT>0)return;
+            ai.actT=P.act;
+            if(g.piece.rot!==t.rot){
+                const cw=(t.rot-g.piece.rot+6)%6;
+                if(!rotate(g,cw<=3?1:-1)){
+                    ai.target=null;ai._exactPlanner=null;ai.stuck=(ai.stuck||0)+1;ai.thinkT=Math.min(.08,P.think*.2);
+                }else ai.stuck=0;
+                return;
+            }
+            if(g.piece.x!==t.x){
+                if(!move(g,g.piece.x<t.x?1:-1)){
+                    ai.target=null;ai._exactPlanner=null;ai.stuck=(ai.stuck||0)+1;ai.thinkT=Math.min(.08,P.think*.2);
+                }else ai.stuck=0;
+                return;
+            }
+            ai.stuck=0;
+            hardDrop(g);
+            return;
+        }
+
         if(level>=3){g.fastForward=false;return legacyStepAI(g,dt);}
         if(!g.piece||g.state!=="PLAYING"){g.fastForward=false;return;}
 
@@ -277,8 +391,12 @@
         g.fastForward=true;
     };
 
-    window.__hexAiDifficultyProfileVersion="ai-difficulty-v3";
+    window.__hexAiDifficultyProfileVersion="ai-difficulty-v4-perf";
     window.__hexAiLowLevelsUseFastFallOnly=true;
     window.__hexAiSuperStrongExactTechnique=true;
     window.__hexAiSuperStrongExhaustiveNext=true;
+    window.__hexAiSuperStrongTimeSliced=true;
+    window.__hexAiInternalSimulationSingleClone=true;
+    window.__hexAiExactCurrentMetaReuse=true;
+    window.__hexAiExactSliceMaxSimulations=EXACT_SLICE_MAX_SIMULATIONS;
 })();
