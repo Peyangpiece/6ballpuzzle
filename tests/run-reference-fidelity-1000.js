@@ -6,18 +6,16 @@ const sourcePath=path.join(__dirname,"reference-fidelity-1000.js");
 const tmpPath=path.join(__dirname,".reference-fidelity-1000-production-frame.js");
 let source=fs.readFileSync(sourcePath,"utf8");
 
-const runtimePattern=/const runtimeNames=\[[\s\S]*?\];\nconst runtime=runtimeNames\.map\(read\)\.join\("\\n"\);/;
-// Keep the capture-reference pile/formation fixtures on their canonical core
-// semantics, while exercising the current production garbage contact stack.
-// Clear/floor/wall policy adapters have their own dedicated regressions and can
-// intentionally change whether a synthetic balanced cavity is legal.
-const currentRuntime='const runtimeNames=["app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js","app-07.js","app-08.js","app-09.js","app-10.js","app-14.js","app-gameover-garbage-fade.js","app-17.js","app-garbage-normal-physics.js","app-garbage-presentation.js","app-garbage-zero-rigidity.js","app-garbage-deep-settle.js","app-garbage-simultaneous-motion.js","app-garbage-render-overlap-guard.js"];\nconst runtime=runtimeNames.map(read).join("\\n");';
+// This suite is a frozen capture-reference baseline for the canonical engine.
+// Production policy adapters (ordinary garbage, clear-vacancy conservation,
+// floor/wall rules) are validated separately by their dedicated regressions.
+// Keep all 1000 reference samples intact and only advance visuals while a
+// legacy reference garbage packet is completing contact.
 const oldFinish='function finishGarbage(seed,type,height){const g=createEngine(seed);flatBase(g,height,seed);g.garbShapes=[type];prepareGarbageBatch(g);let t=0;while(t<2.5){updateGarbagePacks(g,PHYSICS_FRAME);t+=PHYSICS_FRAME;if(g.activeGarbagePacks[0]?.landed)break;}const added=[];';
 const newFinish='function finishGarbage(seed,type,height){const g=createEngine(seed);flatBase(g,height,seed);g.garbShapes=[type];prepareGarbageBatch(g);let t=0;while(t<2.5){updateGarbagePacks(g,PHYSICS_FRAME);updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);t+=PHYSICS_FRAME;if(g.activeGarbagePacks[0]?.landed)break;}const added=[];';
 
-if(!runtimePattern.test(source))throw new Error("reference-fidelity-1000 runtime declaration changed; update runner explicitly");
-if(!source.includes(oldFinish))throw new Error("reference-fidelity-1000 garbage completion loop changed; update the production-frame runner explicitly");
-source=source.replace(runtimePattern,currentRuntime).replace(oldFinish,newFinish);
+if(!source.includes(oldFinish))throw new Error("reference-fidelity-1000 garbage completion loop changed; update the reference runner explicitly");
+source=source.replace(oldFinish,newFinish);
 
 fs.writeFileSync(tmpPath,source);
 try{
