@@ -12,3 +12,20 @@ game-over former-garbage fade PASS
 garbage render overlap guard PASS
 upward normal triangle contact-side 2+1 split PASS
 runtime static-board performance guards PASS {"staticContactSkips":1,"colliders":6}
+evalmachine.<anonymous>:3273
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: could not construct an immediate-technique fixture
+    at expect (evalmachine.<anonymous>:3273:34)
+    at evalmachine.<anonymous>:3310:1
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-fastest-technique.js:67:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
