@@ -26,7 +26,12 @@ expect(brand.includes('ev.t==="move"'),'legacy menu move sound is not suppressed
 expect(brand.includes('https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3'),'Cyber44 gameplay source missing');
 expect(brand.includes('4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532'),'uploaded Cyber44 reference hash missing');
 expect(brand.includes('a.loop=true'),'gameplay BGM must loop');
-expect(brand.includes('a.volume=0;')&&brand.includes('prime(){'),'BGM is not silently primed under user activation');
+expect(brand.includes('a.playsInline=true')&&brand.includes('a.setAttribute("playsinline","")'),'inline mobile playback guard missing');
+expect(brand.includes('a.muted=true')&&brand.includes('a.volume=0;')&&brand.includes('prime(){'),'BGM must be explicitly muted while priming under user activation');
+expect(brand.includes('window.__sixBallGameplayBgmMutedPrime=true'),'muted-prime autoplay guard marker missing');
+expect(brand.includes('document.addEventListener("click",()=>syncGameplayMusic(),{capture:false})'),'same-click bubble promotion into gameplay BGM missing');
+expect(brand.includes('document.addEventListener("pointerdown"'),'gameplay gesture retry missing');
+expect(brand.includes('window.__sixBallGameplayBgmGestureRetry=true'),'gesture retry marker missing');
 expect(brand.includes('if(game&&!wasGame)Bgm.start(true)'),'BGM must start on entering gameplay');
 expect(brand.includes('else if(!game&&wasGame)Bgm.stop()'),'BGM must stop when leaving gameplay');
 expect(brand.includes('window.__sixBallGameplayBgmPrimedFromMenu=true'),'BGM autoplay-race fix marker missing');
