@@ -31,16 +31,20 @@ jobs:
           START=$(date +%s%3N)
           node tests/ai-technique-levels.js >> audit-results/runtime-performance.log 2>&1
           A=$?
-          MID=$(date +%s%3N)
+          MID1=$(date +%s%3N)
           node tests/runtime-performance-guards.js >> audit-results/runtime-performance.log 2>&1
           B=$?
+          MID2=$(date +%s%3N)
+          node tests/pileflow-tangency-performance.js >> audit-results/runtime-performance.log 2>&1
+          C=$?
           END=$(date +%s%3N)
 
-          AI_MS=$((MID-START))
-          RUNTIME_MS=$((END-MID))
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","aiTechnique":%s,"runtimePerformance":%s,"aiTestMs":%s,"runtimeTestMs":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$AI_MS" "$RUNTIME_MS" > audit-results/runtime-performance.json
+          AI_MS=$((MID1-START))
+          RUNTIME_MS=$((MID2-MID1))
+          PILEFLOW_MS=$((END-MID2))
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","aiTechnique":%s,"runtimePerformance":%s,"pileflowTangencyPerformance":%s,"aiTestMs":%s,"runtimeTestMs":%s,"pileflowTestMs":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$AI_MS" "$RUNTIME_MS" "$PILEFLOW_MS" > audit-results/runtime-performance.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
