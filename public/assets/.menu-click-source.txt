@@ -1,0 +1,5 @@
+Source: user-uploaded 決定ボタンを押す42.mp3
+SHA-256: 97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e
+Duration: 1.2912083333 s
+Sample rate: 48000 Hz
+Target asset: public/assets/menu-confirm-42.mp3
