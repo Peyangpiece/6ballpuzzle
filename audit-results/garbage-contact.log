@@ -5,13 +5,13 @@ evalmachine.<anonymous>:2880
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
-Error: CPU labels were not updated
+Error: fixture exposes no immediate HEXAGON/PYRAMID completion
     at expect (evalmachine.<anonymous>:2880:34)
-    at evalmachine.<anonymous>:2889:1
+    at evalmachine.<anonymous>:2948:3
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-technique-levels.js:62:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-technique-levels.js:114:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
