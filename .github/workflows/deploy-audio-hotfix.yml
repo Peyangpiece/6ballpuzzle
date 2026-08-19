@@ -14,7 +14,7 @@ permissions:
   contents: write
 
 # One-shot recovery path after the full regression gate has already passed.
-# The current full gate is green; this commit intentionally re-triggers only this audio path.
+# The current full gate is green; re-trigger for Cyber44 muted-prime/gesture recovery.
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -86,7 +86,7 @@ jobs:
             done
           fi
           if [ "$verified" -eq 1 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","deployOutcome":"%s","productionUrl":"%s","observedSha":"%s","featureSha":"ef6e80574d1bb2ee6f5e0a4856b628cf2381617b"}\n' "$GITHUB_SHA" "$STATUS" "$DEPLOY_OUTCOME" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-audio-hotfix.json
+          printf '{"sha":"%s","status":"%s","deployOutcome":"%s","productionUrl":"%s","observedSha":"%s","featureSha":"e4bf22e6889341ec0e75e95a04ba969b16327d26"}\n' "$GITHUB_SHA" "$STATUS" "$DEPLOY_OUTCOME" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-audio-hotfix.json
           rm -f public/deploy-sha.txt
           test "$STATUS" = pass
 
@@ -98,7 +98,7 @@ jobs:
         run: |
           if [ ! -f audit-results/cloudflare-audio-hotfix.json ]; then
             mkdir -p audit-results
-            printf '{"sha":"%s","status":"fail","deployOutcome":"%s","productionUrl":"%s","observedSha":"","featureSha":"ef6e80574d1bb2ee6f5e0a4856b628cf2381617b"}\n' "$GITHUB_SHA" "$DEPLOY_OUTCOME" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-audio-hotfix.json
+            printf '{"sha":"%s","status":"fail","deployOutcome":"%s","productionUrl":"%s","observedSha":"","featureSha":"e4bf22e6889341ec0e75e95a04ba969b16327d26"}\n' "$GITHUB_SHA" "$DEPLOY_OUTCOME" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-audio-hotfix.json
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
