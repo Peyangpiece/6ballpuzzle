@@ -41,6 +41,9 @@ jobs:
       - name: Run runtime performance guards
         run: node tests/runtime-performance-guards.js
 
+      - name: Run pile-flow tangency performance parity
+        run: node tests/pileflow-tangency-performance.js
+
       - name: Run upward triangle split-side regression
         run: node tests/up-convex-split-side.js
 
