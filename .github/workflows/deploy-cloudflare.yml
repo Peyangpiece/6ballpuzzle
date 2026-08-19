@@ -35,6 +35,9 @@ jobs:
       - name: Run Super Strong technique-first speed-second regression
         run: node tests/ai-superstrong-speed-priority.js
 
+      - name: Run Grandmaster Super Strong regression
+        run: node tests/ai-grandmaster.js
+
       - name: Run runtime performance guards
         run: node tests/runtime-performance-guards.js
 
