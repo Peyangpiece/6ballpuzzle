@@ -1,0 +1,3 @@
+Performance-only production release trigger.
+
+This release contains runtime hot-path optimizations only. Physics equations, collision thresholds and sampling, animation timing, render coordinates, visual styling, AI decisions and final board results are intentionally unchanged.
