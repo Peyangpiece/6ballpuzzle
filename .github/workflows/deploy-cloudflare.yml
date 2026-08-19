@@ -26,6 +26,9 @@ jobs:
       - name: Run physics regressions
         run: node tests/physics-regressions.js
 
+      - name: Run precise CPU difficulty regression
+        run: node tests/ai-technique-levels.js
+
       - name: Run upward triangle split-side regression
         run: node tests/up-convex-split-side.js
 
