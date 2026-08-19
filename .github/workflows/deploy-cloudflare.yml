@@ -38,6 +38,9 @@ jobs:
       - name: Run post-garbage clear-collapse regression
         run: node tests/garbage-post-clear-collapse.js
 
+      - name: Run post-clear vacancy-priority regression
+        run: node tests/clear-vacancy-priority.js
+
       - name: Run game-over garbage fade regression
         run: node tests/gameover-garbage-fade.js
 
