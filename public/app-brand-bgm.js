@@ -92,13 +92,16 @@
     window.__sixBallMenuClickUploadedSha256=MENU_CONFIRM_SHA256;
     window.__sixBallMenuClickAllButtons=true;
 
-    // This is the official MP3 corresponding to the selected Cyber44 track.
+    // Cyber44 gameplay BGM. The selected source stays unchanged; the playback
+    // bridge below fixes Safari/iOS/desktop autoplay timing without touching game logic.
     const CYBER44_SRC="https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3";
     const UPLOADED_SHA256="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
     const Bgm={
         audio:null,
         wanted:false,
         primed:false,
+        primePromise:null,
+        lastError:"",
         volume:Number.isFinite(window.__hexBgmVolume)?window.__hexBgmVolume:.70,
         init(){
             if(this.audio)return this.audio;
@@ -106,48 +109,91 @@
             const a=new Audio();
             a.preload="auto";
             a.loop=true;
+            a.playsInline=true;
+            a.setAttribute("playsinline","");
             a.volume=0;
+            a.muted=true;
             a.src=CYBER44_SRC;
+            a.addEventListener("error",()=>{
+                const err=a.error;
+                this.lastError=err?`media-${err.code}`:"media-error";
+                window.__sixBallGameplayBgmLastError=this.lastError;
+            });
             this.audio=a;
             return a;
         },
         setVolume(v){
             this.volume=Math.max(0,Math.min(1,Number(v)||0));
-            if(this.audio&&this.wanted)this.audio.volume=this.volume;
+            if(this.audio&&this.wanted&&!this.audio.muted)this.audio.volume=this.volume;
         },
-        // Browser autoplay policies require media playback to originate from a
-        // trusted user action. A menu button click starts the SAME audio element
-        // silently and keeps it alive; entering GAME only raises its volume.
-        // This removes the previous race where MutationObserver called play()
-        // after the user gesture had already ended.
+        markPlayError(err){
+            this.lastError=err&&err.name?String(err.name):"play-rejected";
+            window.__sixBallGameplayBgmLastError=this.lastError;
+        },
+        // Prime the SAME audio element while the menu click is still a trusted
+        // user activation. Muted playback is explicitly used so Safari/iOS does
+        // not reject the priming request merely because volume is numerically 0.
         prime(){
             const a=this.init();
-            if(!a||this.wanted)return;
-            a.muted=false;
+            if(!a)return null;
+            if(!a.paused){this.primed=true;return Promise.resolve(true);}
+            if(this.primePromise)return this.primePromise;
+            a.muted=true;
             a.volume=0;
-            if(!a.paused){this.primed=true;return;}
             try{
                 const p=a.play();
-                this.primed=true;
-                if(p&&typeof p.catch==="function")p.catch(()=>{this.primed=false;});
-            }catch(_){this.primed=false;}
+                if(p&&typeof p.then==="function"){
+                    this.primePromise=p.then(()=>{
+                        this.primed=true;
+                        this.lastError="";
+                        window.__sixBallGameplayBgmLastError="";
+                        return true;
+                    }).catch((err)=>{
+                        this.primed=false;
+                        this.primePromise=null;
+                        this.markPlayError(err);
+                        return false;
+                    });
+                    return this.primePromise;
+                }
+                this.primed=!a.paused;
+                return Promise.resolve(this.primed);
+            }catch(err){
+                this.primed=false;
+                this.primePromise=null;
+                this.markPlayError(err);
+                return Promise.resolve(false);
+            }
+        },
+        activate(){
+            const a=this.init();if(!a||!this.wanted)return;
+            a.muted=false;
+            a.volume=this.volume;
+            if(!a.paused)return;
+            try{
+                const p=a.play();
+                if(p&&typeof p.catch==="function")p.catch((err)=>this.markPlayError(err));
+            }catch(err){this.markPlayError(err);}
         },
         start(restart=true){
             const a=this.init();if(!a)return;
             this.wanted=true;
-            a.muted=false;
             if(restart){try{a.currentTime=0;}catch(_){}}
-            a.volume=this.volume;
-            if(a.paused){
-                try{const p=a.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}catch(_){}
-            }
+            // If the menu click has already started muted playback, unmute it
+            // immediately. Otherwise wait for that exact priming request.
+            if(!a.paused){this.primed=true;this.activate();return;}
+            const ready=this.prime();
+            if(ready&&typeof ready.then==="function")ready.then((ok)=>{if(ok&&this.wanted)this.activate();});
+            else this.activate();
         },
         pause(){if(this.audio)this.audio.pause();},
         stop(){
             this.wanted=false;
             this.primed=false;
+            this.primePromise=null;
             if(!this.audio)return;
             this.audio.pause();
+            this.audio.muted=true;
             this.audio.volume=0;
             try{this.audio.currentTime=0;}catch(_){}
         }
@@ -157,7 +203,9 @@
     window.__sixBallGameplayBgmUploadedSha256=UPLOADED_SHA256;
     window.__sixBallGameplayBgmLoop=true;
     window.__sixBallGameplayBgmPrimedFromMenu=true;
-    window.__sixBallGameplayBgmVersion="cyber44-v2-primed";
+    window.__sixBallGameplayBgmMutedPrime=true;
+    window.__sixBallGameplayBgmGestureRetry=true;
+    window.__sixBallGameplayBgmVersion="cyber44-v3-muted-prime";
 
     // The game screen uniquely owns the top-right resign button.
     let wasGame=false,observer=null;
@@ -179,13 +227,26 @@
         syncGameplayMusic();
     }
 
-    // Native capture runs before React's menu onClick, so the confirmation SE
-    // and silent BGM prime are both guaranteed to begin inside the user's click.
+    // Capture phase: play the requested menu SE and prime BGM inside the same
+    // trusted click, before React changes screens.
     document.addEventListener("click",(e)=>{
         const target=e.target&&typeof e.target.closest==="function"?e.target.closest("button"):null;
         if(!target||gameIsVisible())return;
         MenuClick.play();
         Bgm.prime();
+    },{capture:true});
+
+    // Bubble phase runs after React's discrete button handler. If that click has
+    // entered GAME, promote the already-playing muted element to audible BGM
+    // while still handling the same click event. MutationObserver remains backup.
+    document.addEventListener("click",()=>syncGameplayMusic(),{capture:false});
+
+    // Last-resort browser-policy recovery: if a browser still suspended media,
+    // the first gameplay pointer action retries start() under a fresh gesture.
+    document.addEventListener("pointerdown",()=>{
+        if(!gameIsVisible())return;
+        wasGame=true;
+        if(!Bgm.wanted||!Bgm.audio||Bgm.audio.paused||Bgm.audio.muted)Bgm.start(false);
     },{capture:true});
 
     // Two legacy Settings actions explicitly emitted the old generic "move"
