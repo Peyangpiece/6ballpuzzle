@@ -27,7 +27,7 @@ jobs:
 
       - name: Require completed full regression gate
         run: |
-          node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/deploy-gate.json","utf8"));if(q.status!=="pass"||q.sha!=="ef6e80574d1bb2ee6f5e0a4856b628cf2381617b")process.exit(1)'
+          node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/deploy-gate.json","utf8"));const ks=["physics","airborne","movement100","garbage100","reference1000","convergence3000","overlap","clearVacancy"];if(q.status!=="pass"||ks.some(k=>q[k]!==0))process.exit(1)'
 
       - name: Reconstruct exact uploaded menu sound
         shell: bash
