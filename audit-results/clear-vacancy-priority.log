@@ -1,17 +1,1 @@
-evalmachine.<anonymous>:2601
-function expect(v,m){if(!v)throw new Error(m);}
-                           ^
-
-Error: clear vacancy priority version mismatch
-    at expect (evalmachine.<anonymous>:2601:34)
-    at evalmachine.<anonymous>:2653:1
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/clear-vacancy-priority.js:91:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-
-Node.js v22.23.2
+post-clear no-new-gap vacancy conservation PASS
