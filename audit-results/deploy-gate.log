@@ -1,0 +1,167 @@
+physics regressions PASS
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-garbage-contact.js'
+    at Object.readFileSync (node:fs:440:20)
+    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-airborne-pass-through.js:5:17
+    at Array.map (<anonymous>)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-airborne-pass-through.js:5:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-garbage-contact.js'
+}
+
+Node.js v22.23.2
+movement fidelity 100/100 PASS
+evalmachine.<anonymous>:3453
+function expect(value,message){if(!value)throw new Error(message);}
+                                         ^
+
+Error: pass 2: garbage did not reach contact within the reference envelope
+    at expect (evalmachine.<anonymous>:3453:48)
+    at evalmachine.<anonymous>:3558:2
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-fidelity-100.js:135:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+evalmachine.<anonymous>:3454
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: garbage 2: packet missed the reference contact envelope
+    at expect (evalmachine.<anonymous>:3454:34)
+    at evalmachine.<anonymous>:3546:45
+    at pass (evalmachine.<anonymous>:3455:34)
+    at evalmachine.<anonymous>:3534:23
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-fidelity-1000-production-frame.js:149:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+
+Node.js v22.23.2
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-fidelity-1000-production-frame.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-fidelity-1000.js:18:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2186,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
+reference convergence round 1 1000/1000 PASS
+reference convergence round 2 2000/2000 PASS
+evalmachine.<anonymous>:3455
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: round3 garbage contact 2
+    at expect (evalmachine.<anonymous>:3455:34)
+    at evalmachine.<anonymous>:3513:305
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-convergence-3000-production-frame.js:84:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-convergence-3000-production-frame.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-convergence-3000.js:20:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2203,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
+evalmachine.<anonymous>:3453
+function expect(value,message){if(!value)throw new Error(message);}
+                                         ^
+
+Error: visual balls overlapped: min=0.9998812910864792 worst={"seed":1,"step":3252,"state":"RESOLVING","phase":"GARBAGE","pair":[{"id":52,"x":13,"y":6,"logicalX":13,"logicalY":6,"path":[],"group":0,"garbage":true},{"id":54,"x":14.98815214250424,"y":5.875767095991903,"logicalX":15,"logicalY":6,"path":[{"from":[14,5],"to":[15,6],"kind":"FOLLOW_SUPPORT","motionSeq":610,"pileFlow":false}],"group":0,"garbage":true}]}
+    at expect (evalmachine.<anonymous>:3453:48)
+    at evalmachine.<anonymous>:3558:1
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js:122:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-overlap-regressions.js:19:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2255,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
+post-clear no-new-gap vacancy conservation PASS
