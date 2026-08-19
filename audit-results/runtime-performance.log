@@ -1,18 +1,2 @@
 precise + time-sliced technique CPU PASS {"hex3":100.352,"hex4":329.728,"hex5":991.3344000000001,"pyr5":724.6740480000001,"dropModes":["fast","fast","hard","hard","hard"]}
-evalmachine.<anonymous>:2595
-function expect(v,m){if(!v)throw new Error(m);}
-                           ^
-
-Error: runtime performance adapter was not installed
-    at expect (evalmachine.<anonymous>:2595:34)
-    at evalmachine.<anonymous>:2825:1
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/runtime-performance-guards.js:88:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-
-Node.js v22.23.2
+runtime performance v2 parity guards PASS {"staticContactSkips":1,"colliders":6,"idCache":6,"drawFastPath":true,"rigidShadowCache":true}
