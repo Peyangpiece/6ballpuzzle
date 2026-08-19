@@ -29,6 +29,9 @@ jobs:
       - name: Run precise CPU difficulty regression
         run: node tests/ai-technique-levels.js
 
+      - name: Run runtime performance guards
+        run: node tests/runtime-performance-guards.js
+
       - name: Run upward triangle split-side regression
         run: node tests/up-convex-split-side.js
 
