@@ -13,3 +13,4 @@ garbage render overlap guard PASS
 upward normal triangle contact-side 2+1 split PASS
 runtime static-board performance guards PASS {"staticContactSkips":1,"colliders":6}
 Super Strong learned multi-technique strategy PASS {"immediateTurn":1,"nextTurn":2,"fastFollow":1,"slowFollow":2,"dualSecondary":4,"act":0.1}
+Super Strong technique-first + speed-second PASS {"think":0.12,"act":0.065,"strongThink":0.28,"strongAct":0.1,"primary":"technique"}
