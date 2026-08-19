@@ -1,0 +1,40 @@
+name: Diagnose Parity Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: parity-release-audit
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run parity release regression
+        shell: bash
+        run: |
+          set +e
+          node tests/release-parity-settle.js > parity-release.log 2>&1
+          CODE=$?
+          mkdir -p audit-results
+          STATUS=fail
+          if [ "$CODE" -eq 0 ]; then STATUS=pass; fi
+          printf '{"sha":"%s","status":"%s","releaseParitySettle":%s}\n' "$GITHUB_SHA" "$STATUS" "$CODE" > audit-results/parity-release.json
+          cat parity-release.log
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/parity-release.json
+          git commit -m 'Record parity release audit [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+          test "$CODE" -eq 0
