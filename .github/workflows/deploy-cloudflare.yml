@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   deploy:
@@ -80,6 +80,11 @@ jobs:
       - name: Run continuous no-overlap regression
         run: node tests/run-overlap-regressions.js
 
+      # This file is generated only in CI and is shipped with the static assets.
+      # It gives every production deployment an exact, queryable commit marker.
+      - name: Stamp deploy commit
+        run: printf '%s\n' "$GITHUB_SHA" > public/deploy-sha.txt
+
       - name: Deploy 6ballpuzzle
         uses: cloudflare/wrangler-action@v3
         with:
@@ -87,3 +92,37 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4.123.0"
           command: deploy
+
+      - name: Verify Cloudflare production commit
+        shell: bash
+        env:
+          PRODUCTION_URL: https://6ballpuzzle.hrk-6888.workers.dev
+        run: |
+          set -euo pipefail
+          verified=0
+          observed=""
+          for attempt in $(seq 1 20); do
+            observed="$(curl -fsSL "${PRODUCTION_URL}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
+            if [ "$observed" = "$GITHUB_SHA" ]; then
+              verified=1
+              break
+            fi
+            sleep 3
+          done
+          if [ "$verified" -ne 1 ]; then
+            echo "Cloudflare production SHA mismatch: expected=$GITHUB_SHA observed=$observed" >&2
+            exit 1
+          fi
+          mkdir -p audit-results
+          printf '{"sha":"%s","status":"pass","productionUrl":"%s"}\n' "$GITHUB_SHA" "$PRODUCTION_URL" > audit-results/cloudflare-deploy.json
+          rm -f public/deploy-sha.txt
+
+      - name: Record Cloudflare production verification
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/cloudflare-deploy.json
+          git commit -m 'Record Cloudflare production deploy [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
