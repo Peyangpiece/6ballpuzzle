@@ -80,12 +80,11 @@ jobs:
       - name: Run continuous no-overlap regression
         run: node tests/run-overlap-regressions.js
 
-      # This file is generated only in CI and is shipped with the static assets.
-      # It gives every production deployment an exact, queryable commit marker.
       - name: Stamp deploy commit
         run: printf '%s\n' "$GITHUB_SHA" > public/deploy-sha.txt
 
       - name: Deploy 6ballpuzzle
+        id: cloudflare_deploy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -94,11 +93,14 @@ jobs:
           command: deploy
 
       - name: Verify Cloudflare production commit
+        id: verify_production
+        if: always()
         shell: bash
         env:
           PRODUCTION_URL: https://6ballpuzzle.hrk-6888.workers.dev
         run: |
-          set -euo pipefail
+          set +e
+          mkdir -p audit-results
           verified=0
           observed=""
           for attempt in $(seq 1 20); do
@@ -109,20 +111,32 @@ jobs:
             fi
             sleep 3
           done
-          if [ "$verified" -ne 1 ]; then
-            echo "Cloudflare production SHA mismatch: expected=$GITHUB_SHA observed=$observed" >&2
-            exit 1
+          if [ "$verified" -eq 1 ]; then
+            STATUS=pass
+          else
+            STATUS=fail
           fi
-          mkdir -p audit-results
-          printf '{"sha":"%s","status":"pass","productionUrl":"%s"}\n' "$GITHUB_SHA" "$PRODUCTION_URL" > audit-results/cloudflare-deploy.json
+          printf '{"sha":"%s","status":"%s","productionUrl":"%s","observedSha":"%s"}\n' "$GITHUB_SHA" "$STATUS" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-deploy.json
           rm -f public/deploy-sha.txt
+          test "$STATUS" = pass
 
       - name: Record Cloudflare production verification
+        if: always()
         shell: bash
         run: |
+          if [ ! -f audit-results/cloudflare-deploy.json ]; then
+            mkdir -p audit-results
+            printf '{"sha":"%s","status":"fail","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-deploy.json
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add audit-results/cloudflare-deploy.json
           git commit -m 'Record Cloudflare production deploy [skip ci]' || true
           git pull --rebase origin main
           git push origin HEAD:main
+
+      - name: Require verified production deployment
+        if: always()
+        shell: bash
+        run: |
+          node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/cloudflare-deploy.json","utf8"));if(q.status!=="pass")process.exit(1)'
