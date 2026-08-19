@@ -1,3 +1,3 @@
-Production deploy requested: 2026-08-20T04:03:00+09:00
-Target feature commit: d77744b5b46cd1d25f09f618f1ed784a841765ce
-Reason: deploy 6ball branding, gameplay ball artwork menu logo, and exact Cyber44 gameplay BGM to Cloudflare production.
+Production deploy requested: 2026-08-20T04:45:00+09:00
+Target feature commit: 635aef3d66da81f0ebc56f6f6f3154ad56e00b95
+Reason: deploy exact uploaded menu confirmation sound on all menu buttons and trusted-user-action Cyber44 gameplay BGM priming fix to Cloudflare production.
