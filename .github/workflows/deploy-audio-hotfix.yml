@@ -33,16 +33,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat \
-            public/assets/menu-confirm-42.b64.00 \
-            public/assets/menu-confirm-42.b64.01 \
-            public/assets/menu-confirm-42.b64.02 \
-            public/assets/menu-confirm-42.b64.03 \
-            public/assets/menu-confirm-42.b64.tail \
-            public/assets/menu-confirm-42.b64.tail \
-            public/assets/menu-confirm-42.b64.tail \
-            public/assets/menu-confirm-42.b64.tail \
-            | base64 --decode > public/assets/menu-confirm-42.mp3
+          for part in 00 01 02 tail; do
+            tr -d '\r\n\t ' < "public/assets/menu-confirm-42.b64.${part}" > "/tmp/menu-confirm-42.${part}.b64"
+          done
+          {
+            cat /tmp/menu-confirm-42.00.b64
+            cat /tmp/menu-confirm-42.01.b64
+            head -c 5376 /tmp/menu-confirm-42.02.b64
+            for _ in 1 2 3 4 5; do head -c 5376 /tmp/menu-confirm-42.tail.b64; done
+          } | base64 --decode > public/assets/menu-confirm-42.mp3
           echo '97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e  public/assets/menu-confirm-42.mp3' | sha256sum -c -
           test "$(stat -c%s public/assets/menu-confirm-42.mp3)" -eq 32256
 
