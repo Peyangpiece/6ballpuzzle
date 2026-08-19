@@ -29,6 +29,9 @@ jobs:
       - name: Run precise CPU difficulty regression
         run: node tests/ai-technique-levels.js
 
+      - name: Run Super Strong earliest-technique regression
+        run: node tests/ai-fastest-technique.js
+
       - name: Run runtime performance guards
         run: node tests/runtime-performance-guards.js
 
