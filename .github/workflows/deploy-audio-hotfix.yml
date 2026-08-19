@@ -1,0 +1,111 @@
+name: Deploy Audio Hotfix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-audio-hotfix.yml'
+
+concurrency:
+  group: cloudflare-audio-hotfix
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require completed full regression gate
+        run: |
+          node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/deploy-gate.json","utf8"));if(q.status!=="pass"||q.sha!=="ef6e80574d1bb2ee6f5e0a4856b628cf2381617b")process.exit(1)'
+
+      - name: Reconstruct exact uploaded menu sound
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            public/assets/menu-confirm-42.b64.00 \
+            public/assets/menu-confirm-42.b64.01 \
+            public/assets/menu-confirm-42.b64.02 \
+            public/assets/menu-confirm-42.b64.03 \
+            public/assets/menu-confirm-42.b64.tail \
+            public/assets/menu-confirm-42.b64.tail \
+            public/assets/menu-confirm-42.b64.tail \
+            public/assets/menu-confirm-42.b64.tail \
+            | base64 --decode > public/assets/menu-confirm-42.mp3
+          echo '97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e  public/assets/menu-confirm-42.mp3' | sha256sum -c -
+          test "$(stat -c%s public/assets/menu-confirm-42.mp3)" -eq 32256
+
+      - name: Run audio UI regression
+        run: node tests/brand-bgm.js
+
+      - name: Stamp deploy commit
+        run: printf '%s\n' "$GITHUB_SHA" > public/deploy-sha.txt
+
+      - name: Deploy verified audio hotfix
+        id: cloudflare_deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.123.0'
+          command: deploy
+
+      - name: Verify Cloudflare production commit
+        id: verify_production
+        if: always()
+        shell: bash
+        env:
+          WRANGLER_DEPLOYMENT_URL: ${{ steps.cloudflare_deploy.outputs.deployment-url }}
+          DEPLOY_OUTCOME: ${{ steps.cloudflare_deploy.outcome }}
+          FALLBACK_PRODUCTION_URL: https://6ballpuzzle.hrk-6888.workers.dev
+        run: |
+          set +e
+          mkdir -p audit-results
+          PRODUCTION_URL="${WRANGLER_DEPLOYMENT_URL:-$FALLBACK_PRODUCTION_URL}"
+          verified=0
+          observed=""
+          if [ "$DEPLOY_OUTCOME" = "success" ]; then
+            for attempt in $(seq 1 20); do
+              observed="$(curl -fsSL "${PRODUCTION_URL%/}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
+              if [ "$observed" = "$GITHUB_SHA" ]; then
+                verified=1
+                break
+              fi
+              sleep 3
+            done
+          fi
+          if [ "$verified" -eq 1 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","deployOutcome":"%s","productionUrl":"%s","observedSha":"%s","featureSha":"ef6e80574d1bb2ee6f5e0a4856b628cf2381617b"}\n' "$GITHUB_SHA" "$STATUS" "$DEPLOY_OUTCOME" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-audio-hotfix.json
+          rm -f public/deploy-sha.txt
+          test "$STATUS" = pass
+
+      - name: Record audio hotfix production verification
+        if: always()
+        shell: bash
+        env:
+          DEPLOY_OUTCOME: ${{ steps.cloudflare_deploy.outcome }}
+        run: |
+          if [ ! -f audit-results/cloudflare-audio-hotfix.json ]; then
+            mkdir -p audit-results
+            printf '{"sha":"%s","status":"fail","deployOutcome":"%s","productionUrl":"%s","observedSha":"","featureSha":"ef6e80574d1bb2ee6f5e0a4856b628cf2381617b"}\n' "$GITHUB_SHA" "$DEPLOY_OUTCOME" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-audio-hotfix.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/cloudflare-audio-hotfix.json
+          git commit -m 'Record Cloudflare audio hotfix deploy [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Require verified audio hotfix deployment
+        if: always()
+        run: node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/cloudflare-audio-hotfix.json","utf8"));if(q.status!=="pass")process.exit(1)'
