@@ -1,0 +1,41 @@
+name: Diagnose absolute wall zero-gap
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run absolute wall zero-gap regression
+        id: wall_zero_gap
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          node tests/wall-zero-gap.js > audit-results/wall-zero-gap.log 2>&1
+          code=$?
+          if [ "$code" -eq 0 ]; then status=pass; else status=fail; fi
+          printf '{"sha":"%s","status":"%s","wallZeroGap":%s}\n' "$GITHUB_SHA" "$status" "$code" > audit-results/wall-zero-gap.json
+          cat audit-results/wall-zero-gap.log
+          exit "$code"
+      - name: Record absolute wall zero-gap audit
+        if: always()
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/wall-zero-gap.json audit-results/wall-zero-gap.log
+          git commit -m 'Record absolute wall zero-gap audit [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
