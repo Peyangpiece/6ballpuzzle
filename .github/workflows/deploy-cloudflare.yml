@@ -56,6 +56,9 @@ jobs:
       - name: Run landscape startup regression
         run: node tests/landscape-startup.js
 
+      - name: Run immersive menu UI regression
+        run: node tests/menu-ui-regression.js
+
       - name: Run every-cleared-ball disappearance FX regression
         run: node tests/clear-all-ball-fx.js
 
