@@ -59,10 +59,12 @@ jobs:
           N=$?
           node tests/ai-superstrong-speed-priority.js >> audit-results/garbage-contact.log 2>&1
           O=$?
+          node tests/ai-grandmaster.js >> audit-results/garbage-contact.log 2>&1
+          P=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ] && [ "$K" -eq 0 ] && [ "$L" -eq 0 ] && [ "$M" -eq 0 ] && [ "$N" -eq 0 ] && [ "$O" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"wallGapRegression":%s,"gameoverGarbageFade":%s,"garbageRenderOverlap":%s,"upConvexSplitSide":%s,"runtimePerformance":%s,"aiFastestTechnique":%s,"aiSuperStrongSpeedPriority":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" "$K" "$L" "$M" "$N" "$O" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ] && [ "$K" -eq 0 ] && [ "$L" -eq 0 ] && [ "$M" -eq 0 ] && [ "$N" -eq 0 ] && [ "$O" -eq 0 ] && [ "$P" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"wallGapRegression":%s,"gameoverGarbageFade":%s,"garbageRenderOverlap":%s,"upConvexSplitSide":%s,"runtimePerformance":%s,"aiFastestTechnique":%s,"aiSuperStrongSpeedPriority":%s,"aiGrandmaster":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" "$K" "$L" "$M" "$N" "$O" "$P" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
