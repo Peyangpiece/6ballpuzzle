@@ -1,17 +1,20 @@
 /* Post-clear vacancy priority.
  *
- * A clear can expose a symmetric fork: a settled pile ball is directly
- * supported, both lower diagonals are open, and one of those diagonals is the
- * cell that was actually cleared (or was vacated by an earlier collapse move).
- * Normal momentum and the wall-packing tie-break are useful during ordinary
- * landing, but in this clear-support-loss context they can choose the OTHER
- * open diagonal and recreate a hole in the pile.
+ * A clear can expose a symmetric fork: a settled pile ball has two legal lower
+ * choices and one of them is the cell that was actually cleared (or was vacated
+ * by an earlier collapse move). Normal momentum and wall/floor tie-breaks are
+ * useful during ordinary landing, but in this clear-support-loss context they
+ * can choose the OTHER open diagonal and recreate a hole in the pile.
  *
  * Keep the normal motion solver everywhere else. During clear_support_loss
  * only, remember the original cleared cells plus every subsequent motion origin.
  * If a directly supported ball has exactly one open lower diagonal in that
- * vacancy history, choose that canonical unit-radius roll. No teleport, speed,
- * collision, gravity, garbage cadence, or ordinary landing rule is changed.
+ * vacancy history, choose that canonical unit-radius roll. The same rule now
+ * covers the row immediately above the floor: there is no y+2 support cell on
+ * that row, so choose the historical vacancy before the ordinary FLOOR_DROP
+ * momentum/packing tie-break. This is still the canonical one-step floor drop;
+ * no teleport, speed, collision, gravity, garbage cadence, or ordinary landing
+ * rule is changed.
  */
 (function installClearVacancyPriority(){
     if(typeof window==="undefined"||window.__hexClearVacancyPriority)return;
@@ -38,8 +41,6 @@
     function vacancyRoll(board,x,y,ball,ignore){
         const vacancies=vacancySet(board);
         if(!vacancies||!ball||ball.garbageBubbleHold||touchesFloorRow(y))return null;
-        const supportY=y+2,support=activeSupport(board,x,supportY,ignore);
-        if(!support)return null;
 
         const left=[x-1,y+1],right=[x+1,y+1];
         if(!hexPhysEmpty(board,left[0],left[1],ignore)||!hexPhysEmpty(board,right[0],right[1],ignore))return null;
@@ -50,6 +51,24 @@
         if(candidates.length!==1)return null;
 
         const q=candidates[0];
+
+        // The row directly above the physical floor has no valid (x,y+2)
+        // support cell. The core solver already treats both open floor diagonals
+        // as a legal downward FLOOR_DROP. In a clear collapse, choose the one
+        // that is the actual cleared/vacated cell before residual momentum or
+        // floor-packing heuristics can send the ball to the opposite side.
+        if(y+1===ROWS-1){
+            return{
+                x,y,tx:q.to[0],ty:q.to[1],ball,
+                kind:"FLOOR_DROP",pivot:null,topPivot:null,followSupportIds:[],
+                clearVacancyPriority:true,
+                clearFloorVacancyPriority:true,
+                clearVacancyTarget:key(q.to[0],q.to[1])
+            };
+        }
+
+        const supportY=y+2,support=activeSupport(board,x,supportY,ignore);
+        if(!support)return null;
         return{
             x,y,tx:q.to[0],ty:q.to[1],ball,
             kind:q.dir<0?"ROLL_LEFT":"ROLL_RIGHT",
@@ -89,6 +108,7 @@
                 const seg=path[i];
                 if(seg?.to&&seg.to[0]===p.tx&&seg.to[1]===p.ty){
                     seg.clearVacancyPriority=true;
+                    seg.clearFloorVacancyPriority=!!p.clearFloorVacancyPriority;
                     seg.clearVacancyTarget=p.clearVacancyTarget||key(p.tx,p.ty);
                     break;
                 }
@@ -120,8 +140,9 @@
         }
     };
 
-    window.__hexClearVacancyPriorityVersion="clear-vacancy-v1";
+    window.__hexClearVacancyPriorityVersion="clear-vacancy-v2";
     window.__hexClearVacancyHistoryTracksMotionOrigins=true;
     window.__hexClearVacancyOverridesResidualMomentum=true;
     window.__hexClearVacancyOverridesWallTieBreak=true;
+    window.__hexClearFloorVacancyPriority=true;
 })();
