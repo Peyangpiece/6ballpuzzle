@@ -29,6 +29,9 @@ jobs:
       - name: Run upward triangle split-side regression
         run: node tests/up-convex-split-side.js
 
+      - name: Run parity direct-contact release regression
+        run: node tests/release-parity-settle.js
+
       - name: Run wall-gap regression
         run: node tests/wall-gap-regression.js
 
