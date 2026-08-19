@@ -1,0 +1,54 @@
+name: Diagnose Runtime Performance
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: runtime-performance-audit
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run performance-preserving regressions
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          : > audit-results/runtime-performance.log
+
+          START=$(date +%s%3N)
+          node tests/ai-technique-levels.js >> audit-results/runtime-performance.log 2>&1
+          A=$?
+          MID=$(date +%s%3N)
+          node tests/runtime-performance-guards.js >> audit-results/runtime-performance.log 2>&1
+          B=$?
+          END=$(date +%s%3N)
+
+          AI_MS=$((MID-START))
+          RUNTIME_MS=$((END-MID))
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","aiTechnique":%s,"runtimePerformance":%s,"aiTestMs":%s,"runtimeTestMs":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$AI_MS" "$RUNTIME_MS" > audit-results/runtime-performance.json
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/runtime-performance.log audit-results/runtime-performance.json
+          git commit -m 'Record runtime performance audit [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+          cat audit-results/runtime-performance.log
+          cat audit-results/runtime-performance.json
+          test "$STATUS" = pass
