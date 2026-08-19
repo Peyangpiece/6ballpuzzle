@@ -1,17 +1,1 @@
-evalmachine.<anonymous>:2470
-function expect(v,m){if(!v)throw new Error(m);}
-                           ^
-
-Error: interior left vacancy: vacancy-priority branch was not used
-    at expect (evalmachine.<anonymous>:2470:34)
-    at runFork (evalmachine.<anonymous>:2499:3)
-    at evalmachine.<anonymous>:2510:1
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/clear-vacancy-priority.js:65:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-
-Node.js v22.23.2
+post-clear cleared-cell vacancy priority PASS
