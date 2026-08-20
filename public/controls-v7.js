@@ -252,6 +252,7 @@
         const dist=Math.hypot(rec.lastX-rec.startX,rec.lastY-rec.startY);
         if(!cancelled&&!rec.dragActive&&rec.tapEligible&&elapsed<=TAP_MAX_MS&&dist<=TAP_MOVE_TOL&&validGame(g)){
             rotate(g,rec.half>0?1:-1);
+            try{window.__sixBallPlayRotateDirect?.(1);}catch(_){}
         }
         if(pointers.size===0)stopFast(g);
     };
