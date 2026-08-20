@@ -14,7 +14,7 @@
     try{a.load();}catch(_){}
     return a;
   });
-  let cursor=0,primed=false,priming=false;
+  let cursor=0,primed=false,priming=false,lastDirectAt=-1e9;
 
   function gameIsVisible(){
     const root=document.getElementById("root");
@@ -60,11 +60,12 @@
     }
   }
 
-  function playRotate(vol=1){
+  function playRotate(vol=1,direct=false){
     const actual=Math.max(0,Math.min(1,liveSfxVolume()*Math.max(0,Number(vol)||0)));
     window.__sixBallRotateSampleLastVolume=actual;
     window.__sixBallRotateSamplePlayCount=(window.__sixBallRotateSamplePlayCount||0)+1;
-    if(actual<=0)return;
+    if(direct)lastDirectAt=performance.now();
+    if(actual<=0)return false;
     const a=pool[cursor++%pool.length];
     try{a.pause();a.currentTime=0;}catch(_){}
     a.muted=false;
@@ -72,13 +73,24 @@
     try{
       const p=a.play();
       if(p&&typeof p.catch==="function")p.catch(err=>{window.__sixBallRotateSampleLastError=err&&err.name?String(err.name):"play-rejected";});
-    }catch(err){window.__sixBallRotateSampleLastError=err&&err.name?String(err.name):"play-error";}
+      return true;
+    }catch(err){
+      window.__sixBallRotateSampleLastError=err&&err.name?String(err.name):"play-error";
+      return false;
+    }
   }
+
+  window.__sixBallPlayRotateDirect=function(vol=1){
+    return playRotate(vol,true);
+  };
 
   const basePlay=Sfx.play.bind(Sfx);
   Sfx.play=function(ev,vol){
     if(ev&&ev.t==="rotate"){
-      playRotate(vol);
+      // A human touch rotation is played synchronously inside pointerup.
+      // Suppress the queued duplicate arriving on the next animation frame.
+      if(performance.now()-lastDirectAt<180)return;
+      playRotate(vol,false);
       if((Number(vol)||0)>.9&&typeof this.vib==="function")this.vib(5);
       return;
     }
@@ -93,5 +105,5 @@
   window.__sixBallPrimeRotateSample=prime;
   window.__sixBallRotateSampleSource=SRC;
   window.__sixBallRotateSampleSha256="3aad062888f14b9bb00b8c255fca5e3597b6f8e7be0cf51a1b3fff3a4681d1be";
-  window.__sixBallRotateSampleVersion="normal-rotate-user-mp3-v3";
+  window.__sixBallRotateSampleVersion="normal-rotate-direct-gesture-v4";
 })();
