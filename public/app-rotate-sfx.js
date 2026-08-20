@@ -4,7 +4,7 @@
   window.__sixBallRotateSampleInstalled=true;
   if(typeof Sfx==="undefined"||typeof Sfx.play!=="function")return;
 
-  const SRC="/assets/normal-ball-rotate.mp3?v=3aad062888f14b9b";
+  const SRC="/assets/normal-ball-rotate.mp3?v=de0ea647a02cb8b8";
   const pool=Array.from({length:6},()=>{
     const a=new Audio();
     a.preload="auto";
@@ -87,8 +87,6 @@
   const basePlay=Sfx.play.bind(Sfx);
   Sfx.play=function(ev,vol){
     if(ev&&ev.t==="rotate"){
-      // A human touch rotation is played synchronously inside pointerup.
-      // Suppress the queued duplicate arriving on the next animation frame.
       if(performance.now()-lastDirectAt<180)return;
       playRotate(vol,false);
       if((Number(vol)||0)>.9&&typeof this.vib==="function")this.vib(5);
@@ -104,6 +102,6 @@
 
   window.__sixBallPrimeRotateSample=prime;
   window.__sixBallRotateSampleSource=SRC;
-  window.__sixBallRotateSampleSha256="3aad062888f14b9bb00b8c255fca5e3597b6f8e7be0cf51a1b3fff3a4681d1be";
-  window.__sixBallRotateSampleVersion="normal-rotate-direct-gesture-v4";
+  window.__sixBallRotateSampleSha256="de0ea647a02cb8b87c1cf55ed55e0d30643aefe10ad3be5e2a7480d11dc1d97e";
+  window.__sixBallRotateSampleVersion="normal-rotate-latest-v5";
 })();
