@@ -27,10 +27,7 @@
           if(typeof bgm.effectiveVolume==="function")effective=bgm.effectiveVolume();
         }catch(_){}
         effective=Math.max(0,Math.min(1,Number(effective)||0));
-        try{
-          // Do not change prime/play mute state; only update the real level.
-          bgm.audio.volume=effective;
-        }catch(_){}
+        try{bgm.audio.volume=effective;}catch(_){}
         window.__sixBallSliderBgmAudioVolume=effective;
       }
     }
@@ -52,33 +49,13 @@
           Sfx.enabled=p>0;
         }
       }catch(_){}
-
-      // Ensure the current graph reflects the slider immediately even if a
-      // previous Safari recovery recreated the AudioContext/master node.
-      if(Sfx.master&&Sfx.ctx&&Number.isFinite(Sfx._menuVolume)){
-        try{
-          const param=Sfx.master.gain;
-          const current=Number(param.value)||0;
-          const oldVol=Math.max(0,Math.min(1,Number(window.__sixBallSliderPrevSfxNormalized)||1));
-          // Preserve whichever SFX max-gain the current local build uses
-          // (.26 stock or a louder locally tuned value) instead of hardcoding it.
-          let maxGain=Number(window.__sixBallSfxSliderMaxGain);
-          if(!Number.isFinite(maxGain)||maxGain<=0){
-            if(oldVol>0&&current>0)maxGain=current/oldVol;
-            if(!Number.isFinite(maxGain)||maxGain<=0)maxGain=.26;
-            window.__sixBallSfxSliderMaxGain=maxGain;
-          }
-          const target=maxGain*n;
-          const t=Sfx.ctx.currentTime;
-          try{param.cancelScheduledValues(t);}catch(_){}
-          try{param.setValueAtTime(target,t);}catch(_){param.value=target;}
-          window.__sixBallSliderSfxMasterGain=target;
-        }catch(_){}
+      if(Sfx.master&&Sfx.ctx){
+        try{window.__sixBallSliderSfxMasterGain=Number(Sfx.master.gain.value)||0;}catch(_){}
       }
     }
 
-    // The menu confirmation MP3 is HTMLAudio, not WebAudio. Keep it under the
-    // same SFX slider so 0% really means all effects are silent.
+    // Menu confirmation uses HTMLAudio rather than WebAudio, so keep it tied
+    // to the same SFX slider as gameplay effects.
     if(window.MenuClick&&Array.isArray(window.MenuClick.pool)){
       for(const a of window.MenuClick.pool){
         if(!a)continue;
@@ -86,7 +63,6 @@
       }
     }
 
-    window.__sixBallSliderPrevSfxNormalized=n;
     window.__sixBallSliderSfxPercent=p;
     window.__sixBallSliderSfxNormalized=n;
     return p;
@@ -121,5 +97,5 @@
     };
   }
 
-  window.__sixBallAudioSliderVersion="live-audio-sliders-v1";
+  window.__sixBallAudioSliderVersion="live-audio-sliders-v2";
 })();
