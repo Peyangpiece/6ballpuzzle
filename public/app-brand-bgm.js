@@ -7,9 +7,6 @@
     window.__sixBallBrandVersion="6ball-brand-v2";
     window.__sixBallAppName="6ball";
 
-    // Replace the old visible product name at React element creation time.
-    // Internal HEXDROP-prefixed storage/runtime identifiers stay untouched so
-    // existing profiles/settings remain backward compatible.
     if(typeof React!=="undefined"&&React.createElement&&!React.__sixBallNameBridge){
         const baseCreateElement=React.createElement.bind(React);
         React.__sixBallNameBridge=true;
@@ -19,17 +16,12 @@
         };
     }
 
-    // Use the exact same PNG ball assets as gameplay. No CSS-drawn substitute
-    // is used in the menu mark; the sixth ball intentionally repeats red.
     if(typeof HexLogoMark==="function"&&typeof BALL_SRC!=="undefined"){
         HexLogoMark=function({size=112}){
             const nodes=[],order=[0,1,2,3,4,0],r=size*.31,d=size*.30,c=size/2;
             for(let i=0;i<6;i++){
                 const a=-Math.PI/2+i*Math.PI/3,ci=order[i];
-                nodes.push(React.createElement("img",{
-                    key:i,src:BALL_SRC[ci],alt:"",draggable:false,"aria-hidden":"true",
-                    style:{position:"absolute",left:c+Math.cos(a)*r-d/2,top:c+Math.sin(a)*r-d/2,width:d,height:d,objectFit:"contain",pointerEvents:"none",userSelect:"none",filter:"drop-shadow(0 0 8px rgba(255,255,255,.10))"}
-                }));
+                nodes.push(React.createElement("img",{key:i,src:BALL_SRC[ci],alt:"",draggable:false,"aria-hidden":"true",style:{position:"absolute",left:c+Math.cos(a)*r-d/2,top:c+Math.sin(a)*r-d/2,width:d,height:d,objectFit:"contain",pointerEvents:"none",userSelect:"none",filter:"drop-shadow(0 0 8px rgba(255,255,255,.10))"}}));
             }
             return React.createElement("div",{style:{position:"relative",width:size,height:size,filter:"drop-shadow(0 0 22px rgba(47,227,245,.18))"}},nodes);
         };
@@ -37,8 +29,6 @@
         window.__sixBallMenuBallSources=BALL_SRC.slice();
     }
 
-    // Keep the existing shell/world-view, but update its default brand line and
-    // expose the required music credit inside Settings.
     if(typeof HexMenuShell==="function"&&!window.__sixBallShellWrapped){
         const baseShell=HexMenuShell;
         window.__sixBallShellWrapped=true;
@@ -46,35 +36,38 @@
             const p={...(props||{})};
             if(!p.eyebrow)p.eyebrow="6BALL // COMMAND";
             if(p.title==="設定"){
-                const credit=React.createElement("div",{
-                    key:"sixball-bgm-credit",
-                    className:"mt-3 text-center text-[9px] font-semibold text-white/30 leading-relaxed"
-                },"BGM：魔王魂 / 森田交一『サイバー44』");
+                const credit=React.createElement("div",{key:"sixball-bgm-credit",className:"mt-3 text-center text-[9px] font-semibold text-white/30 leading-relaxed"},"BGM：魔王魂 / 森田交一『サイバー44』");
                 p.children=React.createElement(React.Fragment,null,p.children,credit);
             }
             return baseShell(p);
         };
     }
 
-    // Every menu button uses the exact uploaded confirmation sound.
-    const MENU_CONFIRM_SRC="assets/menu-confirm-42.mp3";
+    // Exact uploaded tap sound. Use a root-absolute, cache-busted URL so an older
+    // missing/HTML response can never remain cached as the menu sound asset.
     const MENU_CONFIRM_SHA256="97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e";
+    const MENU_CONFIRM_SRC="/assets/menu-confirm-42.mp3?v="+MENU_CONFIRM_SHA256.slice(0,16);
     const MenuClick={
         pool:null,
         cursor:0,
+        lastError:"",
         init(){
             if(this.pool||typeof Audio==="undefined")return;
             this.pool=Array.from({length:4},()=>{
-                const a=new Audio(MENU_CONFIRM_SRC);
+                const a=new Audio();
                 a.preload="auto";
+                a.playsInline=true;
+                a.setAttribute("playsinline","");
+                a.src=MENU_CONFIRM_SRC;
+                try{a.load();}catch(_){}
                 return a;
             });
         },
         volume(){
             if(typeof Sfx!=="undefined"&&Number.isFinite(Sfx._menuVolume))return Math.max(0,Math.min(1,Sfx._menuVolume));
             try{
-                const raw=Number(localStorage.getItem("hexdrop_sfx_volume"));
-                if(Number.isFinite(raw))return Math.max(0,Math.min(1,raw/100));
+                const stored=localStorage.getItem("hexdrop_sfx_volume");
+                if(stored!==null){const raw=Number(stored);if(Number.isFinite(raw))return Math.max(0,Math.min(1,raw/100));}
             }catch(_){}
             return .85;
         },
@@ -83,120 +76,33 @@
             if(!this.pool||!this.pool.length)return;
             const a=this.pool[this.cursor++%this.pool.length];
             try{a.pause();a.currentTime=0;}catch(_){}
+            a.muted=false;
             a.volume=this.volume();
-            try{const p=a.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}catch(_){}
+            try{
+                const p=a.play();
+                if(p&&typeof p.catch==="function")p.catch((err)=>{this.lastError=err&&err.name?String(err.name):"play-rejected";window.__sixBallMenuClickLastError=this.lastError;});
+            }catch(err){this.lastError=err&&err.name?String(err.name):"play-error";window.__sixBallMenuClickLastError=this.lastError;}
         }
     };
     window.MenuClick=MenuClick;
     window.__sixBallMenuClickSource=MENU_CONFIRM_SRC;
     window.__sixBallMenuClickUploadedSha256=MENU_CONFIRM_SHA256;
     window.__sixBallMenuClickAllButtons=true;
+    window.__sixBallMenuClickPointerDown=true;
+    window.__sixBallMenuClickVersion="menu42-v3-pointerdown";
 
-    // Cyber44 gameplay BGM. The selected source stays unchanged; the playback
-    // bridge below fixes Safari/iOS/desktop autoplay timing without touching game logic.
     const CYBER44_SRC="https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3";
     const UPLOADED_SHA256="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
     const Bgm={
-        audio:null,
-        wanted:false,
-        primed:false,
-        primePromise:null,
-        lastError:"",
-        volume:Number.isFinite(window.__hexBgmVolume)?window.__hexBgmVolume:.70,
-        init(){
-            if(this.audio)return this.audio;
-            if(typeof Audio==="undefined")return null;
-            const a=new Audio();
-            a.preload="auto";
-            a.loop=true;
-            a.playsInline=true;
-            a.setAttribute("playsinline","");
-            a.volume=0;
-            a.muted=true;
-            a.src=CYBER44_SRC;
-            a.addEventListener("error",()=>{
-                const err=a.error;
-                this.lastError=err?`media-${err.code}`:"media-error";
-                window.__sixBallGameplayBgmLastError=this.lastError;
-            });
-            this.audio=a;
-            return a;
-        },
-        setVolume(v){
-            this.volume=Math.max(0,Math.min(1,Number(v)||0));
-            if(this.audio&&this.wanted&&!this.audio.muted)this.audio.volume=this.volume;
-        },
-        markPlayError(err){
-            this.lastError=err&&err.name?String(err.name):"play-rejected";
-            window.__sixBallGameplayBgmLastError=this.lastError;
-        },
-        // Prime the SAME audio element while the menu click is still a trusted
-        // user activation. Muted playback is explicitly used so Safari/iOS does
-        // not reject the priming request merely because volume is numerically 0.
-        prime(){
-            const a=this.init();
-            if(!a)return null;
-            if(!a.paused){this.primed=true;return Promise.resolve(true);}
-            if(this.primePromise)return this.primePromise;
-            a.muted=true;
-            a.volume=0;
-            try{
-                const p=a.play();
-                if(p&&typeof p.then==="function"){
-                    this.primePromise=p.then(()=>{
-                        this.primed=true;
-                        this.lastError="";
-                        window.__sixBallGameplayBgmLastError="";
-                        return true;
-                    }).catch((err)=>{
-                        this.primed=false;
-                        this.primePromise=null;
-                        this.markPlayError(err);
-                        return false;
-                    });
-                    return this.primePromise;
-                }
-                this.primed=!a.paused;
-                return Promise.resolve(this.primed);
-            }catch(err){
-                this.primed=false;
-                this.primePromise=null;
-                this.markPlayError(err);
-                return Promise.resolve(false);
-            }
-        },
-        activate(){
-            const a=this.init();if(!a||!this.wanted)return;
-            a.muted=false;
-            a.volume=this.volume;
-            if(!a.paused)return;
-            try{
-                const p=a.play();
-                if(p&&typeof p.catch==="function")p.catch((err)=>this.markPlayError(err));
-            }catch(err){this.markPlayError(err);}
-        },
-        start(restart=true){
-            const a=this.init();if(!a)return;
-            this.wanted=true;
-            if(restart){try{a.currentTime=0;}catch(_){}}
-            // If the menu click has already started muted playback, unmute it
-            // immediately. Otherwise wait for that exact priming request.
-            if(!a.paused){this.primed=true;this.activate();return;}
-            const ready=this.prime();
-            if(ready&&typeof ready.then==="function")ready.then((ok)=>{if(ok&&this.wanted)this.activate();});
-            else this.activate();
-        },
+        audio:null,wanted:false,primed:false,primePromise:null,lastError:"",volume:Number.isFinite(window.__hexBgmVolume)?window.__hexBgmVolume:.70,
+        init(){if(this.audio)return this.audio;if(typeof Audio==="undefined")return null;const a=new Audio();a.preload="auto";a.loop=true;a.playsInline=true;a.setAttribute("playsinline","");a.volume=0;a.muted=true;a.src=CYBER44_SRC;a.addEventListener("error",()=>{const err=a.error;this.lastError=err?`media-${err.code}`:"media-error";window.__sixBallGameplayBgmLastError=this.lastError;});this.audio=a;return a;},
+        setVolume(v){this.volume=Math.max(0,Math.min(1,Number(v)||0));if(this.audio&&this.wanted&&!this.audio.muted)this.audio.volume=this.volume;},
+        markPlayError(err){this.lastError=err&&err.name?String(err.name):"play-rejected";window.__sixBallGameplayBgmLastError=this.lastError;},
+        prime(){const a=this.init();if(!a)return null;if(!a.paused){this.primed=true;return Promise.resolve(true);}if(this.primePromise)return this.primePromise;a.muted=true;a.volume=0;try{const p=a.play();if(p&&typeof p.then==="function"){this.primePromise=p.then(()=>{this.primed=true;this.lastError="";window.__sixBallGameplayBgmLastError="";return true;}).catch((err)=>{this.primed=false;this.primePromise=null;this.markPlayError(err);return false;});return this.primePromise;}this.primed=!a.paused;return Promise.resolve(this.primed);}catch(err){this.primed=false;this.primePromise=null;this.markPlayError(err);return Promise.resolve(false);}},
+        activate(){const a=this.init();if(!a||!this.wanted)return;a.muted=false;a.volume=this.volume;if(!a.paused)return;try{const p=a.play();if(p&&typeof p.catch==="function")p.catch((err)=>this.markPlayError(err));}catch(err){this.markPlayError(err);}},
+        start(restart=true){const a=this.init();if(!a)return;this.wanted=true;if(restart){try{a.currentTime=0;}catch(_){}}if(!a.paused){this.primed=true;this.activate();return;}const ready=this.prime();if(ready&&typeof ready.then==="function")ready.then((ok)=>{if(ok&&this.wanted)this.activate();});else this.activate();},
         pause(){if(this.audio)this.audio.pause();},
-        stop(){
-            this.wanted=false;
-            this.primed=false;
-            this.primePromise=null;
-            if(!this.audio)return;
-            this.audio.pause();
-            this.audio.muted=true;
-            this.audio.volume=0;
-            try{this.audio.currentTime=0;}catch(_){}
-        }
+        stop(){this.wanted=false;this.primed=false;this.primePromise=null;if(!this.audio)return;this.audio.pause();this.audio.muted=true;this.audio.volume=0;try{this.audio.currentTime=0;}catch(_){}}
     };
     window.Bgm=Bgm;
     window.__sixBallGameplayBgmSource=CYBER44_SRC;
@@ -207,64 +113,31 @@
     window.__sixBallGameplayBgmGestureRetry=true;
     window.__sixBallGameplayBgmVersion="cyber44-v3-muted-prime";
 
-    // The game screen uniquely owns the top-right resign button.
     let wasGame=false,observer=null;
-    function gameIsVisible(){
-        const root=document.getElementById("root");if(!root)return false;
-        for(const b of root.querySelectorAll("button"))if((b.textContent||"").trim()==="✕")return true;
-        return false;
-    }
-    function syncGameplayMusic(){
-        const game=gameIsVisible();
-        if(game&&!wasGame)Bgm.start(true);
-        else if(!game&&wasGame)Bgm.stop();
-        wasGame=game;
-    }
-    function observeRoot(){
-        const root=document.getElementById("root");if(!root||observer)return;
-        observer=new MutationObserver(syncGameplayMusic);
-        observer.observe(root,{childList:true,subtree:true});
-        syncGameplayMusic();
-    }
+    function gameIsVisible(){const root=document.getElementById("root");if(!root)return false;for(const b of root.querySelectorAll("button"))if((b.textContent||"").trim()==="✕")return true;return false;}
+    function syncGameplayMusic(){const game=gameIsVisible();if(game&&!wasGame)Bgm.start(true);else if(!game&&wasGame)Bgm.stop();wasGame=game;}
+    function observeRoot(){const root=document.getElementById("root");if(!root||observer)return;observer=new MutationObserver(syncGameplayMusic);observer.observe(root,{childList:true,subtree:true});syncGameplayMusic();}
 
-    // Capture phase: play the requested menu SE and prime BGM inside the same
-    // trusted click, before React changes screens.
-    document.addEventListener("click",(e)=>{
-        const target=e.target&&typeof e.target.closest==="function"?e.target.closest("button"):null;
-        if(!target||gameIsVisible())return;
+    // Play on pointer-down, not click. This is immediate on iPhone/Android and
+    // happens before React navigation can unmount the pressed menu button.
+    function handleMenuPress(e){
+        const target=e.target&&typeof e.target.closest==="function"?e.target.closest("button,[role='button']"):null;
+        if(!target||target.disabled||gameIsVisible())return;
         MenuClick.play();
         Bgm.prime();
-    },{capture:true});
+    }
+    if(typeof PointerEvent!=="undefined")document.addEventListener("pointerdown",handleMenuPress,{capture:true,passive:true});
+    else document.addEventListener("touchstart",handleMenuPress,{capture:true,passive:true});
 
-    // Bubble phase runs after React's discrete button handler. If that click has
-    // entered GAME, promote the already-playing muted element to audible BGM
-    // while still handling the same click event. MutationObserver remains backup.
     document.addEventListener("click",()=>syncGameplayMusic(),{capture:false});
+    document.addEventListener("pointerdown",()=>{if(!gameIsVisible())return;wasGame=true;if(!Bgm.wanted||!Bgm.audio||Bgm.audio.paused||Bgm.audio.muted)Bgm.start(false);},{capture:true});
 
-    // Last-resort browser-policy recovery: if a browser still suspended media,
-    // the first gameplay pointer action retries start() under a fresh gesture.
-    document.addEventListener("pointerdown",()=>{
-        if(!gameIsVisible())return;
-        wasGame=true;
-        if(!Bgm.wanted||!Bgm.audio||Bgm.audio.paused||Bgm.audio.muted)Bgm.start(false);
-    },{capture:true});
-
-    // Two legacy Settings actions explicitly emitted the old generic "move"
-    // sound. Suppress only that menu-only call so every menu button is the
-    // uploaded confirmation sound while gameplay movement SE remains intact.
     if(typeof Sfx!=="undefined"&&typeof Sfx.play==="function"&&!Sfx.__sixBallMenuClickBridge){
-        const baseSfxPlay=Sfx.play.bind(Sfx);
-        Sfx.__sixBallMenuClickBridge=true;
-        Sfx.play=function(ev,vol){
-            if(!gameIsVisible()&&ev&&ev.t==="move")return;
-            return baseSfxPlay(ev,vol);
-        };
+        const baseSfxPlay=Sfx.play.bind(Sfx);Sfx.__sixBallMenuClickBridge=true;Sfx.play=function(ev,vol){if(!gameIsVisible()&&ev&&ev.t==="move")return;return baseSfxPlay(ev,vol);};
     }
 
-    document.addEventListener("visibilitychange",()=>{
-        if(document.hidden)Bgm.pause();
-        else if(wasGame)Bgm.start(false);
-    });
-    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",observeRoot,{once:true});
-    else observeRoot();
+    document.addEventListener("visibilitychange",()=>{if(document.hidden)Bgm.pause();else if(wasGame)Bgm.start(false);});
+    // Start loading the exact tap sound before the first user interaction.
+    MenuClick.init();
+    if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",observeRoot,{once:true});else observeRoot();
 })();
