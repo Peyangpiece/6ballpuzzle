@@ -9,7 +9,14 @@ expect(local.includes('4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40e
 expect(local.includes('window.__sixBallGameplayBgmSameOrigin=true'),'same-origin marker missing');
 expect(local.includes('legacy.prime=function()')&&local.includes('legacy.start=function()'),'legacy cross-origin BGM must be disabled');
 expect(local.includes('Bgm.prime();'),'BGM must be primed under menu user gesture');
-expect(local.includes('if(game&&!wasGame)Bgm.start(true)'),'BGM must start when GAME becomes visible');
+expect(local.includes('Bgm.start(true);'),'BGM must start when GAME becomes visible');
+expect(local.includes('document.addEventListener("click",()=>sync(),{capture:false})'),'Safari BGM promotion must remain in the same click without setTimeout');
+expect(!local.includes('setTimeout(sync,0)'),'BGM start must not be deferred out of the trusted click');
+expect(local.includes('resumeGameSfxContext()'),'gameplay SFX AudioContext recovery missing');
+expect(local.includes('Sfx.__sixBallSafariResumeBridge=true'),'SFX resume bridge marker missing');
+expect(local.includes('ctx.state==="suspended"'),'suspended WebAudio context recovery missing');
+expect(local.includes('ctx.resume()'),'WebAudio resume call missing');
+expect(local.includes('window.__sixBallSfxSafariResumeBridge=true'),'SFX recovery diagnostic marker missing');
 expect(local.includes('a.loop=true'),'BGM must loop');
-expect(!local.includes('stepEngine(')&&!local.includes('settlePass(')&&!local.includes('SLIDE_SPEED')&&!local.includes('GRAV='),'local BGM override must not alter gameplay physics');
-console.log('same-origin Cyber44 BGM regression PASS');
+expect(!local.includes('stepEngine(')&&!local.includes('settlePass(')&&!local.includes('SLIDE_SPEED')&&!local.includes('GRAV='),'local audio adapter must not alter gameplay physics');
+console.log('same-origin Cyber44 + Safari gameplay SFX recovery regression PASS');
