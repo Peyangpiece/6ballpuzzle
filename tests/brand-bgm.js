@@ -13,7 +13,7 @@ expect(manifest.name==='6ball'&&manifest.short_name==='6ball','installed app nam
 expect(index.includes('<title>6ball</title>'),'document title is not 6ball');
 expect(index.includes('apple-mobile-web-app-title" content="6ball"'),'iOS app title is not 6ball');
 expect(index.includes('6ballは横画面専用です'),'orientation gate still shows old app name');
-expect(index.includes('"app-menu-ui.js","app-brand-bgm.js","app-16.js"'),'brand/BGM adapter must load after menu UI and before App');
+expect(index.includes('"app-menu-ui.js","app-brand-bgm.js","app-bgm-local.js","app-16.js"'),'brand/BGM adapters must load after menu UI and before App');
 expect(brand.includes('v==="HEXDROP"?"6ball":v'),'visible old app name is not bridged to 6ball');
 expect(brand.includes('window.__sixBallUsesGameBallAssets=true'),'game-ball menu art marker missing');
 expect(brand.includes('src:BALL_SRC[ci]'),'menu illustration is not using gameplay BALL_SRC assets');
@@ -35,12 +35,12 @@ expect(brand.includes('document.addEventListener("touchstart",handleMenuPress'),
 expect(brand.includes('try{a.load();}catch(_){}'),'menu audio must preload before first tap');
 expect(brand.includes('MenuClick.play();')&&brand.includes('Bgm.prime();'),'menu press must play supplied SE and prime BGM in the same user action');
 expect(brand.includes('ev.t==="move"'),'legacy menu move sound is not suppressed');
-expect(brand.includes('https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3'),'Cyber44 gameplay source missing');
+expect(brand.includes('https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3'),'legacy Cyber44 source marker missing');
 expect(brand.includes('4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532'),'uploaded Cyber44 reference hash missing');
-expect(brand.includes('a.loop=true'),'gameplay BGM must loop');
+expect(brand.includes('a.loop=true'),'legacy gameplay BGM loop marker missing');
 expect(brand.includes('a.playsInline=true')&&brand.includes('a.setAttribute("playsinline","")'),'inline mobile playback guard missing');
 expect(brand.includes('window.__sixBallGameplayBgmMutedPrime=true'),'muted-prime autoplay guard marker missing');
-expect(brand.includes('document.addEventListener("click",()=>syncGameplayMusic(),{capture:false})'),'same-click bubble promotion into gameplay BGM missing');
+expect(brand.includes('document.addEventListener("click",()=>syncGameplayMusic(),{capture:false})'),'same-click bubble promotion marker missing');
 expect(brand.includes('window.__sixBallGameplayBgmGestureRetry=true'),'gesture retry marker missing');
 expect(brand.includes('if(game&&!wasGame)Bgm.start(true)'),'BGM must start on entering gameplay');
 expect(brand.includes('else if(!game&&wasGame)Bgm.stop()'),'BGM must stop when leaving gameplay');
