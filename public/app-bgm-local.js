@@ -7,6 +7,7 @@
 
   const HASH="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
   const SRC="/assets/maou_bgm_cyber44.mp3?v="+HASH.slice(0,16);
+  const BGM_OUTPUT_SCALE=0.20;
 
   const legacy=window.Bgm;
   if(legacy){
@@ -24,6 +25,9 @@
     primed:false,
     lastError:"",
     volume:Number.isFinite(window.__hexBgmVolume)?window.__hexBgmVolume:.70,
+    effectiveVolume(){
+      return Math.max(0,Math.min(1,this.volume*BGM_OUTPUT_SCALE));
+    },
     init(){
       if(this.audio)return this.audio;
       if(typeof Audio==="undefined")return null;
@@ -49,7 +53,9 @@
     },
     setVolume(v){
       this.volume=Math.max(0,Math.min(1,Number(v)||0));
-      if(this.audio&&this.wanted&&!this.audio.muted)this.audio.volume=this.volume;
+      window.__sixBallGameplayBgmUserVolume=this.volume;
+      window.__sixBallGameplayBgmEffectiveVolume=this.effectiveVolume();
+      if(this.audio&&this.wanted&&!this.audio.muted)this.audio.volume=this.effectiveVolume();
     },
     prime(){
       const a=this.init();
@@ -84,7 +90,9 @@
       this.wanted=true;
       if(restart){try{a.currentTime=0;}catch(_){}}
       a.muted=false;
-      a.volume=this.volume;
+      a.volume=this.effectiveVolume();
+      window.__sixBallGameplayBgmUserVolume=this.volume;
+      window.__sixBallGameplayBgmEffectiveVolume=a.volume;
       if(!a.paused){window.__sixBallGameplayBgmPlaying=true;return;}
       try{
         const p=a.play();
@@ -120,7 +128,8 @@
   window.__sixBallGameplayBgmSource=SRC;
   window.__sixBallGameplayBgmUploadedSha256=HASH;
   window.__sixBallGameplayBgmSameOrigin=true;
-  window.__sixBallGameplayBgmVersion="cyber44-v6-sfx-recovery";
+  window.__sixBallGameplayBgmOutputScale=BGM_OUTPUT_SCALE;
+  window.__sixBallGameplayBgmVersion="cyber44-v7-volume-20pct";
   window.__sixBallGameplayBgmReady=false;
   window.__sixBallGameplayBgmPlaying=false;
 
@@ -227,6 +236,8 @@
   });
 
   Bgm.init();
+  window.__sixBallGameplayBgmUserVolume=Bgm.volume;
+  window.__sixBallGameplayBgmEffectiveVolume=Bgm.effectiveVolume();
   resumeGameSfxContext();
   sync();
 })();
