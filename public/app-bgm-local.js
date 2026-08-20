@@ -129,7 +129,7 @@
   window.__sixBallGameplayBgmUploadedSha256=HASH;
   window.__sixBallGameplayBgmSameOrigin=true;
   window.__sixBallGameplayBgmOutputScale=BGM_OUTPUT_SCALE;
-  window.__sixBallGameplayBgmVersion="cyber44-v8-volume-10pct";
+  window.__sixBallGameplayBgmVersion="cyber44-v9-sfx-unlock";
   window.__sixBallGameplayBgmReady=false;
   window.__sixBallGameplayBgmPlaying=false;
 
@@ -143,19 +143,57 @@
     return false;
   }
 
-  function resumeGameSfxContext(){
-    if(typeof Sfx==="undefined")return null;
-    try{if(typeof Sfx.init==="function")Sfx.init();}catch(_){}
+  function unlockSilentFrame(ctx){
+    if(!ctx||ctx.state!=="running")return false;
+    try{
+      const buf=ctx.createBuffer(1,1,ctx.sampleRate||44100);
+      const src=ctx.createBufferSource();
+      const gain=ctx.createGain();
+      gain.gain.value=0;
+      src.buffer=buf;
+      src.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(0);
+      window.__sixBallSfxUnlockCount=(window.__sixBallSfxUnlockCount||0)+1;
+      return true;
+    }catch(_){return false;}
+  }
+
+  function ensureGameSfxContext(){
+    if(typeof Sfx==="undefined")return Promise.resolve(false);
+
+    // A closed WebAudio context cannot be resumed; recreate the native graph.
+    if(Sfx.ctx&&Sfx.ctx.state==="closed"){
+      Sfx.ctx=null;
+      Sfx.master=null;
+    }
+    try{if(!Sfx.ctx&&typeof Sfx.init==="function")Sfx.init();}catch(err){
+      window.__sixBallSfxResumeError=err&&err.name?String(err.name):"init-error";
+      return Promise.resolve(false);
+    }
+
     const ctx=Sfx.ctx;
-    if(!ctx)return null;
+    if(!ctx){
+      window.__sixBallSfxContextState="missing";
+      return Promise.resolve(false);
+    }
     window.__sixBallSfxContextState=ctx.state||"unknown";
-    if(ctx.state!=="suspended")return null;
+
+    if(ctx.state==="running"){
+      unlockSilentFrame(ctx);
+      window.__sixBallSfxResumeSucceeded=true;
+      return Promise.resolve(true);
+    }
+
+    // Safari/WebKit can report both "suspended" and non-standard
+    // "interrupted". Resume every non-running, non-closed state.
     try{
       const p=ctx.resume();
       if(p&&typeof p.then==="function"){
         return p.then(()=>{
           window.__sixBallSfxContextState=ctx.state||"unknown";
           window.__sixBallSfxResumeSucceeded=ctx.state==="running";
+          if(ctx.state==="running")unlockSilentFrame(ctx);
           return ctx.state==="running";
         }).catch(err=>{
           window.__sixBallSfxResumeSucceeded=false;
@@ -163,39 +201,31 @@
           return false;
         });
       }
+      const ok=ctx.state==="running";
+      if(ok)unlockSilentFrame(ctx);
+      window.__sixBallSfxResumeSucceeded=ok;
+      return Promise.resolve(ok);
     }catch(err){
       window.__sixBallSfxResumeSucceeded=false;
       window.__sixBallSfxResumeError=err&&err.name?String(err.name):"resume-error";
+      return Promise.resolve(false);
     }
-    return null;
   }
 
   if(typeof Sfx!=="undefined"&&typeof Sfx.play==="function"&&!Sfx.__sixBallSafariResumeBridge){
     const baseSfxPlay=Sfx.play.bind(Sfx);
     Sfx.__sixBallSafariResumeBridge=true;
     Sfx.play=function(ev,vol){
-      try{if(typeof this.init==="function")this.init();}catch(_){}
-      const ctx=this.ctx;
-      if(ctx&&ctx.state==="suspended"){
-        try{
-          const p=ctx.resume();
-          if(p&&typeof p.then==="function"){
-            p.then(()=>{
-              window.__sixBallSfxContextState=ctx.state||"unknown";
-              window.__sixBallSfxResumeSucceeded=ctx.state==="running";
-              if(ctx.state==="running")baseSfxPlay(ev,vol);
-            }).catch(err=>{
-              window.__sixBallSfxResumeSucceeded=false;
-              window.__sixBallSfxResumeError=err&&err.name?String(err.name):"resume-rejected";
-            });
-            return;
-          }
-        }catch(err){
-          window.__sixBallSfxResumeError=err&&err.name?String(err.name):"resume-error";
-        }
+      // Normal path stays synchronous once WebAudio is unlocked.
+      if(this.ctx&&this.ctx.state==="running"){
+        window.__sixBallSfxContextState="running";
+        return baseSfxPlay(ev,vol);
       }
-      window.__sixBallSfxContextState=ctx&&ctx.state?ctx.state:"missing";
-      return baseSfxPlay(ev,vol);
+      // If Safari interrupted/suspended WebAudio, recover then replay the
+      // exact event once instead of silently dropping it.
+      ensureGameSfxContext().then(ok=>{
+        if(ok)baseSfxPlay(ev,vol);
+      });
     };
     window.__sixBallSfxSafariResumeBridge=true;
   }
@@ -203,24 +233,27 @@
   function sync(){
     const game=gameIsVisible();
     if(game&&!wasGame){
-      resumeGameSfxContext();
+      ensureGameSfxContext();
       Bgm.start(true);
     }else if(!game&&wasGame)Bgm.stop();
     wasGame=game;
   }
 
   function primeFromGesture(){
-    resumeGameSfxContext();
+    // This runs inside the trusted pointer/touch event. Do not create the
+    // AudioContext eagerly at module load; Safari requires user activation.
+    ensureGameSfxContext();
     if(gameIsVisible())return;
     Bgm.prime();
   }
   if(typeof PointerEvent!=="undefined")document.addEventListener("pointerdown",primeFromGesture,{capture:true,passive:true});
   else document.addEventListener("touchstart",primeFromGesture,{capture:true,passive:true});
+  document.addEventListener("keydown",()=>{ensureGameSfxContext();},{capture:true});
 
   document.addEventListener("click",()=>sync(),{capture:false});
   document.addEventListener("pointerdown",()=>{
     if(!gameIsVisible())return;
-    resumeGameSfxContext();
+    ensureGameSfxContext();
     wasGame=true;
     if(!Bgm.audio||Bgm.audio.paused||Bgm.audio.muted)Bgm.start(false);
   },{capture:true});
@@ -232,12 +265,14 @@
   }
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden)Bgm.pause();
-    else if(wasGame){resumeGameSfxContext();Bgm.start(false);}
+    else if(wasGame){ensureGameSfxContext();Bgm.start(false);}
   });
 
   Bgm.init();
   window.__sixBallGameplayBgmUserVolume=Bgm.volume;
   window.__sixBallGameplayBgmEffectiveVolume=Bgm.effectiveVolume();
-  resumeGameSfxContext();
+  // Deliberately do NOT initialize/resume Sfx here. WebAudio is unlocked only
+  // by the first real user gesture above.
+  window.__sixBallSfxLazyInit=true;
   sync();
 })();
