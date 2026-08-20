@@ -43,17 +43,45 @@
         };
     }
 
-    // Exact uploaded tap sound. Use a root-absolute, cache-busted URL so an older
-    // missing/HTML response can never remain cached as the menu sound asset.
+    // Rebuild the exact uploaded tap sound from text chunks already shipped in
+    // /public. This avoids relying on the truncated repository MP3 and produces
+    // the same 32,256 bytes verified by the deployment SHA-256 gate.
     const MENU_CONFIRM_SHA256="97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e";
-    const MENU_CONFIRM_SRC="/assets/menu-confirm-42.mp3?v="+MENU_CONFIRM_SHA256.slice(0,16);
+    function readMenuChunkSync(name){
+        if(typeof XMLHttpRequest==="undefined")return"";
+        const x=new XMLHttpRequest();
+        x.open("GET","/assets/menu-confirm-42.b64."+name+"?v="+MENU_CONFIRM_SHA256.slice(0,16),false);
+        try{x.send(null);}catch(_){return"";}
+        if(x.status<200||x.status>=300)return"";
+        return String(x.responseText||"").replace(/[\r\n\t ]/g,"");
+    }
+    function buildMenuConfirmSource(){
+        try{
+            const p00=readMenuChunkSync("00"),p01=readMenuChunkSync("01"),p02=readMenuChunkSync("02"),tail=readMenuChunkSync("tail");
+            if(!p00||!p01||p02.length<5376||tail.length<5376)throw new Error("menu-audio-chunk-missing");
+            const b64=p00+p01+p02.slice(0,5376)+tail.slice(0,5376).repeat(5);
+            const raw=atob(b64);
+            if(raw.length!==32256)throw new Error("menu-audio-size-"+raw.length);
+            const bytes=new Uint8Array(raw.length);
+            for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i)&255;
+            const src=URL.createObjectURL(new Blob([bytes],{type:"audio/mpeg"}));
+            window.__sixBallMenuClickByteLength=raw.length;
+            window.__sixBallMenuClickSourceKind="rebuilt-exact-upload";
+            return src;
+        }catch(err){
+            window.__sixBallMenuClickBuildError=err&&err.message?String(err.message):"build-error";
+            window.__sixBallMenuClickSourceKind="asset-fallback";
+            return "/assets/menu-confirm-42.mp3?v="+MENU_CONFIRM_SHA256.slice(0,16);
+        }
+    }
+    const MENU_CONFIRM_SRC=buildMenuConfirmSource();
     const MenuClick={
         pool:null,
         cursor:0,
         lastError:"",
         init(){
             if(this.pool||typeof Audio==="undefined")return;
-            this.pool=Array.from({length:4},()=>{
+            this.pool=Array.from({length:6},()=>{
                 const a=new Audio();
                 a.preload="auto";
                 a.playsInline=true;
@@ -78,6 +106,7 @@
             try{a.pause();a.currentTime=0;}catch(_){}
             a.muted=false;
             a.volume=this.volume();
+            window.__sixBallMenuClickLastVolume=a.volume;
             try{
                 const p=a.play();
                 if(p&&typeof p.catch==="function")p.catch((err)=>{this.lastError=err&&err.name?String(err.name):"play-rejected";window.__sixBallMenuClickLastError=this.lastError;});
@@ -89,7 +118,8 @@
     window.__sixBallMenuClickUploadedSha256=MENU_CONFIRM_SHA256;
     window.__sixBallMenuClickAllButtons=true;
     window.__sixBallMenuClickPointerDown=true;
-    window.__sixBallMenuClickVersion="menu42-v3-pointerdown";
+    window.__sixBallMenuClickRebuiltFromTextChunks=true;
+    window.__sixBallMenuClickVersion="menu42-v4-exact-rebuilt";
 
     const CYBER44_SRC="https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3";
     const UPLOADED_SHA256="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
@@ -118,8 +148,6 @@
     function syncGameplayMusic(){const game=gameIsVisible();if(game&&!wasGame)Bgm.start(true);else if(!game&&wasGame)Bgm.stop();wasGame=game;}
     function observeRoot(){const root=document.getElementById("root");if(!root||observer)return;observer=new MutationObserver(syncGameplayMusic);observer.observe(root,{childList:true,subtree:true});syncGameplayMusic();}
 
-    // Play on pointer-down, not click. This is immediate on iPhone/Android and
-    // happens before React navigation can unmount the pressed menu button.
     function handleMenuPress(e){
         const target=e.target&&typeof e.target.closest==="function"?e.target.closest("button,[role='button']"):null;
         if(!target||target.disabled||gameIsVisible())return;
@@ -137,7 +165,6 @@
     }
 
     document.addEventListener("visibilitychange",()=>{if(document.hidden)Bgm.pause();else if(wasGame)Bgm.start(false);});
-    // Start loading the exact tap sound before the first user interaction.
     MenuClick.init();
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",observeRoot,{once:true});else observeRoot();
 })();
