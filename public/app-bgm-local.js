@@ -7,7 +7,7 @@
 
   const HASH="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
   const SRC="/assets/maou_bgm_cyber44.mp3?v="+HASH.slice(0,16);
-  const BGM_OUTPUT_SCALE=0.20;
+  const BGM_OUTPUT_SCALE=0.10;
 
   const legacy=window.Bgm;
   if(legacy){
@@ -129,7 +129,7 @@
   window.__sixBallGameplayBgmUploadedSha256=HASH;
   window.__sixBallGameplayBgmSameOrigin=true;
   window.__sixBallGameplayBgmOutputScale=BGM_OUTPUT_SCALE;
-  window.__sixBallGameplayBgmVersion="cyber44-v7-volume-20pct";
+  window.__sixBallGameplayBgmVersion="cyber44-v8-volume-10pct";
   window.__sixBallGameplayBgmReady=false;
   window.__sixBallGameplayBgmPlaying=false;
 
