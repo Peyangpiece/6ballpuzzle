@@ -4,7 +4,10 @@ function expect(v,m){if(!v)throw new Error(m);}
 const brand=fs.readFileSync('public/app-brand-bgm.js','utf8');
 const index=fs.readFileSync('public/index.html','utf8');
 const manifest=JSON.parse(fs.readFileSync('public/manifest.webmanifest','utf8'));
-const menuAudio=fs.readFileSync('public/assets/menu-confirm-42.mp3');
+const cleanChunk=(name)=>fs.readFileSync(`public/assets/menu-confirm-42.b64.${name}`,'utf8').replace(/[\r\n\t ]/g,'');
+const p00=cleanChunk('00'),p01=cleanChunk('01'),p02=cleanChunk('02'),tail=cleanChunk('tail');
+const menuB64=p00+p01+p02.slice(0,5376)+tail.slice(0,5376).repeat(5);
+const menuAudio=Buffer.from(menuB64,'base64');
 new Function(brand);
 expect(manifest.name==='6ball'&&manifest.short_name==='6ball','installed app name is not 6ball');
 expect(index.includes('<title>6ball</title>'),'document title is not 6ball');
@@ -16,9 +19,14 @@ expect(brand.includes('window.__sixBallUsesGameBallAssets=true'),'game-ball menu
 expect(brand.includes('src:BALL_SRC[ci]'),'menu illustration is not using gameplay BALL_SRC assets');
 const gameplay=fs.readFileSync('public/app-10.js','utf8');
 for(const s of ['ball-red.png','ball-blue.png','ball-green.png','ball-yellow.png','ball-purple.png'])expect(gameplay.includes(s),`missing gameplay ball asset ${s}`);
+expect(menuAudio.length===32256,`rebuilt menu audio size differs: ${menuAudio.length}`);
 const menuHash=crypto.createHash('sha256').update(menuAudio).digest('hex');
-expect(menuHash==='97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e','menu button audio differs from uploaded file');
-expect(brand.includes('const MENU_CONFIRM_SRC="/assets/menu-confirm-42.mp3?v="'),'menu sound must use root-absolute cache-busted asset URL');
+expect(menuHash==='97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e','rebuilt menu button audio differs from uploaded file');
+expect(brand.includes('readMenuChunkSync("00")')&&brand.includes('readMenuChunkSync("01")')&&brand.includes('readMenuChunkSync("02")')&&brand.includes('readMenuChunkSync("tail")'),'exact menu-audio chunk rebuild is missing');
+expect(brand.includes('tail.slice(0,5376).repeat(5)'),'verified menu-audio reconstruction recipe missing');
+expect(brand.includes('raw.length!==32256'),'runtime rebuilt-byte-length guard missing');
+expect(brand.includes('window.__sixBallMenuClickRebuiltFromTextChunks=true'),'rebuilt menu sound marker missing');
+expect(brand.includes('/assets/menu-confirm-42.mp3?v='),'menu sound fallback asset URL missing');
 expect(brand.includes('window.__sixBallMenuClickAllButtons=true'),'all-menu-button sound marker missing');
 expect(brand.includes('window.__sixBallMenuClickPointerDown=true'),'pointer-down menu sound marker missing');
 expect(brand.includes('e.target.closest("button,[role=\'button\']")'),'menu tap bridge must cover button and role=button controls');
@@ -38,4 +46,4 @@ expect(brand.includes('if(game&&!wasGame)Bgm.start(true)'),'BGM must start on en
 expect(brand.includes('else if(!game&&wasGame)Bgm.stop()'),'BGM must stop when leaving gameplay');
 expect(brand.includes('BGM：魔王魂 / 森田交一『サイバー44』'),'music credit missing from settings');
 expect(!brand.includes('stepEngine(')&&!brand.includes('settlePass(')&&!brand.includes('SLIDE_SPEED')&&!brand.includes('GRAV='),'brand/BGM adapter must not alter gameplay physics');
-console.log('6ball brand + immediate menu tap + gameplay BGM regression PASS',JSON.stringify({menuHash}));
+console.log('6ball brand + exact rebuilt menu tap + gameplay BGM regression PASS',JSON.stringify({menuHash,bytes:menuAudio.length}));
