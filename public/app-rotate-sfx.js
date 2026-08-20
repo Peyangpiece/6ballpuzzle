@@ -4,7 +4,7 @@
   window.__sixBallRotateSampleInstalled=true;
   if(typeof Sfx==="undefined"||typeof Sfx.play!=="function")return;
 
-  const SRC="/assets/maou_se_sound_footstep02.wav?v=rotate-v2";
+  const SRC="/assets/normal-ball-rotate.mp3?v=3aad062888f14b9b";
   const pool=Array.from({length:6},()=>{
     const a=new Audio();
     a.preload="auto";
@@ -92,5 +92,6 @@
 
   window.__sixBallPrimeRotateSample=prime;
   window.__sixBallRotateSampleSource=SRC;
-  window.__sixBallRotateSampleVersion="normal-rotate-wav-safari-v2";
+  window.__sixBallRotateSampleSha256="3aad062888f14b9bb00b8c255fca5e3597b6f8e7be0cf51a1b3fff3a4681d1be";
+  window.__sixBallRotateSampleVersion="normal-rotate-user-mp3-v3";
 })();
