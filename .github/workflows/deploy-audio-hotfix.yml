@@ -5,6 +5,13 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/deploy-audio-hotfix.yml'
+      - 'public/app-brand-bgm.js'
+      - 'public/assets/menu-confirm-42.b64.00'
+      - 'public/assets/menu-confirm-42.b64.01'
+      - 'public/assets/menu-confirm-42.b64.02'
+      - 'public/assets/menu-confirm-42.b64.tail'
+      - 'tests/brand-bgm.js'
+  workflow_dispatch:
 
 concurrency:
   group: cloudflare-audio-hotfix
@@ -13,8 +20,8 @@ concurrency:
 permissions:
   contents: write
 
-# One-shot recovery path after the full regression gate has already passed.
-# Re-trigger for immediate menu tap sound: pointerdown + preload + cache-busted exact MP3.
+# Audio-only deploy path. The menu tap sound is rebuilt from verified text chunks
+# in-browser, while this workflow also reconstructs the exact MP3 for regression.
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -86,7 +93,7 @@ jobs:
             done
           fi
           if [ "$verified" -eq 1 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","deployOutcome":"%s","productionUrl":"%s","observedSha":"%s","featureSha":"52353179dead280e394517dab635affeb9e62c8b"}\n' "$GITHUB_SHA" "$STATUS" "$DEPLOY_OUTCOME" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-audio-hotfix.json
+          printf '{"sha":"%s","status":"%s","deployOutcome":"%s","productionUrl":"%s","observedSha":"%s","featureSha":"5770762746ec5306435d981ba83b1c9950df1562"}\n' "$GITHUB_SHA" "$STATUS" "$DEPLOY_OUTCOME" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-audio-hotfix.json
           rm -f public/deploy-sha.txt
           test "$STATUS" = pass
 
@@ -98,7 +105,7 @@ jobs:
         run: |
           if [ ! -f audit-results/cloudflare-audio-hotfix.json ]; then
             mkdir -p audit-results
-            printf '{"sha":"%s","status":"fail","deployOutcome":"%s","productionUrl":"%s","observedSha":"","featureSha":"52353179dead280e394517dab635affeb9e62c8b"}\n' "$GITHUB_SHA" "$DEPLOY_OUTCOME" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-audio-hotfix.json
+            printf '{"sha":"%s","status":"fail","deployOutcome":"%s","productionUrl":"%s","observedSha":"","featureSha":"5770762746ec5306435d981ba83b1c9950df1562"}\n' "$GITHUB_SHA" "$DEPLOY_OUTCOME" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-audio-hotfix.json
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
