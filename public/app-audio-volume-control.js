@@ -17,10 +17,11 @@
       return Number.isFinite(n)?clampPercent(n):fallback;
     }catch(_){return fallback;}
   };
-  const store=(key,value)=>{try{localStorage.setItem(key,String(value));}catch(_){}};
+  const store=(key,value)=>{try{localStorage.setItem(key,String(value));}catch(_){} };
 
   let bgmPercent=readPercent("hexdrop_bgm_volume",70);
   let sfxPercent=readPercent("hexdrop_sfx_volume",85);
+  let wasGame=false;
 
   function gameIsVisible(){
     const root=document.getElementById("root");
@@ -41,6 +42,18 @@
     return clamp01(n*(Number.isFinite(scale)?scale:1));
   }
 
+  function getBgmAudio(){
+    const bgm=window.Bgm;
+    if(!bgm)return null;
+    try{
+      if(typeof bgm.init==="function"){
+        const a=bgm.init();
+        if(a)return a;
+      }
+    }catch(_){}
+    return bgm.audio||null;
+  }
+
   function applyBgm(value,persist=true){
     bgmPercent=clampPercent(value);
     const n=bgmPercent/100;
@@ -53,18 +66,62 @@
         if(typeof bgm.setVolume==="function")bgm.setVolume(n);
         else bgm.volume=n;
       }catch(_){}
-      // Some older adapters do not expose setVolume consistently. Keep the
-      // controller's normalized value as the source of truth as well.
       try{bgm.volume=n;}catch(_){}
-      if(bgm.audio){
+      const a=bgm.audio||null;
+      if(a){
         const actual=effectiveBgmVolume(bgm,n);
-        try{bgm.audio.volume=actual;}catch(_){}
+        try{a.volume=actual;}catch(_){}
         window.__sixBallAudioActualBgmVolume=actual;
       }
     }
 
     window.__sixBallAudioBgmPercent=bgmPercent;
     return bgmPercent;
+  }
+
+  function playBgmNow(restart=false){
+    const bgm=window.Bgm;
+    if(!bgm||bgmPercent<=0||!gameIsVisible())return Promise.resolve(false);
+    const n=bgmPercent/100;
+    try{bgm.wanted=true;}catch(_){}
+    try{bgm.volume=n;}catch(_){}
+    const a=getBgmAudio();
+    if(!a)return Promise.resolve(false);
+    if(restart){try{a.currentTime=0;}catch(_){}}
+    try{a.muted=false;}catch(_){}
+    const actual=effectiveBgmVolume(bgm,n);
+    try{a.volume=actual;}catch(_){}
+    window.__sixBallAudioActualBgmVolume=actual;
+    try{
+      const p=a.play();
+      if(p&&typeof p.then==="function"){
+        return p.then(()=>{
+          window.__sixBallAudioBgmPlaying=!a.paused;
+          window.__sixBallAudioBgmPlayError="";
+          return !a.paused;
+        }).catch(err=>{
+          window.__sixBallAudioBgmPlaying=false;
+          window.__sixBallAudioBgmPlayError=err&&err.name?String(err.name):"play-rejected";
+          return false;
+        });
+      }
+      window.__sixBallAudioBgmPlaying=!a.paused;
+      return Promise.resolve(!a.paused);
+    }catch(err){
+      window.__sixBallAudioBgmPlaying=false;
+      window.__sixBallAudioBgmPlayError=err&&err.name?String(err.name):"play-error";
+      return Promise.resolve(false);
+    }
+  }
+
+  function stopBgmNow(){
+    const bgm=window.Bgm;
+    if(!bgm)return;
+    try{bgm.wanted=false;}catch(_){}
+    const a=bgm.audio||null;
+    if(a){
+      try{a.pause();}catch(_){}
+    }
   }
 
   function applySfxGainNow(){
@@ -83,8 +140,6 @@
       window.__sixBallAudioActualSfxGain=target;
     }
 
-    // Menu confirmation sound is HTMLAudio. MenuClick.play() also reads
-    // Sfx._menuVolume, so this stays correct for every future button press.
     if(window.MenuClick&&Array.isArray(window.MenuClick.pool)){
       for(const a of window.MenuClick.pool){
         if(!a)continue;
@@ -114,9 +169,14 @@
           window.__sixBallAudioSfxContextState=ctx.state||"unknown";
           applySfxGainNow();
           return ctx.state==="running";
-        }).catch(()=>false);
+        }).catch(err=>{
+          window.__sixBallAudioSfxResumeError=err&&err.name?String(err.name):"resume-rejected";
+          return false;
+        });
       }
-    }catch(_){}
+    }catch(err){
+      window.__sixBallAudioSfxResumeError=err&&err.name?String(err.name):"resume-error";
+    }
     applySfxGainNow();
     return Promise.resolve(ctx.state==="running");
   }
@@ -125,8 +185,6 @@
     sfxPercent=clampPercent(value);
     if(persist)store("hexdrop_sfx_volume",sfxPercent);
     applySfxGainNow();
-    // Slider input is a trusted user gesture on Safari, so this is also the
-    // safest moment to create/resume WebAudio.
     ensureSfxRunning();
     return sfxPercent;
   }
@@ -148,25 +206,25 @@
     const input=e&&e.target;
     if(!input||input.tagName!=="INPUT"||input.type!=="range")return;
     const kind=sliderKind(input);
-    if(kind==="bgm")applyBgm(input.value,true);
-    else if(kind==="sfx")applySfx(input.value,true);
+    if(kind==="bgm"){
+      applyBgm(input.value,true);
+      if(gameIsVisible()&&bgmPercent>0)playBgmNow(false);
+    }else if(kind==="sfx"){
+      applySfx(input.value,true);
+    }
   }
 
-  // Do not replace HexSettingSlider. React keeps ownership of the UI state;
-  // this capture listener only mirrors the physical slider into live audio.
   document.addEventListener("input",onSliderInput,true);
   document.addEventListener("change",onSliderInput,true);
 
   function unlockFromGesture(){
-    // If a match is visible, secure HTMLAudio playback first, then WebAudio.
-    const bgm=window.Bgm;
-    if(gameIsVisible()&&bgmPercent>0&&bgm){
-      try{
-        if(typeof bgm.setVolume==="function")bgm.setVolume(bgmPercent/100);
-        if(typeof bgm.start==="function")bgm.start(false);
-      }catch(_){}
-    }else if(!gameIsVisible()&&bgm&&typeof bgm.prime==="function"){
-      try{bgm.prime();}catch(_){}
+    // HTMLAudio first, then WebAudio. Both calls occur in the trusted gesture.
+    if(gameIsVisible()&&bgmPercent>0)playBgmNow(false);
+    else{
+      const bgm=window.Bgm;
+      if(bgm&&typeof bgm.prime==="function"){
+        try{bgm.prime();}catch(_){}
+      }
     }
     ensureSfxRunning();
     applyBgm(bgmPercent,false);
@@ -176,25 +234,41 @@
   else document.addEventListener("touchstart",unlockFromGesture,{capture:true,passive:true});
   document.addEventListener("keydown",unlockFromGesture,true);
 
-  // If Safari interrupted audio while backgrounded, restore both paths on the
-  // next visible state without changing the user's slider values.
+  function syncGameAudio(){
+    const game=gameIsVisible();
+    if(game&&!wasGame){
+      // The click that opened the match already primed audio. Promote it here.
+      if(bgmPercent>0)playBgmNow(true);
+      ensureSfxRunning();
+    }else if(!game&&wasGame){
+      stopBgmNow();
+    }
+    wasGame=game;
+  }
+
+  const root=document.getElementById("root");
+  if(root){
+    const observer=new MutationObserver(syncGameAudio);
+    observer.observe(root,{childList:true,subtree:true});
+  }
+
   document.addEventListener("visibilitychange",()=>{
     if(document.hidden)return;
     applyBgm(bgmPercent,false);
     ensureSfxRunning();
-    if(gameIsVisible()&&bgmPercent>0&&window.Bgm&&typeof window.Bgm.start==="function"){
-      try{window.Bgm.start(false);}catch(_){}
-    }
+    if(gameIsVisible()&&bgmPercent>0)playBgmNow(false);
   });
 
-  // Initial values only; no playback is forced at module load.
   applyBgm(bgmPercent,false);
   if(typeof Sfx!=="undefined"){
     Sfx._menuVolume=sfxPercent/100;
     Sfx.enabled=sfxPercent>0;
   }
   window.__sixBallAudioSfxPercent=sfxPercent;
-  window.__sixBallAudioControlVersion="unified-audio-control-v2";
+  window.__sixBallAudioControlVersion="unified-audio-control-v3";
   window.__sixBallApplyBgmSlider=applyBgm;
   window.__sixBallApplySfxSlider=applySfx;
+  window.__sixBallPlayBgmNow=playBgmNow;
+  window.__sixBallEnsureSfxRunning=ensureSfxRunning;
+  syncGameAudio();
 })();
