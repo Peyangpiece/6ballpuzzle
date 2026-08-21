@@ -1,0 +1,85 @@
+V1303 FULL V3.6 BYPASS PROOF
+============================
+
+Purpose
+-------
+Verify whether the entire FLOOR UP TRIANGLE LANDING v3.6 IIFE
+can be removed without changing observable #1303 behavior.
+
+Bypassed in memory
+------------------
+Complete v3.6 block:
+
+- hexPhysPlanGroup wrapper
+- hexPhysUpConvexSeparator wrapper
+- floor landing commit-side rigidity maintenance
+- v3.6 marker state
+
+Removed size:
+5856 bytes
+
+Resulting planner chain
+-----------------------
+BASE
+ -> Layer 1
+ -> [v3.6 fully absent]
+ -> Layer 3
+ -> Layer 4
+ -> Layer 5
+
+Captured planners:
+5 total = BASE + 4 remaining wrappers
+
+Preview verification
+--------------------
+
+Random Oracle:
+10000 / 10000 match
+0 mismatch
+
+Directed Oracle:
+2000 / 2000 match
+0 mismatch
+
+Commit verification
+-------------------
+
+Random Oracle:
+10000 / 10000 match
+0 mismatch
+
+Directed Oracle:
+2000 / 2000 match
+0 mismatch
+
+Overall:
+12000 / 12000 GOLDEN
+
+Locked Oracle SHA256
+--------------------
+
+Random 10K:
+e3b5ea6de12c0d7b2ee54e74f5c07895ab1136030f007d57c15ecc176fc54488
+
+Directed 2K:
+66cc5406d402e7066589871b95776cf0ecddbd652065584e164ec68c70dda9356
+
+Golden public physics SHA256
+----------------------------
+
+a69720e2666885769b0464e33a8851be2f4e83c2c76a514fff8ede230c24dab4
+
+Conclusion
+----------
+
+Within the locked 12000-case Oracle:
+
+The entire v3.6 Layer 2 IIFE is observationally redundant.
+
+Removing it changes neither:
+- preview planner output
+- commit planner output
+- commit-visible state
+
+Acceptance:
+PASS
