@@ -2810,75 +2810,77 @@
     }
 
 
-    /*
-     * Direct floor candidate used by the single final planner.
-     * No hexPhysPlanGroup wrapper is installed here anymore.
-     */
-    function tryFloorPlanV37(
-        board,
-        members,
-        preview=false
-    ){
+    /* ========================================================
+     * FINAL FLOOR TRANSITION HAS HIGHEST PRIORITY
+     * ======================================================== */
 
-        const floorPlan =
-            floorPlanV37(
-                board,
-                members
-            );
+    hexPhysPlanGroup =
+        function(
+            board,
+            members,
+            preview=false
+        ){
 
-
-        if(!floorPlan){
-            return null;
-        }
+            const floorPlan =
+                floorPlanV37(
+                    board,
+                    members
+                );
 
 
-        if(!preview){
+            if(floorPlan){
 
-            for(const m of members){
+                if(!preview){
 
-                m.ball.rigid =
-                    true;
+                    for(const m of members){
 
-                m.ball.motionGroupSize =
-                    3;
+                        m.ball.rigid =
+                            true;
 
-                m.ball.motionGroupOrientation =
-                    "up";
+                        m.ball.motionGroupSize =
+                            3;
 
-                m.ball
-                .__upFloorRigidLandingV37 =
-                    true;
+                        m.ball.motionGroupOrientation =
+                            "up";
+
+                        m.ball
+                        .__upFloorRigidLandingV37 =
+                            true;
+                    }
+
+
+                    window
+                    .__sixBallLastUpFloorRigidLandingV37 = {
+
+                        ids:
+                            members.map(
+                                m => m.ball.id
+                            ),
+
+                        vector:[
+                            floorPlan[0].tx-
+                            floorPlan[0].x,
+
+                            floorPlan[0].ty-
+                            floorPlan[0].y
+                        ],
+
+                        at:
+                            Date.now()
+                    };
+                }
+
+
+                return floorPlan;
             }
 
 
-            window
-            .__sixBallLastUpFloorRigidLandingV37 = {
-
-                ids:
-                    members.map(
-                        m => m.ball.id
-                    ),
-
-                vector:[
-                    floorPlan[0].tx-
-                    floorPlan[0].x,
-
-                    floorPlan[0].ty-
-                    floorPlan[0].y
-                ],
-
-                at:
-                    Date.now()
-            };
-        }
-
-
-        return floorPlan;
-    }
-
-
-    window.__sixBallTryFloorPlanV37 =
-        tryFloorPlanV37;
+            return basePlanGroupV37(
+                board,
+                members,
+                preview
+            );
+        };
 
 
     /*
@@ -3126,103 +3128,114 @@
     }
 
 
-    /*
-     * Direct current-step rigid candidate used by the single
-     * final planner.
-     *
-     * No nested hexPhysPlanGroup delegation here.
-     */
-    function tryCurrentRigidSlopeV39(
-        board,
-        members,
-        preview=false
-    ){
-
-        if(
-            normalTripletV39(
-                members
-            )
+    hexPhysPlanGroup =
+        function(
+            board,
+            members,
+            preview = false
         ){
 
-            const motions =
-                currentMemberMotionsV39(
-                    board,
+            if(
+                normalTripletV39(
                     members
-                );
+                )
+            ){
 
-
-            if(motions){
-
-                const rigidPlan =
-                    currentCommonRigidSlopeV39(
+                const motions =
+                    currentMemberMotionsV39(
                         board,
-                        members,
-                        motions
+                        members
                     );
 
 
-                if(rigidPlan){
+                if(motions){
 
-                    if(!preview){
+                    const rigidPlan =
+                        currentCommonRigidSlopeV39(
+                            board,
+                            members,
+                            motions
+                        );
 
-                        for(
-                            const member
-                            of members
-                        ){
 
-                            member.ball.rigid =
-                                true;
+                    if(rigidPlan){
 
-                            member.ball.motionGroupSize =
-                                3;
+                        if(!preview){
 
-                            member.ball
-                                ._smoothSlopeRigidV39 =
-                                true;
+                            for(
+                                const member
+                                of members
+                            ){
+
+                                member.ball.rigid =
+                                    true;
+
+                                member.ball.motionGroupSize =
+                                    3;
+
+                                member.ball
+                                    ._smoothSlopeRigidV39 =
+                                    true;
+                            }
                         }
+
+
+                        window
+                            .__sixBallLastSmoothSlopeCurrentStepV39 =
+                        {
+                            ids:
+                                members.map(
+                                    m =>
+                                        m.ball.id
+                                ),
+
+                            vector:[
+                                rigidPlan[0].tx -
+                                rigidPlan[0].x,
+
+                                rigidPlan[0].ty -
+                                rigidPlan[0].y
+                            ],
+
+                            orientation:
+                                members[0]
+                                ?.ball
+                                ?.motionGroupOrientation
+                                || "",
+
+                            at:
+                                Date.now()
+                        };
+
+
+                        return rigidPlan;
                     }
-
-
-                    window
-                        .__sixBallLastSmoothSlopeCurrentStepV39 =
-                    {
-                        ids:
-                            members.map(
-                                m =>
-                                    m.ball.id
-                            ),
-
-                        vector:[
-                            rigidPlan[0].tx -
-                            rigidPlan[0].x,
-
-                            rigidPlan[0].ty -
-                            rigidPlan[0].y
-                        ],
-
-                        orientation:
-                            members[0]
-                            ?.ball
-                            ?.motionGroupOrientation
-                            || "",
-
-                        at:
-                            Date.now()
-                    };
-
-
-                    return rigidPlan;
                 }
             }
-        }
 
 
-        return null;
-    }
-
-
-    window.__sixBallTryCurrentRigidSlopeV39 =
-        tryCurrentRigidSlopeV39;
+            /*
+             * Common rigid motion is impossible NOW.
+             *
+             * Only here may the existing v3 rules decide:
+             *
+             * - protrusion split
+             * - hole entry
+             * - one-ball pinning
+             * - asymmetric obstruction
+             * - floor landing
+             * - terminal rigidity
+             * - freeze protection
+             *
+             * No future obstacle is used to break rigidity
+             * before this point.
+             */
+            return basePlanGroupV39(
+                board,
+                members,
+                preview
+            );
+        };
 
 
     window.__sixBallSmoothSlopeRigidityVersion =
@@ -3613,58 +3626,6 @@
              * Only now may the existing canonical resolver
              * decide whether to rest, split, pivot or separate.
              */
-            /*
-             * One authoritative planner path.
-             *
-             * Priority is exactly equivalent to the old
-             * wrapper stack:
-             *
-             * final rigid
-             * -> current-step rigid
-             * -> floor approach
-             * -> canonical resolver
-             */
-
-            if(
-                typeof window
-                    .__sixBallTryCurrentRigidSlopeV39 ===
-                    "function"
-            ){
-
-                const currentRigid =
-                    window
-                    .__sixBallTryCurrentRigidSlopeV39(
-                        board,
-                        members,
-                        preview
-                    );
-
-                if(currentRigid){
-                    return currentRigid;
-                }
-            }
-
-
-            if(
-                typeof window
-                    .__sixBallTryFloorPlanV37 ===
-                    "function"
-            ){
-
-                const floorPlan =
-                    window
-                    .__sixBallTryFloorPlanV37(
-                        board,
-                        members,
-                        preview
-                    );
-
-                if(floorPlan){
-                    return floorPlan;
-                }
-            }
-
-
             return basePlanGroupV39(
                 board,
                 members,
