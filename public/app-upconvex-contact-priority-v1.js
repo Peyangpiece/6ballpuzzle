@@ -1,36 +1,42 @@
 /* ============================================================
- * 6ball UP-CONVEX CONTACT PRIORITY v1
+ * 6ball UP-CONVEX FIRST-CONTACT SIDE LOCK v2
  *
- * Root fix:
- * a real centre protrusion must decide the 1+2 split at the
- * FIRST physical contact step, before the later v3.9 generic
- * common-slope wrapper can translate the whole triplet past the
- * protrusion and reverse the apparent left/right relationship.
+ * IMPORTANT:
+ * This patch does NOT split the triplet when the protrusion is
+ * first detected logically.  The visual release position may
+ * still be above physical contact at that instant.
  *
- * This file does not change floor landing, garbage physics,
- * ordinary smooth slopes, collapse epochs or non-UP groups.
+ * Instead it only remembers which side the protrusion was on at
+ * the first encounter.  The existing v3.9 resolver keeps full
+ * control of WHEN the split is physically allowed.  When that
+ * canonical split finally becomes legal, this patch restores the
+ * remembered 2+1 side so a prior rigid-slope step cannot reverse
+ * left/right.
+ *
+ * protrusion RIGHT of triangle centre -> LEFT pair + RIGHT solo
+ * protrusion LEFT  of triangle centre -> RIGHT pair + LEFT solo
  * ============================================================ */
 (function(){
     if(
         typeof window === "undefined" ||
-        window.__sixBallUpConvexContactPriorityV1
+        window.__sixBallUpConvexFirstContactSideLockV2
     ){
         return;
     }
 
     if(
         typeof hexPhysPlanGroup !== "function" ||
-        typeof hexPhysUpConvexSplitPlan !== "function" ||
-        typeof hexPhysIndependentMemberMotion !== "function" ||
+        typeof hexPhysUpConvexSeparator !== "function" ||
         typeof hexPhysEmpty !== "function" ||
         typeof valid !== "function"
     ){
         return;
     }
 
-    window.__sixBallUpConvexContactPriorityV1 = true;
+    window.__sixBallUpConvexFirstContactSideLockV2 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
+    const baseSeparator = hexPhysUpConvexSeparator;
 
     function isUpTriplet(members){
         if(!Array.isArray(members) || members.length !== 3)
@@ -60,7 +66,140 @@
         return values[Math.floor(values.length / 2)];
     }
 
-    function outwardSoloMotion(board, solo, direction, px, py, members){
+    function tripletGeometry(board, members){
+        if(!isUpTriplet(members))
+            return null;
+
+        const lowerY = Math.max(...members.map(m => m.y));
+        const lower = members
+            .filter(m => m.y === lowerY)
+            .sort((a,b) => a.x-b.x);
+        const top = members.find(m => m.y < lowerY);
+
+        if(
+            lower.length !== 2 ||
+            !top ||
+            lower[1].x - lower[0].x !== 2
+        ){
+            return null;
+        }
+
+        const px = (lower[0].x + lower[1].x) / 2;
+        const py = lowerY + 1;
+        const support = valid(px,py) ? board?.[py]?.[px] : null;
+
+        if(
+            !support ||
+            members.some(m => m.ball.id === support.id)
+        ){
+            return null;
+        }
+
+        const offset = continuousOffset(members);
+        const baseLeft = lower[0].x + offset;
+        const baseRight = lower[1].x + offset;
+        const width = baseRight - baseLeft;
+
+        if(Math.abs(width) <= 1e-9)
+            return null;
+
+        const hitFraction = (px - baseLeft) / width;
+
+        /* Outer-quarter contact remains an ordinary smooth slope. */
+        if(
+            hitFraction < 0.25 - 1e-9 ||
+            hitFraction > 0.75 + 1e-9
+        ){
+            return null;
+        }
+
+        const triangleCenter = (baseLeft + baseRight) / 2;
+        const delta = triangleCenter - px;
+
+        /* Exact centre keeps the canonical tie-break. */
+        if(Math.abs(delta) <= 1e-9)
+            return null;
+
+        return {
+            lower,
+            top,
+            support,
+            px,
+            py,
+            hitFraction,
+            triangleCenter,
+            protrusionCenter: px,
+            delta,
+            pairDir: delta > 0 ? 1 : -1,
+            groupId: Number(members[0]?.ball?.motionGroupId) || 0
+        };
+    }
+
+    function readSideLock(members, supportId){
+        if(!isUpTriplet(members) || !supportId)
+            return null;
+
+        const locks = members
+            .map(m => m?.ball?._upConvexFirstContactSideLockV2)
+            .filter(Boolean)
+            .filter(l => l.supportId === supportId);
+
+        if(!locks.length)
+            return null;
+
+        const first = locks[0];
+
+        if(
+            !locks.every(l =>
+                l.supportId === first.supportId &&
+                l.groupId === first.groupId &&
+                l.pairDir === first.pairDir
+            )
+        ){
+            return null;
+        }
+
+        return first;
+    }
+
+    function rememberFirstSide(board, members){
+        const g = tripletGeometry(board, members);
+
+        if(!g)
+            return null;
+
+        const existing = readSideLock(members, g.support.id);
+
+        /* Same protrusion: never overwrite the first-contact side. */
+        if(existing)
+            return existing;
+
+        const lock = {
+            supportId: g.support.id,
+            groupId: g.groupId,
+            pairDir: g.pairDir,
+            triangleCenter: g.triangleCenter,
+            protrusionCenter: g.protrusionCenter,
+            delta: g.delta,
+            hitFraction: g.hitFraction
+        };
+
+        for(const m of members){
+            m.ball._upConvexFirstContactSideLockV2 = {...lock};
+        }
+
+        window.__sixBallLastUpConvexFirstContactObserved = {
+            ...lock,
+            pairSide: lock.pairDir > 0 ? "right" : "left",
+            soloSide: lock.pairDir > 0 ? "left" : "right",
+            ids: members.map(m => m.ball.id),
+            at: Date.now()
+        };
+
+        return lock;
+    }
+
+    function outwardSoloMotion(board, solo, direction, info, members){
         const tx = solo.x + direction;
         const ty = solo.y + 1;
 
@@ -84,15 +223,41 @@
             ty,
             ball: solo.ball,
             kind: direction < 0 ? "ROLL_LEFT" : "ROLL_RIGHT",
-            pivot: [px,py],
+            pivot: [info.px, info.py],
             topPivot: null,
             followSupportIds: []
         };
     }
 
-    function firstContactSeparator(board, members){
-        if(!isUpTriplet(members))
-            return null;
+    /*
+     * Observation only.  Do not manufacture a split here.
+     * This is the key fix for the airborne-split regression.
+     */
+    hexPhysPlanGroup = function(board, members, preview=false){
+        if(isUpTriplet(members)){
+            rememberFirstSide(board, members);
+        }
+
+        return basePlanGroup(board, members, preview);
+    };
+
+    /*
+     * Existing v3.9 decides WHEN a real split is legal.
+     * We only replace its left/right assignment with the side
+     * remembered before rigid-slope translation could cross the
+     * protrusion centre.
+     */
+    hexPhysUpConvexSeparator = function(board, members, motions){
+        const info = baseSeparator(board, members, motions);
+
+        if(!info || !isUpTriplet(members))
+            return info;
+
+        const supportId = info?.support?.id;
+        const lock = readSideLock(members, supportId);
+
+        if(!lock)
+            return info;
 
         const lowerY = Math.max(...members.map(m => m.y));
         const lower = members
@@ -100,77 +265,16 @@
             .sort((a,b) => a.x-b.x);
         const top = members.find(m => m.y < lowerY);
 
-        if(
-            lower.length !== 2 ||
-            !top ||
-            lower[1].x - lower[0].x !== 2
-        ){
-            return null;
-        }
+        if(lower.length !== 2 || !top)
+            return info;
 
-        /*
-         * The physical protrusion is the real ball directly
-         * under the nominal base centre. The continuous offset
-         * tells us where the falling triangle actually is at
-         * this exact contact step.
-         */
-        const px = (lower[0].x + lower[1].x) / 2;
-        const py = lowerY + 1;
-        const support = valid(px,py) ? board?.[py]?.[px] : null;
+        const pairDir = lock.pairDir > 0 ? 1 : -1;
+        const pairLower = pairDir > 0 ? lower[1] : lower[0];
+        const solo = pairDir > 0 ? lower[0] : lower[1];
+        const soloDirection = -pairDir;
 
-        if(
-            !support ||
-            members.some(m => m.ball.id === support.id)
-        ){
-            return null;
-        }
-
-        const offset = continuousOffset(members);
-        const baseLeft = lower[0].x + offset;
-        const baseRight = lower[1].x + offset;
-        const width = baseRight - baseLeft;
-
-        if(Math.abs(width) <= 1e-9)
-            return null;
-
-        const hitFraction = (px - baseLeft) / width;
-
-        /* Outer-quarter contact is an ordinary slope, not a separator. */
-        if(
-            hitFraction < 0.25 - 1e-9 ||
-            hitFraction > 0.75 + 1e-9
-        ){
-            return null;
-        }
-
-        const triangleCenter = (baseLeft + baseRight) / 2;
-        const delta = triangleCenter - px;
-
-        /* Exact centre keeps the existing canonical tie-break. */
-        if(Math.abs(delta) <= 1e-9)
-            return null;
-
-        /*
-         * protrusion RIGHT of triangle centre (delta < 0)
-         *   -> LEFT pair of 2, RIGHT solo
-         *
-         * protrusion LEFT of triangle centre (delta > 0)
-         *   -> RIGHT pair of 2, LEFT solo
-         */
-        const pairSide = delta > 0 ? 1 : -1;
-        const pairLower = pairSide > 0 ? lower[1] : lower[0];
-        const solo = pairSide > 0 ? lower[0] : lower[1];
-        const soloDirection = -pairSide;
-
-        const motions = members.map(m => {
-            try{
-                return hexPhysIndependentMemberMotion(board, members, m);
-            }catch(_){
-                return null;
-            }
-        });
-
-        let soloMotion = motions[members.indexOf(solo)] || null;
+        let soloMotion =
+            motions?.[members.indexOf(solo)] || null;
 
         if(
             !soloMotion ||
@@ -180,12 +284,12 @@
                 board,
                 solo,
                 soloDirection,
-                px,
-                py,
+                info,
                 members
             );
         }
 
+        /* Never replace a legal canonical split with an unsafe path. */
         if(
             !soloMotion ||
             Math.sign(soloMotion.tx - solo.x) !== soloDirection
@@ -193,67 +297,41 @@
             return null;
         }
 
-        return {
-            dir: pairSide,
+        const corrected = {
+            ...info,
+            dir: pairDir,
             top,
             pairLower,
             solo,
             soloMotion,
-            support,
-            px,
-            py,
-            hitFraction,
-            triangleCenter,
-            protrusionCenter: px,
-            geometryDelta: delta,
-            pairSide: pairSide > 0 ? "right" : "left",
-            soloSide: pairSide > 0 ? "left" : "right",
-            authoritativeFirstContact: true
+            triangleCenterAtFirstContact: lock.triangleCenter,
+            protrusionCenterAtFirstContact: lock.protrusionCenter,
+            firstContactDelta: lock.delta,
+            firstContactSideLocked: true,
+            pairSide: pairDir > 0 ? "right" : "left",
+            soloSide: pairDir > 0 ? "left" : "right"
         };
-    }
 
-    hexPhysPlanGroup = function(board, members, preview=false){
-        const separator = firstContactSeparator(board, members);
+        window.__sixBallLastUpConvexAppliedSideLock = {
+            supportId,
+            groupId: lock.groupId,
+            delta: lock.delta,
+            pairSide: corrected.pairSide,
+            soloSide: corrected.soloSide,
+            ids: {
+                top: top.ball.id,
+                pairLower: pairLower.ball.id,
+                solo: solo.ball.id
+            },
+            at: Date.now()
+        };
 
-        if(separator){
-            let split = null;
-
-            try{
-                split = hexPhysUpConvexSplitPlan(
-                    board,
-                    members,
-                    separator,
-                    preview
-                );
-            }catch(_){
-                split = null;
-            }
-
-            if(Array.isArray(split) && split.length){
-                if(!preview){
-                    window.__sixBallLastUpConvexFirstContactDecision = {
-                        triangleCenter: separator.triangleCenter,
-                        protrusionCenter: separator.protrusionCenter,
-                        delta: separator.geometryDelta,
-                        pairSide: separator.pairSide,
-                        soloSide: separator.soloSide,
-                        ids: {
-                            top: separator.top.ball.id,
-                            pairLower: separator.pairLower.ball.id,
-                            solo: separator.solo.ball.id,
-                            support: separator.support.id
-                        },
-                        at: Date.now()
-                    };
-                }
-
-                return split;
-            }
-        }
-
-        return basePlanGroup(board, members, preview);
+        return corrected;
     };
 
     window.__sixBallUpConvexContactPriorityVersion =
-        "upconvex-first-contact-priority-v1";
+        "upconvex-first-contact-side-lock-v2";
+
+    window.__sixBallUpConvexSplitTimingOwnedByCanonicalResolver = true;
+    window.__sixBallUpConvexFirstContactOnlyLocksSide = true;
 })();
