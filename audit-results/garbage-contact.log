@@ -14,14 +14,14 @@ evalmachine.<anonymous>:1918
 function expect(value,message){if(!value)throw new Error(message);}
                                          ^
 
-Error: split-side: no separator for interior right contact
+Error: split-side: required 2+1 split plan was not accepted for blocked left rigid continuation
     at expect (evalmachine.<anonymous>:1918:48)
-    at check (evalmachine.<anonymous>:1935:3)
-    at evalmachine.<anonymous>:1954:1
+    at checkSplit (evalmachine.<anonymous>:1973:3)
+    at evalmachine.<anonymous>:1993:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/up-convex-split-side.js:60:4)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/up-convex-split-side.js:93:4)
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
