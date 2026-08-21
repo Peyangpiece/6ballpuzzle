@@ -10,14 +10,13 @@ post-garbage internal + secondary-clear collapse PASS
 wall + floor + normal-ball + dynamic wall-vacancy regression PASS
 game-over former-garbage fade PASS
 garbage render overlap guard PASS
-evalmachine.<anonymous>:1918
+evalmachine.<anonymous>:1806
 function expect(value,message){if(!value)throw new Error(message);}
                                          ^
 
-Error: split-side: required 2+1 split plan was not accepted for blocked left rigid continuation
-    at expect (evalmachine.<anonymous>:1918:48)
-    at checkSplit (evalmachine.<anonymous>:1973:3)
-    at evalmachine.<anonymous>:1993:1
+Error: rigid-first arc guard was not installed
+    at expect (evalmachine.<anonymous>:1806:48)
+    at evalmachine.<anonymous>:1871:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -25,6 +24,7 @@ Error: split-side: required 2+1 split plan was not accepted for blocked left rig
     at Module._compile (node:internal/modules/cjs/loader:1781:14)
     at Object..js (node:internal/modules/cjs/loader:1913:10)
     at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
 
 Node.js v22.23.2
 runtime performance v2 parity guards PASS {"staticContactSkips":1,"colliders":6,"idCache":6,"drawFastPath":true,"rigidShadowCache":true}
