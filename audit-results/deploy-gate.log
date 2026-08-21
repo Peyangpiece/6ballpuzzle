@@ -6,45 +6,5 @@ reference fidelity 1000/1000 PASS {"active":180,"rigidity":220,"pile":200,"garba
 reference convergence round 1 1000/1000 PASS
 reference convergence round 2 2000/2000 PASS
 reference convergence round 3 3000/3000 PASS
-evalmachine.<anonymous>:6383
-function expect(value,message){if(!value)throw new Error(message);}
-                                         ^
-
-Error: visual balls overlapped: min=0.9997884546784694 worst={"seed":37,"step":3117,"state":"RESOLVING","phase":"SETTLE","pair":[{"id":66,"x":9.884655021328175,"y":8.964682289183685,"logicalX":10,"logicalY":9,"path":[{"from":[9,8],"to":[10,9],"kind":"FOLLOW_SUPPORT","motionSeq":0,"pileFlow":true}],"group":0,"garbage":true},{"id":28,"x":8.999974553902991,"y":10,"logicalX":9,"logicalY":10,"path":[{"from":[8,9],"to":[9,10],"kind":"ROLL_RIGHT","motionSeq":0,"pileFlow":true}],"group":0,"garbage":true}]}
-    at expect (evalmachine.<anonymous>:6383:48)
-    at evalmachine.<anonymous>:6488:1
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js:119:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-
-Node.js v22.23.2
-node:child_process:955
-    throw err;
-    ^
-
-Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js
-    at genericNodeError (node:internal/errors:983:15)
-    at wrappedFn (node:internal/errors:537:14)
-    at checkExecSyncError (node:child_process:916:11)
-    at Object.execFileSync (node:child_process:952:15)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-overlap-regressions.js:21:6)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
-  status: 1,
-  signal: null,
-  output: [ null, null, null ],
-  pid: 2454,
-  stdout: null,
-  stderr: null
-}
-
-Node.js v22.23.2
+overlap regressions PASS {"samples":28362,"min":0.999999894}
 post-clear no-new-gap vacancy conservation PASS
