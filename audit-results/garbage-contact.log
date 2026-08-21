@@ -10,7 +10,23 @@ post-garbage internal + secondary-clear collapse PASS
 wall + floor + normal-ball + dynamic wall-vacancy regression PASS
 game-over former-garbage fade PASS
 garbage render overlap guard PASS
-upward normal triangle contact-side 2+1 split PASS
+evalmachine.<anonymous>:1918
+function expect(value,message){if(!value)throw new Error(message);}
+                                         ^
+
+Error: split-side: no separator for interior right contact
+    at expect (evalmachine.<anonymous>:1918:48)
+    at check (evalmachine.<anonymous>:1935:3)
+    at evalmachine.<anonymous>:1954:1
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/up-convex-split-side.js:60:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+
+Node.js v22.23.2
 runtime performance v2 parity guards PASS {"staticContactSkips":1,"colliders":6,"idCache":6,"drawFastPath":true,"rigidShadowCache":true}
 Super Strong learned multi-technique strategy PASS {"immediateTurn":1,"nextTurn":2,"fastFollow":1,"slowFollow":2,"dualSecondary":4,"act":0.1}
 Super Strong technique-first + speed-second PASS {"think":0.12,"act":0.065,"strongThink":0.28,"strongAct":0.1,"primary":"technique"}
