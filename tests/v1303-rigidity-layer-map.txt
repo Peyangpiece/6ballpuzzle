@@ -1,0 +1,64 @@
+V1303 RIGIDITY INTERNAL LAYER MAP
+
+LAYER 1
+  capture : previousPlanGroup @ line 49
+  redefine: line 365
+  delegate calls to captured layer: 2
+  version markers:
+    L883: __sixBallRigidityResolverVersion = rigidity-resolver-authoritative-v3
+    L1255: __sixBallTerminalRigidStabilityVersion = terminal-rigid-stability-v3.1
+    L1839: __sixBallTerminalRigidStabilityVersion = terminal-rigid-stability-v3.2
+    L2438: __sixBallPersistentEquilibriumVersion = persistent-collision-equilibrium-v3.3
+
+LAYER 2
+  capture : basePlanGroupV36 @ line 2502
+  redefine: line 2712
+  delegate calls to captured layer: 1
+  nearby rule comments:
+    L2650: m.ball.rigid =
+    L2653: m.ball.__floorUpLandingRigidV36 =
+    L2658: window.__sixBallLastFloorUpLandingV36 = {
+    L2672: FLOOR CANNOT BE A PROTRUSION SPLIT
+    L2683: onPhysicalFloorV36(
+    L2701: FLOOR LANDING
+    L2703: Stop as one rigid triangle.
+  version markers:
+    L2745: __sixBallFloorUpTriangleVersion = floor-up-triangle-v3.6
+
+LAYER 3
+  capture : basePlanGroupV37 @ line 2809
+  redefine: line 3124
+  delegate calls to captured layer: 1
+  nearby rule comments:
+    L3095: triangle by using the other legal rigid direction.
+    L3106: Perfectly centred empty floor:
+    L3109: Pick one deterministic rigid landing rather than
+    L3110: allowing individual FLOOR_DROP to split the set.
+    L3121: FINAL FLOOR TRANSITION HAS HIGHEST PRIORITY
+  version markers:
+    L3224: __sixBallUpFloorApproachVersion = up-floor-approach-v3.7
+
+LAYER 4
+  capture : basePlanGroupV39 @ line 3279
+  redefine: line 3438
+  delegate calls to captured layer: 1
+  nearby rule comments:
+    L3371: "GROUP_SLOPE_TRANSLATE"
+  version markers:
+    L3548: __sixBallSmoothSlopeRigidityVersion = smooth-slope-current-step-v39
+
+LAYER 5
+  capture : basePlanGroupV39 @ line 3613
+  redefine: line 3886
+  delegate calls to captured layer: 1
+  nearby rule comments:
+    L3858: canonical rigid-slope motion.
+    L3861: continuous slope even if the three individual
+    L3865: const slope=
+    L3866: rigidSlopePlan(
+    L3872: if(slope){
+    L3873: return slope;
+    L3881: FINAL GROUP PLAN PRIORITY
+    L3884: all 3 ordinary balls can still move as one rigid object.
+  version markers:
+    L4106: __sixBallRigidityRuleVersion = rigidity-authoritative-v3.9
