@@ -1,12 +1,11 @@
 /* Upward-triangle split-side invariant.
  *
- * For an ordinary (non-garbage) upward triangle, a protruding pile ball on the
- * right side of the triangle must detach exactly the right lower ball; the top
- * plus left lower ball stay together and move left.  A protrusion on the left
- * is the mirror image: the left lower ball detaches and the other two move
- * right.  This layer keeps the existing center-half split window and all
- * collision/arc calculations, but makes the 2+1 assignment explicitly follow
- * the physical contact side instead of any residual momentum/tie-break state.
+ * For an ordinary (non-garbage) upward triangle, a protruding pile ball may
+ * produce a 2+1 split only after the complete three-ball rigid body has no
+ * collision-safe continuation. A legal rigid slope route always wins.
+ *
+ * Once a true split is unavoidable, contact side still decides which lower
+ * ball becomes the solo ball.
  */
 (function installUpConvexSplitSideInvariant(){
     if(typeof window==="undefined"||window.__hexUpConvexSplitSideInvariant)return;
@@ -21,6 +20,15 @@
             members.every(m=>m?.ball&&!m.ball.isGarbage);
     }
 
+    function fullRigidContinuation(board,members,motions){
+        if(typeof hexPhysRigidSlopePlan!=="function")return null;
+        const plan=hexPhysRigidSlopePlan(board,members,motions);
+        if(!Array.isArray(plan)||plan.length!==members.length)return null;
+        const ids=new Set(plan.map(p=>p?.ball?.id));
+        if(ids.size!==members.length||!members.every(m=>ids.has(m.ball.id)))return null;
+        return plan;
+    }
+
     function outwardSoloMotion(board,solo,side,info,ignore){
         const tx=solo.x+side,ty=solo.y+1;
         if(!valid(tx,ty)||!hexPhysEmpty(board,tx,ty,ignore))return null;
@@ -32,6 +40,18 @@
     }
 
     hexPhysUpConvexSeparator=function(board,members,motions){
+        if(normalUpTriplet(members)){
+            // A protrusion is not itself a split condition. If the complete
+            // three-ball body still has a collision-safe slope route, keep it
+            // rigid. This prevents both premature 2+1 mode selection and the
+            // visible impression that the triangle separated while airborne.
+            const rigid=fullRigidContinuation(board,members,motions);
+            if(rigid){
+                window.__sixBallLastUpConvexRigidLandingV41="kept-rigid";
+                return null;
+            }
+        }
+
         const base=baseSeparator(board,members,motions);
         if(!base||!normalUpTriplet(members))return base;
 
@@ -52,16 +72,15 @@
         const own=new Set(members.filter(m=>m.ball.id!==solo.ball.id).map(m=>m.ball.id));
         let soloMotion=motions?.[members.indexOf(solo)]||null;
 
-        // A true center-protrusion split has an unobstructed outward arc around
-        // that protruding support. If a later wall/tie-break wrapper supplied a
-        // different individual tendency, restore only this canonical outward
-        // solo arc; the event resolver still performs the normal sweep safety
-        // checks before accepting it.
+        // Once a true split is unavoidable, preserve the canonical physical
+        // 2+1 assignment: the lower ball on the contact side becomes the solo
+        // ball and the remaining two travel together to the opposite side.
         if(!soloMotion||Math.sign(soloMotion.tx-solo.x)!==splitSide){
             soloMotion=outwardSoloMotion(board,solo,splitSide,base,own);
         }
         if(!soloMotion||Math.sign(soloMotion.tx-solo.x)!==splitSide)return base;
 
+        window.__sixBallLastUpConvexRigidLandingV41="split-required";
         return{
             ...base,
             dir:-splitSide,
@@ -74,7 +93,9 @@
         };
     };
 
-    window.__hexUpConvexSplitSideVersion="up-convex-side-v1";
+    window.__hexUpConvexSplitSideVersion="up-convex-side-v2-rigid-first";
+    window.__sixBallUpConvexSplitRequiresRigidFailure=true;
+    window.__sixBallUpConvexAirSplitGuard=true;
     window.__hexUpConvexRightContactSoloSide="right";
     window.__hexUpConvexLeftContactSoloSide="left";
 })();
