@@ -1,17 +1,12 @@
 /* ============================================================
- * 6ball UP-CONVEX FIRST-CONTACT SIDE LOCK v2
+ * 6ball UP-CONVEX FIRST-CONTACT SIDE LOCK v2.1
  *
- * IMPORTANT:
- * This patch does NOT split the triplet when the protrusion is
- * first detected logically.  The visual release position may
- * still be above physical contact at that instant.
- *
- * Instead it only remembers which side the protrusion was on at
- * the first encounter.  The existing v3.9 resolver keeps full
- * control of WHEN the split is physically allowed.  When that
- * canonical split finally becomes legal, this patch restores the
- * remembered 2+1 side so a prior rigid-slope step cannot reverse
- * left/right.
+ * This patch never starts the split early.
+ * It only remembers the protrusion side at the first encounter.
+ * The existing v3.9 resolver remains authoritative for WHEN the
+ * split is physically legal.  When that canonical split occurs,
+ * the remembered side is restored so a prior rigid-slope step
+ * cannot reverse the intended 2+1 direction.
  *
  * protrusion RIGHT of triangle centre -> LEFT pair + RIGHT solo
  * protrusion LEFT  of triangle centre -> RIGHT pair + LEFT solo
@@ -19,7 +14,7 @@
 (function(){
     if(
         typeof window === "undefined" ||
-        window.__sixBallUpConvexFirstContactSideLockV2
+        window.__sixBallUpConvexFirstContactSideLockV21
     ){
         return;
     }
@@ -33,10 +28,13 @@
         return;
     }
 
-    window.__sixBallUpConvexFirstContactSideLockV2 = true;
+    window.__sixBallUpConvexFirstContactSideLockV21 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
     const baseSeparator = hexPhysUpConvexSeparator;
+
+    /* Synchronous preview-only observation used during one planner call. */
+    let activeObservation = null;
 
     function isUpTriplet(members){
         if(!Array.isArray(members) || members.length !== 3)
@@ -105,7 +103,6 @@
 
         const hitFraction = (px - baseLeft) / width;
 
-        /* Outer-quarter contact remains an ordinary smooth slope. */
         if(
             hitFraction < 0.25 - 1e-9 ||
             hitFraction > 0.75 + 1e-9
@@ -140,11 +137,12 @@
             return null;
 
         const locks = members
-            .map(m => m?.ball?._upConvexFirstContactSideLockV2)
+            .map(m => m?.ball?._upConvexFirstContactSideLockV21)
             .filter(Boolean)
             .filter(l => l.supportId === supportId);
 
-        if(!locks.length)
+        /* A persistent lock is valid only if all 3 members agree. */
+        if(locks.length !== 3)
             return null;
 
         const first = locks[0];
@@ -162,19 +160,11 @@
         return first;
     }
 
-    function rememberFirstSide(board, members){
-        const g = tripletGeometry(board, members);
-
+    function geometryAsLock(g){
         if(!g)
             return null;
 
-        const existing = readSideLock(members, g.support.id);
-
-        /* Same protrusion: never overwrite the first-contact side. */
-        if(existing)
-            return existing;
-
-        const lock = {
+        return {
             supportId: g.support.id,
             groupId: g.groupId,
             pairDir: g.pairDir,
@@ -183,9 +173,20 @@
             delta: g.delta,
             hitFraction: g.hitFraction
         };
+    }
+
+    function persistFirstSide(members, g){
+        if(!g)
+            return null;
+
+        const existing = readSideLock(members, g.support.id);
+        if(existing)
+            return existing;
+
+        const lock = geometryAsLock(g);
 
         for(const m of members){
-            m.ball._upConvexFirstContactSideLockV2 = {...lock};
+            m.ball._upConvexFirstContactSideLockV21 = {...lock};
         }
 
         window.__sixBallLastUpConvexFirstContactObserved = {
@@ -197,6 +198,19 @@
         };
 
         return lock;
+    }
+
+    function currentObservationLock(members, supportId){
+        if(
+            !activeObservation ||
+            !supportId ||
+            activeObservation.support?.id !== supportId ||
+            !isUpTriplet(members)
+        ){
+            return null;
+        }
+
+        return geometryAsLock(activeObservation);
     }
 
     function outwardSoloMotion(board, solo, direction, info, members){
@@ -230,22 +244,32 @@
     }
 
     /*
-     * Observation only.  Do not manufacture a split here.
-     * This is the key fix for the airborne-split regression.
+     * Observe first-contact geometry BEFORE v3.9 can translate the
+     * triplet past the protrusion.  Preview calls stay read-only:
+     * activeObservation exists only on the synchronous call stack.
      */
     hexPhysPlanGroup = function(board, members, preview=false){
-        if(isUpTriplet(members)){
-            rememberFirstSide(board, members);
+        const observed = isUpTriplet(members)
+            ? tripletGeometry(board, members)
+            : null;
+
+        if(!preview && observed){
+            persistFirstSide(members, observed);
         }
 
-        return basePlanGroup(board, members, preview);
+        const previousObservation = activeObservation;
+        activeObservation = observed;
+
+        try{
+            return basePlanGroup(board, members, preview);
+        }finally{
+            activeObservation = previousObservation;
+        }
     };
 
     /*
-     * Existing v3.9 decides WHEN a real split is legal.
-     * We only replace its left/right assignment with the side
-     * remembered before rigid-slope translation could cross the
-     * protrusion centre.
+     * Canonical v3.9 still owns split timing.  Only after it returns
+     * a real separator do we restore the first-contact side.
      */
     hexPhysUpConvexSeparator = function(board, members, motions){
         const info = baseSeparator(board, members, motions);
@@ -254,7 +278,10 @@
             return info;
 
         const supportId = info?.support?.id;
-        const lock = readSideLock(members, supportId);
+
+        const lock =
+            readSideLock(members, supportId) ||
+            currentObservationLock(members, supportId);
 
         if(!lock)
             return info;
@@ -289,7 +316,7 @@
             );
         }
 
-        /* Never replace a legal canonical split with an unsafe path. */
+        /* Do not manufacture a path through an occupied target. */
         if(
             !soloMotion ||
             Math.sign(soloMotion.tx - solo.x) !== soloDirection
@@ -330,8 +357,9 @@
     };
 
     window.__sixBallUpConvexContactPriorityVersion =
-        "upconvex-first-contact-side-lock-v2";
+        "upconvex-first-contact-side-lock-v2.1";
 
     window.__sixBallUpConvexSplitTimingOwnedByCanonicalResolver = true;
     window.__sixBallUpConvexFirstContactOnlyLocksSide = true;
+    window.__sixBallUpConvexPreviewIsReadOnly = true;
 })();
