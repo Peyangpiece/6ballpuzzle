@@ -147,7 +147,11 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     // The reference keeps both NEXT windows empty throughout READY. They are
     // populated on the same frame that the first active triplets appear.
     const nd = 42, ncx = nx0 + nw / 2, ncy = ny0 + nh / 2, q = g.state === "READY" ? null : g.queue[0];
-    if (q) {drawBall(ctx, ncx - nd * 0.5, ncy - nd * 0.42, nd, q[0], {});drawBall(ctx, ncx + nd * 0.5, ncy - nd * 0.42, nd, q[1], {});drawBall(ctx, ncx, ncy + nd * 0.42, nd, q[2], {});}
+    if (q) {
+        drawBall(ctx, ncx, ncy - nd * 0.42, nd, q[0], {});
+        drawBall(ctx, ncx - nd * 0.5, ncy + nd * 0.42, nd, q[2], {});
+        drawBall(ctx, ncx + nd * 0.5, ncy + nd * 0.42, nd, q[1], {});
+    }
     ctx.font = "900 17px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.94)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.fillText("つぎ", ncx, ny0 + nh + 7);ctx.restore();
     const avx=side===0?44:VW-44,avy=36;
     ctx.save();ctx.beginPath();ctx.arc(avx,avy,25,0,TAU);ctx.fillStyle=side===0?"#A9F68A":"#747C89";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle="rgba(255,255,255,.88)";ctx.stroke();ctx.beginPath();ctx.arc(avx,avy-5,7,0,TAU);ctx.fillStyle="rgba(25,24,38,.72)";ctx.fill();ctx.beginPath();ctx.ellipse(avx,avy+11,13,8,0,Math.PI,TAU);ctx.fill();ctx.font="900 8px ui-sans-serif,system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#FFFFFF";ctx.fillText((label||"").slice(0,7),avx,avy+31);ctx.restore();
@@ -197,7 +201,7 @@ function ResultOverlay({win,onNext,onExit}){
     );
 }
 const FIREBASE_CONFIG = {apiKey:"AIzaSyAanVETIredUVH1slS8OtIMSPdOn91u2HM",authDomain:"ballpuzzle-8cc87.firebaseapp.com",databaseURL:"https://ballpuzzle-8cc87-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"ballpuzzle-8cc87",storageBucket:"ballpuzzle-8cc87.firebasestorage.app",messagingSenderId:"114162791129",appId:"1:114162791129:web:14a0fc04ca3c6f5d9f84c8"};
-const BANDW = 150, STALE_MS = 20000, WAIT_MS = 1600, SNAP_MS = 200, GRACE_MS = 5000;
+const BANDW = 150, STALE_MS = 20000, WAIT_MS = 1600, SNAP_MS = 66, GRACE_MS = 5000;
 const bandOf = (r) => Math.max(0, Math.min(19, Math.floor(r / BANDW)));
 const eloDelta = (mine, foe, win) => Math.round(32 * ((win ? 1 : 0) - 1 / (1 + Math.pow(10, (foe - mine) / 400))));
 const VALID_CELLS = (() => {const a = [];for (let y = BOARD_MIN_ROW; y < ROWS; y++) for (let x = 0; x < W2; x++) if (valid(x, y)) a.push([x, y]);return a;})();

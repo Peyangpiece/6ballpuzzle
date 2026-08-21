@@ -1,0 +1,83 @@
+/* HEXDROP immersive menu system.
+ * UI-only components and persisted preferences. No game physics are touched.
+ */
+const HEX_MENU_ACCENTS={cyan:"#2FE3F5",pink:"#FF3EA5",violet:"#9B6DFF",gold:"#FFD36A",gray:"#AAB6D6"};
+
+function hexReadStored(key,fallback){
+    try{const v=localStorage.getItem(key);return v===null?fallback:v;}catch(_){return fallback;}
+}
+function hexReadStoredNumber(key,fallback){
+    const n=Number(hexReadStored(key,fallback));return Number.isFinite(n)?n:fallback;
+}
+function hexLoadMenuPrefs(){
+    return{
+        nickname:String(hexReadStored("hexdrop_nickname","Player")||"Player").slice(0,12),
+        bgmVolume:Math.max(0,Math.min(100,hexReadStoredNumber("hexdrop_bgm_volume",70))),
+        sfxVolume:Math.max(0,Math.min(100,hexReadStoredNumber("hexdrop_sfx_volume",85))),
+        haptics:hexReadStored("hexdrop_haptics","1")!=="0",
+        offset:hexReadStored("hexdrop_offset","0")==="1"
+    };
+}
+function hexStoreMenuPref(key,value){try{localStorage.setItem(key,String(value));}catch(_){} }
+function hexApplySfxVolume(percent){
+    const p=Math.max(0,Math.min(100,Number(percent)||0));
+    Sfx._menuVolume=p/100;
+    Sfx.enabled=p>0;
+    if(Sfx.master&&Sfx.ctx){
+        const target=.70*Sfx._menuVolume;
+        try{Sfx.master.gain.setTargetAtTime(target,Sfx.ctx.currentTime,.025);}catch(_){Sfx.master.gain.value=target;}
+    }
+}
+(function installMenuSfxVolumeBridge(){
+    if(typeof Sfx==="undefined"||Sfx.__menuVolumeBridge)return;
+    Sfx.__menuVolumeBridge=true;Sfx._menuVolume=1;
+    const baseInit=Sfx.init.bind(Sfx);
+    Sfx.init=function(){baseInit();if(this.master&&this.ctx){const target=.70*(Number.isFinite(this._menuVolume)?this._menuVolume:1);this.master.gain.value=target;}};
+})();
+function hexRankLabel(r){
+    r=Number(r)||0;
+    if(r>=1800)return"MASTER";if(r>=1500)return"DIAMOND";if(r>=1300)return"PLATINUM";if(r>=1150)return"GOLD";if(r>=1000)return"SILVER";return"BRONZE";
+}
+function hexWinRate(w,l){const n=(Number(w)||0)+(Number(l)||0);return n?Math.round((Number(w)||0)/n*100):0;}
+
+function HexLogoMark({size=112}){
+    const dots=[];const r=size*.31,d=size*.24,c=size/2;
+    for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3;dots.push(React.createElement("div",{key:i,style:{position:"absolute",left:c+Math.cos(a)*r-d/2,top:c+Math.sin(a)*r-d/2,width:d,height:d,borderRadius:"50%",background:i%2?"linear-gradient(145deg,#FF7BC5,#FF3EA5)":"linear-gradient(145deg,#8FF8FF,#2FE3F5)",boxShadow:i%2?"0 0 18px #FF3EA588":"0 0 18px #2FE3F588",border:"1px solid rgba(255,255,255,.65)"}}));}
+    return React.createElement("div",{style:{position:"relative",width:size,height:size,filter:"drop-shadow(0 0 22px rgba(47,227,245,.18))"}},dots,React.createElement("div",{style:{position:"absolute",left:c-size*.085,top:c-size*.085,width:size*.17,height:size*.17,borderRadius:"50%",border:"1px solid rgba(255,255,255,.35)",background:"rgba(5,8,24,.7)",boxShadow:"inset 0 0 14px rgba(47,227,245,.22)"}}));
+}
+
+function HexMenuBackdrop(){
+    const motes=Array.from({length:16},(_,i)=>React.createElement("div",{key:i,style:{position:"absolute",left:`${5+(i*17)%92}%`,top:`${8+(i*29)%82}%`,width:i%4===0?5:2,height:i%4===0?5:2,borderRadius:"50%",background:i%3===0?"#FF7AC6":"#8DEEFF",opacity:.16+(i%5)*.06,boxShadow:"0 0 12px currentColor",animation:`hexMenuDrift ${7+i%5}s ease-in-out ${-(i%6)}s infinite alternate`}}));
+    return React.createElement(React.Fragment,null,
+        React.createElement("style",null,"@keyframes hexMenuDrift{0%{transform:translate3d(0,-5px,0);opacity:.18}100%{transform:translate3d(8px,8px,0);opacity:.55}}@keyframes hexMenuPulse{0%,100%{opacity:.35;transform:scale(.96)}50%{opacity:.7;transform:scale(1.04)}}"),
+        React.createElement("div",{className:"absolute inset-0 pointer-events-none overflow-hidden",style:{background:"radial-gradient(900px 520px at 12% 18%,rgba(58,38,145,.34),transparent 60%),radial-gradient(760px 460px at 88% 28%,rgba(0,187,210,.20),transparent 62%),radial-gradient(800px 440px at 58% 112%,rgba(255,62,165,.18),transparent 58%),linear-gradient(145deg,#050412 0%,#08081c 46%,#050512 100%)"}},
+            React.createElement("div",{style:{position:"absolute",inset:"7% 4%",opacity:.19,backgroundImage:"linear-gradient(30deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(150deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(30deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(150deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%)",backgroundSize:"46px 80px",backgroundPosition:"0 0,0 0,23px 40px,23px 40px",maskImage:"linear-gradient(90deg,transparent,black 18%,black 82%,transparent)"}}),
+            React.createElement("div",{style:{position:"absolute",width:"32vw",height:"32vw",minWidth:240,minHeight:240,right:"-12vw",top:"-13vw",border:"1px solid rgba(47,227,245,.14)",borderRadius:"50%",boxShadow:"0 0 90px rgba(47,227,245,.08),inset 0 0 70px rgba(47,227,245,.04)",animation:"hexMenuPulse 7s ease-in-out infinite"}}),
+            React.createElement("div",{style:{position:"absolute",width:"26vw",height:"26vw",minWidth:210,minHeight:210,left:"-10vw",bottom:"-13vw",border:"1px solid rgba(255,62,165,.13)",borderRadius:"50%",boxShadow:"0 0 80px rgba(255,62,165,.07)",animation:"hexMenuPulse 8s ease-in-out -2s infinite"}}),motes));
+}
+
+function HexMenuShell({children,title,eyebrow="HEXDROP // COMMAND",back,wide=true}){
+    return React.createElement("div",{className:"absolute inset-0 z-20 overflow-y-auto font-sans",style:{paddingTop:"max(12px,env(safe-area-inset-top))",paddingBottom:"max(12px,env(safe-area-inset-bottom))",paddingLeft:"max(16px,env(safe-area-inset-left))",paddingRight:"max(16px,env(safe-area-inset-right))"}},
+        React.createElement(HexMenuBackdrop,null),
+        React.createElement("div",{className:"relative z-10 mx-auto min-h-full flex flex-col justify-center",style:{maxWidth:wide?980:760}},
+            (title||back)&&React.createElement("div",{className:"flex items-center gap-3 mb-3"},
+                back&&React.createElement("button",{onClick:back,className:"shrink-0 flex items-center justify-center rounded-xl text-white/80 active:scale-95",style:{width:40,height:40,border:"1px solid rgba(255,255,255,.16)",background:"rgba(255,255,255,.055)",boxShadow:"0 8px 24px rgba(0,0,0,.3)",backdropFilter:"blur(12px)"}},"←"),
+                React.createElement("div",null,React.createElement("div",{className:"text-[9px] font-black tracking-[.24em] text-cyan-200/45"},eyebrow),title&&React.createElement("div",{className:"text-white font-black tracking-[.04em]",style:{fontSize:"clamp(18px,2.5vw,27px)"}},title))),children));
+}
+
+function HexMenuButton({icon="◆",title,subtitle,meta,accent="cyan",onClick,disabled=false,compact=false}){
+    const [hover,setHover]=React.useState(false),[down,setDown]=React.useState(false);const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;
+    return React.createElement("button",{disabled,onClick,onPointerEnter:()=>setHover(true),onPointerLeave:()=>{setHover(false);setDown(false);},onPointerDown:()=>setDown(true),onPointerUp:()=>setDown(false),className:"w-full text-left relative overflow-hidden disabled:opacity-35",style:{minHeight:compact?66:78,padding:compact?"11px 14px":"13px 16px",borderRadius:18,border:`1px solid ${c}${hover?"88":"42"}`,background:hover?`linear-gradient(105deg,${c}1f,rgba(255,255,255,.075) 52%,rgba(255,255,255,.035))`:`linear-gradient(105deg,${c}12,rgba(255,255,255,.048) 52%,rgba(255,255,255,.024))`,boxShadow:down?`inset 0 2px 14px rgba(0,0,0,.5),0 0 16px ${c}1c`:`0 12px 26px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.08),0 0 ${hover?28:13}px ${c}20`,backdropFilter:"blur(16px)",transform:down?"translateY(2px) scale(.992)":hover?"translateY(-1px)":"none",transition:"transform .12s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease"}},
+        React.createElement("div",{style:{position:"absolute",left:0,top:0,bottom:0,width:3,background:c,boxShadow:`0 0 14px ${c}`}}),
+        React.createElement("div",{className:"flex items-center gap-3"},
+            React.createElement("div",{className:"shrink-0 flex items-center justify-center font-black",style:{width:compact?38:44,height:compact?38:44,borderRadius:13,color:c,border:`1px solid ${c}55`,background:`${c}10`,boxShadow:`inset 0 0 16px ${c}10`,fontSize:compact?17:20}},icon),
+            React.createElement("div",{className:"min-w-0 flex-1"},React.createElement("div",{className:"font-black text-white tracking-[.03em]",style:{fontSize:compact?14:16}},title),subtitle&&React.createElement("div",{className:"mt-0.5 text-[10px] text-white/42 font-semibold truncate"},subtitle)),
+            meta&&React.createElement("div",{className:"text-[9px] font-black tracking-[.12em] shrink-0",style:{color:c}},meta),React.createElement("div",{className:"text-white/25 text-lg shrink-0"},"›")));
+}
+
+function HexPanel({children,accent="cyan",className="",style={}}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement("div",{className,style:{border:`1px solid ${c}2e`,background:"linear-gradient(145deg,rgba(255,255,255,.062),rgba(255,255,255,.022))",boxShadow:"0 18px 42px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.07)",backdropFilter:"blur(18px)",borderRadius:20,...style}},children);}
+function HexStat({label,value,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement(HexPanel,{accent,className:"p-3 text-center"},React.createElement("div",{className:"text-[9px] font-black tracking-[.18em] text-white/35"},label),React.createElement("div",{className:"mt-1 font-black tabular-nums",style:{fontSize:"clamp(20px,3vw,30px)",color:c,textShadow:`0 0 18px ${c}55`}},value));}
+function HexSettingSlider({label,caption,value,onChange,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement(HexPanel,{accent,className:"px-4 py-3"},React.createElement("div",{className:"flex items-center justify-between gap-4 mb-2"},React.createElement("div",null,React.createElement("div",{className:"text-sm font-black text-white/90"},label),caption&&React.createElement("div",{className:"text-[9px] text-white/35 mt-0.5"},caption)),React.createElement("div",{className:"text-xs font-black tabular-nums",style:{color:c}},`${Math.round(value)}%`)),React.createElement("input",{type:"range",min:0,max:100,step:1,value,onChange:e=>onChange(Number(e.target.value)),className:"w-full",style:{accentColor:c}}));}
+function HexSettingToggle({label,caption,value,onChange,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement("button",{onClick:()=>onChange(!value),className:"w-full text-left"},React.createElement(HexPanel,{accent,className:"px-4 py-3 flex items-center gap-4"},React.createElement("div",{className:"flex-1"},React.createElement("div",{className:"text-sm font-black text-white/90"},label),caption&&React.createElement("div",{className:"text-[9px] text-white/35 mt-0.5 leading-relaxed"},caption)),React.createElement("div",{className:"shrink-0 relative rounded-full",style:{width:44,height:24,background:value?`${c}55`:"rgba(255,255,255,.10)",border:`1px solid ${value?c:"rgba(255,255,255,.18)"}`,boxShadow:value?`0 0 14px ${c}35`:"none",transition:"all .18s ease"}},React.createElement("div",{style:{position:"absolute",top:3,left:value?22:3,width:16,height:16,borderRadius:"50%",background:value?c:"#77809a",boxShadow:"0 2px 8px rgba(0,0,0,.45)",transition:"left .16s ease"}}))));}
+
+window.__hexMenuUiVersion="menu-ui-v1";

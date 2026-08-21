@@ -19,14 +19,59 @@ function hexPhysSetGroup(members,size,orientation=""){
  return gid;
 }
 function hexPhysSupportInfo(b,x,y,ignore=null){
- const floor=touchesFloorRow(y),left={x:x-1,y:y+1,valid:valid(x-1,y+1)},right={x:x+1,y:y+1,valid:valid(x+1,y+1)};
- left.ball=left.valid?b[left.y][left.x]:null;right.ball=right.valid?b[right.y][right.x]:null;
- left.occupied=!left.valid||!!(left.ball&&!(ignore&&ignore.has(left.ball.id)));right.occupied=!right.valid||!!(right.ball&&!(ignore&&ignore.has(right.ball.id)));
- return{floor,left,right,count:floor?2:Number(left.occupied)+Number(right.occupied)};
+ const floor=touchesFloorRow(y),
+       left={x:x-1,y:y+1,valid:valid(x-1,y+1)},
+       right={x:x+1,y:y+1,valid:valid(x+1,y+1)};
+
+ left.ball=left.valid?b[left.y][left.x]:null;
+ right.ball=right.valid?b[right.y][right.x]:null;
+
+ left.wall=!left.valid;
+ right.wall=!right.valid;
+
+ const leftBall=!!(
+   left.ball &&
+   !(ignore&&ignore.has(left.ball.id))
+ );
+ const rightBall=!!(
+   right.ball &&
+   !(ignore&&ignore.has(right.ball.id))
+ );
+
+ /*
+  * Wall = zero-friction collision constraint.
+  * It may provide a normal constraint against penetration,
+  * but it is NOT a real lower ball/support.
+  */
+ left.occupied=left.wall||leftBall;
+ right.occupied=right.wall||rightBall;
+
+ const realCount=Number(leftBall)+Number(rightBall);
+ const wallContact=left.wall||right.wall;
+
+ return{
+   floor,
+   left,
+   right,
+
+   /*
+    * Keep contact stability compatible with a ball trapped
+    * between a frictionless wall and one real ball.
+    */
+   count:floor?2:realCount+(wallContact&&realCount>0?1:0),
+
+   // Used for hole / structural support decisions.
+   realCount,
+   wallContact
+ };
 }
 function isBalancedHexagonCenterHole(b,cx,cy){
  if(!isHexagonCenterHole(b,cx,cy))return false;
- return [[cx-1,cy+1],[cx+1,cy+1]].every(([x,y])=>touchesFloorRow(y)||hexPhysSupportInfo(b,x,y).count>=2);
+ return [[cx-1,cy+1],[cx+1,cy+1]].every(([x,y])=>{
+  if(touchesFloorRow(y))return true;
+  const s=hexPhysSupportInfo(b,x,y);
+  return s.realCount>=2;
+});
 }
 function ballInBalancedHexagonRing(b,x,y){
  for(let cy=y-1;cy<=y+1;cy++)for(let cx=x-2;cx<=x+2;cx++)if(isBalancedHexagonCenterHole(b,cx,cy)){
@@ -42,8 +87,28 @@ function hexPhysNaturalMotion(b,x,y,ignore=null){
  if(!ignore&&ballInBalancedHexagonRing(b,x,y))return null;
  const l=hexPhysEmpty(b,x-1,y+1,ignore),r=hexPhysEmpty(b,x+1,y+1,ignore),down=hexPhysEmpty(b,x,y+2,ignore);
  if(l&&r&&down)return{x,y,tx:x,ty:y+2,ball,kind:"FREE_FALL",pivot:null,topPivot:null,followSupportIds:[]};
- if(l&&!r)return{x,y,tx:x-1,ty:y+1,ball,kind:"ROLL_LEFT",pivot:[x+1,y+1],topPivot:null,followSupportIds:[]};
- if(r&&!l)return{x,y,tx:x+1,ty:y+1,ball,kind:"ROLL_RIGHT",pivot:[x-1,y+1],topPivot:null,followSupportIds:[]};
+ if(l&&!r){
+  const px=x+1,py=y+1;
+  const wall=!valid(px,py);
+  return{
+    x,y,tx:x-1,ty:y+1,ball,
+    kind:wall?"WALL_SLIDE_LEFT":"ROLL_LEFT",
+    pivot:wall?null:[px,py],
+    topPivot:null,
+    followSupportIds:[]
+  };
+ }
+ if(r&&!l){
+  const px=x-1,py=y+1;
+  const wall=!valid(px,py);
+  return{
+    x,y,tx:x+1,ty:y+1,ball,
+    kind:wall?"WALL_SLIDE_RIGHT":"ROLL_RIGHT",
+    pivot:wall?null:[px,py],
+    topPivot:null,
+    followSupportIds:[]
+  };
+ }
  if(!l&&!r)return null;
 
  // Bottom-row parity bridge.
@@ -54,10 +119,10 @@ function hexPhysNaturalMotion(b,x,y,ignore=null){
  if(l&&r&&y+1===ROWS-1){
   let dir=hexPhysBias(ball);
   if(!dir){
-   const sl=floorPackingScore(b,x-1,y+1),sr=floorPackingScore(b,x+1,y+1);
-   if(sl!==sr)dir=sl>sr?-1:1;
+   // Perfectly symmetric unstable contact:
+   // deterministic neutral tie-break, independent of wall distance.
+   dir=((Number(ball.id)||0)&1)?-1:1;
   }
-  if(!dir)dir=(x<=1?1:(x>=W2-2?-1:-1));
   const tx=x+dir,ty=y+1;
   if(hexPhysEmpty(b,tx,ty,ignore))return{x,y,tx,ty,ball,kind:"FLOOR_DROP",pivot:null,topPivot:null,followSupportIds:[]};
   const alt=x-dir;
@@ -66,8 +131,10 @@ function hexPhysNaturalMotion(b,x,y,ignore=null){
 
  if(!down&&valid(x,y+2)){
   let dir=hexPhysBias(ball);
-  if(!dir&&y+1===ROWS-1){const sl=floorPackingScore(b,x-1,y+1),sr=floorPackingScore(b,x+1,y+1);if(sl!==sr)dir=sl>sr?-1:1;}
-  if(!dir)dir=-1;
+  if(!dir){
+   // No wall attraction / no global left bias.
+   dir=((Number(ball.id)||0)&1)?-1:1;
+  }
   if(hexPhysEmpty(b,x+dir,y+1,ignore))return{x,y,tx:x+dir,ty:y+1,ball,kind:dir<0?"ROLL_LEFT":"ROLL_RIGHT",pivot:null,topPivot:[x,y+2],followSupportIds:[]};
   if(hexPhysEmpty(b,x-dir,y+1,ignore))return{x,y,tx:x-dir,ty:y+1,ball,kind:dir<0?"ROLL_RIGHT":"ROLL_LEFT",pivot:null,topPivot:[x,y+2],followSupportIds:[]};
  }

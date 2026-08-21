@@ -88,6 +88,23 @@ function stepEngine(g, dt) {
                 g.balanceWait=(g.balanceWait||0)+dt;
                 if(g.balanceWait<.12){g.stateT=0;return;}
                 markCollisionBalancedGaps(g.board);
+
+                /*
+                 * This exact logical board has now completed the
+                 * collision-balance confirmation window with no
+                 * legal gravity event.
+                 *
+                 * CHECK must not immediately reject the exact same
+                 * board again as illegalFloat, otherwise:
+                 *
+                 * SETTLE -> confirm -> CHECK -> SETTLE
+                 *
+                 * loops forever.
+                 */
+                if(!hasLegalGravityMove(g.board)){
+                    g.__sixBallConfirmedEquilibriumSig =
+                        physicsSignature(g);
+                }
             }
 
             g.balanceWait=0;
@@ -98,8 +115,31 @@ function stepEngine(g, dt) {
             return;
         }
         if (g.phase === "CHECK") {
-            // Absolute invariant: no next piece / game-over decision while an unsupported ball is frozen.
-            if (boardHasIllegalFloat(g.board) || hasLegalGravityMove(g.board)) {
+            /*
+             * A board that SETTLE has already confirmed as a
+             * no-event collision equilibrium is quiescent as long
+             * as its logical board signature has not changed.
+             *
+             * This is NOT a shape exception.
+             * Any later placement / clear / garbage / collapse
+             * changes physicsSignature(), automatically invalidating
+             * this checkpoint.
+             */
+            const checkSig = physicsSignature(g);
+            const legalNow = hasLegalGravityMove(g.board);
+
+            const confirmedEquilibrium =
+                !legalNow &&
+                !!g.__sixBallConfirmedEquilibriumSig &&
+                g.__sixBallConfirmedEquilibriumSig === checkSig;
+
+            if (
+                legalNow ||
+                (
+                    !confirmedEquilibrium &&
+                    boardHasIllegalFloat(g.board)
+                )
+            ) {
                 g.phase = "SETTLE";
                 g.stateT = 0;
                 return;

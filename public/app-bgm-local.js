@@ -5,9 +5,9 @@
   if(typeof window==="undefined"||window.__sixBallLocalBgmInstalled)return;
   window.__sixBallLocalBgmInstalled=true;
 
-  const HASH="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
-  const SRC="/assets/maou_bgm_cyber44.mp3?v="+HASH.slice(0,16);
-  const BGM_OUTPUT_SCALE=0.20;
+  const HASH="2625608e666158082464c1d4052c228d5fd964d592ccc275947708fcf6ee2b5f";
+  const SRC="/assets/6ball-battle-bgm.mp3?v="+HASH.slice(0,16);
+  const BGM_OUTPUT_SCALE=0.10;
 
   const legacy=window.Bgm;
   if(legacy){
@@ -129,7 +129,7 @@
   window.__sixBallGameplayBgmUploadedSha256=HASH;
   window.__sixBallGameplayBgmSameOrigin=true;
   window.__sixBallGameplayBgmOutputScale=BGM_OUTPUT_SCALE;
-  window.__sixBallGameplayBgmVersion="cyber44-v7-volume-20pct";
+  window.__sixBallGameplayBgmVersion="6ball-audio-coexist-v2";
   window.__sixBallGameplayBgmReady=false;
   window.__sixBallGameplayBgmPlaying=false;
 
@@ -143,19 +143,58 @@
     return false;
   }
 
-  function resumeGameSfxContext(){
-    if(typeof Sfx==="undefined")return null;
-    try{if(typeof Sfx.init==="function")Sfx.init();}catch(_){}
+  function unlockSilentFrame(ctx){
+    if(!ctx||ctx.state!=="running")return false;
+    try{
+      const buf=ctx.createBuffer(1,1,ctx.sampleRate||44100);
+      const src=ctx.createBufferSource();
+      const gain=ctx.createGain();
+      gain.gain.value=0;
+      src.buffer=buf;
+      src.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(0);
+      window.__sixBallSfxUnlockCount=(window.__sixBallSfxUnlockCount||0)+1;
+      return true;
+    }catch(_){return false;}
+  }
+
+  function ensureGameSfxContext(){
+    if(typeof Sfx==="undefined")return Promise.resolve(false);
+
+    if(Sfx.ctx&&Sfx.ctx.state==="closed"){
+      Sfx.ctx=null;
+      Sfx.master=null;
+    }
+
+    try{
+      if(!Sfx.ctx&&typeof Sfx.init==="function")Sfx.init();
+    }catch(err){
+      window.__sixBallSfxResumeError=err&&err.name?String(err.name):"init-error";
+      return Promise.resolve(false);
+    }
+
     const ctx=Sfx.ctx;
-    if(!ctx)return null;
+    if(!ctx){
+      window.__sixBallSfxContextState="missing";
+      return Promise.resolve(false);
+    }
+
     window.__sixBallSfxContextState=ctx.state||"unknown";
-    if(ctx.state!=="suspended")return null;
+
+    if(ctx.state==="running"){
+      unlockSilentFrame(ctx);
+      window.__sixBallSfxResumeSucceeded=true;
+      return Promise.resolve(true);
+    }
+
     try{
       const p=ctx.resume();
       if(p&&typeof p.then==="function"){
         return p.then(()=>{
           window.__sixBallSfxContextState=ctx.state||"unknown";
           window.__sixBallSfxResumeSucceeded=ctx.state==="running";
+          if(ctx.state==="running")unlockSilentFrame(ctx);
           return ctx.state==="running";
         }).catch(err=>{
           window.__sixBallSfxResumeSucceeded=false;
@@ -167,52 +206,74 @@
       window.__sixBallSfxResumeSucceeded=false;
       window.__sixBallSfxResumeError=err&&err.name?String(err.name):"resume-error";
     }
-    return null;
+
+    return Promise.resolve(ctx.state==="running");
+  }
+
+  function recoverGameplayBgm(){
+    if(!Bgm.wanted)return;
+    const a=Bgm.init();
+    if(!a)return;
+
+    a.muted=false;
+    a.volume=Bgm.effectiveVolume();
+
+    try{
+      const p=a.play();
+      if(p&&typeof p.catch==="function"){
+        p.catch(err=>{
+          Bgm.lastError=err&&err.name?String(err.name):"play-rejected";
+          window.__sixBallGameplayBgmLastError=Bgm.lastError;
+        });
+      }
+    }catch(err){
+      Bgm.lastError=err&&err.name?String(err.name):"play-error";
+      window.__sixBallGameplayBgmLastError=Bgm.lastError;
+    }
   }
 
   if(typeof Sfx!=="undefined"&&typeof Sfx.play==="function"&&!Sfx.__sixBallSafariResumeBridge){
     const baseSfxPlay=Sfx.play.bind(Sfx);
     Sfx.__sixBallSafariResumeBridge=true;
+
     Sfx.play=function(ev,vol){
-      try{if(typeof this.init==="function")this.init();}catch(_){}
-      const ctx=this.ctx;
-      if(ctx&&ctx.state==="suspended"){
-        try{
-          const p=ctx.resume();
-          if(p&&typeof p.then==="function"){
-            p.then(()=>{
-              window.__sixBallSfxContextState=ctx.state||"unknown";
-              window.__sixBallSfxResumeSucceeded=ctx.state==="running";
-              if(ctx.state==="running")baseSfxPlay(ev,vol);
-            }).catch(err=>{
-              window.__sixBallSfxResumeSucceeded=false;
-              window.__sixBallSfxResumeError=err&&err.name?String(err.name):"resume-rejected";
-            });
-            return;
-          }
-        }catch(err){
-          window.__sixBallSfxResumeError=err&&err.name?String(err.name):"resume-error";
-        }
+      if(this.ctx&&this.ctx.state==="running"){
+        window.__sixBallSfxContextState="running";
+        return baseSfxPlay(ev,vol);
       }
-      window.__sixBallSfxContextState=ctx&&ctx.state?ctx.state:"missing";
-      return baseSfxPlay(ev,vol);
+
+      ensureGameSfxContext().then(ok=>{
+        if(ok)baseSfxPlay(ev,vol);
+      });
     };
+
     window.__sixBallSfxSafariResumeBridge=true;
   }
 
   function sync(){
     const game=gameIsVisible();
+
     if(game&&!wasGame){
-      resumeGameSfxContext();
       Bgm.start(true);
-    }else if(!game&&wasGame)Bgm.stop();
+
+      ensureGameSfxContext().then(()=>{
+        recoverGameplayBgm();
+      });
+
+    }else if(!game&&wasGame){
+      Bgm.stop();
+    }
+
     wasGame=game;
   }
 
   function primeFromGesture(){
-    resumeGameSfxContext();
-    if(gameIsVisible())return;
-    Bgm.prime();
+    // SafariではHTML Audioを先にユーザー操作へ結びつける。
+    if(!gameIsVisible())Bgm.prime();
+
+    ensureGameSfxContext().then(()=>{
+      if(Bgm.wanted)recoverGameplayBgm();
+    });
   }
   if(typeof PointerEvent!=="undefined")document.addEventListener("pointerdown",primeFromGesture,{capture:true,passive:true});
   else document.addEventListener("touchstart",primeFromGesture,{capture:true,passive:true});
@@ -220,9 +281,17 @@
   document.addEventListener("click",()=>sync(),{capture:false});
   document.addEventListener("pointerdown",()=>{
     if(!gameIsVisible())return;
-    resumeGameSfxContext();
+
     wasGame=true;
-    if(!Bgm.audio||Bgm.audio.paused||Bgm.audio.muted)Bgm.start(false);
+
+    if(!Bgm.audio||Bgm.audio.paused||Bgm.audio.muted){
+      Bgm.start(false);
+    }
+
+    ensureGameSfxContext().then(()=>{
+      recoverGameplayBgm();
+    });
+
   },{capture:true});
 
   const root=document.getElementById("root");
@@ -231,13 +300,20 @@
     observer.observe(root,{childList:true,subtree:true});
   }
   document.addEventListener("visibilitychange",()=>{
-    if(document.hidden)Bgm.pause();
-    else if(wasGame){resumeGameSfxContext();Bgm.start(false);}
+    if(document.hidden){
+      Bgm.pause();
+    }else if(wasGame){
+      Bgm.start(false);
+
+      ensureGameSfxContext().then(()=>{
+        recoverGameplayBgm();
+      });
+    }
   });
 
   Bgm.init();
   window.__sixBallGameplayBgmUserVolume=Bgm.volume;
   window.__sixBallGameplayBgmEffectiveVolume=Bgm.effectiveVolume();
-  resumeGameSfxContext();
+  window.__sixBallSfxLazyInit=true;
   sync();
 })();

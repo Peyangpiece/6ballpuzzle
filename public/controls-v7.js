@@ -26,6 +26,59 @@
     const pointers=new Map();
     let dual=null;
 
+    // Normal-ball rotation MP3. Played directly inside the trusted
+    // pointerup gesture so Safari cannot reject it as delayed playback.
+    const ROTATE_AUDIO_SRC="/assets/normal-ball-rotate-v14.mp3?v=652d0f18f431199f";
+    const rotateAudioPool=Array.from({length:4},()=>{
+        const a=new Audio();
+        a.preload="auto";
+        a.playsInline=true;
+        a.setAttribute("playsinline","");
+        a.src=ROTATE_AUDIO_SRC;
+        try{a.load();}catch(_){}
+        return a;
+    });
+    let rotateAudioCursor=0;
+
+    function rotateAudioVolume(){
+        try{
+            const v=Number(localStorage.getItem("hexdrop_sfx_volume"));
+            if(Number.isFinite(v))return Math.max(0,Math.min(1,v/100));
+        }catch(_){}
+        return 1;
+    }
+
+    function playRotateAudioNow(){
+        const volume=rotateAudioVolume();
+        window.__sixBallRotateDirectRequested=(window.__sixBallRotateDirectRequested||0)+1;
+        window.__sixBallRotateDirectVolume=volume;
+        if(volume<=0)return;
+
+        const a=rotateAudioPool[rotateAudioCursor++%rotateAudioPool.length];
+        try{
+            a.pause();
+            a.currentTime=0;
+            a.muted=false;
+            a.volume=volume;
+
+            const result=a.play();
+            if(result&&typeof result.then==="function"){
+                result.then(()=>{
+                    window.__sixBallRotateDirectPlayed=(window.__sixBallRotateDirectPlayed||0)+1;
+                    window.__sixBallRotateDirectError="";
+                }).catch(err=>{
+                    window.__sixBallRotateDirectError=
+                        err&&err.name?String(err.name):"play-rejected";
+                });
+            }
+        }catch(err){
+            window.__sixBallRotateDirectError=
+                err&&err.name?String(err.name):"play-error";
+        }
+    }
+
+    window.__sixBallRotateDirectSource=ROTATE_AUDIO_SRC;
+
     const HOLD_MS=LONG_PRESS_MS;
     const TAP_MAX_MS=350;
     const DUAL_TAP_MAX_MS=320;
@@ -73,7 +126,9 @@
         // setFreeX() has already selected the nearest legal logical column.
         // Keep the exact sub-cell visual X through the instant transfer and
         // let lock() perform the single final lattice hand-off.
+        try{window.__sixBallArmInstantDrop?.();}catch(_){}
         hardDrop(g);
+        try{window.__sixBallPlayInstantDropLand?.(1);}catch(_){}
         return g.state!=="PLAYING";
     }
     window.__hexInstantDropV7=instantVerticalDrop;
@@ -251,7 +306,10 @@
         const elapsed=performance.now()-rec.downAt;
         const dist=Math.hypot(rec.lastX-rec.startX,rec.lastY-rec.startY);
         if(!cancelled&&!rec.dragActive&&rec.tapEligible&&elapsed<=TAP_MAX_MS&&dist<=TAP_MOVE_TOL&&validGame(g)){
-            rotate(g,rec.half>0?1:-1);
+            const rotated=rotate(g,rec.half>0?1:-1);
+            if(rotated){
+                try{window.__sixBallPlayRotateDirect?.(1);}catch(_){}
+            }
         }
         if(pointers.size===0)stopFast(g);
     };

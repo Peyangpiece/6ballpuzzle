@@ -179,32 +179,183 @@ function drawIncomingPreviews(ctx,g,L){
 }
 
 function rigidShadowPixelPlacement(g, shadowCells, pos, D, X, Y, BW, BH) {
-    if(!shadowCells||!shadowCells.length)return [];
-    const pts=shadowCells.map(([sx,sy,sc])=>{const [px,py]=pos(sx,sy);return {px,py,sc};});
-    const floorCenter=Y+BH-D*0.5;
-    let dy=0;
-    const deepest=Math.max(...pts.map(p=>p.py));
-    if(deepest+dy>floorCenter)dy=floorCenter-deepest;
-    for(let pass=0;pass<4;pass++){
-        let changed=false;
-        for(const gp of pts){
-            const gx=gp.px,gy=gp.py+dy;
-            for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){
-                if(!valid(bx,by))continue;
-                const cell=g.board[by][bx];if(!cell)continue;
-                const vv=g.vis.get(cell.id)||{x:bx,y:by};
-                const [bpX,bpY]=pos(vv.x,vv.y);
-                const dx=Math.abs(gx-bpX);if(dx>=D-1e-6)continue;
-                const vert=Math.sqrt(Math.max(0,D*D-dx*dx));
-                const ceiling=bpY-vert;
-                if(gy>ceiling+1e-6){dy-=gy-ceiling;changed=true;}
+    /*
+     * SHADOW CONTACT SOLVER v2
+     *
+     * landingShadowVisualCells() has already calculated the
+     * logical lowest landing position.
+     *
+     * This final pixel pass is only allowed to move the whole
+     * rigid shadow UP when current rendered pile geometry would
+     * overlap it.
+     *
+     * IMPORTANT:
+     * old code accumulated corrections from several balls and
+     * repeated them over multiple passes, causing the complete
+     * 3-ball shadow to float far above its real contact point.
+     *
+     * New rule:
+     * one rigid translation,
+     * one most-restrictive contact constraint,
+     * no cumulative correction.
+     */
+
+    if(!shadowCells || !shadowCells.length)
+        return [];
+
+    const pts =
+        shadowCells.map(
+            ([sx,sy,sc]) => {
+                const [px,py] = pos(sx,sy);
+
+                return {
+                    px,
+                    py,
+                    sc
+                };
+            }
+        );
+
+
+    const floorCenter =
+        Y + BH - D * 0.5;
+
+
+    /*
+     * Never move the guide DOWN here.
+     *
+     * The previous landing-shadow stage already found its
+     * lowest physical position. This stage only repairs a
+     * visual overlap with a currently animated pile.
+     */
+    let dy = 0;
+
+
+    const deepest =
+        Math.max(
+            ...pts.map(
+                p => p.py
+            )
+        );
+
+
+    const floorLimit =
+        floorCenter - deepest;
+
+
+    if(floorLimit < dy)
+        dy = floorLimit;
+
+
+    /*
+     * Every obstacle produces a MAXIMUM allowed dy.
+     *
+     * Take the minimum once.
+     *
+     * Do NOT subtract every penetration sequentially.
+     */
+    for(const gp of pts){
+
+        for(
+            let by = boardScanMin(g.board);
+            by < ROWS;
+            by++
+        ){
+
+            for(let bx = 0; bx < W2; bx++){
+
+                if(!valid(bx,by))
+                    continue;
+
+
+                const cell =
+                    g.board[by][bx];
+
+
+                if(!cell)
+                    continue;
+
+
+                const vv =
+                    g.vis.get(cell.id) ||
+                    {
+                        x:bx,
+                        y:by
+                    };
+
+
+                const [bpX,bpY] =
+                    pos(
+                        vv.x,
+                        vv.y
+                    );
+
+
+                const dx =
+                    Math.abs(
+                        gp.px - bpX
+                    );
+
+
+                if(dx >= D - 1e-6)
+                    continue;
+
+
+                const vertical =
+                    Math.sqrt(
+                        Math.max(
+                            0,
+                            D*D - dx*dx
+                        )
+                    );
+
+
+                const contactCenterY =
+                    bpY - vertical;
+
+
+                const allowedDy =
+                    contactCenterY -
+                    gp.py;
+
+
+                /*
+                 * Most restrictive obstacle wins.
+                 *
+                 * Example:
+                 *
+                 * allowed -2px
+                 * allowed -7px
+                 * allowed -3px
+                 *
+                 * final dy = -7px
+                 *
+                 * NOT -12px.
+                 */
+                if(allowedDy < dy)
+                    dy = allowedDy;
             }
         }
-        if(!changed)break;
     }
-    const finalDeepest=Math.max(...pts.map(p=>p.py+dy));
-    if(finalDeepest>floorCenter)dy-=finalDeepest-floorCenter;
-    return pts.map(p=>[p.px,p.py+dy,p.sc]);
+
+
+    if(!Number.isFinite(dy))
+        dy = 0;
+
+
+    window.__sixBallLastShadowContactV2 = {
+        dy,
+        at:Date.now()
+    };
+
+
+    return pts.map(
+        p => [
+            p.px,
+            p.py + dy,
+            p.sc
+        ]
+    );
 }
 function drawLandingShadowBall(ctx, cx, cy, d, ci) {
     // Reference landing guides are dark, hollow silhouettes with only the

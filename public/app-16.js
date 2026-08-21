@@ -18,11 +18,25 @@ const [result, setResult] = useState(null);
 const [portrait, setPortrait] = useState(false);
 const [, force] = useState(0);
 const meRef = useRef(null), foeRef = useRef(null), cvRef = useRef(null);
+if(typeof window!=="undefined"){
+    window.__sixBallDebugRefs=
+        window.__sixBallDebugRefs||{};
+
+    window.__sixBallDebugRefs.meRef=
+        meRef;
+
+    window.__sixBallDebugRefs.foeRef=
+        foeRef;
+}
+
 const orbsRef = useRef([]), runRef = useRef(false), dropFlashRef = useRef(0);
 const helpRef = useRef({ alpha: (() => { try { return localStorage.getItem("hexdrop_controls_seen") === "1" ? 0 : 1; } catch (_) { return 1; } })(), count: 0, fading: false, forced: 0 });
 const matchRef = useRef(null), reportedRef = useRef(false);
 const sizeRef = useRef({ scale: 0, dpr: 1, rect: null });
 const [netErr, setNetErr] = useState(null);
+const [googleUser,setGoogleUser]=useState(null);
+const [googleBusy,setGoogleBusy]=useState(false);
+const [googleErr,setGoogleErr]=useState("");
 const [foeConn, setFoeConn] = useState(true);
 const stateRef = useRef({ mode, opp, rating, nickname });stateRef.current = { mode, opp, rating, nickname };
 const optRef = useRef({ offset });optRef.current = { offset };
@@ -38,6 +52,45 @@ useEffect(() => {hexStoreMenuPref("hexdrop_nickname",nickname);Net.profile.name=
 useEffect(() => {if(screen!=="PROFILE")return;let alive=true;(async()=>{try{await Net.connect();if(!alive)return;setRating(Number(Net.profile.rating)||1000);setRecord({w:Number(Net.profile.wins)||0,l:Number(Net.profile.losses)||0});hexStoreMenuPref("hexdrop_rating",Number(Net.profile.rating)||1000);hexStoreMenuPref("hexdrop_wins",Number(Net.profile.wins)||0);hexStoreMenuPref("hexdrop_losses",Number(Net.profile.losses)||0);if((nickname==="Player"||!nickname)&&Net.profile.name&&Net.profile.name!=="Player"){setNickname(String(Net.profile.name).slice(0,12));setProfileDraft(String(Net.profile.name).slice(0,12));}else if(Net.profile.name!==nickname){Net.profile.name=nickname;const F=Net.fb;F.update(F.ref(Net.db,"users/"+Net.uid),{name:nickname,updatedAt:F.serverTimestamp()}).catch(()=>{});}}catch(_){}})();return()=>{alive=false;};},[screen]);
 useEffect(() => {const cv = cvRef.current;if (!cv)return;const measure = () => {const r = cv.getBoundingClientRect();sizeRef.current = {scale: r.width > 0 ? r.width / VW : 0,dpr: Math.min(2, window.devicePixelRatio || 1),rect: r};};measure();const ro = new ResizeObserver(measure);ro.observe(cv);window.addEventListener("orientationchange", measure);window.addEventListener("scroll", measure, { passive: true });return () => { ro.disconnect(); window.removeEventListener("orientationchange", measure); window.removeEventListener("scroll", measure); };}, []);
 useEffect(() => {const check = () => setPortrait(window.innerHeight > window.innerWidth && window.innerWidth < 900);check();window.addEventListener("resize", check);window.addEventListener("orientationchange", check);return () => { window.removeEventListener("resize", check); window.removeEventListener("orientationchange", check); };}, []);
+useEffect(()=>{
+    let alive=true;
+
+    if(
+        typeof Net.restoreGoogleUser!=="function"
+    )return()=>{alive=false;};
+
+    Net.restoreGoogleUser()
+    .then(user=>{
+        if(!alive||!user)return;
+
+        setGoogleUser({
+            name:
+                user.displayName||
+                Net.profile.name||
+                "Google"
+        });
+
+        setRating(
+            Number(Net.profile.rating)||1000
+        );
+
+        setRecord({
+            w:Number(Net.profile.wins)||0,
+            l:Number(Net.profile.losses)||0
+        });
+
+        if(Net.profile.name){
+            setNickname(Net.profile.name);
+            setProfileDraft(Net.profile.name);
+        }
+    })
+    .catch(()=>{});
+
+    return()=>{
+        alive=false;
+    };
+},[]);
+
 const startMatch = useCallback((m, lv, o) => {Sfx.init();hexApplySfxVolume(sfxVolume);const seed = (Math.random() * 1e9) | 0;meRef.current = createEngine(seed, { offset: optRef.current.offset });foeRef.current = createEngine(seed, { offset: optRef.current.offset });foeRef.current.ai = { level: lv, target: null, thinkT: 0, actT: 0 };if (matchRef.current) {matchRef.current.leave();matchRef.current = null;}orbsRef.current = [];reportedRef.current = false;try {const seen = localStorage.getItem("hexdrop_controls_seen") === "1";helpRef.current = { alpha: seen ? 0 : 1, count: 0, fading: seen, forced: 0 };} catch (_) { helpRef.current = { alpha: 1, count: 0, fading: false, forced: 0 }; }setMode(m);setAiLevel(lv);setOpp(o);setResult(null);setScreen("GAME");runRef.current = true;}, [sfxVolume]);
 const finish = useCallback((win) => {const me=meRef.current,foe=foeRef.current;if(win&&me)me.matchFrozen=true;if(!win&&foe)foe.matchFrozen=true;Sfx.play({ t: win ? "win" : "lose" }, 1);const { mode: m, opp: o, rating: r } = stateRef.current;const match = matchRef.current;setTimeout(async () => {if (m === "ONLINE" && match) {let delta=0;try{delta=await Net.applyRating(win,match.opponent?.rating||r,match.ranked);const nr=Number(Net.profile.rating)||r,nw=Number(Net.profile.wins)||0,nl=Number(Net.profile.losses)||0;setRating(nr);setRecord({w:nw,l:nl});hexStoreMenuPref("hexdrop_rating",nr);hexStoreMenuPref("hexdrop_wins",nw);hexStoreMenuPref("hexdrop_losses",nl);}catch(_){}setResult({ win, delta });match.leave();matchRef.current = null;} else if (m === "ONLINE") {setResult({ win, delta: 0 });} else setResult({ win, delta: 0 });setScreen("RESULT");}, RESULT_REVEAL_DELAY_MS);}, []);
 const beginOnline = useCallback((match) => {Sfx.init();hexApplySfxVolume(sfxVolume);setRating(Number(Net.profile.rating)||rating);setRecord({w:Number(Net.profile.wins)||0,l:Number(Net.profile.losses)||0});const seed = match.seed >>> 0;meRef.current = createEngine(seed, { offset: optRef.current.offset });const foe = createEngine(seed, { offset: optRef.current.offset });foe.ai = null;foe.piece = null;foe.state = "NET";foeRef.current = foe;orbsRef.current = [];reportedRef.current = false;try {const seen = localStorage.getItem("hexdrop_controls_seen") === "1";helpRef.current = { alpha: seen ? 0 : 1, count: 0, fading: seen, forced: 0 };} catch (_) { helpRef.current = { alpha: 1, count: 0, fading: false, forced: 0 }; }matchRef.current = match;setFoeConn(true);match.events.onOpponentState = (st) => {const g = foeRef.current;if (!g)return;applySnapshot(g,st.board,st.fx);g.incoming = st.incoming || 0;applyRemoteVisualState(g,st);if(st.alive===false&&g.alive)die(g,null,"REMOTE");};match.events.onAttack = (atk) => {const n = typeof atk === "number" ? atk : ((atk === null || atk === void 0 ? void 0 : atk.n) || 0);const shapes = Array.isArray(atk === null || atk === void 0 ? void 0 : atk.shapes) ? atk.shapes : [];orbsRef.current.push({ side: 1, t: 0, dur: 0.6, n, shapes,tint: shapes.includes("HEXAGON") ? "#FFD86B" : shapes.includes("PYRAMID") ? "#FF9AD5" : "#A8FFCF" });};match.events.onConnection = (c) => setFoeConn(c);match.events.onFinish = (win) => { runRef.current = false; finish(win); };setMode("ONLINE");setAiLevel(0);setOpp({ name: match.opponent.name, rating: match.opponent.rating });setResult(null);setScreen("GAME");runRef.current = true;}, [finish,sfxVolume,rating]);
@@ -53,7 +106,7 @@ if (net) {if (me.sendBuffer > 0 || me.sendShapes.length > 0) {const n = me.sendB
 orbsRef.current = orbsRef.current.filter((o) => {o.t += h;if (o.t >= o.dur) {const tgt = o.side === 0 ? foe : me;if (!(net && o.side === 0)) {if (o.shapes && o.shapes.length)tgt.incomingShapes.push(...o.shapes.filter((w) => WAZA[w]));else tgt.incoming += o.n;}tgt.fx.incomingPreviews=tgt.fx.incomingPreviews||[];tgt.fx.incomingPreviews.push({shapes:(o.shapes||[]).slice(0,6),n:o.n||0,tint:o.tint,life:3.05,max:3.05});tgt.fx.shake = Math.max(tgt.fx.shake, 0.55);return false;}return true;});};
 if (runRef.current) {acc += dt;let guard = 0;while (acc >= FIXED && guard++ < MAX_PHYSICS_CATCHUP_STEPS) {advance(FIXED);acc -= FIXED;if (!net) {if (!me.alive || !foe.alive) {runRef.current = false;finish(me.alive && !foe.alive);break;}} else if (!me.alive) break;}if(acc>=FIXED)acc=Math.min(acc,FIXED);} else advance(dt);
 drain(me, 1);drain(foe, 0.32);
-if (net) {netT += dt;if (netT >= 0.2) {netT = 0;const snap=snapshotOf(me),piece=pieceSnapshotOf(me),fx=remoteFxSnapshotOf(me),sig=snap+"|"+pendingIncomingCount(me)+"|"+me.alive+"|"+JSON.stringify(piece)+"|"+JSON.stringify(fx);if(sig!==lastNetState){lastNetState=sig;net.sendBoard(snap,pendingIncomingCount(me),me.alive,piece,fx);}}if (!me.alive && !reportedRef.current) {reportedRef.current = true;net.reportResult(false, "dead");}}
+if (net) {netT += dt;if (netT >= 0.066) {netT = 0;const snap=snapshotOf(me),piece=pieceSnapshotOf(me),fx=remoteFxSnapshotOf(me),sig=snap+"|"+pendingIncomingCount(me)+"|"+me.alive+"|"+JSON.stringify(piece)+"|"+JSON.stringify(fx);if(sig!==lastNetState){lastNetState=sig;net.sendBoard(snap,pendingIncomingCount(me),me.alive,piece,fx);}}if (!me.alive && !reportedRef.current) {reportedRef.current = true;net.reportResult(false, "dead");}}
 const renderLead=runRef.current?Math.min(FIXED,Math.max(0,acc)):0;
 const scale = sizeRef.current.scale;if (scale <= 0)return;const dpr = sizeRef.current.dpr;const w = Math.round(VW * scale * dpr), h = Math.round(VH * scale * dpr);if (cv.width !== w || cv.height !== h) {cv.width = w;cv.height = h;}const ctx = cv.getContext("2d");ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);renderScene(ctx, me, foe, orbsRef.current, T, {me: stateRef.current.nickname||"Player", meSub: stateRef.current.rating ? `${stateRef.current.rating}` : "",foe: stateRef.current.opp?.name ?? "CPU",foeSub: stateRef.current.opp?.rating ? `${stateRef.current.opp.rating}` : ""}, dropFlashRef.current, helpRef.current.alpha,renderLead);hud += dt;if (hud > 0.2) {hud = 0;force((x) => x + 1);}
 };raf = requestAnimationFrame(loop);return () => cancelAnimationFrame(raf);}, [finish]);
@@ -65,32 +118,425 @@ const up=(e)=>{const g=meRef.current;try{cv.releasePointerCapture(e.pointerId);}
 cv.addEventListener("pointerdown",dn);cv.addEventListener("pointermove",mv);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);return()=>{pressActive=false; stopFast();cv.removeEventListener("pointerdown",dn);cv.removeEventListener("pointermove",mv);cv.removeEventListener("pointerup",up);cv.removeEventListener("pointercancel",up);};}, [screen,sfxVolume]);
 const me = meRef.current;
 const rankName=hexRankLabel(rating),winRate=hexWinRate(record.w,record.l);
-const homeHero=React.createElement("div",{className:"flex items-center gap-4"},
-    React.createElement(HexLogoMark,{size:112}),
-    React.createElement("div",{className:"min-w-0"},
-        React.createElement("div",{className:"text-[9px] font-black tracking-[.32em] text-cyan-200/45 mb-1"},"TACTICAL HEX PUZZLE"),
-        React.createElement("div",{className:"font-black text-white tracking-[.11em]",style:{fontSize:"clamp(38px,7vw,72px)",lineHeight:.94,textShadow:"0 0 30px rgba(47,227,245,.30)"}},"HEXDROP"),
-        React.createElement("div",{className:"mt-2 max-w-md text-white/42 font-semibold",style:{fontSize:"clamp(10px,1.4vw,13px)",lineHeight:1.65}},"積み、崩し、技をつなぐ。ひとつの判断が盤面を変える。"),
-        React.createElement("div",{className:"mt-4 inline-flex items-center gap-3 rounded-2xl px-3 py-2",style:{border:"1px solid rgba(47,227,245,.22)",background:"rgba(8,13,32,.54)",backdropFilter:"blur(12px)"}},
-            React.createElement("div",{className:"w-8 h-8 rounded-xl flex items-center justify-center font-black text-[#07101a]",style:{background:"linear-gradient(145deg,#9AF8FF,#2FE3F5)",boxShadow:"0 0 18px rgba(47,227,245,.35)" }},(nickname||"P").slice(0,1).toUpperCase()),
-            React.createElement("div",null,
-                React.createElement("div",{className:"text-[11px] font-black text-white/90 truncate max-w-[130px]"},nickname),
-                React.createElement("div",{className:"text-[8px] tracking-[.16em] font-black text-white/35"},rankName," // ",rating)))));
-const homeMenu=React.createElement("div",{className:"space-y-2.5"},
-    React.createElement("div",{className:"mb-1.5 flex items-center justify-between"},
-        React.createElement("div",{className:"text-[9px] font-black tracking-[.24em] text-white/28"},"MAIN MENU"),
-        React.createElement("div",{className:"text-[8px] font-black tracking-[.14em] text-cyan-200/35"},"READY")),
-    React.createElement(HexMenuButton,{icon:"⚡",title:"対戦",subtitle:"オンライン・CPU・ルーム対戦",meta:"BATTLE",accent:"pink",onClick:()=>{initUiAudio();setNetErr(null);setScreen("BATTLE");}}),
-    React.createElement(HexMenuButton,{icon:"◎",title:"プロフィール",subtitle:`${nickname}  /  RATING ${rating}`,meta:"PROFILE",accent:"cyan",onClick:()=>{initUiAudio();setProfileDraft(nickname);setScreen("PROFILE");}}),
-    React.createElement(HexMenuButton,{icon:"⚙",title:"設定",subtitle:"サウンド・操作・振動",meta:"OPTION",accent:"violet",onClick:()=>{initUiAudio();setScreen("SETTINGS");}}),
-    netErr&&React.createElement("div",{className:"rounded-xl px-3 py-2 text-[9px] font-bold",style:{border:"1px solid rgba(255,62,165,.28)",background:"rgba(255,62,165,.08)",color:"#ffb8d6"}},"オンライン接続を確認してください"));
-const home=screen==="HOME"&&React.createElement(HexMenuShell,{wide:true},
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"minmax(0,1.08fr) minmax(310px,.92fr)",gap:"clamp(18px,4vw,42px)",alignItems:"center"}},homeHero,homeMenu));
+const homeWordmark=React.createElement(
+    "div",
+    {
+        "aria-hidden":"true",
+        style:{
+            "--logoH":"clamp(225px,39vh,320px)",
+            position:"absolute",
+            left:"clamp(30px,4vw,64px)",
+            top:"50%",
+            transform:"translateY(-57%)",
+            display:"flex",
+            alignItems:"center",
+            height:"var(--logoH)",
+            pointerEvents:"none",
+            whiteSpace:"nowrap",
+            zIndex:0
+        }
+    },
+
+    React.createElement(
+        "img",
+        {
+            src:"/assets/6ball-logo-transparent.png",
+            alt:"",
+            draggable:false,
+            style:{
+                height:"var(--logoH)",
+                width:"auto",
+                objectFit:"contain",
+                flexShrink:0,
+                filter:
+                    "saturate(1.08) contrast(1.03) brightness(1.04) drop-shadow(0 18px 28px rgba(0,0,0,.30))"
+            }
+        }
+    ),
+
+    /*
+     * BALL is a fixed part of the logo.
+     * Its position never follows the menu buttons.
+     */
+    React.createElement(
+        "svg",
+        {
+            viewBox:"0 0 760 300",
+            preserveAspectRatio:"none",
+            style:{
+                width:"calc(var(--logoH) * 2.45)",
+                height:"var(--logoH)",
+                marginLeft:"clamp(24px,2.8vw,46px)",
+                overflow:"visible"
+            }
+        },
+
+        React.createElement(
+            "text",
+            {
+                x:"8",
+                y:"246",
+                fill:"rgba(205,210,220,.20)",
+                fontFamily:
+                    'ui-sans-serif,system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif',
+                fontSize:"255",
+                fontWeight:"900",
+                letterSpacing:"22"
+            },
+            "BALL"
+        )
+    )
+);
+
+const homeHero=React.createElement(
+    "div",
+    {
+        className:"relative flex items-end",
+        style:{
+            minHeight:"clamp(330px,57vh,420px)",
+            paddingLeft:"clamp(18px,3vw,42px)",
+            paddingBottom:8,
+            zIndex:2
+        }
+    },
+
+    React.createElement(
+        "button",
+        {
+            onClick:()=>{
+                initUiAudio();
+                setProfileDraft(nickname);
+                setScreen("PROFILE");
+            },
+            className:
+                "inline-flex items-center rounded-2xl px-5 py-3 text-left active:scale-[.98]",
+            style:{
+                minWidth:185,
+                border:
+                    "1px solid rgba(255,255,255,.10)",
+                background:
+                    "rgba(10,12,28,.52)",
+                backdropFilter:"blur(15px)",
+                boxShadow:
+                    "0 12px 30px rgba(0,0,0,.24)"
+            }
+        },
+
+        React.createElement(
+            "div",
+            {
+                className:"min-w-0 flex-1"
+            },
+
+            React.createElement(
+                "div",
+                {
+                    className:
+                        "text-[12px] font-black text-white/90"
+                },
+                "戦績"
+            ),
+
+            React.createElement(
+                "div",
+                {
+                    className:
+                        "mt-1 text-[8px] tracking-[.12em] font-black text-white/36"
+                },
+                record.w,
+                "勝 ",
+                record.l,
+                "敗  //  ",
+                rating
+            )
+        ),
+
+        React.createElement(
+            "div",
+            {
+                className:"ml-4 text-white/25"
+            },
+            "›"
+        )
+    )
+);
+
+const googleSignedIn=!!googleUser;
+
+const homeMenu=React.createElement(
+    "div",
+    {
+        className:
+            "relative flex flex-col justify-center",
+        style:{
+            width:"100%",
+            maxWidth:525,
+            justifySelf:"end",
+            zIndex:3
+        }
+    },
+
+    /*
+     * Login belongs to normal layout flow.
+     * It can no longer overlap Online Battle.
+     */
+    React.createElement(
+        "div",
+        {
+            className:"flex justify-end mb-4"
+        },
+
+        React.createElement(
+            "button",
+            {
+                disabled:
+                    googleBusy||
+                    googleSignedIn,
+
+                onClick:async()=>{
+                    if(
+                        googleBusy||
+                        googleSignedIn
+                    )return;
+
+                    initUiAudio();
+                    setGoogleBusy(true);
+                    setGoogleErr("");
+
+                    try{
+                        const user=
+                            await Net.loginWithGoogle();
+
+                        setGoogleUser({
+                            name:
+                                user?.displayName||
+                                Net.profile.name||
+                                "Google"
+                        });
+
+                        setRating(
+                            Number(
+                                Net.profile.rating
+                            )||1000
+                        );
+
+                        setRecord({
+                            w:
+                                Number(
+                                    Net.profile.wins
+                                )||0,
+                            l:
+                                Number(
+                                    Net.profile.losses
+                                )||0
+                        });
+
+                        if(Net.profile.name){
+                            setNickname(
+                                Net.profile.name
+                            );
+                            setProfileDraft(
+                                Net.profile.name
+                            );
+                        }
+                    }catch(err){
+                        const code=
+                            String(err?.code||"");
+
+                        if(
+                            code===
+                            "auth/operation-not-allowed"
+                        ){
+                            setGoogleErr(
+                                "GoogleログインをFirebaseで有効にしてください"
+                            );
+                        }else if(
+                            code===
+                            "auth/popup-closed-by-user"
+                        ){
+                            setGoogleErr("");
+                        }else{
+                            console.error(
+                                "Google login",
+                                err
+                            );
+                            setGoogleErr(
+                                "Googleログインに失敗しました"
+                            );
+                        }
+                    }finally{
+                        setGoogleBusy(false);
+                    }
+                },
+
+                className:
+                    "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[10px] font-black active:scale-[.98] disabled:opacity-70",
+
+                style:{
+                    color:
+                        googleSignedIn
+                            ?"rgba(255,255,255,.54)"
+                            :"rgba(255,255,255,.88)",
+                    border:
+                        "1px solid rgba(255,255,255,.13)",
+                    background:
+                        "rgba(10,13,28,.64)",
+                    backdropFilter:"blur(16px)",
+                    boxShadow:
+                        "0 8px 24px rgba(0,0,0,.22)"
+                }
+            },
+
+            React.createElement(
+                "div",
+                {
+                    className:
+                        "flex items-center justify-center rounded-full font-black",
+                    style:{
+                        width:20,
+                        height:20,
+                        background:
+                            "rgba(255,255,255,.94)",
+                        color:"#202124",
+                        fontSize:12
+                    }
+                },
+                "G"
+            ),
+
+            googleBusy
+                ?"ログイン中…"
+                :googleSignedIn
+                    ?"Googleログイン済み"
+                    :"Googleでログイン"
+        )
+    ),
+
+    googleErr&&React.createElement(
+        "div",
+        {
+            className:
+                "mb-3 text-right text-[9px] font-bold",
+            style:{
+                color:"#ff9bbf"
+            }
+        },
+        googleErr
+    ),
+
+    React.createElement(
+        "div",
+        {
+            className:"space-y-3",
+            style:{
+                width:"100%"
+            }
+        },
+
+        React.createElement(
+            HexMenuButton,
+            {
+                icon:"↗",
+                title:"オンライン対戦",
+                subtitle:
+                    "レートをかけてプレイヤーと対戦",
+                accent:"pink",
+                onClick:()=>{
+                    initUiAudio();
+                    setNetErr(null);
+                    setScreen("MATCHING");
+                }
+            }
+        ),
+
+        React.createElement(
+            HexMenuButton,
+            {
+                icon:"AI",
+                title:"AI対戦",
+                subtitle:
+                    "5段階の強さから相手を選択",
+                accent:"cyan",
+                onClick:()=>{
+                    initUiAudio();
+                    setScreen("CPU");
+                }
+            }
+        ),
+
+        React.createElement(
+            HexMenuButton,
+            {
+                icon:"+",
+                title:"ルームでプレイ",
+                subtitle:
+                    "ルームを作成・参加して友だちと対戦",
+                accent:"violet",
+                onClick:()=>{
+                    initUiAudio();
+                    setScreen("FRIEND");
+                }
+            }
+        )
+    ),
+
+    netErr&&React.createElement(
+        "div",
+        {
+            className:
+                "mt-3 rounded-xl px-3 py-2 text-[9px] font-bold",
+            style:{
+                border:
+                    "1px solid rgba(255,62,165,.28)",
+                background:
+                    "rgba(255,62,165,.08)",
+                color:"#ffb8d6"
+            }
+        },
+        "オンライン接続を確認してください"
+    )
+);
+
+const home=
+screen==="HOME"&&
+React.createElement(
+    HexMenuShell,
+    {
+        wide:true
+    },
+
+    homeWordmark,
+
+    /*
+     * Buttons only reserve space against the polygon 6.
+     * BALL may continue behind the buttons.
+     */
+    React.createElement(
+        "div",
+        {
+            style:{
+                position:"relative",
+                zIndex:2,
+                display:"grid",
+                gridTemplateColumns:
+                    "minmax(285px,38%) minmax(350px,525px)",
+                justifyContent:"space-between",
+                gap:"clamp(18px,2vw,34px)",
+                alignItems:"center",
+                width:"100%"
+            }
+        },
+
+        homeHero,
+        homeMenu
+    )
+);
+
 const battle=screen==="BATTLE"&&React.createElement(HexMenuShell,{title:"対戦",eyebrow:"BATTLE SELECT",back:()=>setScreen("HOME"),wide:false},
     React.createElement("div",{className:"grid gap-2.5"},
         React.createElement(HexMenuButton,{icon:"◉",title:"オンライン対戦",subtitle:"レートをかけてプレイヤーとマッチング",meta:"RANKED",accent:"pink",onClick:()=>{initUiAudio();setScreen("MATCHING");}}),
-        React.createElement(HexMenuButton,{icon:"◇",title:"CPU対戦",subtitle:"5段階の強さから相手を選択",meta:"SOLO",accent:"cyan",onClick:()=>{initUiAudio();setScreen("CPU");}}),
-        React.createElement(HexMenuButton,{icon:"⌁",title:"ルームを作って対戦",subtitle:"ルームコードで友だちと遊ぶ",meta:"ROOM",accent:"violet",onClick:()=>{initUiAudio();setScreen("FRIEND");}})));
+        React.createElement(HexMenuButton,{icon:"◇",title:"AI対戦",subtitle:"5段階の強さから相手を選択",meta:"SOLO",accent:"cyan",onClick:()=>{initUiAudio();setScreen("CPU");}}),
+        React.createElement(HexMenuButton,{icon:"⌁",title:"フレンド対戦",subtitle:"ルームコードで友だちと遊ぶ",meta:"ROOM",accent:"violet",onClick:()=>{initUiAudio();setScreen("FRIEND");}})));
 const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プロフィール",eyebrow:"PLAYER PROFILE",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"minmax(260px,.9fr) minmax(0,1.1fr)",gap:14}},
         React.createElement(HexPanel,{accent:"cyan",className:"p-5 flex items-center gap-4"},
@@ -99,7 +545,7 @@ const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プ�
                 React.createElement("div",{className:"text-[9px] tracking-[.2em] font-black text-cyan-200/45"},rankName),
                 React.createElement("div",{className:"text-xl font-black text-white truncate"},nickname),
                 React.createElement("div",{className:"mt-2 flex items-center gap-2"},React.createElement("div",{className:"text-[9px] font-black text-white/32"},"RATING"),React.createElement("div",{className:"text-2xl font-black tabular-nums",style:{color:"#2FE3F5",textShadow:"0 0 15px rgba(47,227,245,.35)"}},rating)))),
-        React.createElement("div",{className:"grid grid-cols-3 gap-2.5"},React.createElement(HexStat,{label:"WIN",value:record.w,accent:"cyan"}),React.createElement(HexStat,{label:"LOSE",value:record.l,accent:"pink"}),React.createElement(HexStat,{label:"WIN RATE",value:`${winRate}%`,accent:"violet"})),
+        React.createElement("div",{className:"grid grid-cols-3 gap-2.5"},React.createElement(HexStat,{label:"MATCHES",value:record.w+record.l,accent:"gray"}),React.createElement(HexStat,{label:"WIN",value:record.w,accent:"cyan"}),React.createElement(HexStat,{label:"WIN RATE",value:`${winRate}%`,accent:"violet"})),
         React.createElement(HexPanel,{accent:"violet",className:"p-4",style:{gridColumn:"1 / -1"}},
             React.createElement("div",{className:"flex items-end gap-3"},
                 React.createElement("div",{className:"flex-1"},React.createElement("div",{className:"text-[9px] font-black tracking-[.16em] text-white/38 mb-1.5"},"NICKNAME"),React.createElement("input",{value:profileDraft,maxLength:12,onChange:e=>setProfileDraft(e.target.value.slice(0,12)),placeholder:"ニックネーム",className:"w-full rounded-xl px-3 py-2.5 text-sm font-black text-white outline-none",style:{background:"rgba(0,0,0,.28)",border:"1px solid rgba(255,255,255,.13)"}})),
@@ -114,19 +560,122 @@ const settings=screen==="SETTINGS"&&React.createElement(HexMenuShell,{title:"設
         React.createElement("div",{className:"space-y-2.5"},
             React.createElement("div",{className:"text-[9px] font-black tracking-[.18em] text-white/28 px-1"},"CONTROL"),
             React.createElement(HexSettingToggle,{label:"振動",caption:"対応端末で操作と技の振動を使用",value:haptics,onChange:setHaptics,accent:"pink"}),
-            React.createElement(HexSettingToggle,{label:"着地位置補正",caption:"操作時の着地位置を補助する設定",value:offset,onChange:setOffset,accent:"cyan"})),
+            null),
         React.createElement(HexPanel,{accent:"gray",className:"p-3 flex items-center justify-between gap-4",style:{gridColumn:"1 / -1"}},
             React.createElement("div",null,React.createElement("div",{className:"text-sm font-black text-white/88"},"操作ガイド"),React.createElement("div",{className:"text-[9px] text-white/32 mt-0.5"},"次の対戦で操作説明をもう一度表示します。")),
             React.createElement("div",{className:"flex gap-2"},React.createElement("button",{onClick:resetControlGuide,className:"rounded-xl px-4 py-2 text-[10px] font-black text-white/78",style:{border:"1px solid rgba(255,255,255,.14)",background:"rgba(255,255,255,.05)"}},"再表示"),React.createElement("button",{onClick:()=>{setBgmVolume(70);setSfxVolume(85);setHaptics(true);setOffset(false);},className:"rounded-xl px-4 py-2 text-[10px] font-black",style:{color:"#9B6DFF",border:"1px solid rgba(155,109,255,.3)",background:"rgba(155,109,255,.07)"}},"初期設定")))));
-const cpu=screen==="CPU"&&React.createElement(HexMenuShell,{title:"CPU対戦",eyebrow:"CPU BATTLE",back:()=>setScreen("BATTLE"),wide:false},
+const cpu=screen==="CPU"&&React.createElement(HexMenuShell,{title:"AI対戦",eyebrow:"AI BATTLE",back:()=>setScreen("BATTLE"),wide:false},
     React.createElement("div",{className:"grid grid-cols-2 gap-2.5"},[1,2,3,4,5].map((lv)=>React.createElement(HexMenuButton,{key:lv,compact:true,icon:String(lv),title:AI_PARAMS[lv].name,subtitle:lv===5?"技の発動を最優先する最高難度":lv>=4?"高度な判断で攻める":lv===3?"標準的な強さ":lv===2?"ゆっくり考える相手":"はじめての対戦向け",meta:`LV.${lv}`,accent:lv===5?"pink":lv>=3?"cyan":"gray",onClick:()=>startMatch("CPU",lv,{name:`CPU ${AI_PARAMS[lv].name}`,rating:880+lv*130})}))));
-const friend=screen==="FRIEND"&&React.createElement(HexMenuShell,{title:"ルーム対戦",eyebrow:"PRIVATE ROOM",back:()=>setScreen("BATTLE"),wide:false},
-    React.createElement("div",{className:"space-y-3"},
-        React.createElement(HexMenuButton,{icon:"+",title:"ルームを作る",subtitle:"6桁のルームコードを発行",meta:"HOST",accent:"violet",onClick:()=>{initUiAudio();setRoom(String(Math.floor(100000+Math.random()*900000)));setScreen("ROOM");}}),
-        React.createElement(HexPanel,{accent:"cyan",className:"p-4"},
-            React.createElement("div",{className:"text-[9px] font-black tracking-[.16em] text-white/35 mb-2"},"JOIN ROOM"),
-            React.createElement("div",{className:"flex gap-2"},React.createElement("input",{value:room,onChange:e=>setRoom(e.target.value.replace(/\D/g,"").slice(0,6)),placeholder:"6桁のコード",inputMode:"numeric",className:"flex-1 min-w-0 px-3 py-2.5 rounded-xl bg-black/30 border border-white/15 text-white text-center tracking-[0.28em] font-black tabular-nums placeholder:text-white/22"}),React.createElement("button",{disabled:room.length!==6,onClick:()=>startMatch("FRIEND",3,{name:"フレンド",rating}),className:"px-5 rounded-xl text-xs font-black text-[#061016] disabled:opacity-25",style:{background:"#2FE3F5"}},"入室")))));
-const roomScreen=screen==="ROOM"&&React.createElement(HexMenuShell,{title:"ルームを作成",eyebrow:"PRIVATE ROOM // HOST",back:()=>setScreen("FRIEND"),wide:false},
+const friend=screen==="FRIEND"&&React.createElement(
+    HexMenuShell,
+    {
+        title:"ルームでプレイ",
+        eyebrow:"PRIVATE ROOM",
+        back:()=>setScreen("HOME"),
+        wide:false
+    },
+
+    React.createElement(
+        HexPanel,
+        {
+            accent:"violet",
+            className:"p-5"
+        },
+
+        React.createElement(
+            "div",
+            {
+                className:"grid gap-3"
+            },
+
+            React.createElement(
+                "button",
+                {
+                    onClick:()=>{
+                        initUiAudio();
+                        setRoom(
+                            String(
+                                Math.floor(
+                                    100000+
+                                    Math.random()*900000
+                                )
+                            )
+                        );
+                        setScreen("ROOM");
+                    },
+                    className:"w-full rounded-2xl px-4 py-3 text-sm font-black text-[#0a0f18]",
+                    style:{
+                        background:"linear-gradient(145deg,#c59cff,#8e66ff)"
+                    }
+                },
+                "新しくルームを作成"
+            ),
+
+            React.createElement(
+                "div",
+                {
+                    className:"text-[9px] font-black tracking-[.18em] text-white/32 text-center pt-1"
+                },
+                "または"
+            ),
+
+            React.createElement(
+                "div",
+                {
+                    className:"text-[9px] font-black tracking-[.16em] text-white/35 mb-1"
+                },
+                "ROOM CODE"
+            ),
+
+            React.createElement(
+                "div",
+                {
+                    className:"flex gap-2"
+                },
+
+                React.createElement(
+                    "input",
+                    {
+                        value:room,
+                        onChange:e=>
+                            setRoom(
+                                e.target.value
+                                    .replace(/\D/g,"")
+                                    .slice(0,6)
+                            ),
+                        placeholder:"6桁のコード",
+                        inputMode:"numeric",
+                        autoFocus:true,
+                        className:"flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/30 border border-white/15 text-white text-center tracking-[0.28em] font-black tabular-nums placeholder:text-white/22"
+                    }
+                ),
+
+                React.createElement(
+                    "button",
+                    {
+                        disabled:room.length!==6,
+                        onClick:()=>
+                            startMatch(
+                                "FRIEND",
+                                3,
+                                {
+                                    name:"フレンド",
+                                    rating
+                                }
+                            ),
+                        className:"px-6 rounded-xl text-xs font-black text-[#061016] disabled:opacity-25",
+                        style:{
+                            background:"#2FE3F5"
+                        }
+                    },
+                    "参加"
+                )
+            )
+        )
+    )
+);
+
+const roomScreen=screen==="ROOM"&&React.createElement(HexMenuShell,{title:"ルームを作成",eyebrow:"PRIVATE ROOM // HOST",back:()=>setScreen("HOME"),wide:false},
     React.createElement(HexPanel,{accent:"violet",className:"p-6 text-center"},
         React.createElement("div",{className:"text-[9px] font-black tracking-[.2em] text-white/32"},"ROOM CODE"),
         React.createElement("div",{className:"my-2 font-black tracking-[.24em] tabular-nums text-white",style:{fontSize:"clamp(28px,5vw,42px)",textShadow:"0 0 24px rgba(155,109,255,.35)"}},room.slice(0,3)," ",room.slice(3)),
@@ -137,7 +686,7 @@ React.createElement("div", { className: "w-full h-full flex items-center justify
 screen === "GAME" && React.createElement("button", { onClick: () => {runRef.current = false;if (matchRef.current) {matchRef.current.reportResult(false, "resign");matchRef.current.leave();matchRef.current = null;}setScreen("HOME");}, className: "absolute top-3 right-3 z-10 w-9 h-9 rounded-xl text-white/60 border border-white/20 bg-black/40" }, "✕"),
 portrait && React.createElement("div", { className: "absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 px-8 text-center", style: { background: SPACE_BG } },React.createElement("div", { className: "text-5xl" }, "📱"),React.createElement("div", { className: "text-white font-extrabold text-lg" }, "端末を横向きにしてください"),React.createElement("div", { className: "text-white/50 text-sm leading-relaxed" },"このゲームは横画面専用です。",React.createElement("br", null),"画面の自動回転をオンにしてから横に倒してください。")),
 home,battle,profile,settings,cpu,
-screen === "MATCHING" && React.createElement(Matching, { onMatched: beginOnline, onCancel: () => { Net.cancelMatchmaking(); setScreen("BATTLE"); }, onError: (m) => { setNetErr(m); setScreen("BATTLE"); } }),
+screen === "MATCHING" && React.createElement(Matching, { onMatched: beginOnline, onCancel: () => { Net.cancelMatchmaking(); setScreen("HOME"); }, onError: (m) => { setNetErr(m); setScreen("HOME"); } }),
 friend,roomScreen,
 screen === "RESULT" && React.createElement(ResultOverlay,{win:!!result?.win,onNext:()=>{if(mode==="ONLINE")setScreen("MATCHING");else startMatch(mode,aiLevel,opp);},onExit:()=>setScreen("HOME")})));
 }

@@ -24,7 +24,7 @@ function hexApplySfxVolume(percent){
     Sfx._menuVolume=p/100;
     Sfx.enabled=p>0;
     if(Sfx.master&&Sfx.ctx){
-        const target=.26*Sfx._menuVolume;
+        const target=.70*Sfx._menuVolume;
         try{Sfx.master.gain.setTargetAtTime(target,Sfx.ctx.currentTime,.025);}catch(_){Sfx.master.gain.value=target;}
     }
 }
@@ -32,7 +32,7 @@ function hexApplySfxVolume(percent){
     if(typeof Sfx==="undefined"||Sfx.__menuVolumeBridge)return;
     Sfx.__menuVolumeBridge=true;Sfx._menuVolume=1;
     const baseInit=Sfx.init.bind(Sfx);
-    Sfx.init=function(){baseInit();if(this.master&&this.ctx){const target=.26*(Number.isFinite(this._menuVolume)?this._menuVolume:1);this.master.gain.value=target;}};
+    Sfx.init=function(){baseInit();if(this.master&&this.ctx){const target=.70*(Number.isFinite(this._menuVolume)?this._menuVolume:1);this.master.gain.value=target;}};
 })();
 function hexRankLabel(r){
     r=Number(r)||0;
@@ -40,23 +40,164 @@ function hexRankLabel(r){
 }
 function hexWinRate(w,l){const n=(Number(w)||0)+(Number(l)||0);return n?Math.round((Number(w)||0)/n*100):0;}
 
-function HexLogoMark({size=112}){
-    const dots=[];const r=size*.31,d=size*.24,c=size/2;
-    for(let i=0;i<6;i++){const a=-Math.PI/2+i*Math.PI/3;dots.push(React.createElement("div",{key:i,style:{position:"absolute",left:c+Math.cos(a)*r-d/2,top:c+Math.sin(a)*r-d/2,width:d,height:d,borderRadius:"50%",background:i%2?"linear-gradient(145deg,#FF7BC5,#FF3EA5)":"linear-gradient(145deg,#8FF8FF,#2FE3F5)",boxShadow:i%2?"0 0 18px #FF3EA588":"0 0 18px #2FE3F588",border:"1px solid rgba(255,255,255,.65)"}}));}
-    return React.createElement("div",{style:{position:"relative",width:size,height:size,filter:"drop-shadow(0 0 22px rgba(47,227,245,.18))"}},dots,React.createElement("div",{style:{position:"absolute",left:c-size*.085,top:c-size*.085,width:size*.17,height:size*.17,borderRadius:"50%",border:"1px solid rgba(255,255,255,.35)",background:"rgba(5,8,24,.7)",boxShadow:"inset 0 0 14px rgba(47,227,245,.22)"}}));
+function HexLogoMark({size=210}){
+    const ref=React.useRef(null);
+
+    React.useEffect(()=>{
+        const cv=ref.current;
+        if(!cv)return;
+
+        const img=new Image();
+
+        img.onload=()=>{
+            const w=img.naturalWidth||816;
+            const h=img.naturalHeight||768;
+
+            cv.width=w;
+            cv.height=h;
+
+            const ctx=cv.getContext(
+                "2d",
+                {willReadFrequently:true}
+            );
+
+            ctx.clearRect(0,0,w,h);
+            ctx.drawImage(img,0,0,w,h);
+
+            try{
+                const image=
+                    ctx.getImageData(
+                        0,0,w,h
+                    );
+
+                const d=image.data;
+
+                for(
+                    let i=0;
+                    i<d.length;
+                    i+=4
+                ){
+                    const r=d[i];
+                    const g=d[i+1];
+                    const b=d[i+2];
+
+                    const hi=
+                        Math.max(r,g,b);
+
+                    const lo=
+                        Math.min(r,g,b);
+
+                    const chroma=
+                        hi-lo;
+
+                    let alpha=1;
+
+                    /*
+                     * JPEGの黒背景だけを透明化。
+                     * ロゴ内部の暗い色面は
+                     * 色差があるので保持する。
+                     */
+                    if(
+                        hi<=16 &&
+                        chroma<=8
+                    ){
+                        alpha=0;
+                    }
+                    else if(
+                        hi<45 &&
+                        chroma<14
+                    ){
+                        alpha=
+                            Math.max(
+                                0,
+                                Math.min(
+                                    1,
+                                    (hi-16)/29
+                                )
+                            );
+                    }
+
+                    d[i+3]=
+                        Math.round(
+                            d[i+3]*alpha
+                        );
+                }
+
+                ctx.clearRect(
+                    0,0,w,h
+                );
+
+                ctx.putImageData(
+                    image,
+                    0,0
+                );
+            }catch(err){
+                console.warn(
+                    "logo transparency failed",
+                    err
+                );
+            }
+        };
+
+        img.src=
+            "/assets/6ball-logo-source.jpg";
+    },[]);
+
+    return React.createElement(
+        "div",
+        {
+            style:{
+                position:"relative",
+                width:size,
+                height:size*.94,
+                flexShrink:0
+            }
+        },
+
+        React.createElement(
+            "div",
+            {
+                style:{
+                    position:"absolute",
+                    inset:"14%",
+                    borderRadius:"45%",
+                    background:
+                        "radial-gradient(circle,rgba(255,93,156,.15),rgba(70,208,214,.11) 48%,transparent 72%)",
+                    filter:"blur(25px)",
+                    transform:"scale(1.1)"
+                }
+            }
+        ),
+
+        React.createElement(
+            "canvas",
+            {
+                ref,
+                style:{
+                    position:"absolute",
+                    inset:0,
+                    width:"100%",
+                    height:"100%",
+                    objectFit:"contain",
+                    filter:
+                        "saturate(1.10) contrast(1.04) brightness(1.05) drop-shadow(0 18px 30px rgba(0,0,0,.32))"
+                }
+            }
+        )
+    );
 }
 
 function HexMenuBackdrop(){
-    const motes=Array.from({length:16},(_,i)=>React.createElement("div",{key:i,style:{position:"absolute",left:`${5+(i*17)%92}%`,top:`${8+(i*29)%82}%`,width:i%4===0?5:2,height:i%4===0?5:2,borderRadius:"50%",background:i%3===0?"#FF7AC6":"#8DEEFF",opacity:.16+(i%5)*.06,boxShadow:"0 0 12px currentColor",animation:`hexMenuDrift ${7+i%5}s ease-in-out ${-(i%6)}s infinite alternate`}}));
+    const motes=Array.from({length:0},(_,i)=>React.createElement("div",{key:i,style:{position:"absolute",left:`${5+(i*17)%92}%`,top:`${8+(i*29)%82}%`,width:i%4===0?5:2,height:i%4===0?5:2,borderRadius:"50%",background:i%3===0?"#FF7AC6":"#8DEEFF",opacity:.16+(i%5)*.06,boxShadow:"0 0 12px currentColor",animation:`hexMenuDrift ${7+i%5}s ease-in-out ${-(i%6)}s infinite alternate`}}));
     return React.createElement(React.Fragment,null,
         React.createElement("style",null,"@keyframes hexMenuDrift{0%{transform:translate3d(0,-5px,0);opacity:.18}100%{transform:translate3d(8px,8px,0);opacity:.55}}@keyframes hexMenuPulse{0%,100%{opacity:.35;transform:scale(.96)}50%{opacity:.7;transform:scale(1.04)}}"),
         React.createElement("div",{className:"absolute inset-0 pointer-events-none overflow-hidden",style:{background:"radial-gradient(900px 520px at 12% 18%,rgba(58,38,145,.34),transparent 60%),radial-gradient(760px 460px at 88% 28%,rgba(0,187,210,.20),transparent 62%),radial-gradient(800px 440px at 58% 112%,rgba(255,62,165,.18),transparent 58%),linear-gradient(145deg,#050412 0%,#08081c 46%,#050512 100%)"}},
-            React.createElement("div",{style:{position:"absolute",inset:"7% 4%",opacity:.19,backgroundImage:"linear-gradient(30deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(150deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(30deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(150deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%)",backgroundSize:"46px 80px",backgroundPosition:"0 0,0 0,23px 40px,23px 40px",maskImage:"linear-gradient(90deg,transparent,black 18%,black 82%,transparent)"}}),
+            React.createElement("div",{style:{position:"absolute",inset:"7% 4%",opacity:.08,backgroundImage:"linear-gradient(30deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(150deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(30deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%),linear-gradient(150deg,rgba(47,227,245,.13) 12%,transparent 12.5%,transparent 87%,rgba(47,227,245,.13) 87.5%)",backgroundSize:"46px 80px",backgroundPosition:"0 0,0 0,23px 40px,23px 40px",maskImage:"linear-gradient(90deg,transparent,black 18%,black 82%,transparent)"}}),
             React.createElement("div",{style:{position:"absolute",width:"32vw",height:"32vw",minWidth:240,minHeight:240,right:"-12vw",top:"-13vw",border:"1px solid rgba(47,227,245,.14)",borderRadius:"50%",boxShadow:"0 0 90px rgba(47,227,245,.08),inset 0 0 70px rgba(47,227,245,.04)",animation:"hexMenuPulse 7s ease-in-out infinite"}}),
             React.createElement("div",{style:{position:"absolute",width:"26vw",height:"26vw",minWidth:210,minHeight:210,left:"-10vw",bottom:"-13vw",border:"1px solid rgba(255,62,165,.13)",borderRadius:"50%",boxShadow:"0 0 80px rgba(255,62,165,.07)",animation:"hexMenuPulse 8s ease-in-out -2s infinite"}}),motes));
 }
 
-function HexMenuShell({children,title,eyebrow="HEXDROP // COMMAND",back,wide=true}){
+function HexMenuShell({children,title,eyebrow="6BALL",back,wide=true}){
     return React.createElement("div",{className:"absolute inset-0 z-20 overflow-y-auto font-sans",style:{paddingTop:"max(12px,env(safe-area-inset-top))",paddingBottom:"max(12px,env(safe-area-inset-bottom))",paddingLeft:"max(16px,env(safe-area-inset-left))",paddingRight:"max(16px,env(safe-area-inset-right))"}},
         React.createElement(HexMenuBackdrop,null),
         React.createElement("div",{className:"relative z-10 mx-auto min-h-full flex flex-col justify-center",style:{maxWidth:wide?980:760}},

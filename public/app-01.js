@@ -49,7 +49,7 @@ const mulberry32=a=>()=>{a|=0;a=(a+0x6d2b79f5)|0;let t=Math.imul(a^(a>>>15),1|a)
 /* Sound system is intentionally independent from physics. */
 const Sfx={
  ctx:null,master:null,enabled:true,haptics:true,
- init(){if(this.ctx){if(this.ctx.state==="suspended")this.ctx.resume();return;}const C=window.AudioContext||window.webkitAudioContext;if(!C)return;this.ctx=new C();this.master=this.ctx.createGain();this.master.gain.value=.26;const comp=this.ctx.createDynamicsCompressor();comp.threshold.value=-18;comp.knee.value=18;comp.ratio.value=3.2;comp.attack.value=.003;comp.release.value=.16;this.master.connect(comp);comp.connect(this.ctx.destination);},
+ init(){if(this.ctx){if(this.ctx.state==="suspended")this.ctx.resume();return;}const C=window.AudioContext||window.webkitAudioContext;if(!C)return;this.ctx=new C();this.master=this.ctx.createGain();this.master.gain.value=.70;const comp=this.ctx.createDynamicsCompressor();comp.threshold.value=-18;comp.knee.value=18;comp.ratio.value=3.2;comp.attack.value=.003;comp.release.value=.16;this.master.connect(comp);comp.connect(this.ctx.destination);},
  tone({f=440,f2=null,d=.1,type="sine",v=1,delay=0,attack=.004}){if(!this.enabled||!this.ctx)return;const t0=this.ctx.currentTime+delay,o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=type;o.frequency.setValueAtTime(Math.max(20,f),t0);if(f2)o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t0+d);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v),t0+attack);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g);g.connect(this.master);o.start(t0);o.stop(t0+d+.03);},
  noise({d=.12,v=.18,f=1200,q=.7,delay=0,type="lowpass"}){if(!this.enabled||!this.ctx)return;const t0=this.ctx.currentTime+delay,n=Math.max(1,Math.floor(this.ctx.sampleRate*d)),buf=this.ctx.createBuffer(1,n,this.ctx.sampleRate),ch=buf.getChannelData(0);for(let i=0;i<n;i++)ch[i]=(Math.random()*2-1)*Math.pow(1-i/n,1.8);const src=this.ctx.createBufferSource();src.buffer=buf;const lp=this.ctx.createBiquadFilter();lp.type=type;lp.frequency.value=f;lp.Q.value=q;const g=this.ctx.createGain();g.gain.value=v;src.connect(lp);lp.connect(g);g.connect(this.master);src.start(t0);},
  blip(f,delay=0,v=.06){this.tone({f,f2:f*1.07,d:.055,type:"square",v,delay,attack:.002});this.tone({f:f*2,f2:f*1.92,d:.04,type:"sine",v:v*.33,delay});},
@@ -58,7 +58,7 @@ const Sfx={
  vib(p){if(!this.haptics)return;try{if(navigator.vibrate)navigator.vibrate(p);}catch(e){}},
  play(ev,vol=1){switch(ev.t){
   case"move":this.tone({f:238,f2:205,d:.038,type:"triangle",v:.028*vol,attack:.001});this.noise({d:.018,v:.018*vol,f:1100,q:.8});break;
-  case"rotate":this.keyThock(vol);if(vol>.9)this.vib(5);break;
+  case"rotate":if(vol>.9)this.vib(5);break;
   case"land":this.tone({f:148,f2:92,d:.10,type:"sine",v:.115*vol,attack:.0015});this.tone({f:286,f2:214,d:.052,type:"triangle",v:.033*vol,attack:.001});this.noise({d:.035,v:.045*vol,f:680,q:1});if(vol>.9)this.vib(7);break;
   case"drop":this.tone({f:310,f2:108,d:.13,type:"triangle",v:.072*vol,attack:.0015});this.tone({f:115,f2:78,d:.15,type:"sine",v:.048*vol,attack:.002});this.noise({d:.045,v:.038*vol,f:930,q:.9});if(vol>.9)this.vib(10);break;
   case"clear":{const step=Math.min(7,Math.max(0,(ev.chain||1)-1)),root=588*Math.pow(1.075,step);this.tone({f:112,f2:54,d:.24,type:"sine",v:.105*vol,attack:.001});[1,1.335,1.68].forEach((r,i)=>this.metal(root*r,i*.032,(.043+step*.004)*vol));this.noise({d:.11,v:.05*vol,f:2800,q:3,type:"bandpass"});if(vol>.9)this.vib(step>=2?[0,12,24,12]:10);break;}

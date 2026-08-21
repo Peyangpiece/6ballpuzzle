@@ -22,7 +22,7 @@ const emit=(g,e)=>g.events.push(e);
 
 function spawn(g){
  const colors=g.queue.shift();g.queue.push(makeSet(g));
- g.piece={x:SPAWN_X,y:-2,rot:0,colors};g.pieceVX=SPAWN_X;g.pieceVY=-2;
+ g.piece={x:SPAWN_X,y:-2,rot:1,colors};g.pieceVX=SPAWN_X;g.pieceVY=-2;
  g.rotAnim={p:1,dir:1,dx:0,dy:0};g.freeX=null;g.dragging=false;
  g.physicsWatch={lastSig:"",repeats:0,steps:0,fallbacks:g.physicsWatch?.fallbacks||0};
  g.dropT=0;g.lockT=0;g.lockResets=0;g.garbDone=false;g.garbLeft=0;g.garbShapes=[];
