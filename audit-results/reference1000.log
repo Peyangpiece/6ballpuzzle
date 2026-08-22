@@ -1,1 +1,22 @@
-reference fidelity 1000/1000 PASS {"active":180,"rigidity":220,"pile":200,"garbage":180,"formation":120,"network":100}
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/public/app-pileflow-visual-tangency.js'
+    at Object.readFileSync (node:fs:440:20)
+    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-fidelity-1000.js:26:42
+    at Array.map (<anonymous>)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-fidelity-1000.js:26:29)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/public/app-pileflow-visual-tangency.js'
+}
+
+Node.js v22.23.2
