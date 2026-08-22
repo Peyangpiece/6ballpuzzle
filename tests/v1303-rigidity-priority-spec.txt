@@ -1,0 +1,179 @@
+V1303 RIGIDITY CONSOLIDATION CONTRACT
+=====================================
+
+BASELINE
+--------
+Branch base:
+  v1303 verified golden build
+
+Random Oracle:
+  10000 cases
+  SHA256:
+  e3b5ea6de12c0d7b2ee54e74f5c07895ab1136030f007d57c15ecc176fc54488
+
+Directed Oracle:
+  2000 cases
+  SHA256:
+  66cc5406d402e7066589871b95776cf0ecddbd652065584e164ec68c70dda9356
+
+Golden physics SHA256:
+  a69720e2666885769b0464e33a8851be2f4e83c2c76a514fff8ede230c24dab4
+
+Preview/commit mismatch:
+  0 / 12000
+
+
+FINAL EFFECTIVE PRIORITY
+========================
+
+PRIORITY 1
+----------
+Final ordinary 3-ball rigid motion.
+
+For an ordinary non-garbage triplet:
+
+1. Try one exact common translation.
+2. If unavailable, try canonical rigid-slope motion.
+3. If either succeeds:
+   - return the 3-ball rigid plan
+   - keep rigid=true
+   - keep motionGroupSize=3
+4. Only if both fail may lower layers run.
+
+
+PRIORITY 2
+----------
+Current-step smooth slope protection.
+
+For a normal triplet:
+
+1. Calculate current independent member motions.
+2. Ask whether a genuine 3-member
+   GROUP_SLOPE_TRANSLATE exists RIGHT NOW.
+3. If yes:
+   - return it
+   - preserve 3-ball rigidity
+4. Do not use a future obstruction to split early.
+
+
+PRIORITY 3
+----------
+UP triangle final floor approach.
+
+If a normal UP triplet is on ROWS-2:
+
+1. Construct legal common rigid landing:
+     (-1,+1)
+   or
+     (+1,+1)
+
+2. Prefer actual continuous impact bias.
+3. If preferred direction is blocked,
+   use the other legal rigid direction.
+4. If centred and both are legal,
+   use deterministic legal direction.
+5. Never allow individual FLOOR_DROP
+   to split the triplet here.
+
+
+PRIORITY 4
+----------
+UP triangle physical floor landing.
+
+If the normal UP triplet has reached
+the physical floor:
+
+1. Return [].
+2. Keep triangle geometry.
+3. Keep rigid=true during landing finalization.
+4. Keep motionGroupSize=3.
+5. Physical floor is NOT an up-convex separator.
+6. Ball-row surfaces are not part of this rule.
+
+
+PRIORITY 5
+----------
+Canonical authoritative resolver.
+
+First delegate to the pre-resolver planner.
+
+If that produces a legal event:
+  return it unchanged.
+
+Otherwise:
+
+A. Non-normal group:
+   preserve base result.
+
+B. No independent member can move:
+   return [].
+   This is stable/final, not illegal floating.
+
+C. 2-ball group:
+   if common rigid continuation already failed
+   and members still have independent motion,
+   release the pair and return independent motion.
+
+D. 3-ball group:
+   attempt a legitimate surviving 2-ball branch.
+
+   If a pair can survive:
+     preserve that pair
+     release the solo
+     return pair plan + solo motion if present.
+
+E. No legitimate pair survives:
+   release all three
+   return independent moving-member proposals.
+
+
+NON-NEGOTIABLE INVARIANTS
+=========================
+
+1. Preview and commit planner output must match.
+
+2. Ordinary three-ball rigidity may break ONLY when
+   one common legal rigid continuation is physically
+   impossible at the current step.
+
+3. Smooth slope alone never causes premature split.
+
+4. Physical floor never causes UP triangle 1+2 split.
+
+5. Final floor approach remains one 3-ball rigid event.
+
+6. Real protrusion remains eligible for canonical split.
+
+7. Garbage behavior must not change during this refactor.
+
+8. No new movement may be manufactured for a stable group.
+
+9. Existing event ordering must be preserved.
+
+10. Refactor acceptance requires:
+      12000 / 12000 oracle equality.
+
+    11999 / 12000 = FAIL.
+
+
+REFACTOR SCOPE
+==============
+
+FIRST PASS:
+
+Only consolidate the five hexPhysPlanGroup wrappers inside:
+
+  public/app-rigidity-resolver-authoritative-v3.js
+
+DO NOT modify yet:
+
+  app-gravity-priority-v1.js
+  app-slope-upconvex-authoritative-v3.js
+  app-intentional-hexagon-stability-v1.js
+  app-garbage-zero-rigidity.js
+  settlePass
+  updateGarbagePacks
+  hexPhysApplyEvent
+  collapse logic
+  garbage motion logic
+

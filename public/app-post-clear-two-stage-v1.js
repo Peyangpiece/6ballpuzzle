@@ -690,23 +690,20 @@
         }
 
 
-        if(moved){
-
-            /*
-             * Schedule all newly appended straight-down
-             * fallPaths as continuous analytic gravity.
-             */
-            if(
-                typeof markPileFlowPaths===
-                    "function"
-            ){
-
-                markPileFlowPaths(
-                    g,
-                    "large_clear_vertical_first"
-                );
-            }
-        }
+        /*
+         * Do NOT schedule the vertical-only animation here.
+         *
+         * Large-clear collapse is now compiled as one epoch:
+         *
+         * vertical free-fall
+         *      ->
+         * physical contact / split
+         *      ->
+         * arc / roll
+         *
+         * All generated fallPath segments are scheduled once
+         * after the complete logical collapse is known.
+         */
 
 
         window.__sixBallLastVerticalFirst={
@@ -717,6 +714,142 @@
 
 
         return moved;
+    }
+
+
+    /* ========================================================
+     * SINGLE COLLAPSE EPOCH
+     *
+     * Compute the whole post-clear reaction before animation:
+     *
+     * 1. maximal straight-down collapse
+     * 2. coherent collision / physical split
+     * 3. canonical contact / arc / roll
+     *
+     * Rendering receives the complete path once.
+     *
+     * This removes the old visual barrier between vertical
+     * movement and the following deformation.
+     * ======================================================== */
+
+    function compileCollapseEpoch(g){
+
+        let moved =
+            compileVerticalPhase(g);
+
+        let passes = 0;
+
+        const cap =
+            Math.max(
+                128,
+                (
+                    ROWS -
+                    BOARD_MIN_ROW
+                ) *
+                W2 *
+                4
+            );
+
+
+        /*
+         * Logical vertical collapse is already complete.
+         * Permit real contact geometry immediately.
+         */
+        g.board.__postClearStage =
+            "ARC";
+
+
+        for(
+            let guard=0;
+            guard<cap;
+            guard++
+        ){
+
+            let q=false;
+
+            try{
+
+                q =
+                    !!settlePass(
+                        g.board,
+                        false
+                    );
+
+            }catch(err){
+
+                window.__sixBallCollapseEpochError = {
+                    message:
+                        String(
+                            err?.message ||
+                            err
+                        ),
+
+                    passes,
+
+                    at:
+                        Date.now()
+                };
+
+                break;
+            }
+
+
+            if(!q)
+                break;
+
+
+            moved=true;
+            passes++;
+
+            g.ver++;
+        }
+
+
+        /*
+         * IMPORTANT:
+         *
+         * Schedule ONCE after every physical segment has been
+         * appended.  collapse-timing can therefore give all
+         * affected balls one common start while each individual
+         * ball keeps a continuous sequential path.
+         */
+        if(
+            moved &&
+            typeof markPileFlowPaths ===
+                "function"
+        ){
+
+            markPileFlowPaths(
+                g,
+                "large_clear_collapse_epoch"
+            );
+        }
+
+
+        const capHit =
+            passes >= cap;
+
+
+        window.__sixBallLastCollapseEpoch = {
+
+            moved,
+
+            passes,
+
+            cap,
+
+            capHit,
+
+            at:
+                Date.now()
+        };
+
+
+        return{
+            moved,
+            passes,
+            capHit
+        };
     }
 
 
@@ -781,20 +914,18 @@
                     "VERTICAL";
 
 
-                const moved=
-                    compileVerticalPhase(g);
+                const epoch=
+                    compileCollapseEpoch(g);
 
 
                 /*
-                 * IMPORTANT:
+                 * There is no visual phase barrier anymore.
                  *
-                 * Do not generate a single circular path yet.
-                 *
-                 * SETTLE cannot proceed until these fallPaths
-                 * have visually finished.
+                 * Vertical + physical deformation were compiled
+                 * into one continuous collapse epoch.
                  */
                 g.board.__postClearStage=
-                    "WAIT_VERTICAL_VISUAL";
+                    "ARC";
 
 
                 window.__sixBallPostClearTwoStageActive=
@@ -802,10 +933,21 @@
 
 
                 return{
-                    moved,
+                    moved:
+                        epoch.moved,
+
                     twoStage:true,
+
+                    collapseEpoch:true,
+
+                    passes:
+                        epoch.passes,
+
+                    capHit:
+                        epoch.capHit,
+
                     stage:
-                        "VERTICAL_FIRST"
+                        "COLLAPSE_EPOCH"
                 };
             };
     }

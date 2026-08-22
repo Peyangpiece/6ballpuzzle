@@ -1,0 +1,90 @@
+{
+  "oracle": "v1303-plan-group-directed-2000",
+  "cases": 2000,
+  "casesPerType": 250,
+  "types": [
+    "blocked",
+    "floor",
+    "leftWall",
+    "rightWall",
+    "valley",
+    "leftSupport",
+    "rightSupport",
+    "separator"
+  ],
+  "oracleSha256": "66cc5406d402e7066589871b95776cf0ecddb652065584e164ec68c70dda9356",
+  "counts": {
+    "total": 2000,
+    "empty": 0,
+    "rigid3": 1125,
+    "split": 375,
+    "other": 500,
+    "previewCommitMismatch": 0
+  },
+  "byType": {
+    "blocked": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 0,
+      "split": 0,
+      "other": 250
+    },
+    "floor": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 125,
+      "split": 125,
+      "other": 0
+    },
+    "leftWall": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 250,
+      "split": 0,
+      "other": 0
+    },
+    "rightWall": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 250,
+      "split": 0,
+      "other": 0
+    },
+    "valley": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 0,
+      "split": 0,
+      "other": 250
+    },
+    "leftSupport": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 125,
+      "split": 125,
+      "other": 0
+    },
+    "rightSupport": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 250,
+      "split": 0,
+      "other": 0
+    },
+    "separator": {
+      "total": 250,
+      "empty": 0,
+      "rigid3": 125,
+      "split": 125,
+      "other": 0
+    }
+  },
+  "kinds": {
+    "ROLL_LEFT": 500,
+    "ROLL_RIGHT": 500,
+    "UP_FLOOR_RIGID_LAND": 750,
+    "GROUP_TRANSLATE": 1125,
+    "GROUP_SLOPE_TRANSLATE": 1748,
+    "RIGID_SMOOTH_SLOPE": 252
+  }
+}
