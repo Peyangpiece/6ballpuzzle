@@ -1,0 +1,2 @@
+trigger=2026-08-22T09:41:00+09:00
+reason=run verified v1303 production deployment
