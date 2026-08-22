@@ -3,6 +3,8 @@ name: Deploy V1303 Production
 on:
   push:
     branches: [main]
+    paths:
+      - "audit-results/v1303-deploy-trigger.txt"
   workflow_dispatch:
 
 concurrency:
