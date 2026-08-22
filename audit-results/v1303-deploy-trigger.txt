@@ -1,2 +1,2 @@
-trigger=2026-08-22T14:35:00+09:00
-reason=deploy v2.4 immediate inward red-pocket capture with BLUE+YELLOW pair preservation
+trigger=2026-08-22T14:50:00+09:00
+reason=deploy v2.4 continuous pre-split pocket disambiguation for RED solo and BLUE+YELLOW pair
