@@ -1,10 +1,235 @@
-physics regressions PASS
-airborne garbage pass-through PASS
-movement fidelity 100/100 PASS
-production ordinary-garbage fidelity 100/100 PASS {"maxFrame":169}
-reference fidelity 1000/1000 PASS {"active":180,"rigidity":220,"pile":200,"garbage":180,"formation":120,"network":100}
+evalmachine.<anonymous>:2702
+function expect(value,message){if(!value)throw new Error(message);}
+                                         ^
+
+Error: convex split: opposite two-ball side lost its rigidity
+    at expect (evalmachine.<anonymous>:2702:48)
+    at evalmachine.<anonymous>:2791:2
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/physics-regressions.js:256:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
+    at Object.readFileSync (node:fs:440:20)
+    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-airborne-pass-through.js:13:16
+    at Array.map (<anonymous>)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-airborne-pass-through.js:13:3)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
+}
+
+Node.js v22.23.2
+evalmachine.<anonymous>:3468
+function check(id,name,value){if(!value)throw new Error(String(id).padStart(3,"0")+" "+name);passed.push({id,name});}
+                                        ^
+
+Error: 018 counter rotation advances minus sixty
+    at check (evalmachine.<anonymous>:3468:47)
+    at evalmachine.<anonymous>:3501:34
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.movement-fidelity-100-production-frame.js:149:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.movement-fidelity-100-production-frame.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-movement-fidelity-100.js:21:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2371,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-pileflow-visual-tangency.js'
+    at Object.readFileSync (node:fs:440:20)
+    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-garbage-fidelity-100.js:10:16
+    at Array.map (<anonymous>)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-garbage-fidelity-100.js:10:3)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-pileflow-visual-tangency.js'
+}
+
+Node.js v22.23.2
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/public/app-pileflow-visual-tangency.js'
+    at Object.readFileSync (node:fs:440:20)
+    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-fidelity-1000.js:26:42
+    at Array.map (<anonymous>)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-fidelity-1000.js:26:29)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/public/app-pileflow-visual-tangency.js'
+}
+
+Node.js v22.23.2
 reference convergence round 1 1000/1000 PASS
 reference convergence round 2 2000/2000 PASS
-reference convergence round 3 3000/3000 PASS
-overlap regressions PASS {"samples":28362,"min":0.999999894}
-post-clear no-new-gap vacancy conservation PASS
+evalmachine.<anonymous>:3469
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: round3 garbage contact 17
+    at expect (evalmachine.<anonymous>:3469:34)
+    at evalmachine.<anonymous>:3527:305
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-convergence-3000-production-frame.js:84:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.reference-convergence-3000-production-frame.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-reference-convergence-3000.js:23:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2400,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
+    at Object.readFileSync (node:fs:440:20)
+    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js:4:727
+    at Array.map (<anonymous>)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js:4:714)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
+}
+
+Node.js v22.23.2
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.overlap-regressions-full-timeout.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/run-overlap-regressions.js:21:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2419,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
+
+Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
+    at Object.readFileSync (node:fs:440:20)
+    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/clear-vacancy-priority.js:8:16
+    at Array.map (<anonymous>)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/clear-vacancy-priority.js:8:3)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
+}
+
+Node.js v22.23.2

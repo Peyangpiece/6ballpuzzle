@@ -1,1 +1,1 @@
-{"sha":"18b8f9f64058f067c56566698fb96a307d80df9e","status":"pass","physics":0,"airborne":0,"movement100":0,"garbage100":0,"reference1000":0,"convergence3000":0,"overlap":0,"clearVacancy":0}
+{"sha":"8d114bb3b8ca0ba43fc01002038019b11f9bbc71","status":"fail","physics":1,"airborne":1,"movement100":1,"garbage100":1,"reference1000":1,"convergence3000":1,"overlap":1,"clearVacancy":1}
