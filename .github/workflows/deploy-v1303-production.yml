@@ -1,0 +1,124 @@
+name: Deploy V1303 Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: cloudflare-v1303-production
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Stage exact uploaded menu confirmation sound
+        shell: bash
+        run: |
+          set -euo pipefail
+          for part in 00 01 02 tail; do
+            tr -d '\r\n\t ' < "public/assets/menu-confirm-42.b64.${part}" > "/tmp/menu-confirm-42.${part}.b64"
+          done
+          {
+            cat /tmp/menu-confirm-42.00.b64
+            cat /tmp/menu-confirm-42.01.b64
+            head -c 5376 /tmp/menu-confirm-42.02.b64
+            for _ in 1 2 3 4 5; do head -c 5376 /tmp/menu-confirm-42.tail.b64; done
+          } | base64 --decode > public/assets/menu-confirm-42.mp3
+          echo '97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e  public/assets/menu-confirm-42.mp3' | sha256sum -c -
+          test "$(stat -c%s public/assets/menu-confirm-42.mp3)" -eq 32256
+
+      - name: Run v1303 planner smoke
+        run: node tests/v1303-plan-group-smoke.js
+
+      - name: Run v1303 10k shadow oracle
+        run: node tests/v1303-rigidity-shadow-audit.js
+
+      - name: Run v1303 2k directed oracle
+        run: node tests/v1303-rigidity-shadow-directed-audit.js
+
+      - name: Run v1303 commit-state audit
+        run: node tests/v1303-rigidity-commit-state-audit.js
+
+      - name: Run UP-convex production guard
+        run: node tests/v1303-upconvex-production-guard.js
+
+      - name: Run clear vacancy priority regression
+        run: node tests/clear-vacancy-priority.js
+
+      - name: Run parity direct-contact release regression
+        run: node tests/release-parity-settle.js
+
+      - name: Run every-cleared-ball disappearance FX regression
+        run: node tests/clear-all-ball-fx.js
+
+      - name: Stamp deploy commit
+        run: printf '%s\n' "$GITHUB_SHA" > public/deploy-sha.txt
+
+      - name: Deploy 6ballpuzzle
+        id: cloudflare_deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.123.0"
+          command: deploy
+
+      - name: Verify Cloudflare production commit
+        id: verify_production
+        if: always()
+        shell: bash
+        env:
+          WRANGLER_DEPLOYMENT_URL: ${{ steps.cloudflare_deploy.outputs.deployment-url }}
+          DEPLOY_OUTCOME: ${{ steps.cloudflare_deploy.outcome }}
+          FALLBACK_PRODUCTION_URL: https://6ballpuzzle.hrk-6888.workers.dev
+        run: |
+          set +e
+          mkdir -p audit-results
+          PRODUCTION_URL="${WRANGLER_DEPLOYMENT_URL:-$FALLBACK_PRODUCTION_URL}"
+          verified=0
+          observed=""
+          if [ "$DEPLOY_OUTCOME" = "success" ]; then
+            for attempt in $(seq 1 20); do
+              observed="$(curl -fsSL "${PRODUCTION_URL%/}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
+              if [ "$observed" = "$GITHUB_SHA" ]; then
+                verified=1
+                break
+              fi
+              sleep 3
+            done
+          fi
+          if [ "$verified" -eq 1 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","deployOutcome":"%s","productionUrl":"%s","observedSha":"%s"}\n' "$GITHUB_SHA" "$STATUS" "$DEPLOY_OUTCOME" "$PRODUCTION_URL" "$observed" > audit-results/cloudflare-v1303-deploy.json
+          rm -f public/deploy-sha.txt
+          test "$STATUS" = pass
+
+      - name: Record V1303 Cloudflare verification
+        if: always()
+        shell: bash
+        run: |
+          if [ ! -f audit-results/cloudflare-v1303-deploy.json ]; then
+            mkdir -p audit-results
+            printf '{"sha":"%s","status":"fail","deployOutcome":"unknown","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-v1303-deploy.json
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add audit-results/cloudflare-v1303-deploy.json
+          git commit -m 'Record V1303 Cloudflare deploy [skip ci]' || true
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Require verified V1303 deployment
+        if: always()
+        run: node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/cloudflare-v1303-deploy.json","utf8"));if(q.status!=="pass")process.exit(1)'
