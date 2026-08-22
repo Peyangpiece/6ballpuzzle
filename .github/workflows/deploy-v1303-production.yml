@@ -20,16 +20,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Verify committed menu confirmation sound exists
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s public/assets/menu-confirm-42.mp3
+      - name: Verify committed assets
+        run: test -s public/assets/menu-confirm-42.mp3
 
       - name: Run V1303 production gate
         id: v1303_gate
@@ -38,16 +34,12 @@ jobs:
           set +e
           mkdir -p audit-results
           node tests/v1303-plan-group-smoke.js >/tmp/v1303-smoke.log 2>&1; A=$?
-          node tests/v1303-rigidity-shadow-audit.js >/tmp/v1303-shadow.log 2>&1; B=$?
-          node tests/v1303-rigidity-shadow-directed-audit.js >/tmp/v1303-directed.log 2>&1; C=$?
-          node tests/v1303-rigidity-commit-state-audit.js >/tmp/v1303-commit.log 2>&1; D=$?
-          node tests/v1303-upconvex-production-guard.js >/tmp/v1303-upconvex.log 2>&1; E=$?
-          node tests/clear-vacancy-priority.js >/tmp/v1303-vacancy.log 2>&1; F=$?
-          node tests/release-parity-settle.js >/tmp/v1303-parity.log 2>&1; G=$?
-          node tests/clear-all-ball-fx.js >/tmp/v1303-clearfx.log 2>&1; H=$?
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","smoke":%s,"shadow10k":%s,"directed2k":%s,"commit12k":%s,"upconvex":%s,"clearVacancy":%s,"parity":%s,"clearFx":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" > audit-results/v1303-predeploy-gate.json
-          for f in /tmp/v1303-*.log; do echo "===== $f ====="; tail -40 "$f"; done
+          node tests/v1303-current-oracle-suite.js >/tmp/v1303-oracle.log 2>&1; B=$?
+          node tests/v1303-upconvex-production-guard.js >/tmp/v1303-upconvex.log 2>&1; C=$?
+          node tests/clear-all-ball-fx.js >/tmp/v1303-clearfx.log 2>&1; D=$?
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" > audit-results/v1303-predeploy-gate.json
+          for f in /tmp/v1303-*.log; do echo "===== $f ====="; tail -80 "$f"; done
           test "$STATUS" = pass
 
       - name: Record V1303 production gate
@@ -59,7 +51,7 @@ jobs:
           set -euo pipefail
           if [ ! -f audit-results/v1303-predeploy-gate.json ]; then
             mkdir -p audit-results
-            printf '{"sha":"%s","status":"fail","smoke":99,"shadow10k":99,"directed2k":99,"commit12k":99,"upconvex":99,"clearVacancy":99,"parity":99,"clearFx":99}\n' "$GITHUB_SHA" > audit-results/v1303-predeploy-gate.json
+            printf '{"sha":"%s","status":"fail","smoke":99,"oracle12k":99,"upconvex":99,"clearFx":99}\n' "$GITHUB_SHA" > audit-results/v1303-predeploy-gate.json
           fi
           encoded="$(base64 -w0 audit-results/v1303-predeploy-gate.json)"
           current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/v1303-predeploy-gate.json?ref=main" --jq '.sha' 2>/dev/null || true)"
@@ -93,8 +85,7 @@ jobs:
           set +e
           mkdir -p audit-results
           PRODUCTION_URL="${WRANGLER_DEPLOYMENT_URL:-$FALLBACK_PRODUCTION_URL}"
-          verified=0
-          observed=""
+          verified=0; observed=""
           if [ "$DEPLOY_OUTCOME" = "success" ]; then
             for attempt in $(seq 1 20); do
               observed="$(curl -fsSL "${PRODUCTION_URL%/}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
