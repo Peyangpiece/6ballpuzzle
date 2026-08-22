@@ -35,7 +35,7 @@ jobs:
           mkdir -p audit-results
           node tests/v1303-plan-group-smoke.js >/tmp/v1303-smoke.log 2>&1; A=$?
           node tests/v1303-current-oracle-suite.js >/tmp/v1303-oracle.log 2>&1; B=$?
-          node tests/v1303-upconvex-production-guard.js >/tmp/v1303-upconvex.log 2>&1; C=$?
+          { node tests/v1303-upconvex-production-guard.js && node tests/v1303-upconvex-live-pocket-v24.js; } >/tmp/v1303-upconvex.log 2>&1; C=$?
           node tests/clear-all-ball-fx.js >/tmp/v1303-clearfx.log 2>&1; D=$?
           if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
           printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" > audit-results/v1303-predeploy-gate.json
