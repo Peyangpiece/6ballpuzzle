@@ -1,2 +1,2 @@
-trigger=2026-08-22T10:10:00+09:00
-reason=deploy UP triplet rigid-until-common-motion-impossible v2
+trigger=2026-08-22T10:43:00+09:00
+reason=deploy UP rigidity physical-contact guard v2.1
