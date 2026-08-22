@@ -41,34 +41,48 @@ jobs:
           echo '97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e  public/assets/menu-confirm-42.mp3' | sha256sum -c -
           test "$(stat -c%s public/assets/menu-confirm-42.mp3)" -eq 32256
 
-      - name: Run v1303 planner smoke
-        run: node tests/v1303-plan-group-smoke.js
+      - name: Run V1303 production gate
+        id: v1303_gate
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          node tests/v1303-plan-group-smoke.js >/tmp/v1303-smoke.log 2>&1; A=$?
+          node tests/v1303-rigidity-shadow-audit.js >/tmp/v1303-shadow.log 2>&1; B=$?
+          node tests/v1303-rigidity-shadow-directed-audit.js >/tmp/v1303-directed.log 2>&1; C=$?
+          node tests/v1303-rigidity-commit-state-audit.js >/tmp/v1303-commit.log 2>&1; D=$?
+          node tests/v1303-upconvex-production-guard.js >/tmp/v1303-upconvex.log 2>&1; E=$?
+          node tests/clear-vacancy-priority.js >/tmp/v1303-vacancy.log 2>&1; F=$?
+          node tests/release-parity-settle.js >/tmp/v1303-parity.log 2>&1; G=$?
+          node tests/clear-all-ball-fx.js >/tmp/v1303-clearfx.log 2>&1; H=$?
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","smoke":%s,"shadow10k":%s,"directed2k":%s,"commit12k":%s,"upconvex":%s,"clearVacancy":%s,"parity":%s,"clearFx":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" > audit-results/v1303-predeploy-gate.json
+          for f in /tmp/v1303-*.log; do echo "===== $f ====="; tail -40 "$f"; done
+          test "$STATUS" = pass
 
-      - name: Run v1303 10k shadow oracle
-        run: node tests/v1303-rigidity-shadow-audit.js
-
-      - name: Run v1303 2k directed oracle
-        run: node tests/v1303-rigidity-shadow-directed-audit.js
-
-      - name: Run v1303 commit-state audit
-        run: node tests/v1303-rigidity-commit-state-audit.js
-
-      - name: Run UP-convex production guard
-        run: node tests/v1303-upconvex-production-guard.js
-
-      - name: Run clear vacancy priority regression
-        run: node tests/clear-vacancy-priority.js
-
-      - name: Run parity direct-contact release regression
-        run: node tests/release-parity-settle.js
-
-      - name: Run every-cleared-ball disappearance FX regression
-        run: node tests/clear-all-ball-fx.js
+      - name: Record V1303 production gate
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ! -f audit-results/v1303-predeploy-gate.json ]; then
+            mkdir -p audit-results
+            printf '{"sha":"%s","status":"fail","smoke":99,"shadow10k":99,"directed2k":99,"commit12k":99,"upconvex":99,"clearVacancy":99,"parity":99,"clearFx":99}\n' "$GITHUB_SHA" > audit-results/v1303-predeploy-gate.json
+          fi
+          encoded="$(base64 -w0 audit-results/v1303-predeploy-gate.json)"
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/v1303-predeploy-gate.json?ref=main" --jq '.sha' 2>/dev/null || true)"
+          args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/v1303-predeploy-gate.json" -f message='Record V1303 predeploy gate [skip ci]' -f content="$encoded" -f branch='main')
+          if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
+          gh api "${args[@]}" >/dev/null
 
       - name: Stamp deploy commit
+        if: ${{ steps.v1303_gate.outcome == 'success' }}
         run: printf '%s\n' "$GITHUB_SHA" > public/deploy-sha.txt
 
       - name: Deploy 6ballpuzzle
+        if: ${{ steps.v1303_gate.outcome == 'success' }}
         id: cloudflare_deploy
         uses: cloudflare/wrangler-action@v4
         with:
@@ -94,10 +108,7 @@ jobs:
           if [ "$DEPLOY_OUTCOME" = "success" ]; then
             for attempt in $(seq 1 20); do
               observed="$(curl -fsSL "${PRODUCTION_URL%/}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
-              if [ "$observed" = "$GITHUB_SHA" ]; then
-                verified=1
-                break
-              fi
+              if [ "$observed" = "$GITHUB_SHA" ]; then verified=1; break; fi
               sleep 3
             done
           fi
@@ -119,18 +130,9 @@ jobs:
           fi
           encoded="$(base64 -w0 audit-results/cloudflare-v1303-deploy.json)"
           current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-v1303-deploy.json?ref=main" --jq '.sha' 2>/dev/null || true)"
-          if [ -n "$current_sha" ]; then
-            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-v1303-deploy.json" \
-              -f message='Record V1303 Cloudflare deploy [skip ci]' \
-              -f content="$encoded" \
-              -f branch='main' \
-              -f sha="$current_sha" >/dev/null
-          else
-            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-v1303-deploy.json" \
-              -f message='Record V1303 Cloudflare deploy [skip ci]' \
-              -f content="$encoded" \
-              -f branch='main' >/dev/null
-          fi
+          args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-v1303-deploy.json" -f message='Record V1303 Cloudflare deploy [skip ci]' -f content="$encoded" -f branch='main')
+          if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
+          gh api "${args[@]}" >/dev/null
 
       - name: Require verified V1303 deployment
         if: always()
