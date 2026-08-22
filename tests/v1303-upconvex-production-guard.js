@@ -26,46 +26,60 @@ function install(ctx,source,name){
   return ctx;
 }
 
-function rigidCase({withCentreContact=false,translationSafe=true}={}){
-  const b=board(),members=upMembers(0);
-  for(const m of members)b[m.y][m.x]=m.ball;
-  if(withCentreContact)b[5][6]={id:999,c:4,isGarbage:false,motionGroupId:0,rigid:false};
+function baseSplit(members){
+  return members.map((m,i)=>({x:m.x,y:m.y,tx:m.x+(i===2?-1:1),ty:m.y+1,ball:m.ball,kind:"BASE_SPLIT",bundleId:i<2?700:0,groupSize:i<2?2:0}));
+}
 
-  const baseSplit=members.map((m,i)=>({x:m.x,y:m.y,tx:m.x+(i===2?-1:1),ty:m.y+1,ball:m.ball,kind:"BASE_SPLIT",bundleId:i<2?700:0,groupSize:i<2?2:0}));
+function rigidCase({withCentreContact=false,realPivot=true,canonicalRigid=true,deform=false}={}){
+  const b=board(),members=upMembers(0);
+  if(deform)members[0].x+=2;
+  for(const m of members)b[m.y][m.x]=m.ball;
+  const support={id:999,c:4,isGarbage:false,motionGroupId:0,rigid:false};
+  if(withCentreContact)b[5][6]=support;
+  if(realPivot&&!withCentreContact)b[5][8]=support;
+
+  const split=baseSplit(members);
   const ctx={console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,Error,TypeError,valid};
-  ctx.hexPhysPlanGroup=()=>baseSplit.map(p=>({...p}));
-  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"ROLL_RIGHT",bundleId:0,groupSize:0});
-  ctx.hexPhysTranslationSafe=()=>translationSafe;
-  ctx.hexPhysGroupTranslationPlan=(bb,mm,dx,dy,kind)=>translationSafe?mm.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind,bundleId:500,groupSize:3})):null;
+  ctx.hexPhysPlanGroup=()=>split.map(p=>({...p}));
+  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"ROLL_RIGHT",pivot:realPivot?[8,5]:null,topPivot:null});
+  ctx.hexPhysRigidSlopePlan=(bb,mm,motions)=>canonicalRigid?mm.map(m=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",pivot:[8,5],topPivot:null,bundleId:500,groupSize:3})):null;
 
   install(ctx,rigidSource,"app-upconvex-rigid-until-contact-v1.js");
   const out=ctx.hexPhysPlanGroup(b,members,false);
   return{ctx,out};
 }
 
-/* Before any protrusion contact: ordinary slope must stay rigid. */
+/* Real current slope contact + canonical rigid solver => keep 3-ball rigidity. */
 {
-  const {ctx,out}=rigidCase({withCentreContact:false,translationSafe:true});
-  expect(ctx.__sixBallUpConvexRigidUntilImpossibleVersion==="upconvex-rigid-until-impossible-v2","rigid-until-impossible wrapper did not install");
-  expect(out.length===3&&out.every(p=>p.groupSize===3&&p.bundleId===500&&p.tx-p.x===1&&p.ty-p.y===1),"UP triplet split before protrusion contact instead of staying rigid");
+  const {ctx,out}=rigidCase({realPivot:true,canonicalRigid:true});
+  expect(ctx.__sixBallUpConvexRigidUntilImpossibleVersion==="upconvex-rigid-until-impossible-v2.1","v2.1 wrapper did not install");
+  expect(out.length===3&&out.every(p=>p.groupSize===3&&p.kind==="GROUP_SLOPE_TRANSLATE"),"genuine current rigid slope was not preserved");
 }
 
-/*
- * Critical regression: touching the protrusion itself is NOT enough
- * to split.  If the exact same three-ball rigid slope step is still
- * safe, all three balls must continue together.
- */
+/* Protrusion contact alone is not a split if the canonical current slope remains valid. */
 {
-  const {ctx,out}=rigidCase({withCentreContact:true,translationSafe:true});
+  const {ctx,out}=rigidCase({withCentreContact:true,realPivot:true,canonicalRigid:true});
   expect(ctx.__sixBallUpConvexContactAloneDoesNotSplit===true,"contact-alone policy missing");
-  expect(out.length===3&&out.every(p=>p.groupSize===3&&p.bundleId===500&&p.kind==="GROUP_SLOPE_TRANSLATE"),"UP triplet split merely on protrusion contact even though common rigid motion was still possible");
+  expect(out.length===3&&out.every(p=>p.groupSize===3&&p.kind==="GROUP_SLOPE_TRANSLATE"),"valid rigid motion was lost merely on protrusion contact");
 }
 
-/* Only actual common-motion failure may release the 1+2 split. */
+/* Critical regression from live screenshot: empty collision-safe space cannot invent rigidity. */
 {
-  const {ctx,out}=rigidCase({withCentreContact:true,translationSafe:false});
-  expect(ctx.__sixBallUpConvexSplitRequiresCommonMotionFailure===true,"common-motion-failure split policy missing");
-  expect(out.length===3&&out.every(p=>p.kind==="BASE_SPLIT"),"UP triplet failed to release split after common rigid motion became impossible");
+  const {ctx,out}=rigidCase({realPivot:false,canonicalRigid:true});
+  expect(ctx.__sixBallUpConvexNoSyntheticRigidTranslation===true,"no-synthetic-rigidity policy missing");
+  expect(out.every(p=>p.kind==="BASE_SPLIT"),"triplet stayed rigid without a real current support pivot");
+}
+
+/* If the canonical current-contact slope solver rejects the move, release to split. */
+{
+  const {out}=rigidCase({realPivot:true,canonicalRigid:false});
+  expect(out.every(p=>p.kind==="BASE_SPLIT"),"triplet stayed rigid after canonical rigid slope became impossible");
+}
+
+/* Once the three balls no longer form the exact UP triangle, never reconstruct rigidity. */
+{
+  const {out}=rigidCase({realPivot:true,canonicalRigid:true,deform:true});
+  expect(out.every(p=>p.kind==="BASE_SPLIT"),"deformed/separated group was incorrectly re-rigidified");
 }
 
 function sideCase(offset){
