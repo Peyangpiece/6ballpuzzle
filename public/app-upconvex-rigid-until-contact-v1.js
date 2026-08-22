@@ -1,23 +1,22 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGID UNTIL IMPOSSIBLE v2
+ * 6ball UP-CONVEX RIGID UNTIL IMPOSSIBLE v2.1
  *
- * Ordinary UP triplets stay as one 3-ball rigid body for as long
- * as one genuine common rigid slope step is physically possible.
+ * Keep an ordinary UP triplet rigid only while the canonical
+ * current-contact slope solver itself proves one genuine common
+ * 3-ball rigid move.
  *
- * IMPORTANT:
- * merely touching / entering the centre envelope of a protrusion
- * is NOT a split condition.  The triplet may ride around that
- * protrusion as one rigid body.  Split is allowed only at the
- * first step where the same 3-ball rigid motion is impossible.
+ * v2 was too permissive: it inferred a direction from one member,
+ * an already-split plan, or momentum and then used only collision
+ * safety to manufacture GROUP_SLOPE_TRANSLATE. That could keep a
+ * ball floating / attached after the physical event that should
+ * have released rigidity.
  *
  * Split side remains owned by app-upconvex-contact-priority-v1.js.
- * This wrapper owns only the "keep 3 balls rigid while possible"
- * rule.
  * ============================================================ */
 (function(){
     if(
         typeof window === "undefined" ||
-        window.__sixBallUpConvexRigidUntilImpossibleV2
+        window.__sixBallUpConvexRigidUntilImpossibleV21
     ){
         return;
     }
@@ -25,29 +24,48 @@
     if(
         typeof hexPhysPlanGroup !== "function" ||
         typeof hexPhysIndependentMemberMotion !== "function" ||
-        typeof valid !== "function"
+        typeof hexPhysRigidSlopePlan !== "function"
     ){
         return;
     }
 
-    window.__sixBallUpConvexRigidUntilImpossibleV2 = true;
+    window.__sixBallUpConvexRigidUntilImpossibleV21 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
 
-    function isOrdinaryUpTriplet(members){
+    function exactOrdinaryUpTriangle(members){
+        if(
+            !Array.isArray(members) ||
+            members.length !== 3 ||
+            members.some(m => !m?.ball || m.ball.isGarbage)
+        ){
+            return false;
+        }
+
+        const orientation =
+            members[0]?.orientation ||
+            members[0]?.ball?.motionGroupOrientation ||
+            "";
+
+        if(orientation !== "up")
+            return false;
+
+        const lowerY = Math.max(...members.map(m => m.y));
+        const lower = members
+            .filter(m => m.y === lowerY)
+            .sort((a,b) => a.x-b.x);
+        const top = members.find(m => m.y < lowerY);
+
         return !!(
-            Array.isArray(members) &&
-            members.length === 3 &&
-            members.every(m => m?.ball && !m.ball.isGarbage) &&
-            (
-                members[0]?.orientation ||
-                members[0]?.ball?.motionGroupOrientation ||
-                ""
-            ) === "up"
+            lower.length === 2 &&
+            top &&
+            lower[1].x-lower[0].x === 2 &&
+            top.x === lower[0].x+1 &&
+            top.y === lowerY-1
         );
     }
 
-    function isThreeBallRigidPlan(plan, members){
+    function isThreeBallRigidPlan(plan,members){
         if(!Array.isArray(plan) || plan.length !== 3)
             return false;
 
@@ -66,204 +84,150 @@
         return bundleIds.size <= 1;
     }
 
-    function memberMotions(board, members){
-        return members.map(m => {
+    function memberMotions(board,members){
+        const motions=[];
+
+        for(const m of members){
             try{
-                return hexPhysIndependentMemberMotion(
-                    board,
-                    members,
-                    m
+                motions.push(
+                    hexPhysIndependentMemberMotion(
+                        board,
+                        members,
+                        m
+                    )
                 );
             }catch(_){
                 return null;
             }
-        });
+        }
+
+        return motions;
     }
 
-    function slopeDirection(motions, members, plan){
-        const votes = new Map();
-
-        function add(dx,dy,weight){
-            if(Math.abs(dx) !== 1 || dy !== 1)
-                return;
-            const key = dx + "," + dy;
-            votes.set(key, (votes.get(key) || 0) + weight);
-        }
-
-        for(const p of motions){
-            if(p)
-                add(p.tx - p.x, p.ty - p.y, 3);
-        }
-
-        /*
-         * A split plan may still preserve the physical slope direction
-         * that the body was trying to follow.  It is only a weak vote;
-         * actual independent member motion has priority.
-         */
-        for(const p of plan || []){
-            if(p)
-                add(p.tx - p.x, p.ty - p.y, 1);
-        }
-
-        let momentum = 0;
-        if(typeof hexPhysBias === "function"){
-            for(const m of members)
-                momentum += Math.sign(hexPhysBias(m.ball) || 0);
-        }
-        if(momentum)
-            add(Math.sign(momentum), 1, 2);
-
-        let best = null;
-        for(const [key,score] of votes){
-            const [dx,dy] = key.split(",").map(Number);
-            if(!best || score > best.score)
-                best = {dx,dy,score};
-        }
-
-        return best;
-    }
-
-    function rigidSlopePlan(board, members, motions, originalPlan){
-        const dir = slopeDirection(
-            motions,
-            members,
-            originalPlan
-        );
-
-        if(!dir)
-            return null;
-
-        /*
-         * This is the authoritative split gate:
-         * if the exact same vector is still safe for all 3 members,
-         * they MUST remain rigid, even if a protrusion is already in
-         * contact with the centre of the triangle.
-         */
-        if(
-            typeof hexPhysTranslationSafe === "function" &&
-            !hexPhysTranslationSafe(
-                board,
-                members,
-                dir.dx,
-                dir.dy
-            )
-        ){
-            return null;
-        }
-
-        if(typeof hexPhysGroupTranslationPlan === "function"){
-            const p = hexPhysGroupTranslationPlan(
-                board,
-                members,
-                dir.dx,
-                dir.dy,
-                "GROUP_SLOPE_TRANSLATE"
-            );
-            if(Array.isArray(p) && p.length === 3)
-                return p;
-        }
-
+    function hasRealCurrentPivot(board,members,motions){
         const own = new Set(members.map(m => m.ball.id));
-        const targets = new Set();
 
-        for(const m of members){
-            const tx = m.x + dir.dx;
-            const ty = m.y + dir.dy;
-            const key = tx + "," + ty;
-            const q = valid(tx,ty) ? board?.[ty]?.[tx] : null;
+        for(const p of motions || []){
+            for(const key of ["pivot","topPivot"]){
+                const pv=p?.[key];
+                if(!Array.isArray(pv) || pv.length<2)
+                    continue;
 
+                const x=Number(pv[0]);
+                const y=Number(pv[1]);
+                if(!Number.isFinite(x) || !Number.isFinite(y))
+                    continue;
+
+                const support=board?.[y]?.[x];
+                if(support && !own.has(support.id))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    function canonicalRigidSlope(board,members,motions){
+        if(!motions || !hasRealCurrentPivot(board,members,motions))
+            return null;
+
+        let plan=null;
+
+        try{
+            plan=hexPhysRigidSlopePlan(
+                board,
+                members,
+                motions
+            );
+        }catch(_){
+            plan=null;
+        }
+
+        if(!Array.isArray(plan) || plan.length!==3)
+            return null;
+
+        const ids=new Set(members.map(m=>m.ball.id));
+        const dx=plan[0].tx-plan[0].x;
+        const dy=plan[0].ty-plan[0].y;
+
+        if(Math.abs(dx)!==1 || dy!==1)
+            return null;
+
+        for(const p of plan){
             if(
-                !valid(tx,ty) ||
-                targets.has(key) ||
-                (q && !own.has(q.id))
+                !p?.ball ||
+                !ids.has(p.ball.id) ||
+                p.kind!=="GROUP_SLOPE_TRANSLATE" ||
+                (p.tx-p.x)!==dx ||
+                (p.ty-p.y)!==dy
             ){
                 return null;
             }
-            targets.add(key);
         }
 
-        const bundle =
-            members[0]?.ball?.motionGroupId ||
-            0;
-
-        return members.map(m => ({
-            x:m.x,
-            y:m.y,
-            tx:m.x + dir.dx,
-            ty:m.y + dir.dy,
-            ball:m.ball,
-            kind:"GROUP_SLOPE_TRANSLATE",
-            pivot:null,
-            topPivot:null,
-            followSupportIds:[],
-            bundleId:bundle,
-            groupSize:3,
-            rigidUntilCommonMotionImpossible:true
-        }));
+        return plan;
     }
 
-    hexPhysPlanGroup = function(
+    hexPhysPlanGroup=function(
         board,
         members,
         preview=false
     ){
-        const plan = basePlanGroup(
+        const plan=basePlanGroup(
             board,
             members,
             preview
         ) || [];
 
-        if(!isOrdinaryUpTriplet(members))
+        if(!exactOrdinaryUpTriangle(members))
             return plan;
 
-        /* Existing canonical planner already found a valid 3-ball move. */
-        if(isThreeBallRigidPlan(plan, members))
+        /* Canonical resolver already has a valid 3-ball move. */
+        if(isThreeBallRigidPlan(plan,members))
             return plan;
 
         /*
-         * DO NOT split simply because a protrusion is being touched.
-         * Re-test the current physical step as one common rigid move.
+         * Only a physically proven CURRENT slope contact may rescue
+         * 3-ball rigidity. No direction is invented from a split plan,
+         * momentum, or collision-safe empty space.
          */
-        const motions = memberMotions(board, members);
-        const rigid = rigidSlopePlan(
+        const motions=memberMotions(board,members);
+        const rigid=canonicalRigidSlope(
             board,
             members,
-            motions,
-            plan
+            motions
         );
 
-        if(rigid){
-            if(!preview){
-                for(const m of members){
-                    m.ball.rigid = true;
-                    m.ball.motionGroupSize = 3;
-                    m.ball.motionGroupOrientation = "up";
-                    m.ball._upConvexRigidUntilImpossibleV2 = true;
-                }
+        if(!rigid)
+            return plan;
 
-                window.__sixBallLastUpConvexRigidUntilImpossibleV2 = {
-                    ids: members.map(m => m.ball.id),
-                    dx: rigid[0].tx - rigid[0].x,
-                    dy: rigid[0].ty - rigid[0].y,
-                    reason: "common-rigid-slope-still-possible",
-                    at: Date.now()
-                };
+        if(!preview){
+            for(const m of members){
+                m.ball.rigid=true;
+                m.ball.motionGroupSize=3;
+                m.ball.motionGroupOrientation="up";
+                m.ball._upConvexRigidUntilImpossibleV21=true;
             }
-            return rigid;
+
+            window.__sixBallLastUpConvexRigidUntilImpossibleV21={
+                ids:members.map(m=>m.ball.id),
+                dx:rigid[0].tx-rigid[0].x,
+                dy:rigid[0].ty-rigid[0].y,
+                reason:"canonical-current-contact-rigid-slope",
+                at:Date.now()
+            };
         }
 
-        /*
-         * Only here is common 3-ball motion impossible NOW.
-         * The canonical resolver may finally decide 1+2 split/pinning.
-         */
-        return plan;
+        return rigid;
     };
 
-    window.__sixBallUpConvexRigidUntilContactV1 = true;
-    window.__sixBallUpConvexRigidUntilContactVersion =
-        "upconvex-rigid-until-impossible-v2";
-    window.__sixBallUpConvexRigidUntilImpossibleVersion =
-        "upconvex-rigid-until-impossible-v2";
-    window.__sixBallUpConvexContactAloneDoesNotSplit = true;
-    window.__sixBallUpConvexSplitRequiresCommonMotionFailure = true;
+    window.__sixBallUpConvexRigidUntilContactV1=true;
+    window.__sixBallUpConvexRigidUntilContactVersion=
+        "upconvex-rigid-until-impossible-v2.1";
+    window.__sixBallUpConvexRigidUntilImpossibleVersion=
+        "upconvex-rigid-until-impossible-v2.1";
+    window.__sixBallUpConvexContactAloneDoesNotSplit=true;
+    window.__sixBallUpConvexSplitRequiresCommonMotionFailure=true;
+    window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
+    window.__sixBallUpConvexRequiresRealCurrentPivot=true;
 })();
