@@ -26,7 +26,7 @@ function install(ctx,source,name){
   return ctx;
 }
 
-function rigidCase(withCentreContact){
+function rigidCase({withCentreContact=false,translationSafe=true}={}){
   const b=board(),members=upMembers(0);
   for(const m of members)b[m.y][m.x]=m.ball;
   if(withCentreContact)b[5][6]={id:999,c:4,isGarbage:false,motionGroupId:0,rigid:false};
@@ -35,22 +35,37 @@ function rigidCase(withCentreContact){
   const ctx={console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,Error,TypeError,valid};
   ctx.hexPhysPlanGroup=()=>baseSplit.map(p=>({...p}));
   ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"ROLL_RIGHT",bundleId:0,groupSize:0});
-  ctx.hexPhysTranslationSafe=()=>true;
-  ctx.hexPhysGroupTranslationPlan=(bb,mm,dx,dy,kind)=>mm.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind,bundleId:500,groupSize:3}));
+  ctx.hexPhysTranslationSafe=()=>translationSafe;
+  ctx.hexPhysGroupTranslationPlan=(bb,mm,dx,dy,kind)=>translationSafe?mm.map(m=>({x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,kind,bundleId:500,groupSize:3})):null;
 
   install(ctx,rigidSource,"app-upconvex-rigid-until-contact-v1.js");
   const out=ctx.hexPhysPlanGroup(b,members,false);
   return{ctx,out};
 }
 
+/* Before any protrusion contact: ordinary slope must stay rigid. */
 {
-  const {ctx,out}=rigidCase(false);
-  expect(ctx.__sixBallUpConvexRigidUntilContactVersion==="upconvex-rigid-until-contact-v1","rigid-until-contact wrapper did not install");
+  const {ctx,out}=rigidCase({withCentreContact:false,translationSafe:true});
+  expect(ctx.__sixBallUpConvexRigidUntilImpossibleVersion==="upconvex-rigid-until-impossible-v2","rigid-until-impossible wrapper did not install");
   expect(out.length===3&&out.every(p=>p.groupSize===3&&p.bundleId===500&&p.tx-p.x===1&&p.ty-p.y===1),"UP triplet split before protrusion contact instead of staying rigid");
 }
+
+/*
+ * Critical regression: touching the protrusion itself is NOT enough
+ * to split.  If the exact same three-ball rigid slope step is still
+ * safe, all three balls must continue together.
+ */
 {
-  const {out}=rigidCase(true);
-  expect(out.length===3&&out.every(p=>p.kind==="BASE_SPLIT"),"real centre protrusion contact was incorrectly suppressed");
+  const {ctx,out}=rigidCase({withCentreContact:true,translationSafe:true});
+  expect(ctx.__sixBallUpConvexContactAloneDoesNotSplit===true,"contact-alone policy missing");
+  expect(out.length===3&&out.every(p=>p.groupSize===3&&p.bundleId===500&&p.kind==="GROUP_SLOPE_TRANSLATE"),"UP triplet split merely on protrusion contact even though common rigid motion was still possible");
+}
+
+/* Only actual common-motion failure may release the 1+2 split. */
+{
+  const {ctx,out}=rigidCase({withCentreContact:true,translationSafe:false});
+  expect(ctx.__sixBallUpConvexSplitRequiresCommonMotionFailure===true,"common-motion-failure split policy missing");
+  expect(out.length===3&&out.every(p=>p.kind==="BASE_SPLIT"),"UP triplet failed to release split after common rigid motion became impossible");
 }
 
 function sideCase(offset){
