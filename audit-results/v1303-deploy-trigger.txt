@@ -1,2 +1,2 @@
-trigger=2026-08-22T09:58:00+09:00
-reason=run v1303 production gate with committed audio asset
+trigger=2026-08-22T10:03:00+09:00
+reason=run current four-layer v1303 oracle production deployment
