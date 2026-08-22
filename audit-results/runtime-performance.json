@@ -1,1 +1,1 @@
-{"sha":"f67a84791db12f4f0f3d5806ba78ca184b4c3226","status":"pass","aiTechnique":0,"runtimePerformance":0,"pileflowTangencyPerformance":0,"aiTestMs":2686,"runtimeTestMs":40,"pileflowTestMs":30}
+{"sha":"2485a56c6c507f00253c6886dc5c989048769852","status":"fail","aiTechnique":1,"runtimePerformance":1,"pileflowTangencyPerformance":1,"aiTestMs":28,"runtimeTestMs":35,"pileflowTestMs":25}
