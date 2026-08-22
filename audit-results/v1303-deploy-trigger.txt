@@ -1,2 +1,2 @@
-trigger=2026-08-22T11:06:00+09:00
-reason=deploy one-pinned-member partial rigidity release v2.2
+trigger=2026-08-22T11:12:00+09:00
+reason=deploy projected one-ball pocket capture and remaining-pair rigidity fix
