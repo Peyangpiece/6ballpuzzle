@@ -34,15 +34,16 @@ function rigidCase({withCentreContact=false,realPivot=true,canonicalRigid=true,d
   const b=board(),members=upMembers(0);
   if(deform)members[0].x+=2;
   for(const m of members)b[m.y][m.x]=m.ball;
+
   const support={id:999,c:4,isGarbage:false,motionGroupId:0,rigid:false};
-  if(withCentreContact)b[5][6]=support;
-  if(realPivot&&!withCentreContact)b[5][8]=support;
+  const pivot=realPivot?(withCentreContact?[6,5]:[8,5]):null;
+  if(pivot)b[pivot[1]][pivot[0]]=support;
 
   const split=baseSplit(members);
   const ctx={console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,Error,TypeError,valid};
   ctx.hexPhysPlanGroup=()=>split.map(p=>({...p}));
-  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"ROLL_RIGHT",pivot:realPivot?[8,5]:null,topPivot:null});
-  ctx.hexPhysRigidSlopePlan=(bb,mm,motions)=>canonicalRigid?mm.map(m=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",pivot:[8,5],topPivot:null,bundleId:500,groupSize:3})):null;
+  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"ROLL_RIGHT",pivot,topPivot:null});
+  ctx.hexPhysRigidSlopePlan=(bb,mm,motions)=>canonicalRigid?mm.map(m=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",pivot,topPivot:null,bundleId:500,groupSize:3})):null;
 
   install(ctx,rigidSource,"app-upconvex-rigid-until-contact-v1.js");
   const out=ctx.hexPhysPlanGroup(b,members,false);
@@ -63,20 +64,20 @@ function rigidCase({withCentreContact=false,realPivot=true,canonicalRigid=true,d
   expect(out.length===3&&out.every(p=>p.groupSize===3&&p.kind==="GROUP_SLOPE_TRANSLATE"),"valid rigid motion was lost merely on protrusion contact");
 }
 
-/* Critical regression from live screenshot: empty collision-safe space cannot invent rigidity. */
+/* Live-regression: empty collision-safe space must never invent rigidity. */
 {
   const {ctx,out}=rigidCase({realPivot:false,canonicalRigid:true});
   expect(ctx.__sixBallUpConvexNoSyntheticRigidTranslation===true,"no-synthetic-rigidity policy missing");
   expect(out.every(p=>p.kind==="BASE_SPLIT"),"triplet stayed rigid without a real current support pivot");
 }
 
-/* If the canonical current-contact slope solver rejects the move, release to split. */
+/* Canonical current-contact slope rejection must release to split. */
 {
   const {out}=rigidCase({realPivot:true,canonicalRigid:false});
   expect(out.every(p=>p.kind==="BASE_SPLIT"),"triplet stayed rigid after canonical rigid slope became impossible");
 }
 
-/* Once the three balls no longer form the exact UP triangle, never reconstruct rigidity. */
+/* Deformed/separated three balls must never be reconstructed as a rigid triangle. */
 {
   const {out}=rigidCase({realPivot:true,canonicalRigid:true,deform:true});
   expect(out.every(p=>p.kind==="BASE_SPLIT"),"deformed/separated group was incorrectly re-rigidified");
