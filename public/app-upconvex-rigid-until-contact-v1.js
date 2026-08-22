@@ -1,18 +1,23 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGID UNTIL CONTACT v1
+ * 6ball UP-CONVEX RIGID UNTIL IMPOSSIBLE v2
  *
- * Ordinary UP triplets stay as one 3-ball rigid body while they
- * are still travelling on a smooth slope toward a later bump.
- * A protrusion is allowed to split the triplet only after the
- * protruding pile ball is in the CURRENT centre-contact envelope.
+ * Ordinary UP triplets stay as one 3-ball rigid body for as long
+ * as one genuine common rigid slope step is physically possible.
  *
- * This wrapper does not change the locked split side. That is
- * owned by app-upconvex-contact-priority-v1.js.
+ * IMPORTANT:
+ * merely touching / entering the centre envelope of a protrusion
+ * is NOT a split condition.  The triplet may ride around that
+ * protrusion as one rigid body.  Split is allowed only at the
+ * first step where the same 3-ball rigid motion is impossible.
+ *
+ * Split side remains owned by app-upconvex-contact-priority-v1.js.
+ * This wrapper owns only the "keep 3 balls rigid while possible"
+ * rule.
  * ============================================================ */
 (function(){
     if(
         typeof window === "undefined" ||
-        window.__sixBallUpConvexRigidUntilContactV1
+        window.__sixBallUpConvexRigidUntilImpossibleV2
     ){
         return;
     }
@@ -25,10 +30,9 @@
         return;
     }
 
-    window.__sixBallUpConvexRigidUntilContactV1 = true;
+    window.__sixBallUpConvexRigidUntilImpossibleV2 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
-    const EPS = 1e-9;
 
     function isOrdinaryUpTriplet(members){
         return !!(
@@ -40,80 +44,6 @@
                 members[0]?.ball?.motionGroupOrientation ||
                 ""
             ) === "up"
-        );
-    }
-
-    function clampOffset(v){
-        return Math.max(-1, Math.min(1, v));
-    }
-
-    function geometry(members){
-        if(!isOrdinaryUpTriplet(members))
-            return null;
-
-        const lowerY = Math.max(...members.map(m => m.y));
-        const lower = members
-            .filter(m => m.y === lowerY)
-            .sort((a,b) => a.x - b.x);
-        const top = members.find(m => m.y < lowerY);
-
-        if(
-            lower.length !== 2 ||
-            !top ||
-            lower[1].x - lower[0].x !== 2
-        ){
-            return null;
-        }
-
-        let offset = Number(top?.ball?.impactOffsetX);
-        if(!Number.isFinite(offset)){
-            const values = members
-                .map(m => Number(m?.ball?.impactOffsetX))
-                .filter(Number.isFinite)
-                .map(clampOffset)
-                .sort((a,b) => a-b);
-            offset = values.length
-                ? values[Math.floor(values.length / 2)]
-                : 0;
-        }
-        offset = clampOffset(offset);
-
-        const leftX = lower[0].x + offset;
-        const rightX = lower[1].x + offset;
-        const px = (lower[0].x + lower[1].x) / 2;
-        const py = lowerY + 1;
-        const width = rightX - leftX;
-        const hitFraction = Math.abs(width) > EPS
-            ? (px - leftX) / width
-            : 0.5;
-
-        return {
-            lowerY,
-            lower,
-            top,
-            offset,
-            px,
-            py,
-            hitFraction
-        };
-    }
-
-    function currentCentreProtrusionContact(board, members){
-        const g = geometry(members);
-        if(!g || !valid(g.px, g.py))
-            return false;
-
-        const support = board?.[g.py]?.[g.px];
-        if(
-            !support ||
-            members.some(m => m.ball.id === support.id)
-        ){
-            return false;
-        }
-
-        return (
-            g.hitFraction >= 0.25 - EPS &&
-            g.hitFraction <= 0.75 + EPS
         );
     }
 
@@ -165,6 +95,11 @@
                 add(p.tx - p.x, p.ty - p.y, 3);
         }
 
+        /*
+         * A split plan may still preserve the physical slope direction
+         * that the body was trying to follow.  It is only a weak vote;
+         * actual independent member motion has priority.
+         */
         for(const p of plan || []){
             if(p)
                 add(p.tx - p.x, p.ty - p.y, 1);
@@ -198,6 +133,12 @@
         if(!dir)
             return null;
 
+        /*
+         * This is the authoritative split gate:
+         * if the exact same vector is still safe for all 3 members,
+         * they MUST remain rigid, even if a protrusion is already in
+         * contact with the centre of the triangle.
+         */
         if(
             typeof hexPhysTranslationSafe === "function" &&
             !hexPhysTranslationSafe(
@@ -224,11 +165,13 @@
 
         const own = new Set(members.map(m => m.ball.id));
         const targets = new Set();
+
         for(const m of members){
             const tx = m.x + dir.dx;
             const ty = m.y + dir.dy;
             const key = tx + "," + ty;
             const q = valid(tx,ty) ? board?.[ty]?.[tx] : null;
+
             if(
                 !valid(tx,ty) ||
                 targets.has(key) ||
@@ -255,7 +198,7 @@
             followSupportIds:[],
             bundleId:bundle,
             groupSize:3,
-            rigidUntilProtrusionContact:true
+            rigidUntilCommonMotionImpossible:true
         }));
     }
 
@@ -273,17 +216,14 @@
         if(!isOrdinaryUpTriplet(members))
             return plan;
 
+        /* Existing canonical planner already found a valid 3-ball move. */
         if(isThreeBallRigidPlan(plan, members))
             return plan;
 
         /*
-         * Once the current protrusion is actually in the canonical
-         * centre-contact envelope, do not interfere. The existing
-         * separator + pre-arc side lock own the real split.
+         * DO NOT split simply because a protrusion is being touched.
+         * Re-test the current physical step as one common rigid move.
          */
-        if(currentCentreProtrusionContact(board, members))
-            return plan;
-
         const motions = memberMotions(board, members);
         const rigid = rigidSlopePlan(
             board,
@@ -294,20 +234,36 @@
 
         if(rigid){
             if(!preview){
-                window.__sixBallLastUpConvexRigidUntilContactV1 = {
+                for(const m of members){
+                    m.ball.rigid = true;
+                    m.ball.motionGroupSize = 3;
+                    m.ball.motionGroupOrientation = "up";
+                    m.ball._upConvexRigidUntilImpossibleV2 = true;
+                }
+
+                window.__sixBallLastUpConvexRigidUntilImpossibleV2 = {
                     ids: members.map(m => m.ball.id),
                     dx: rigid[0].tx - rigid[0].x,
                     dy: rigid[0].ty - rigid[0].y,
-                    reason: "slope-before-protrusion-contact",
+                    reason: "common-rigid-slope-still-possible",
                     at: Date.now()
                 };
             }
             return rigid;
         }
 
+        /*
+         * Only here is common 3-ball motion impossible NOW.
+         * The canonical resolver may finally decide 1+2 split/pinning.
+         */
         return plan;
     };
 
+    window.__sixBallUpConvexRigidUntilContactV1 = true;
     window.__sixBallUpConvexRigidUntilContactVersion =
-        "upconvex-rigid-until-contact-v1";
+        "upconvex-rigid-until-impossible-v2";
+    window.__sixBallUpConvexRigidUntilImpossibleVersion =
+        "upconvex-rigid-until-impossible-v2";
+    window.__sixBallUpConvexContactAloneDoesNotSplit = true;
+    window.__sixBallUpConvexSplitRequiresCommonMotionFailure = true;
 })();
