@@ -1,22 +1,29 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGID UNTIL IMPOSSIBLE v2.1
+ * 6ball UP-CONVEX RIGID UNTIL IMPOSSIBLE v2.2
  *
- * Keep an ordinary UP triplet rigid only while the canonical
- * current-contact slope solver itself proves one genuine common
- * 3-ball rigid move.
+ * Priority for an ordinary UP triplet:
  *
- * v2 was too permissive: it inferred a direction from one member,
- * an already-split plan, or momentum and then used only collision
- * safety to manufacture GROUP_SLOPE_TRANSLATE. That could keep a
- * ball floating / attached after the physical event that should
- * have released rigidity.
+ * 1. If exactly ONE member is physically pinned right now, that
+ *    member alone releases from the 3-ball constraint immediately.
+ *    The other TWO members keep the original rigid pair constraint.
  *
- * Split side remains owned by app-upconvex-contact-priority-v1.js.
+ * 2. Otherwise, preserve 3-ball rigidity only when the canonical
+ *    current-contact slope solver itself proves one genuine common
+ *    rigid 3-ball move.
+ *
+ * This restores the canonical one-member-pin rule that later v3.9
+ * wrappers could accidentally hide behind GROUP_SLOPE_TRANSLATE.
+ * It never chooses the pinned member by colour or by protrusion side;
+ * the member whose independent physical motion is actually blocked
+ * is the one that releases.
+ *
+ * Split side for true UP-convex 1+2 events remains owned by
+ * app-upconvex-contact-priority-v1.js.
  * ============================================================ */
 (function(){
     if(
         typeof window === "undefined" ||
-        window.__sixBallUpConvexRigidUntilImpossibleV21
+        window.__sixBallUpConvexRigidUntilImpossibleV22
     ){
         return;
     }
@@ -29,7 +36,7 @@
         return;
     }
 
-    window.__sixBallUpConvexRigidUntilImpossibleV21 = true;
+    window.__sixBallUpConvexRigidUntilImpossibleV22 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
 
@@ -104,6 +111,108 @@
         return motions;
     }
 
+    function singlePinnedIndex(motions){
+        if(!Array.isArray(motions) || motions.length !== 3)
+            return -1;
+
+        const pinned=[];
+        for(let i=0;i<3;i++){
+            if(!motions[i])
+                pinned.push(i);
+        }
+
+        return pinned.length === 1
+            ? pinned[0]
+            : -1;
+    }
+
+    function clearOneBall(ball){
+        if(!ball)
+            return;
+
+        if(typeof hexPhysClearGroupBall === "function"){
+            hexPhysClearGroupBall(ball);
+            return;
+        }
+
+        ball.motionGroupId=0;
+        ball.motionGroupRole=-1;
+        ball.motionGroupOrientation="";
+        ball.motionGroupSize=0;
+        ball.rigid=false;
+    }
+
+    function releaseSinglePinnedMember(
+        board,
+        members,
+        motions,
+        pinnedIndex,
+        preview
+    ){
+        if(pinnedIndex < 0)
+            return null;
+
+        const fixed = members[pinnedIndex];
+        const pair = members.filter((_,i) => i !== pinnedIndex);
+
+        if(pair.length !== 2)
+            return null;
+
+        if(preview){
+            const fakePair = pair.map(m => ({
+                ...m,
+                ball:{
+                    ...m.ball,
+                    motionGroupSize:2,
+                    rigid:true
+                }
+            }));
+
+            const previewPlan = basePlanGroup(
+                board,
+                fakePair,
+                true
+            );
+
+            return Array.isArray(previewPlan)
+                ? previewPlan
+                : [];
+        }
+
+        const originalGroupId =
+            pair[0]?.ball?.motionGroupId ||
+            pair[1]?.ball?.motionGroupId ||
+            0;
+
+        clearOneBall(fixed.ball);
+
+        for(const m of pair){
+            if(originalGroupId)
+                m.ball.motionGroupId=originalGroupId;
+            m.ball.motionGroupSize=2;
+            m.ball.rigid=true;
+            m.ball._upSinglePinnedPairV22=true;
+        }
+
+        window.__sixBallLastUpSinglePinnedReleaseV22={
+            pinnedId:fixed.ball.id,
+            pairIds:pair.map(m => m.ball.id),
+            pinnedIndex,
+            reason:"exactly-one-independent-member-pinned",
+            at:Date.now()
+        };
+
+        const pairPlan = basePlanGroup(
+            board,
+            pair,
+            false
+        );
+
+        return Array.isArray(pairPlan)
+            ? pairPlan
+            : [];
+    }
+
     function hasRealCurrentPivot(board,members,motions){
         const own = new Set(members.map(m => m.ball.id));
 
@@ -173,25 +282,50 @@
         members,
         preview=false
     ){
+        if(!exactOrdinaryUpTriangle(members)){
+            return basePlanGroup(
+                board,
+                members,
+                preview
+            ) || [];
+        }
+
+        /*
+         * ONE real pin outranks every later 3-ball slope rescue.
+         * This is the canonical physical event that breaks only the
+         * constrained member while the unconstrained two stay paired.
+         */
+        const motions=memberMotions(board,members);
+        const pinnedIndex=singlePinnedIndex(motions);
+
+        if(pinnedIndex >= 0){
+            const partial=releaseSinglePinnedMember(
+                board,
+                members,
+                motions,
+                pinnedIndex,
+                preview
+            );
+
+            if(partial !== null)
+                return partial;
+        }
+
         const plan=basePlanGroup(
             board,
             members,
             preview
         ) || [];
 
-        if(!exactOrdinaryUpTriangle(members))
-            return plan;
-
         /* Canonical resolver already has a valid 3-ball move. */
         if(isThreeBallRigidPlan(plan,members))
             return plan;
 
         /*
-         * Only a physically proven CURRENT slope contact may rescue
-         * 3-ball rigidity. No direction is invented from a split plan,
-         * momentum, or collision-safe empty space.
+         * With no single-member pin, only a physically proven CURRENT
+         * slope contact may rescue 3-ball rigidity. No direction is
+         * invented from a split plan, momentum, or empty space.
          */
-        const motions=memberMotions(board,members);
         const rigid=canonicalRigidSlope(
             board,
             members,
@@ -206,10 +340,10 @@
                 m.ball.rigid=true;
                 m.ball.motionGroupSize=3;
                 m.ball.motionGroupOrientation="up";
-                m.ball._upConvexRigidUntilImpossibleV21=true;
+                m.ball._upConvexRigidUntilImpossibleV22=true;
             }
 
-            window.__sixBallLastUpConvexRigidUntilImpossibleV21={
+            window.__sixBallLastUpConvexRigidUntilImpossibleV22={
                 ids:members.map(m=>m.ball.id),
                 dx:rigid[0].tx-rigid[0].x,
                 dy:rigid[0].ty-rigid[0].y,
@@ -223,11 +357,13 @@
 
     window.__sixBallUpConvexRigidUntilContactV1=true;
     window.__sixBallUpConvexRigidUntilContactVersion=
-        "upconvex-rigid-until-impossible-v2.1";
+        "upconvex-rigid-until-impossible-v2.2";
     window.__sixBallUpConvexRigidUntilImpossibleVersion=
-        "upconvex-rigid-until-impossible-v2.1";
+        "upconvex-rigid-until-impossible-v2.2";
     window.__sixBallUpConvexContactAloneDoesNotSplit=true;
     window.__sixBallUpConvexSplitRequiresCommonMotionFailure=true;
     window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
     window.__sixBallUpConvexRequiresRealCurrentPivot=true;
+    window.__sixBallUpSinglePinnedMemberHasPriority=true;
+    window.__sixBallUpRemainingTwoKeepRigidity=true;
 })();
