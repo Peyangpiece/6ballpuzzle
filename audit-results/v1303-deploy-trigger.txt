@@ -1,2 +1,2 @@
-trigger=2026-08-22T10:50:00+09:00
-reason=redeploy UP rigidity physical-contact guard v2.1 after guard fixture fix
+trigger=2026-08-22T11:06:00+09:00
+reason=deploy one-pinned-member partial rigidity release v2.2
