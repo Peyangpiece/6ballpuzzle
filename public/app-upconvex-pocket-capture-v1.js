@@ -3,8 +3,8 @@
  *
  * Physical priority for an ordinary UP triplet:
  * if exactly one LOWER member is about to move into a real V-pocket
- * formed by two stationary pile balls, that member is the one that
- * must release from the 3-ball constraint.
+ * formed by two stationary NORMAL pile balls, that member is the one
+ * that must release from the 3-ball constraint.
  *
  * The remaining TOP + opposite LOWER member keep a 2-ball rigid pair
  * and move away from the captured member. This overrides geometric
@@ -74,8 +74,13 @@
         }
 
         const q=board?.[y]?.[x] || null;
-        if(!q || own.has(q.id))
+        if(
+            !q ||
+            q.isGarbage ||
+            own.has(q.id)
+        ){
             return null;
+        }
 
         return q;
     }
@@ -119,11 +124,6 @@
                 own
             );
 
-            /*
-             * Two real external lower supports mean the destination is
-             * a genuine V-pocket. Once the member enters, it becomes the
-             * individually constrained member of the original triplet.
-             */
             if(!leftSupport || !rightSupport)
                 continue;
 
@@ -172,10 +172,6 @@
                 ? lower[1]
                 : lower[0];
 
-        /*
-         * Captured RIGHT lower member -> remaining pair goes LEFT.
-         * Captured LEFT  lower member -> remaining pair goes RIGHT.
-         */
         const pairDir =
             solo.x > pairLower.x
                 ? -1
@@ -215,4 +211,5 @@
     window.__sixBallUpProjectedPocketCaptureVersion=
         "up-projected-pocket-capture-v1";
     window.__sixBallUpPocketCaptureOverridesGeometricSide=true;
+    window.__sixBallUpPocketCaptureNormalSupportsOnly=true;
 })();
