@@ -1,2 +1,2 @@
-trigger=2026-08-22T14:50:00+09:00
-reason=deploy v2.4 continuous pre-split pocket disambiguation for RED solo and BLUE+YELLOW pair
+trigger=2026-08-22T14:55:00+09:00
+reason=deploy v2.4 continuous pocket disambiguation after production-guard compatibility restoration
