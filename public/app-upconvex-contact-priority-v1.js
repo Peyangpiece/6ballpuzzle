@@ -1,67 +1,52 @@
 /* ============================================================
- * 6ball UP-CONVEX PRE-ARC SIDE LOCK v2.2
+ * 6ball UP-CONVEX PRE-ARC SIDE LOCK v3.0
  *
- * A normal UP triplet may first perform a rigid circular/slope
- * motion around a pile support and only split on the following
- * resolver step.  The arc can carry the triplet centre across
- * the support centre, so deciding the 2+1 side after that arc can
- * reverse the reference result.
+ * Side is decided from the triplet position BEFORE the first
+ * rigid circular/slope step around the protruding pile ball.
+ * Split timing stays owned by the existing canonical resolver.
  *
- * Rule:
- *   - BEFORE a rigid arc/slope step is committed, remember the
- *     triplet-centre side relative to the actual external pivot.
- *   - Do NOT split early.
- *   - When the canonical v3.9 separator later says the split is
- *     physically legal on that same support, restore the stored
- *     pre-arc side.
- *
- * protrusion RIGHT of pre-arc triangle centre
- *      -> LEFT pair + RIGHT solo
- *
- * protrusion LEFT of pre-arc triangle centre
- *      -> RIGHT pair + LEFT solo
+ * protrusion RIGHT of pre-arc triangle centre -> LEFT pair + RIGHT solo
+ * protrusion LEFT  of pre-arc triangle centre -> RIGHT pair + LEFT solo
  * ============================================================ */
 (function(){
-    if(
-        typeof window === "undefined" ||
-        window.__sixBallUpConvexPreArcSideLockV22
-    ){
+    if(typeof window === "undefined" || window.__sixBallUpConvexPreArcSideLockV30)
         return;
-    }
 
     if(
         typeof hexPhysPlanGroup !== "function" ||
         typeof hexPhysUpConvexSeparator !== "function" ||
+        typeof hexPhysIndependentMemberMotion !== "function" ||
         typeof hexPhysEmpty !== "function" ||
         typeof valid !== "function"
     ){
         return;
     }
 
-    window.__sixBallUpConvexPreArcSideLockV22 = true;
+    window.__sixBallUpConvexPreArcSideLockV30 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
     const baseSeparator = hexPhysUpConvexSeparator;
-
-    /*
-     * Preview must stay read-only.  This synchronous observation
-     * is visible only while the current planner call is executing.
-     */
-    let activeObservation = null;
+    const STORE = "_upConvexPreArcSideLocksV30";
+    let activeLocks = null;
 
     function isUpTriplet(members){
-        if(!Array.isArray(members) || members.length !== 3)
-            return false;
+        return !!(
+            Array.isArray(members) &&
+            members.length === 3 &&
+            members.every(m => m?.ball && !m.ball.isGarbage) &&
+            (
+                members[0]?.orientation ||
+                members[0]?.ball?.motionGroupOrientation ||
+                ""
+            ) === "up"
+        );
+    }
 
-        if(members.some(m => !m?.ball || m.ball.isGarbage))
-            return false;
-
-        const orientation =
-            members[0]?.orientation ||
-            members[0]?.ball?.motionGroupOrientation ||
-            "";
-
-        return orientation === "up";
+    function pieceKey(members){
+        return members
+            .map(m => String(m.ball.id))
+            .sort()
+            .join(":");
     }
 
     function continuousOffset(members){
@@ -71,10 +56,9 @@
             .map(v => Math.max(-1, Math.min(1, v)))
             .sort((a,b) => a-b);
 
-        if(!values.length)
-            return 0;
-
-        return values[Math.floor(values.length / 2)];
+        return values.length
+            ? values[Math.floor(values.length / 2)]
+            : 0;
     }
 
     function tripletBase(members){
@@ -84,127 +68,167 @@
         const lowerY = Math.max(...members.map(m => m.y));
         const lower = members
             .filter(m => m.y === lowerY)
-            .sort((a,b) => a.x-b.x);
+            .sort((a,b) => a.x - b.x);
         const top = members.find(m => m.y < lowerY);
 
-        if(
-            lower.length !== 2 ||
-            !top ||
-            lower[1].x - lower[0].x !== 2
-        ){
+        if(lower.length !== 2 || !top || lower[1].x - lower[0].x !== 2)
             return null;
-        }
 
         const offset = continuousOffset(members);
-        const baseLeft = lower[0].x + offset;
-        const baseRight = lower[1].x + offset;
-        const triangleCenter = (baseLeft + baseRight) / 2;
+        const leftX = lower[0].x + offset;
+        const rightX = lower[1].x + offset;
 
         return {
             lowerY,
             lower,
             top,
             offset,
-            baseLeft,
-            baseRight,
-            triangleCenter,
-            groupId: Number(members[0]?.ball?.motionGroupId) || 0
+            triangleCenter: (leftX + rightX) / 2,
+            key: pieceKey(members)
         };
     }
 
-    /*
-     * Current direct-centre protrusion observation.
-     * This is also used when there was no prior arc.
-     */
-    function directSeparatorGeometry(board, members){
-        const base = tripletBase(members);
-        if(!base)
+    function makeLock(base, support, px, py, source){
+        if(!base || !support || !Number.isFinite(px) || !Number.isFinite(py))
             return null;
-
-        const px = (base.lower[0].x + base.lower[1].x) / 2;
-        const py = base.lowerY + 1;
-        const support = valid(px,py) ? board?.[py]?.[px] : null;
-
-        if(
-            !support ||
-            members.some(m => m.ball.id === support.id)
-        ){
-            return null;
-        }
-
-        const width = base.baseRight - base.baseLeft;
-        if(Math.abs(width) <= 1e-9)
-            return null;
-
-        const hitFraction = (px - base.baseLeft) / width;
-
-        /*
-         * Direct separator is central-half only.
-         * Outer-quarter contact is still an ordinary rigid slope.
-         */
-        if(
-            hitFraction < 0.25 - 1e-9 ||
-            hitFraction > 0.75 + 1e-9
-        ){
-            return null;
-        }
 
         const delta = base.triangleCenter - px;
-
-        /* Exact centre keeps the canonical tie-break. */
         if(Math.abs(delta) <= 1e-9)
             return null;
 
         return {
-            ...base,
-            support,
-            px,
-            py,
-            hitFraction,
+            supportId: support.id,
+            supportX: px,
+            supportY: py,
+            pieceKey: base.key,
+            triangleCenter: base.triangleCenter,
             protrusionCenter: px,
             delta,
             pairDir: delta > 0 ? 1 : -1,
-            source: "direct-centre"
+            source
         };
     }
 
-    function lockStore(ball){
+    function directCentreLock(board, members, base){
+        const px = (base.lower[0].x + base.lower[1].x) / 2;
+        const py = base.lowerY + 1;
+
+        if(!valid(px, py))
+            return null;
+
+        const support = board?.[py]?.[px];
+        if(!support || members.some(m => m.ball.id === support.id))
+            return null;
+
+        return makeLock(base, support, px, py, "direct-centre");
+    }
+
+    function externalPivotLocks(board, members, base){
+        const own = new Set(members.map(m => m.ball.id));
+        const found = new Map();
+
+        for(const member of members){
+            let motion = null;
+            try{
+                motion = hexPhysIndependentMemberMotion(board, members, member);
+            }catch(_){
+                motion = null;
+            }
+
+            if(!motion)
+                continue;
+
+            for(const field of ["pivot", "topPivot"]){
+                const pv = motion[field];
+                if(!Array.isArray(pv) || pv.length < 2)
+                    continue;
+
+                const px = Number(pv[0]);
+                const py = Number(pv[1]);
+                if(!Number.isFinite(px) || !Number.isFinite(py) || !valid(px, py))
+                    continue;
+
+                const support = board?.[py]?.[px];
+                if(!support || own.has(support.id))
+                    continue;
+
+                const lock = makeLock(base, support, px, py, "pre-arc-member-pivot");
+                if(lock && !found.has(String(lock.supportId)))
+                    found.set(String(lock.supportId), lock);
+            }
+        }
+
+        return [...found.values()];
+    }
+
+    function observeLocks(board, members){
+        const base = tripletBase(members);
+        if(!base)
+            return new Map();
+
+        const out = new Map();
+        const direct = directCentreLock(board, members, base);
+        if(direct)
+            out.set(String(direct.supportId), direct);
+
+        for(const lock of externalPivotLocks(board, members, base)){
+            const key = String(lock.supportId);
+            if(!out.has(key))
+                out.set(key, lock);
+        }
+
+        return out;
+    }
+
+    function getStore(ball){
         if(!ball || typeof ball !== "object")
             return null;
 
-        if(
-            !ball._upConvexPreArcSideLocksV22 ||
-            typeof ball._upConvexPreArcSideLocksV22 !== "object"
-        ){
-            ball._upConvexPreArcSideLocksV22 =
-                Object.create(null);
-        }
+        if(!ball[STORE] || typeof ball[STORE] !== "object")
+            ball[STORE] = Object.create(null);
 
-        return ball._upConvexPreArcSideLocksV22;
+        return ball[STORE];
     }
 
-    function readSideLock(members, supportId){
-        if(!isUpTriplet(members) || !supportId)
+    function persistLocks(members, locks){
+        for(const lock of locks.values()){
+            const key = String(lock.supportId);
+
+            for(const m of members){
+                const store = getStore(m.ball);
+                if(store && !store[key])
+                    store[key] = {...lock};
+            }
+
+            window.__sixBallLastUpConvexPreArcObservedV30 = {
+                ...lock,
+                pairSide: lock.pairDir > 0 ? "right" : "left",
+                soloSide: lock.pairDir > 0 ? "left" : "right",
+                ids: members.map(m => m.ball.id),
+                at: Date.now()
+            };
+        }
+    }
+
+    function readPersistentLock(members, supportId){
+        if(!isUpTriplet(members) || supportId == null)
             return null;
 
         const key = String(supportId);
+        const pkey = pieceKey(members);
         const locks = members
-            .map(m => m?.ball?._upConvexPreArcSideLocksV22?.[key])
+            .map(m => m?.ball?.[STORE]?.[key])
             .filter(Boolean);
 
-        /*
-         * A persistent lock is valid only when all three members
-         * agree. This also blocks stale partial metadata.
-         */
         if(locks.length !== 3)
             return null;
 
         const first = locks[0];
-
         if(
+            first.pieceKey !== pkey ||
             !locks.every(l =>
                 l.supportId === first.supportId &&
-                l.groupId === first.groupId &&
+                l.pieceKey === first.pieceKey &&
                 l.pairDir === first.pairDir
             )
         ){
@@ -214,216 +238,27 @@
         return first;
     }
 
-    function geometryAsLock(g){
-        if(!g || !g.support?.id)
+    function activeLockFor(members, supportId){
+        if(!activeLocks || supportId == null || !isUpTriplet(members))
             return null;
 
-        return {
-            supportId: g.support.id,
-            groupId: g.groupId,
-            pairDir: g.pairDir,
-            triangleCenter: g.triangleCenter,
-            protrusionCenter: g.protrusionCenter,
-            delta: g.delta,
-            hitFraction:
-                Number.isFinite(g.hitFraction)
-                    ? g.hitFraction
-                    : null,
-            source: g.source || "unknown"
-        };
+        const lock = activeLocks.get(String(supportId));
+        return lock && lock.pieceKey === pieceKey(members)
+            ? lock
+            : null;
     }
 
-    function persistSide(members, g){
-        if(!g)
-            return null;
-
-        const existing = readSideLock(
-            members,
-            g.support.id
-        );
-
-        /*
-         * Same physical support: the earliest observation wins.
-         * In particular, a later post-arc centre crossing may NOT
-         * overwrite the pre-arc side.
-         */
-        if(existing)
-            return existing;
-
-        const lock = geometryAsLock(g);
-        if(!lock)
-            return null;
-
-        const key = String(lock.supportId);
-
-        for(const m of members){
-            const store = lockStore(m.ball);
-            if(store)
-                store[key] = {...lock};
-        }
-
-        window.__sixBallLastUpConvexSideLockObserved = {
-            ...lock,
-            pairSide: lock.pairDir > 0 ? "right" : "left",
-            soloSide: lock.pairDir > 0 ? "left" : "right",
-            ids: members.map(m => m.ball.id),
-            at: Date.now()
-        };
-
-        return lock;
-    }
-
-    function currentObservationLock(members, supportId){
-        if(
-            !activeObservation ||
-            !supportId ||
-            activeObservation.support?.id !== supportId ||
-            !isUpTriplet(members)
-        ){
-            return null;
-        }
-
-        return geometryAsLock(activeObservation);
-    }
-
-    /*
-     * Locate the actual external pivot that caused a rigid group
-     * arc. hexPhysRigidSlidePlanFromContact marks copied pivots on
-     * the other members as virtualPivot, so only a non-virtual
-     * pivot/topPivot is authoritative.
-     */
-    function externalPivotFromRigidPlan(board, members, plan){
-        if(
-            !isUpTriplet(members) ||
-            !Array.isArray(plan) ||
-            plan.length !== 3
-        ){
-            return null;
-        }
-
-        /*
-         * Split plans contain a 2-ball branch plus a solo.  We only
-         * capture a side while all three are still one rigid body.
-         */
-        if(!plan.every(p => Number(p?.groupSize) === 3))
-            return null;
-
-        const own = new Set(members.map(m => m.ball.id));
-
-        for(const p of plan){
-            if(!p || p.virtualPivot)
-                continue;
-
-            const pv =
-                Array.isArray(p.topPivot)
-                    ? p.topPivot
-                    : Array.isArray(p.pivot)
-                        ? p.pivot
-                        : null;
-
-            if(!pv || pv.length < 2)
-                continue;
-
-            const px = Number(pv[0]);
-            const py = Number(pv[1]);
-
-            if(
-                !Number.isFinite(px) ||
-                !Number.isFinite(py) ||
-                !valid(px,py)
-            ){
-                continue;
-            }
-
-            const support = board?.[py]?.[px];
-
-            if(!support || own.has(support.id))
-                continue;
-
-            return {
-                support,
-                px,
-                py,
-                proposal: p
-            };
-        }
-
-        return null;
-    }
-
-    /*
-     * Side geometry taken BEFORE the rigid circular/slope step.
-     * No central-half restriction is used here: an outer-quarter
-     * contact is precisely the case that can roll around the same
-     * support and become a true separator one step later.
-     */
-    function preArcGeometry(board, members, plan){
-        const base = tripletBase(members);
-        if(!base)
-            return null;
-
-        const pivot =
-            externalPivotFromRigidPlan(
-                board,
-                members,
-                plan
-            );
-
-        if(!pivot)
-            return null;
-
-        /*
-         * Require an actual horizontal arc component. Vertical
-         * rigid gravity has no pivot and never reaches this path.
-         */
-        const p = pivot.proposal;
-        const dx = Number(p?.tx) - Number(p?.x);
-
-        if(!Number.isFinite(dx) || Math.abs(dx) <= 1e-9)
-            return null;
-
-        const delta =
-            base.triangleCenter -
-            pivot.px;
-
-        if(Math.abs(delta) <= 1e-9)
-            return null;
-
-        return {
-            ...base,
-            support: pivot.support,
-            px: pivot.px,
-            py: pivot.py,
-            protrusionCenter: pivot.px,
-            delta,
-            pairDir: delta > 0 ? 1 : -1,
-            hitFraction: null,
-            source: "pre-arc"
-        };
-    }
-
-    function outwardSoloMotion(
-        board,
-        solo,
-        direction,
-        info,
-        members
-    ){
+    function outwardSoloMotion(board, solo, direction, info, members){
         const tx = solo.x + direction;
         const ty = solo.y + 1;
-
         const ignore = new Set(
             members
                 .filter(m => m.ball.id !== solo.ball.id)
                 .map(m => m.ball.id)
         );
 
-        if(
-            !valid(tx,ty) ||
-            !hexPhysEmpty(board, tx, ty, ignore)
-        ){
+        if(!valid(tx, ty) || !hexPhysEmpty(board, tx, ty, ignore))
             return null;
-        }
 
         return {
             x: solo.x,
@@ -431,223 +266,89 @@
             tx,
             ty,
             ball: solo.ball,
-            kind:
-                direction < 0
-                    ? "ROLL_LEFT"
-                    : "ROLL_RIGHT",
-            pivot: [info.px, info.py],
+            kind: direction < 0 ? "ROLL_LEFT" : "ROLL_RIGHT",
+            pivot: Number.isFinite(info?.px) && Number.isFinite(info?.py)
+                ? [info.px, info.py]
+                : null,
             topPivot: null,
             followSupportIds: []
         };
     }
 
     /*
-     * 1) Observe direct separator geometry before the inner
-     *    planner can move the group.
-     * 2) Let canonical physics decide the actual motion.
-     * 3) If that motion is a rigid arc, store its PRE-ARC side
-     *    before the event is committed.
-     *
-     * Preview stays read-only.
+     * IMPORTANT: side observation happens before basePlanGroup.
+     * Therefore a subsequent rigid arc cannot rewrite the side.
+     * We do not force a split here; canonical timing is unchanged.
      */
-    hexPhysPlanGroup = function(
-        board,
-        members,
-        preview=false
-    ){
-        const observed =
-            isUpTriplet(members)
-                ? directSeparatorGeometry(
-                    board,
-                    members
-                  )
-                : null;
+    hexPhysPlanGroup = function(board, members, preview=false){
+        if(!isUpTriplet(members))
+            return basePlanGroup(board, members, preview);
 
-        if(!preview && observed){
-            persistSide(
-                members,
-                observed
-            );
-        }
+        const observed = observeLocks(board, members);
+        if(!preview)
+            persistLocks(members, observed);
 
-        const previousObservation =
-            activeObservation;
-
-        activeObservation =
-            observed;
-
-        let plan;
+        const previousActive = activeLocks;
+        activeLocks = observed;
 
         try{
-            plan =
-                basePlanGroup(
-                    board,
-                    members,
-                    preview
-                );
+            return basePlanGroup(board, members, preview);
         }finally{
-            activeObservation =
-                previousObservation;
+            activeLocks = previousActive;
         }
-
-        /*
-         * CRITICAL FIX:
-         * capture the side before a committed arc changes the
-         * logical group position and before app-03 resets
-         * impactOffsetX after horizontal motion.
-         */
-        if(
-            !preview &&
-            isUpTriplet(members) &&
-            Array.isArray(plan) &&
-            plan.length
-        ){
-            const beforeArc =
-                preArcGeometry(
-                    board,
-                    members,
-                    plan
-                );
-
-            if(beforeArc){
-                persistSide(
-                    members,
-                    beforeArc
-                );
-
-                window.__sixBallLastUpConvexPreArcDecision = {
-                    supportId: beforeArc.support.id,
-                    groupId: beforeArc.groupId,
-                    triangleCenter: beforeArc.triangleCenter,
-                    protrusionCenter:
-                        beforeArc.protrusionCenter,
-                    delta: beforeArc.delta,
-                    pairSide:
-                        beforeArc.pairDir > 0
-                            ? "right"
-                            : "left",
-                    soloSide:
-                        beforeArc.pairDir > 0
-                            ? "left"
-                            : "right",
-                    ids:
-                        members.map(
-                            m => m.ball.id
-                        ),
-                    at: Date.now()
-                };
-            }
-        }
-
-        return plan;
     };
 
     /*
-     * Canonical v3.9 remains the sole authority for WHEN a split
-     * is physically legal. We only replace its side assignment.
+     * Canonical resolver still decides WHEN splitting is legal.
+     * Once it returns a real protrusion, only the pair/solo side
+     * is restored from the pre-arc observation of that support.
      */
-    hexPhysUpConvexSeparator = function(
-        board,
-        members,
-        motions
-    ){
-        const info =
-            baseSeparator(
-                board,
-                members,
-                motions
-            );
-
+    hexPhysUpConvexSeparator = function(board, members, motions){
+        const info = baseSeparator(board, members, motions);
         if(!info || !isUpTriplet(members))
             return info;
 
-        const supportId =
-            info?.support?.id;
-
+        const supportId = info?.support?.id;
         const lock =
-            readSideLock(
-                members,
-                supportId
-            ) ||
-            currentObservationLock(
-                members,
-                supportId
-            );
+            readPersistentLock(members, supportId) ||
+            activeLockFor(members, supportId);
 
         if(!lock)
             return info;
 
-        const lowerY =
-            Math.max(
-                ...members.map(m => m.y)
-            );
-
-        const lower =
-            members
+        const lowerY = Math.max(...members.map(m => m.y));
+        const lower = members
             .filter(m => m.y === lowerY)
-            .sort((a,b) => a.x-b.x);
-
-        const top =
-            members.find(
-                m => m.y < lowerY
-            );
+            .sort((a,b) => a.x - b.x);
+        const top = members.find(m => m.y < lowerY);
 
         if(lower.length !== 2 || !top)
             return info;
 
-        const pairDir =
-            lock.pairDir > 0
-                ? 1
-                : -1;
+        const pairDir = lock.pairDir > 0 ? 1 : -1;
+        const pairLower = pairDir > 0 ? lower[1] : lower[0];
+        const solo = pairDir > 0 ? lower[0] : lower[1];
+        const soloDirection = -pairDir;
 
-        const pairLower =
-            pairDir > 0
-                ? lower[1]
-                : lower[0];
-
-        const solo =
-            pairDir > 0
-                ? lower[0]
-                : lower[1];
-
-        const soloDirection =
-            -pairDir;
-
-        let soloMotion =
-            motions?.[
-                members.indexOf(
-                    solo
-                )
-            ] || null;
+        let soloMotion = motions?.[members.indexOf(solo)] || null;
 
         if(
             !soloMotion ||
-            Math.sign(
-                soloMotion.tx -
-                solo.x
-            ) !== soloDirection
+            Math.sign(soloMotion.tx - solo.x) !== soloDirection
         ){
-            soloMotion =
-                outwardSoloMotion(
-                    board,
-                    solo,
-                    soloDirection,
-                    info,
-                    members
-                );
+            soloMotion = outwardSoloMotion(
+                board,
+                solo,
+                soloDirection,
+                info,
+                members
+            );
         }
 
-        /*
-         * Never manufacture a split through an occupied target.
-         * If the remembered-side split is not physically possible
-         * yet, wait; do not silently flip to the opposite side.
-         */
+        /* Wait rather than flip to the wrong side. */
         if(
             !soloMotion ||
-            Math.sign(
-                soloMotion.tx -
-                solo.x
-            ) !== soloDirection
+            Math.sign(soloMotion.tx - solo.x) !== soloDirection
         ){
             return null;
         }
@@ -659,49 +360,27 @@
             pairLower,
             solo,
             soloMotion,
-
-            triangleCenterAtSideDecision:
-                lock.triangleCenter,
-
-            protrusionCenterAtSideDecision:
-                lock.protrusionCenter,
-
-            sideDecisionDelta:
-                lock.delta,
-
-            sideDecisionSource:
-                lock.source,
-
-            firstContactSideLocked:
-                true,
-
-            pairSide:
-                pairDir > 0
-                    ? "right"
-                    : "left",
-
-            soloSide:
-                pairDir > 0
-                    ? "left"
-                    : "right"
+            triangleCenterAtSideDecision: lock.triangleCenter,
+            protrusionCenterAtSideDecision: lock.protrusionCenter,
+            sideDecisionDelta: lock.delta,
+            sideDecisionSource: lock.source,
+            preArcSideLocked: true,
+            pairSide: pairDir > 0 ? "right" : "left",
+            soloSide: pairDir > 0 ? "left" : "right"
         };
 
-        window.__sixBallLastUpConvexAppliedSideLock = {
+        window.__sixBallLastUpConvexAppliedPreArcLockV30 = {
             supportId,
-            groupId: lock.groupId,
             source: lock.source,
+            triangleCenter: lock.triangleCenter,
+            protrusionCenter: lock.protrusionCenter,
             delta: lock.delta,
             pairSide: corrected.pairSide,
             soloSide: corrected.soloSide,
             ids: {
-                top:
-                    top.ball.id,
-
-                pairLower:
-                    pairLower.ball.id,
-
-                solo:
-                    solo.ball.id
+                top: top.ball.id,
+                pairLower: pairLower.ball.id,
+                solo: solo.ball.id
             },
             at: Date.now()
         };
@@ -710,17 +389,8 @@
     };
 
     window.__sixBallUpConvexContactPriorityVersion =
-        "upconvex-pre-arc-side-lock-v2.2";
-
-    window.__sixBallUpConvexSplitTimingOwnedByCanonicalResolver =
-        true;
-
-    window.__sixBallUpConvexFirstContactOnlyLocksSide =
-        true;
-
-    window.__sixBallUpConvexPreviewIsReadOnly =
-        true;
-
-    window.__sixBallUpConvexPreArcSideAuthoritative =
-        true;
+        "upconvex-pre-arc-side-lock-v3.0";
+    window.__sixBallUpConvexPreArcSideAuthoritative = true;
+    window.__sixBallUpConvexSplitTimingOwnedByCanonicalResolver = true;
+    window.__sixBallUpConvexPreviewIsReadOnly = true;
 })();
