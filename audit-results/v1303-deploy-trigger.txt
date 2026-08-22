@@ -1,2 +1,2 @@
-trigger=2026-08-22T11:16:00+09:00
-reason=deploy normal-pile projected pocket capture with one-member release and pair rigidity
+trigger=2026-08-22T12:39:00+09:00
+reason=deploy v2.3 red projected pocket capture before misleading yellow REST
