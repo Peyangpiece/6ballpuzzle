@@ -109,17 +109,28 @@ jobs:
       - name: Record V1303 Cloudflare verification
         if: always()
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           if [ ! -f audit-results/cloudflare-v1303-deploy.json ]; then
             mkdir -p audit-results
             printf '{"sha":"%s","status":"fail","deployOutcome":"unknown","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-v1303-deploy.json
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add audit-results/cloudflare-v1303-deploy.json
-          git commit -m 'Record V1303 Cloudflare deploy [skip ci]' || true
-          git pull --rebase origin main
-          git push origin HEAD:main
+          encoded="$(base64 -w0 audit-results/cloudflare-v1303-deploy.json)"
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-v1303-deploy.json?ref=main" --jq '.sha' 2>/dev/null || true)"
+          if [ -n "$current_sha" ]; then
+            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-v1303-deploy.json" \
+              -f message='Record V1303 Cloudflare deploy [skip ci]' \
+              -f content="$encoded" \
+              -f branch='main' \
+              -f sha="$current_sha" >/dev/null
+          else
+            gh api --method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-v1303-deploy.json" \
+              -f message='Record V1303 Cloudflare deploy [skip ci]' \
+              -f content="$encoded" \
+              -f branch='main' >/dev/null
+          fi
 
       - name: Require verified V1303 deployment
         if: always()
