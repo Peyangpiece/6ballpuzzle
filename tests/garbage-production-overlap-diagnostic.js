@@ -25,8 +25,27 @@ const checks=String.raw`
 function put(g,x,y,c=0){if(!valid(x,y)||g.board[y][x])return null;const b=mkBall(g,c);g.board[y][x]=b;noteBoardCell(g.board,y,b);setVis(g,b,x,y,0);return b;}
 function entries(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,x,y,v});}return a;}
 function dist(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*HEX_ROW_H);}
+function pointDist(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
 function segSummary(seg){if(!seg)return null;return{from:seg.from,to:seg.to,kind:seg.kind,pivot:seg.pivot,topPivot:seg.topPivot,followSupportIds:seg.followSupportIds,movingSupportId:seg.movingSupportId,start:seg.pileFlowStart,end:seg.pileFlowEnd,duration:seg.pileFlowDuration,seq:seg.motionSeq,originalSeq:seg.pileFlowOriginalSeq,temporalSeparated:!!seg.pileFlowTemporalSeparated,waveDelay:seg.pileFlowWaveDelay,safeV2:!!seg.__garbageTemporalSafeV2,deferredV2:!!seg.__garbageTemporalDeferredV2,continuous:!!seg.__garbageContinuous};}
 function ballSummary(q){return{id:q.b.id,isGarbage:!!q.b.isGarbage,type:q.b.garbageType||null,sourceSeq:q.b.garbageSourceSeq,sourceRole:q.b.garbageSourceRole,splitReleased:!!q.b.garbageSplitReleased,frozen:!!q.b.garbagePhaseFrozen,cell:[q.x,q.y],vis:[q.v.x,q.v.y],vy:q.v.vy,speed:q.v.motionSpeed,pileFlow:!!q.v.pileFlow,pathLen:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0,path:(q.b.fallPath||[]).slice(0,5).map(segSummary)};}
+function activeSegment(ball,t){
+ const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
+ for(let i=0;i<path.length;i++){
+   const seg=path[i],s=Number(seg?.pileFlowStart),e=Number(seg?.pileFlowEnd);
+   if(seg?.pileFlow&&Number.isFinite(s)&&Number.isFinite(e)&&t>=s-1e-9&&t<=e+1e-9)return{index:i,...segSummary(seg)};
+ }
+ return null;
+}
+function prediction(g,q,t){
+ let point=null,error=null;
+ try{point=pileFlowPositionAt(g,q.b,t);}catch(e){error=String(e&&e.message||e);}
+ const actual=[q.v.x,q.v.y];
+ return{t,actual,predicted:point,error,actualVsPredicted:point?pointDist(actual,point):null,active:activeSegment(q.b,t)};
+}
+function pairPrediction(g,best,t){
+ const a=prediction(g,best.a,t),b=prediction(g,best.b,t);
+ return{t,a,b,predictedDistance:a.predicted&&b.predicted?pointDist(a.predicted,b.predicted):null,actualDistance:dist(best.a,best.b)};
+}
 function worst(g,originalIds){
  const all=entries(g),incoming=new Set(all.filter(q=>q.b.isGarbage&&!originalIds.has(q.b.id)).map(q=>q.b.id));let best=null;
  for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){
@@ -54,8 +73,12 @@ function liveAll(g,originalIds){
 }
 function report(g,originalIds,frame,stage,best){
  if(!best||best.d>=0.9995)return null;
+ const clock=Number(g.pileFlowClock)||0;
  const q={
    frame,stage,d:best.d,pileClock:g.pileFlowClock,garbageClock:g.garbageClock,
+   predictionAtClock:pairPrediction(g,best,clock),
+   predictionAtPrevClock:pairPrediction(g,best,Math.max(0,clock-PHYSICS_FRAME)),
+   predictionAtNextClock:pairPrediction(g,best,clock+PHYSICS_FRAME),
    pending:pendingFallPathCount(g),moving:[...(g._visualMovingIds||[])],
    temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,
    deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null,
