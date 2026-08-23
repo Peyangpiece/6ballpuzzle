@@ -11,12 +11,17 @@
  *
  * This layer solves that residual contact as ONE horizontal interaction band.
  * Starting from the overlap, every live ball close enough in Y that horizontal
- * motion could ever make the pair touch is included before solving. That avoids
- * moving an outsider out of one row only to collide with a distant member of
- * another row on the opposite side. Their instantaneous left-to-right order is
- * preserved and every active pair constraint is solved at once. All fixed-safe
- * corridor combinations for the small band are considered and the legal result
- * with minimum total squared horizontal displacement is selected.
+ * motion could ever make the pair touch is included before solving. The current
+ * left-to-right order is tried first. If that order is impossible, each member
+ * of the seed overlap is removed and reinserted at every possible position in
+ * the band. This is the smallest non-convex order search needed to represent a
+ * real trajectory crossing without attempting a factorial permutation search.
+ *
+ * For every candidate order, all fixed-support-safe corridor combinations are
+ * evaluated and the legal result with minimum total squared horizontal
+ * displacement is selected. Reordering is only a tie-break penalty after
+ * displacement, so a crossing is never preferred when the current order is
+ * already physically legal at lower cost.
  *
  * Only visual X of live incoming garbage is changed. Logical cells, visual Y,
  * path timing, segment metadata, settled/frozen balls and ordinary physics are
@@ -33,7 +38,7 @@
     const EPS=1e-9;
     const FEAS_EPS=1e-7;
     const MAX_COMPONENT_PASSES=16;
-    const MAX_COMBINATIONS=100000;
+    const MAX_TOTAL_COMBINATIONS=50000;
 
     function garbagePhase(g){return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&g.board&&g.vis);}
     function hasLivePath(ball){return Array.isArray(ball?.fallPath)&&ball.fallPath.length>0;}
@@ -155,6 +160,42 @@
         return live.filter(q=>ids.has(q.ball.id));
     }
 
+    function baseOrder(component){
+        return component.slice().sort((a,b)=>a.v.x-b.v.x||a.x-b.x||a.ball.id-b.ball.id);
+    }
+
+    function candidateOrders(component,seedIds){
+        const base=baseOrder(component);
+        const result=[];
+        const seen=new Set();
+        function add(order){
+            const key=order.map(q=>q.ball.id).join(",");
+            if(seen.has(key))return;
+            seen.add(key);result.push(order.slice());
+        }
+        add(base);
+        for(const seedId of seedIds){
+            const moving=base.find(q=>q.ball.id===seedId);
+            if(!moving)continue;
+            const rest=base.filter(q=>q.ball.id!==seedId);
+            for(let pos=0;pos<=rest.length;pos++){
+                const order=rest.slice();
+                order.splice(pos,0,moving);
+                add(order);
+            }
+        }
+        return{base,orders:result};
+    }
+
+    function inversionCount(order,base){
+        const pos=new Map(base.map((q,i)=>[q.ball.id,i]));
+        let count=0;
+        for(let i=0;i<order.length;i++)for(let j=i+1;j<order.length;j++){
+            if(pos.get(order[i].ball.id)>pos.get(order[j].ball.id))count++;
+        }
+        return count;
+    }
+
     function solveDomains(order,req,domains){
         const n=order.length;
         const x=new Array(n);
@@ -182,56 +223,103 @@
         return x;
     }
 
-    function solveBand(component,fixed){
-        const order=component.slice().sort((a,b)=>a.v.x-b.v.x||a.x-b.x||a.ball.id-b.ball.id);
-        const n=order.length;
-        const corridors=order.map(q=>allowedIntervals(q,fixed).slice().sort((a,b)=>{
-            const da=intervalDistance(a,q.v.x),db=intervalDistance(b,q.v.x);
-            return da-db||a.lo-b.lo;
-        }));
-        if(corridors.some(q=>!q.length))return{ok:false,reason:"no_fixed_corridor",ids:order.map(q=>q.ball.id)};
-
-        const req=Array.from({length:n},()=>Array(n).fill(0));
-        for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredX(order[i],order[j]);
-
+    function solveBand(component,fixed,seedIds){
+        const candidates=candidateOrders(component,seedIds);
+        const base=candidates.base;
+        const baseIds=base.map(q=>q.ball.id);
         let best=null;
-        let combinations=0;
-        const domains=new Array(n);
+        let totalCombinations=0;
+        let exhausted=false;
+        const orderStats=[];
 
-        function visit(k){
-            if(combinations>=MAX_COMBINATIONS)return;
-            if(k===n){
-                combinations++;
-                const x=solveDomains(order,req,domains);
-                if(!x)return;
-                let cost=0,logicalCost=0;
-                for(let i=0;i<n;i++){
-                    const d=x[i]-order[i].v.x;
-                    cost+=d*d;
-                    const l=x[i]-order[i].x;
-                    logicalCost+=l*l;
-                }
-                if(!best||cost<best.cost-1e-12||(Math.abs(cost-best.cost)<=1e-12&&logicalCost<best.logicalCost-1e-12)){
-                    best={x:x.slice(),cost,logicalCost};
-                }
-                return;
+        for(const order of candidates.orders){
+            if(totalCombinations>=MAX_TOTAL_COMBINATIONS){exhausted=true;break;}
+            const corridors=order.map(q=>allowedIntervals(q,fixed).slice().sort((a,b)=>{
+                const da=intervalDistance(a,q.v.x),db=intervalDistance(b,q.v.x);
+                return da-db||a.lo-b.lo;
+            }));
+            const orderIds=order.map(q=>q.ball.id);
+            const inversions=inversionCount(order,base);
+            if(corridors.some(q=>!q.length)){
+                orderStats.push({order:orderIds,inversions,feasible:false,reason:"no_fixed_corridor",combinations:0});
+                continue;
             }
-            for(const d of corridors[k]){
-                domains[k]=d;
-                visit(k+1);
-                if(combinations>=MAX_COMBINATIONS)return;
+
+            const n=order.length;
+            const req=Array.from({length:n},()=>Array(n).fill(0));
+            for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredX(order[i],order[j]);
+
+            let orderBest=null;
+            let orderCombinations=0;
+            const domains=new Array(n);
+
+            function visit(k){
+                if(totalCombinations>=MAX_TOTAL_COMBINATIONS){exhausted=true;return;}
+                if(k===n){
+                    totalCombinations++;orderCombinations++;
+                    const x=solveDomains(order,req,domains);
+                    if(!x)return;
+                    let cost=0,logicalCost=0;
+                    for(let i=0;i<n;i++){
+                        const d=x[i]-order[i].v.x;
+                        cost+=d*d;
+                        const l=x[i]-order[i].x;
+                        logicalCost+=l*l;
+                    }
+                    if(!orderBest||cost<orderBest.cost-1e-12||
+                       (Math.abs(cost-orderBest.cost)<=1e-12&&logicalCost<orderBest.logicalCost-1e-12)){
+                        orderBest={x:x.slice(),cost,logicalCost};
+                    }
+                    return;
+                }
+                for(const d of corridors[k]){
+                    domains[k]=d;
+                    visit(k+1);
+                    if(exhausted)return;
+                }
+            }
+            visit(0);
+
+            orderStats.push({order:orderIds,inversions,feasible:!!orderBest,combinations:orderCombinations,cost:orderBest?.cost??null});
+            if(orderBest){
+                const candidate={order,x:orderBest.x,cost:orderBest.cost,logicalCost:orderBest.logicalCost,inversions,corridorCounts:corridors.map(q=>q.length),orderCombinations};
+                if(!best||candidate.cost<best.cost-1e-12||
+                   (Math.abs(candidate.cost-best.cost)<=1e-12&&candidate.inversions<best.inversions)||
+                   (Math.abs(candidate.cost-best.cost)<=1e-12&&candidate.inversions===best.inversions&&candidate.logicalCost<best.logicalCost-1e-12)){
+                    best=candidate;
+                }
             }
         }
-        visit(0);
 
-        if(!best)return{ok:false,reason:combinations>=MAX_COMBINATIONS?"combination_limit":"ordered_band_infeasible",ids:order.map(q=>q.ball.id),corridorCounts:corridors.map(q=>q.length),combinations};
+        if(!best)return{
+            ok:false,
+            reason:exhausted?"order_search_limit":"order_search_infeasible",
+            baseOrder:baseIds,
+            seedIds:seedIds.slice(),
+            orderCandidates:candidates.orders.length,
+            totalCombinations,
+            orderStats
+        };
 
         let changed=0,maxShift=0,totalShift=0;
-        for(let i=0;i<n;i++){
-            const shift=Math.abs(best.x[i]-order[i].v.x);
-            if(shift>EPS){order[i].v.x=best.x[i];changed++;maxShift=Math.max(maxShift,shift);totalShift+=shift;}
+        for(let i=0;i<best.order.length;i++){
+            const shift=Math.abs(best.x[i]-best.order[i].v.x);
+            if(shift>EPS){best.order[i].v.x=best.x[i];changed++;maxShift=Math.max(maxShift,shift);totalShift+=shift;}
         }
-        return{ok:true,ids:order.map(q=>q.ball.id),changed,maxShift,totalShift,cost:best.cost,corridorCounts:corridors.map(q=>q.length),combinations};
+        return{
+            ok:true,
+            baseOrder:baseIds,
+            chosenOrder:best.order.map(q=>q.ball.id),
+            seedIds:seedIds.slice(),
+            reorderCount:best.inversions,
+            changed,maxShift,totalShift,cost:best.cost,
+            corridorCounts:best.corridorCounts,
+            orderCandidates:candidates.orders.length,
+            totalCombinations,
+            chosenOrderCombinations:best.orderCombinations,
+            exhausted,
+            orderStats
+        };
     }
 
     function repairResidualCrossings(g){
@@ -247,8 +335,9 @@
             if(!worst)break;
             const component=interactionBand(live,worst.a,worst.b);
             const fixed=fixedEntries(g,all);
-            const result=solveBand(component,fixed);
-            solved.push({pass,seed:[worst.a.ball.id,worst.b.ball.id],seedDistance:worst.d,...result});
+            const seedIds=[worst.a.ball.id,worst.b.ball.id];
+            const result=solveBand(component,fixed,seedIds);
+            solved.push({pass,seed:seedIds,seedDistance:worst.d,...result});
             if(!result.ok||!result.changed){failure=result;break;}
             totalChanged+=result.changed;
             totalShift+=result.totalShift||0;
@@ -282,5 +371,5 @@
     };
 
     window.__sixBallGarbageMinDisplacementCrossingV1=true;
-    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.4";
+    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.5";
 })();
