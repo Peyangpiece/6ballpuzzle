@@ -14,15 +14,11 @@
  *    after the authoritative path position for the frame has been evaluated.
  * 6. The continuous garbage scheduler remains authoritative. This final layer
  *    never inserts an internal wait between two segments of a ball trajectory.
- * 7. Fixed accumulated-pile contact has final priority. Live/live correction
- *    uses only horizontal clearance reachable without crossing a fixed support.
- * 8. A scheduled segment has one clock interval only:
+ * 7. A scheduled segment has one clock interval only:
  *       pileFlowEnd === pileFlowStart + pileFlowDuration
- *    Stale extended end-times may not hold a ball at an internal contact cell
- *    after its physical segment duration has already completed.
- * 9. Live garbage is separated in one stable logical lane order. Corrections do
- *    not alternate pair direction based on board-scan order, preventing dense
- *    packs from cycling back into a previously solved overlap.
+ * 8. The complete live garbage contact network is solved as one ordered set of
+ *    horizontal constraints. Pair-by-pair correction loops are not allowed to
+ *    undo each other in dense packs.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -102,17 +98,14 @@
     function normalizeGarbageSegmentEnds(g){
         if(!garbagePhase(g))return 0;
         let fixed=0;
-
         for(const q of boardEntries(g)){
             const ball=q.ball;
             if(!ball?.isGarbage||!Array.isArray(ball.fallPath))continue;
-
             for(const seg of ball.fallPath){
                 if(!seg)continue;
                 const start=Number(seg.pileFlowStart);
                 const duration=Number(seg.pileFlowDuration);
                 if(!Number.isFinite(start)||!Number.isFinite(duration)||duration<0)continue;
-
                 const exactEnd=start+duration;
                 const oldEnd=Number(seg.pileFlowEnd);
                 if(!Number.isFinite(oldEnd)||Math.abs(oldEnd-exactEnd)>1e-9){
@@ -121,7 +114,6 @@
                 }
             }
         }
-
         if(fixed){
             window.__sixBallGarbageSegmentEndRepairs=(window.__sixBallGarbageSegmentEndRepairs||0)+fixed;
             window.__sixBallLastGarbageSegmentEndRepair={fixed,at:Date.now()};
@@ -132,24 +124,13 @@
     function liveGarbageEntries(g){
         if(!garbagePhase(g))return[];
         const frozen=frozenIds(g.board);
-        return boardEntries(g).filter(q=>
-            q.ball.isGarbage&&
-            !frozen.has(q.ball.id)&&
-            !q.ball.garbagePhaseFrozen&&
-            hasLivePath(q.ball)
-        );
+        return boardEntries(g).filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball));
     }
 
     function captureLiveFreePositions(g){
         const out=new Map();
         for(const q of liveGarbageEntries(g)){
-            out.set(q.ball.id,{
-                x:q.v.x,
-                y:q.v.y,
-                vy:q.v.vy,
-                motionSpeed:q.v.motionSpeed,
-                pileFlow:q.v.pileFlow
-            });
+            out.set(q.ball.id,{x:q.v.x,y:q.v.y,vy:q.v.vy,motionSpeed:q.v.motionSpeed,pileFlow:q.v.pileFlow});
         }
         return out;
     }
@@ -161,15 +142,9 @@
             const s=snapshot.get(q.ball.id);
             if(!s)continue;
             if(Math.abs(q.v.x-s.x)>EPS||Math.abs(q.v.y-s.y)>EPS)restored++;
-            q.v.x=s.x;
-            q.v.y=s.y;
-            q.v.vy=s.vy;
-            q.v.motionSpeed=s.motionSpeed;
-            q.v.pileFlow=s.pileFlow;
+            q.v.x=s.x;q.v.y=s.y;q.v.vy=s.vy;q.v.motionSpeed=s.motionSpeed;q.v.pileFlow=s.pileFlow;
         }
-        if(restored){
-            window.__sixBallGarbageGenericContactRestores=(window.__sixBallGarbageGenericContactRestores||0)+restored;
-        }
+        if(restored)window.__sixBallGarbageGenericContactRestores=(window.__sixBallGarbageGenericContactRestores||0)+restored;
         return restored;
     }
 
@@ -181,169 +156,125 @@
             const{ball,v,x,y}=q;
             if(!ball.isGarbage||frozen.has(ball.id)||ball.garbagePhaseFrozen||hasLivePath(ball))continue;
             if(Math.abs(v.x-x)>EPS||Math.abs(v.y-y)>EPS||Math.abs(v.vy||0)>EPS||Math.abs(v.motionSpeed||0)>EPS)fixed++;
-            v.x=x;
-            v.y=y;
-            v.vy=0;
-            v.motionSpeed=0;
-            v.pileFlow=false;
-            delete v.gravityMismatch;
-            delete v._pendingPathComplete;
+            v.x=x;v.y=y;v.vy=0;v.motionSpeed=0;v.pileFlow=false;
+            delete v.gravityMismatch;delete v._pendingPathComplete;
             if(g._visualMovingIds instanceof Set)g._visualMovingIds.delete(ball.id);
         }
         if(fixed)window.__sixBallGarbageReceivingFinalizations=(window.__sixBallGarbageReceivingFinalizations||0)+fixed;
         return fixed;
     }
 
-    function physicalDistance(a,b){
-        return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*H);
-    }
-
-    function horizontalTangentX(live,fixed,dy){
-        const needX=Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS;
-        let sign=Math.sign((live.v.x-fixed.v.x)*.5);
-        if(!sign)sign=Math.sign((live.x-fixed.x)*.5)||((live.ball.id&1)?1:-1);
-        const candidates=[sign,-sign].map(s=>fixed.v.x+(s*needX)/.5);
-        const validCandidates=candidates.filter(x=>x>=0&&x<=W2-1);
-        if(validCandidates.length){
-            validCandidates.sort((a,b)=>Math.abs(a-live.x)-Math.abs(b-live.x));
-            return validCandidates[0];
-        }
-        return Math.max(0,Math.min(W2-1,candidates[0]));
-    }
-
-    function pushLiveFromFixed(live,fixed){
-        const dy=(live.v.y-fixed.v.y)*H;
-        if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return false;
-        const nextX=horizontalTangentX(live,fixed,dy);
-        if(Math.abs(nextX-live.v.x)<=EPS)return false;
-        live.v.x=nextX;
-        return true;
-    }
-
-    function fixedDirectionalCapacity(live,dir,fixed){
-        let cap=dir>0?(W2-1-live.v.x):live.v.x;
-        const x=live.v.x;
-
-        for(const support of fixed){
-            if(!support||support.ball.id===live.ball.id)continue;
-            const dy=(live.v.y-support.v.y)*H;
-            if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)continue;
-
-            const radial=2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
-            const left=support.v.x-radial;
-            const right=support.v.x+radial;
-
-            if(dir>0){
-                if(x>=right-EPS)continue;
-                if(x<=left+EPS){
-                    cap=Math.min(cap,Math.max(0,left-x));
-                    continue;
-                }
-                return 0;
-            }
-
-            if(x<=left+EPS)continue;
-            if(x>=right-EPS){
-                cap=Math.min(cap,Math.max(0,x-right));
-                continue;
-            }
-            return 0;
-        }
-
-        return Math.max(0,cap);
-    }
+    function physicalDistance(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*H);}
 
     function laneCompare(a,b){
         if(a.x!==b.x)return a.x-b.x;
-        const as=Number(a.ball.garbageSourceSeq);
-        const bs=Number(b.ball.garbageSourceSeq);
+        const as=Number(a.ball.garbageSourceSeq),bs=Number(b.ball.garbageSourceSeq);
         if(Number.isFinite(as)&&Number.isFinite(bs)&&as!==bs)return as-bs;
-        const ar=Number(a.ball.garbageSourceRole);
-        const br=Number(b.ball.garbageSourceRole);
+        const ar=Number(a.ball.garbageSourceRole),br=Number(b.ball.garbageSourceRole);
         if(Number.isFinite(ar)&&Number.isFinite(br)&&ar!==br)return ar-br;
         if(a.y!==b.y)return a.y-b.y;
         return a.ball.id-b.ball.id;
     }
 
-    function separateOrderedPair(left,right,fixed){
-        const dy=(left.v.y-right.v.y)*H;
-        if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return false;
-
-        const requiredPhysicalX=Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
-        const requiredLatticeX=2*(requiredPhysicalX+SAFE_EPS);
-        let missing=requiredLatticeX-(right.v.x-left.v.x);
-        if(missing<=1e-8)return false;
-
-        // Stable lane policy: propagate pressure toward increasing logical X.
-        // This is monotonic across every pair in the pass, unlike the former
-        // board-order solver where the same middle ball could be pushed right by
-        // one pair and immediately left by another pair.
-        let moveRight=Math.min(fixedDirectionalCapacity(right,1,fixed),missing);
-        right.v.x=Math.min(W2-1,right.v.x+moveRight);
-        missing-=moveRight;
-
-        if(missing>EPS){
-            const moveLeft=Math.min(fixedDirectionalCapacity(left,-1,fixed),missing);
-            left.v.x=Math.max(0,left.v.x-moveLeft);
-            missing-=moveLeft;
-            return moveRight+moveLeft>EPS;
-        }
-
-        return moveRight>EPS;
+    function requiredLatticeX(a,b){
+        const dy=(a.v.y-b.v.y)*H;
+        if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return 0;
+        return 2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
     }
 
-    function enforceFixedContacts(g,frozen,maxPasses){
-        let corrections=0;
-        for(let pass=0;pass<maxPasses;pass++){
-            let changed=false;
-            const entries=boardEntries(g);
-            const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
-            const live=entries.filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball));
-
-            for(const moving of live)for(const support of fixed){
-                if(moving.ball.id===support.ball.id)continue;
-                if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
-                if(pushLiveFromFixed(moving,support)){changed=true;corrections++;}
-            }
-            if(!changed)break;
-        }
-        return corrections;
+    function sideForFixed(live,support){
+        const dx=live.v.x-support.v.x;
+        if(dx<-EPS)return-1;
+        if(dx>EPS)return 1;
+        const logical=live.x-support.x;
+        if(logical)return Math.sign(logical);
+        return(live.ball.id&1)?1:-1;
     }
 
-    function enforceGarbageContacts(g){
+    function fixedBounds(live,fixed){
+        let lo=0,hi=W2-1;
+        for(const support of fixed){
+            if(!support||support.ball.id===live.ball.id)continue;
+            const dy=(live.v.y-support.v.y)*H;
+            if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)continue;
+            const radial=2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
+            const left=support.v.x-radial;
+            const right=support.v.x+radial;
+            if(sideForFixed(live,support)<0)hi=Math.min(hi,left);
+            else lo=Math.max(lo,right);
+        }
+        lo=Math.max(0,lo);hi=Math.min(W2-1,hi);
+        return{lo,hi,ok:lo<=hi+1e-8};
+    }
+
+    function fallbackFixedOnly(live,fixed){
+        let changed=0;
+        for(const q of live){
+            const b=fixedBounds(q,fixed);
+            if(!b.ok)continue;
+            const nx=Math.max(b.lo,Math.min(b.hi,q.v.x));
+            if(Math.abs(nx-q.v.x)>EPS){q.v.x=nx;changed++;}
+        }
+        return changed;
+    }
+
+    function solveGarbageContactNetwork(g){
         if(!garbagePhase(g))return 0;
         const frozen=frozenIds(g.board);
-        let corrections=0;
+        const entries=boardEntries(g);
+        const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
+        const live=entries
+            .filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball))
+            .sort(laneCompare);
 
-        corrections+=enforceFixedContacts(g,frozen,16);
-
-        for(let pass=0;pass<128;pass++){
-            let changed=false;
-            const entries=boardEntries(g);
-            const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
-            const live=entries
-                .filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball))
-                .sort(laneCompare);
-
-            for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
-                if(physicalDistance(live[i],live[j])>=MIN_DIST-1e-8)continue;
-                if(separateOrderedPair(live[i],live[j],fixed)){changed=true;corrections++;}
-            }
-
-            // Fixed supports remain the final boundary after every lane sweep.
-            for(const moving of live)for(const support of fixed){
-                if(moving.ball.id===support.ball.id)continue;
-                if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
-                if(pushLiveFromFixed(moving,support)){changed=true;corrections++;}
-            }
-
-            if(!changed)break;
+        if(!live.length)return 0;
+        const bounds=live.map(q=>fixedBounds(q,fixed));
+        if(bounds.some(b=>!b.ok)){
+            const fallback=fallbackFixedOnly(live,fixed);
+            window.__sixBallLastGarbageConstraintSolve={ok:false,reason:"fixed_bounds",fallback,at:Date.now()};
+            return fallback;
         }
 
-        corrections+=enforceFixedContacts(g,frozen,16);
+        const n=live.length;
+        const req=Array.from({length:n},()=>Array(n).fill(0));
+        for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredLatticeX(live[i],live[j]);
 
-        if(corrections)window.__sixBallGarbageFinalContactCorrections=(window.__sixBallGarbageFinalContactCorrections||0)+corrections;
-        return corrections;
+        // Minimal feasible ordered solution. This cannot cycle because every
+        // constraint points from an earlier logical lane to a later one.
+        const x=bounds.map(b=>b.lo);
+        let feasible=true;
+        for(let j=0;j<n;j++){
+            let need=bounds[j].lo;
+            for(let i=0;i<j;i++)if(req[i][j]>0)need=Math.max(need,x[i]+req[i][j]);
+            x[j]=need;
+            if(x[j]>bounds[j].hi+1e-7){feasible=false;break;}
+        }
+
+        if(!feasible){
+            const fallback=fallbackFixedOnly(live,fixed);
+            window.__sixBallLastGarbageConstraintSolve={ok:false,reason:"ordered_infeasible",fallback,at:Date.now()};
+            return fallback;
+        }
+
+        // Starting from the guaranteed-feasible leftmost solution, move each
+        // lane back toward its analytic X as far as later-lane constraints allow.
+        for(let i=n-1;i>=0;i--){
+            let maxAllowed=bounds[i].hi;
+            for(let j=i+1;j<n;j++)if(req[i][j]>0)maxAllowed=Math.min(maxAllowed,x[j]-req[i][j]);
+            const target=Math.max(bounds[i].lo,Math.min(maxAllowed,live[i].v.x));
+            if(target>x[i])x[i]=target;
+        }
+
+        let changed=0;
+        let maxShift=0;
+        for(let i=0;i<n;i++){
+            const shift=Math.abs(x[i]-live[i].v.x);
+            if(shift>EPS){live[i].v.x=x[i];changed++;maxShift=Math.max(maxShift,shift);}
+        }
+
+        window.__sixBallLastGarbageConstraintSolve={ok:true,live:n,fixed:fixed.length,changed,maxShift,at:Date.now()};
+        if(changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+changed;
+        return changed;
     }
 
     if(baseScheduleFreshPileFlowWave){
@@ -370,12 +301,10 @@
 
     hexPhysResolveEvent=function(board,preview=false){
         const r=withFrozenHeld(board,()=>baseResolveEvent(board,preview)||[]);
-        return (r.value||[]).filter(p=>p?.ball&&!r.ids.has(p.ball.id));
+        return(r.value||[]).filter(p=>p?.ball&&!r.ids.has(p.ball.id));
     };
 
-    settlePass=function(board,preview=false){
-        return withFrozenHeld(board,()=>baseSettlePass(board,preview)).value;
-    };
+    settlePass=function(board,preview=false){return withFrozenHeld(board,()=>baseSettlePass(board,preview)).value;};
 
     if(baseBoardHasIllegalFloat){
         boardHasIllegalFloat=function(board){return withFrozenHeld(board,()=>baseBoardHasIllegalFloat(board)).value;};
@@ -385,22 +314,20 @@
         const baseUnstableFrozenBalls=unstableFrozenBalls;
         unstableFrozenBalls=function(board){
             const ids=frozenIds(board);
-            return (baseUnstableFrozenBalls(board)||[]).filter(q=>!ids.has(q?.id));
+            return(baseUnstableFrozenBalls(board)||[]).filter(q=>!ids.has(q?.id));
         };
     }
 
     if(baseResolveVisualContacts){
         resolveVisualContacts=function(g){
             if(!garbagePhase(g))return baseResolveVisualContacts(g);
-
             normalizeGarbageSegmentEnds(g);
             normalizeReceivingGarbage(g);
             const free=captureLiveFreePositions(g);
             const r=baseResolveVisualContacts(g);
-
             normalizeReceivingGarbage(g);
             restoreLiveFreePositions(g,free);
-            enforceGarbageContacts(g);
+            solveGarbageContactNetwork(g);
             return r;
         };
     }
@@ -412,8 +339,6 @@
     window.__sixBallGarbagePathYAuthoritative=true;
     window.__sixBallGarbageContinuousTimingPreserved=true;
     window.__sixBallGarbageSegmentEndInvariant=true;
-    window.__sixBallGarbageStableLaneSeparation=true;
-    window.__sixBallGarbageFixedContactPriorityFinal=true;
-    window.__sixBallGarbageFixedAwareLiveSeparation=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.14";
+    window.__sixBallGarbageConstraintNetworkFinal=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.15";
 })();
