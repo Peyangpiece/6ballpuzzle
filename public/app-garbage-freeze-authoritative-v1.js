@@ -31,7 +31,11 @@
  *    first projected into its nearest fixed-support-safe corridor. Therefore the
  *    iterative pair solver can never preserve an initially illegal live/fixed
  *    penetration merely because that ball was not part of the worst live pair.
- * 11. If the dense disjunctive solver reaches its iteration budget, its best
+ * 11. Dense contact resolution propagates through the entire current contact
+ *    network in alternating left-to-right and right-to-left sweeps. A wall
+ *    correction therefore travels through a touching chain in one outer pass
+ *    instead of bouncing between one worst pair at a time.
+ * 12. If the dense disjunctive solver reaches its iteration budget, its best
  *    corridor-valid contact state is retained instead of being reset afterward.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
@@ -368,45 +372,92 @@
         return{changed,maxShift};
     }
 
-    function solveDisjunctivePairs(live,corridors){
-        const start=live.map(q=>q.v.x);
-        let pairMoves=0;
-        const limit=Math.max(96,live.length*live.length*6);
-
-        for(let iter=0;iter<limit;iter++){
-            let worst=null;
-            for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
-                const req=requiredLatticeX(live[i],live[j]);
-                if(req<=0)continue;
-                const sep=Math.abs(live[j].v.x-live[i].v.x);
-                const deficit=req-sep;
-                if(deficit>1e-7&&(!worst||deficit>worst.deficit))worst={i,j,req,deficit};
-            }
-            if(!worst){
-                const moved=displacementSummary(live,start);
-                return{ok:true,...moved,pairMoves,iterations:iter};
-            }
-
-            const a=live[worst.i],b=live[worst.j];
-            const candidate=bestPairCandidate(a,b,corridors[worst.i],corridors[worst.j],worst.req);
-            if(!candidate){
-                const moved=displacementSummary(live,start);
-                return{ok:false,reason:"pair_unresolvable",pair:[a.ball.id,b.ball.id],...moved,pairMoves,iterations:iter};
-            }
-
-            if(Math.abs(a.v.x-candidate.ax)>EPS||Math.abs(b.v.x-candidate.bx)>EPS)pairMoves++;
-            a.v.x=candidate.ax;
-            b.v.x=candidate.bx;
-        }
-
+    function unresolvedLivePair(live){
         let worst=null;
         for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
             const req=requiredLatticeX(live[i],live[j]);
+            if(req<=0)continue;
             const deficit=req-Math.abs(live[j].v.x-live[i].v.x);
             if(deficit>1e-7&&(!worst||deficit>worst.deficit))worst={i,j,req,deficit};
         }
+        return worst;
+    }
+
+    function currentXOrder(live,reverse=false){
+        const order=live.map((q,i)=>i).sort((ia,ib)=>laneCompare(live[ia],live[ib]));
+        if(reverse)order.reverse();
+        return order;
+    }
+
+    function sweepDisjunctivePairs(live,corridors,reverse=false){
+        const order=currentXOrder(live,reverse);
+        let moves=0;
+        let unsolved=null;
+
+        for(let ai=0;ai<order.length;ai++)for(let bj=ai+1;bj<order.length;bj++){
+            const i=order[ai],j=order[bj];
+            const a=live[i],b=live[j];
+            const req=requiredLatticeX(a,b);
+            if(req<=0||Math.abs(b.v.x-a.v.x)>=req-1e-7)continue;
+            const candidate=bestPairCandidate(a,b,corridors[i],corridors[j],req);
+            if(!candidate){
+                if(!unsolved)unsolved={i,j,req};
+                continue;
+            }
+            if(Math.abs(a.v.x-candidate.ax)>EPS||Math.abs(b.v.x-candidate.bx)>EPS){
+                a.v.x=candidate.ax;
+                b.v.x=candidate.bx;
+                moves++;
+            }
+        }
+        return{moves,unsolved};
+    }
+
+    function solveDisjunctivePairs(live,corridors){
+        const start=live.map(q=>q.v.x);
+        let pairMoves=0;
+        const passes=Math.max(64,Math.min(192,live.length*8));
+        let lastWorst=null;
+        let stagnant=0;
+
+        for(let pass=0;pass<passes;pass++){
+            const forward=sweepDisjunctivePairs(live,corridors,false);
+            const backward=sweepDisjunctivePairs(live,corridors,true);
+            pairMoves+=forward.moves+backward.moves;
+
+            const worst=unresolvedLivePair(live);
+            if(!worst){
+                const moved=displacementSummary(live,start);
+                return{ok:true,...moved,pairMoves,passes:pass+1,iterations:(pass+1)*2};
+            }
+
+            const signature=[
+                live[worst.i].ball.id,live[worst.j].ball.id,
+                Math.round(worst.deficit*1e9)
+            ].join(":");
+            if(lastWorst===signature&&forward.moves+backward.moves===0)stagnant++;
+            else stagnant=0;
+            lastWorst=signature;
+
+            if(stagnant>=2){
+                const moved=displacementSummary(live,start);
+                return{
+                    ok:false,reason:"sweep_stalled",
+                    pair:[live[worst.i].ball.id,live[worst.j].ball.id],
+                    deficit:worst.deficit,...moved,pairMoves,
+                    passes:pass+1,iterations:(pass+1)*2
+                };
+            }
+        }
+
+        const worst=unresolvedLivePair(live);
         const moved=displacementSummary(live,start);
-        return{ok:!worst,reason:worst?"iteration_limit":null,pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,...moved,pairMoves,iterations:limit};
+        return{
+            ok:!worst,reason:worst?"sweep_limit":null,
+            pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,
+            deficit:worst?.deficit||0,...moved,pairMoves,
+            passes,iterations:passes*2
+        };
     }
 
     function solveGarbageContactNetwork(g){
@@ -445,9 +496,10 @@
             const totalChanged=Math.max(fixedClamp,disjunctive.changed||0);
             if(disjunctive.ok){
                 window.__sixBallLastGarbageConstraintSolve={
-                    ok:true,mode:"disjunctive_pairs",live:n,fixed:fixed.length,
+                    ok:true,mode:"disjunctive_sweeps",live:n,fixed:fixed.length,
                     fixedClamp,changed:totalChanged,maxShift:disjunctive.maxShift,
-                    pairMoves:disjunctive.pairMoves,iterations:disjunctive.iterations,
+                    pairMoves:disjunctive.pairMoves,passes:disjunctive.passes,
+                    iterations:disjunctive.iterations,
                     corridorCounts:corridors.map(q=>q.length),at:Date.now()
                 };
                 if(totalChanged)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+totalChanged;
@@ -457,7 +509,8 @@
             window.__sixBallLastGarbageConstraintSolve={
                 ok:false,reason:disjunctive.reason||"corridor_infeasible",
                 retainedBest:true,fixedClamp,changed:totalChanged,maxShift:disjunctive.maxShift,
-                pair:disjunctive.pair||null,pairMoves:disjunctive.pairMoves||0,
+                pair:disjunctive.pair||null,deficit:disjunctive.deficit||0,
+                pairMoves:disjunctive.pairMoves||0,passes:disjunctive.passes||0,
                 iterations:disjunctive.iterations||0,
                 corridorCounts:corridors.map(q=>q.length),at:Date.now()
             };
@@ -550,6 +603,7 @@
     window.__sixBallGarbagePairSideStable=true;
     window.__sixBallGarbageExactTangency=true;
     window.__sixBallGarbagePreClampFixedCorridors=true;
+    window.__sixBallGarbageFullContactSweeps=true;
     window.__sixBallGarbageRetainBestDenseSolution=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.22";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.23";
 })();
