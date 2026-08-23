@@ -108,7 +108,7 @@ for(let type=1;type<=6;type++)for(let variant=0;variant<3;variant++){
     resolveVisualContacts(g);
     updateGarbagePacks(g,PHYSICS_FRAME);
 
-    assertFiniteVisuals(g,`terrain ${type} variant ${variant} frame ${frame}`);
+    assertFiniteVisuals(g,"terrain "+type+" variant "+variant+" frame "+frame);
     const dups=duplicateRefs(g);
     expect(dups.length===0,"duplicate logical ball reference: "+JSON.stringify({type,variant,frame,dups:dups.slice(0,4)}));
 
