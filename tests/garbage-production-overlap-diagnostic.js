@@ -25,7 +25,7 @@ function put(g,x,y,c=0){if(!valid(x,y)||g.board[y][x])return null;const b=mkBall
 function entries(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,x,y,v});}return a;}
 function dist(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*HEX_ROW_H);}
 function segSummary(seg){if(!seg)return null;return{from:seg.from,to:seg.to,kind:seg.kind,pivot:seg.pivot,topPivot:seg.topPivot,start:seg.pileFlowStart,end:seg.pileFlowEnd,duration:seg.pileFlowDuration,seq:seg.motionSeq,continuous:!!seg.__garbageContinuous};}
-function ballSummary(q){return{id:q.b.id,isGarbage:!!q.b.isGarbage,frozen:!!q.b.garbagePhaseFrozen,cell:[q.x,q.y],vis:[q.v.x,q.v.y],vy:q.v.vy,speed:q.v.motionSpeed,pileFlow:!!q.v.pileFlow,pathLen:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0,path:(q.b.fallPath||[]).slice(0,5).map(segSummary)};}
+function ballSummary(q){return{id:q.b.id,isGarbage:!!q.b.isGarbage,type:q.b.garbageType||null,sourceSeq:q.b.garbageSourceSeq,sourceRole:q.b.garbageSourceRole,splitReleased:!!q.b.garbageSplitReleased,frozen:!!q.b.garbagePhaseFrozen,cell:[q.x,q.y],vis:[q.v.x,q.v.y],vy:q.v.vy,speed:q.v.motionSpeed,pileFlow:!!q.v.pileFlow,pathLen:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0,path:(q.b.fallPath||[]).slice(0,5).map(segSummary)};}
 function worst(g,originalIds){
  const all=entries(g),incoming=new Set(all.filter(q=>q.b.isGarbage&&!originalIds.has(q.b.id)).map(q=>q.b.id));let best=null;
  for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){
