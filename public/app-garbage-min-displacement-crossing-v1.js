@@ -9,19 +9,21 @@
  * row: pair-by-pair correction can oscillate because every row member is also
  * exactly touching its neighbour.
  *
- * This layer solves that residual contact as ONE horizontal interaction band.
+ * This layer solves that residual contact as one horizontal interaction band.
  * Starting from the overlap, every live ball close enough in Y that horizontal
  * motion could ever make the pair touch is included before solving. The current
- * left-to-right order is tried first. If that order is impossible, each member
- * of the seed overlap is removed and reinserted at every possible position in
- * the band. This is the smallest non-convex order search needed to represent a
- * real trajectory crossing without attempting a factorial permutation search.
+ * left-to-right order is tried first. If it is impossible, each seed member is
+ * removed and reinserted at every possible position in the band. The seed whose
+ * garbage source is rarer inside the band is tried first; in a row/outsider
+ * collision this naturally tests the outsider before disturbing the row.
  *
- * For every candidate order, all fixed-support-safe corridor combinations are
- * evaluated and the legal result with minimum total squared horizontal
- * displacement is selected. Reordering is only a tie-break penalty after
- * displacement, so a crossing is never preferred when the current order is
- * already physically legal at lower cost.
+ * Fixed-support-safe X domains are unions of intervals. For a fixed order their
+ * constraints are monotone, so exhaustive corridor enumeration is unnecessary:
+ * an earliest-feasible left sweep and a latest-feasible right sweep are both
+ * complete feasibility witnesses. Each witness is then pulled back toward the
+ * current visual positions while preserving all pair constraints. The legal
+ * candidate with minimum squared horizontal displacement is selected, with
+ * fewer order inversions used only as a tie-break.
  *
  * Only visual X of live incoming garbage is changed. Logical cells, visual Y,
  * path timing, segment metadata, settled/frozen balls and ordinary physics are
@@ -37,8 +39,7 @@
     const OVERLAP_LIMIT=0.9995;
     const EPS=1e-9;
     const FEAS_EPS=1e-7;
-    const MAX_COMPONENT_PASSES=16;
-    const MAX_TOTAL_COMBINATIONS=50000;
+    const MAX_BAND_PASSES=16;
 
     function garbagePhase(g){return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&g.board&&g.vis);}
     function hasLivePath(ball){return Array.isArray(ball?.fallPath)&&ball.fallPath.length>0;}
@@ -136,12 +137,6 @@
         return allowed;
     }
 
-    function intervalDistance(d,x){
-        if(x<d.lo)return d.lo-x;
-        if(x>d.hi)return x-d.hi;
-        return 0;
-    }
-
     function interactionBand(live,seedA,seedB){
         const byId=new Map(live.map(q=>[q.ball.id,q]));
         const ids=new Set([seedA.ball.id,seedB.ball.id]);
@@ -152,8 +147,6 @@
             if(!a)continue;
             for(const b of live){
                 if(ids.has(b.ball.id))continue;
-                // If |dy| < one physical diameter, some X positions can make
-                // the pair touch. Include it now, even when currently far away.
                 if(requiredX(a,b)>EPS){ids.add(b.ball.id);queue.push(b.ball.id);}
             }
         }
@@ -174,7 +167,20 @@
             seen.add(key);result.push(order.slice());
         }
         add(base);
-        for(const seedId of seedIds){
+
+        const sourceCounts=new Map();
+        for(const q of component){
+            const s=String(q.ball.garbageSourceSeq ?? "none");
+            sourceCounts.set(s,(sourceCounts.get(s)||0)+1);
+        }
+        const prioritized=seedIds.slice().sort((a,b)=>{
+            const qa=base.find(q=>q.ball.id===a),qb=base.find(q=>q.ball.id===b);
+            const ca=qa?sourceCounts.get(String(qa.ball.garbageSourceSeq ?? "none"))||999:999;
+            const cb=qb?sourceCounts.get(String(qb.ball.garbageSourceSeq ?? "none"))||999:999;
+            return ca-cb;
+        });
+
+        for(const seedId of prioritized){
             const moving=base.find(q=>q.ball.id===seedId);
             if(!moving)continue;
             const rest=base.filter(q=>q.ball.id!==seedId);
@@ -184,7 +190,7 @@
                 add(order);
             }
         }
-        return{base,orders:result};
+        return{base,orders:result,seedPriority:prioritized};
     }
 
     function inversionCount(order,base){
@@ -196,31 +202,102 @@
         return count;
     }
 
-    function solveDomains(order,req,domains){
+    function reqMatrix(order){
         const n=order.length;
-        const x=new Array(n);
+        const req=Array.from({length:n},()=>Array(n).fill(0));
+        for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredX(order[i],order[j]);
+        return req;
+    }
+
+    function verifyOrderedSolution(order,req,x){
+        for(let i=0;i<order.length;i++){
+            if(!Number.isFinite(x[i])||x[i]<-FEAS_EPS||x[i]>W2-1+FEAS_EPS)return false;
+            for(let j=i+1;j<order.length;j++)if(req[i][j]>0&&x[j]-x[i]<req[i][j]-FEAS_EPS)return false;
+        }
+        return true;
+    }
+
+    function solveLeftWitness(order,corridors,req){
+        const n=order.length;
+        const x=new Array(n),chosen=new Array(n);
         for(let j=0;j<n;j++){
-            const d=domains[j];
-            let need=d.lo;
+            let need=0;
             for(let i=0;i<j;i++)if(req[i][j]>0)need=Math.max(need,x[i]+req[i][j]);
-            if(need>d.hi+FEAS_EPS)return null;
-            x[j]=need;
+            let d=null;
+            for(const interval of corridors[j]){
+                if(interval.hi>=need-FEAS_EPS){d=interval;break;}
+            }
+            if(!d)return null;
+            chosen[j]=d;x[j]=Math.max(d.lo,need);
+            if(x[j]>d.hi+FEAS_EPS)return null;
         }
 
         for(let i=n-1;i>=0;i--){
-            const d=domains[i];
-            let maxAllowed=d.hi;
-            for(let j=i+1;j<n;j++)if(req[i][j]>0)maxAllowed=Math.min(maxAllowed,x[j]-req[i][j]);
-            if(maxAllowed<d.lo-FEAS_EPS)return null;
-            const target=Math.max(d.lo,Math.min(maxAllowed,order[i].v.x));
+            const d=chosen[i];
+            let hi=d.hi;
+            for(let j=i+1;j<n;j++)if(req[i][j]>0)hi=Math.min(hi,x[j]-req[i][j]);
+            if(hi<d.lo-FEAS_EPS)return null;
+            const target=Math.max(d.lo,Math.min(hi,order[i].v.x));
             if(target>x[i])x[i]=target;
         }
+        return verifyOrderedSolution(order,req,x)?x:null;
+    }
 
-        for(let i=0;i<n;i++){
-            if(x[i]<domains[i].lo-FEAS_EPS||x[i]>domains[i].hi+FEAS_EPS)return null;
-            for(let j=i+1;j<n;j++)if(req[i][j]>0&&x[j]-x[i]<req[i][j]-FEAS_EPS)return null;
+    function solveRightWitness(order,corridors,req){
+        const n=order.length;
+        const x=new Array(n),chosen=new Array(n);
+        for(let i=n-1;i>=0;i--){
+            let hi=W2-1;
+            for(let j=i+1;j<n;j++)if(req[i][j]>0)hi=Math.min(hi,x[j]-req[i][j]);
+            let d=null;
+            for(let k=corridors[i].length-1;k>=0;k--){
+                const interval=corridors[i][k];
+                if(interval.lo<=hi+FEAS_EPS){d=interval;break;}
+            }
+            if(!d)return null;
+            chosen[i]=d;x[i]=Math.min(d.hi,hi);
+            if(x[i]<d.lo-FEAS_EPS)return null;
         }
-        return x;
+
+        for(let j=0;j<n;j++){
+            const d=chosen[j];
+            let lo=d.lo;
+            for(let i=0;i<j;i++)if(req[i][j]>0)lo=Math.max(lo,x[i]+req[i][j]);
+            if(lo>d.hi+FEAS_EPS)return null;
+            const target=Math.max(lo,Math.min(d.hi,order[j].v.x));
+            if(target<x[j])x[j]=target;
+        }
+        return verifyOrderedSolution(order,req,x)?x:null;
+    }
+
+    function solutionCost(order,x){
+        let cost=0,logicalCost=0,totalShift=0,maxShift=0;
+        for(let i=0;i<order.length;i++){
+            const d=x[i]-order[i].v.x;
+            cost+=d*d;totalShift+=Math.abs(d);maxShift=Math.max(maxShift,Math.abs(d));
+            const l=x[i]-order[i].x;logicalCost+=l*l;
+        }
+        return{cost,logicalCost,totalShift,maxShift};
+    }
+
+    function solveOrder(order,fixed){
+        const corridors=order.map(q=>allowedIntervals(q,fixed));
+        if(corridors.some(q=>!q.length))return null;
+        const req=reqMatrix(order);
+        const witnesses=[];
+        const left=solveLeftWitness(order,corridors,req);if(left)witnesses.push(left);
+        const right=solveRightWitness(order,corridors,req);if(right)witnesses.push(right);
+        if(!witnesses.length)return null;
+
+        let best=null;
+        for(const x of witnesses){
+            const metrics=solutionCost(order,x);
+            if(!best||metrics.cost<best.cost-1e-12||
+               (Math.abs(metrics.cost-best.cost)<=1e-12&&metrics.logicalCost<best.logicalCost-1e-12)){
+                best={x:x.slice(),...metrics};
+            }
+        }
+        return{...best,corridorCounts:corridors.map(q=>q.length),witnesses:witnesses.length};
     }
 
     function solveBand(component,fixed,seedIds){
@@ -228,96 +305,42 @@
         const base=candidates.base;
         const baseIds=base.map(q=>q.ball.id);
         let best=null;
-        let totalCombinations=0;
-        let exhausted=false;
         const orderStats=[];
 
         for(const order of candidates.orders){
-            if(totalCombinations>=MAX_TOTAL_COMBINATIONS){exhausted=true;break;}
-            const corridors=order.map(q=>allowedIntervals(q,fixed).slice().sort((a,b)=>{
-                const da=intervalDistance(a,q.v.x),db=intervalDistance(b,q.v.x);
-                return da-db||a.lo-b.lo;
-            }));
-            const orderIds=order.map(q=>q.ball.id);
             const inversions=inversionCount(order,base);
-            if(corridors.some(q=>!q.length)){
-                orderStats.push({order:orderIds,inversions,feasible:false,reason:"no_fixed_corridor",combinations:0});
-                continue;
-            }
-
-            const n=order.length;
-            const req=Array.from({length:n},()=>Array(n).fill(0));
-            for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredX(order[i],order[j]);
-
-            let orderBest=null;
-            let orderCombinations=0;
-            const domains=new Array(n);
-
-            function visit(k){
-                if(totalCombinations>=MAX_TOTAL_COMBINATIONS){exhausted=true;return;}
-                if(k===n){
-                    totalCombinations++;orderCombinations++;
-                    const x=solveDomains(order,req,domains);
-                    if(!x)return;
-                    let cost=0,logicalCost=0;
-                    for(let i=0;i<n;i++){
-                        const d=x[i]-order[i].v.x;
-                        cost+=d*d;
-                        const l=x[i]-order[i].x;
-                        logicalCost+=l*l;
-                    }
-                    if(!orderBest||cost<orderBest.cost-1e-12||
-                       (Math.abs(cost-orderBest.cost)<=1e-12&&logicalCost<orderBest.logicalCost-1e-12)){
-                        orderBest={x:x.slice(),cost,logicalCost};
-                    }
-                    return;
-                }
-                for(const d of corridors[k]){
-                    domains[k]=d;
-                    visit(k+1);
-                    if(exhausted)return;
-                }
-            }
-            visit(0);
-
-            orderStats.push({order:orderIds,inversions,feasible:!!orderBest,combinations:orderCombinations,cost:orderBest?.cost??null});
-            if(orderBest){
-                const candidate={order,x:orderBest.x,cost:orderBest.cost,logicalCost:orderBest.logicalCost,inversions,corridorCounts:corridors.map(q=>q.length),orderCombinations};
-                if(!best||candidate.cost<best.cost-1e-12||
-                   (Math.abs(candidate.cost-best.cost)<=1e-12&&candidate.inversions<best.inversions)||
-                   (Math.abs(candidate.cost-best.cost)<=1e-12&&candidate.inversions===best.inversions&&candidate.logicalCost<best.logicalCost-1e-12)){
-                    best=candidate;
-                }
+            const solved=solveOrder(order,fixed);
+            const orderIds=order.map(q=>q.ball.id);
+            orderStats.push({order:orderIds,inversions,feasible:!!solved,cost:solved?.cost??null,witnesses:solved?.witnesses??0});
+            if(!solved)continue;
+            const candidate={order,inversions,...solved};
+            if(!best||candidate.cost<best.cost-1e-12||
+               (Math.abs(candidate.cost-best.cost)<=1e-12&&candidate.inversions<best.inversions)||
+               (Math.abs(candidate.cost-best.cost)<=1e-12&&candidate.inversions===best.inversions&&candidate.logicalCost<best.logicalCost-1e-12)){
+                best=candidate;
             }
         }
 
         if(!best)return{
-            ok:false,
-            reason:exhausted?"order_search_limit":"order_search_infeasible",
-            baseOrder:baseIds,
-            seedIds:seedIds.slice(),
-            orderCandidates:candidates.orders.length,
-            totalCombinations,
-            orderStats
+            ok:false,reason:"order_search_infeasible",
+            baseOrder:baseIds,seedIds:seedIds.slice(),seedPriority:candidates.seedPriority,
+            orderCandidates:candidates.orders.length,orderStats
         };
 
-        let changed=0,maxShift=0,totalShift=0;
+        let changed=0;
         for(let i=0;i<best.order.length;i++){
-            const shift=Math.abs(best.x[i]-best.order[i].v.x);
-            if(shift>EPS){best.order[i].v.x=best.x[i];changed++;maxShift=Math.max(maxShift,shift);totalShift+=shift;}
+            if(Math.abs(best.x[i]-best.order[i].v.x)>EPS){best.order[i].v.x=best.x[i];changed++;}
         }
         return{
             ok:true,
             baseOrder:baseIds,
             chosenOrder:best.order.map(q=>q.ball.id),
-            seedIds:seedIds.slice(),
+            seedIds:seedIds.slice(),seedPriority:candidates.seedPriority,
             reorderCount:best.inversions,
-            changed,maxShift,totalShift,cost:best.cost,
+            changed,maxShift:best.maxShift,totalShift:best.totalShift,cost:best.cost,
             corridorCounts:best.corridorCounts,
             orderCandidates:candidates.orders.length,
-            totalCombinations,
-            chosenOrderCombinations:best.orderCombinations,
-            exhausted,
+            chosenWitnesses:best.witnesses,
             orderStats
         };
     }
@@ -328,7 +351,7 @@
         const solved=[];
         let failure=null;
 
-        for(let pass=0;pass<MAX_COMPONENT_PASSES;pass++){
+        for(let pass=0;pass<MAX_BAND_PASSES;pass++){
             const all=boardEntries(g);
             const live=liveEntries(g,all);
             const worst=worstLivePair(live);
@@ -349,8 +372,7 @@
         const final=minIncomingDistance(all,live);
         const info={
             changed:totalChanged,totalShift,maxShift,
-            bands:solved,
-            failure,
+            bands:solved,failure,
             finalMinDistance:Number.isFinite(final.min)?final.min:null,
             finalPair:final.pair,
             ok:!Number.isFinite(final.min)||final.min>=OVERLAP_LIMIT,
@@ -371,5 +393,5 @@
     };
 
     window.__sixBallGarbageMinDisplacementCrossingV1=true;
-    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.5";
+    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.6";
 })();
