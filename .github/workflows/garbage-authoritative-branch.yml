@@ -84,7 +84,12 @@ jobs:
           repl='"app-garbage-freeze-authoritative-v1.js","app-garbage-min-displacement-crossing-v1.js",\n  "app-garbage-contact-monotonic-v1.js","app-garbage-rigid-row-contact-v1.js","app-garbage-deep-contact-hold-v1.js"\n];'
           if needle not in s:
               raise SystemExit('integration runtime tail not found')
-          p.write_text(s.replace(needle,repl,1))
+          s=s.replace(needle,repl,1)
+          old='expect(Number.isFinite(q.v.x)&&Number.isFinite(q.v.y),label+": non-finite visual "+q.b.id);'
+          new='if(!(Number.isFinite(q.v.x)&&Number.isFinite(q.v.y))){console.log("GARBAGE_NONFINITE_DIAGNOSTIC "+JSON.stringify({label,id:q.b.id,cell:[q.x,q.y],vis:{x:q.v.x,y:q.v.y,vx:q.v.vx,vy:q.v.vy,pileFlow:q.v.pileFlow,motionSpeed:q.v.motionSpeed},ball:{type:q.b.garbageType,seq:q.b.garbageSourceSeq,role:q.b.garbageSourceRole,path:q.b.fallPath},rigid:window.__sixBallLastGarbageRigidRowContactV1||null,deep:window.__sixBallLastGarbageDeepContactHoldV1||null,constraint:window.__sixBallLastGarbageConstraintSolve||null,minDisplacement:window.__sixBallLastGarbageMinDisplacementRepair||null}));throw new Error(label+": non-finite visual "+q.b.id);}'
+          if old not in s:
+              raise SystemExit('finite visual assertion not found')
+          p.write_text(s.replace(old,new,1))
           PY
           node tests/.garbage-row-integration.tmp.js
           rm tests/.garbage-row-integration.tmp.js
