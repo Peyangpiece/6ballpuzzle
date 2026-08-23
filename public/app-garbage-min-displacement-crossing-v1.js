@@ -4,17 +4,19 @@
  * Final post-pass for residual dense garbage contacts.
  *
  * The base authoritative layer already protects the frozen pile, preserves the
- * analytic Y/path timeline and resolves almost every live/live contact.  The
+ * analytic Y/path timeline and resolves almost every live/live contact. The
  * remaining hard case is a moving outsider touching a wall-anchored tangent
  * row: pair-by-pair correction can oscillate because every row member is also
  * exactly touching its neighbour.
  *
- * This layer solves that residual contact as ONE connected contact component.
- * Live balls linked by overlap or exact tangency are projected together into
- * fixed-support-safe horizontal corridors.  Their instantaneous left-to-right
- * order is preserved and every active pair constraint is solved at once.  All
- * corridor combinations for the small contact component are considered and the
- * legal solution with minimum total squared horizontal displacement is chosen.
+ * This layer solves that residual contact as ONE horizontal interaction band.
+ * Starting from the overlap, every live ball close enough in Y that horizontal
+ * motion could ever make the pair touch is included before solving. That avoids
+ * moving an outsider out of one row only to collide with a distant member of
+ * another row on the opposite side. Their instantaneous left-to-right order is
+ * preserved and every active pair constraint is solved at once. All fixed-safe
+ * corridor combinations for the small band are considered and the legal result
+ * with minimum total squared horizontal displacement is selected.
  *
  * Only visual X of live incoming garbage is changed. Logical cells, visual Y,
  * path timing, segment metadata, settled/frozen balls and ordinary physics are
@@ -28,11 +30,10 @@
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const OVERLAP_LIMIT=0.9995;
-    const CONTACT_LINK=1.000001;
     const EPS=1e-9;
     const FEAS_EPS=1e-7;
-    const MAX_COMPONENT_PASSES=32;
-    const MAX_COMBINATIONS=50000;
+    const MAX_COMPONENT_PASSES=16;
+    const MAX_COMBINATIONS=100000;
 
     function garbagePhase(g){return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&g.board&&g.vis);}
     function hasLivePath(ball){return Array.isArray(ball?.fallPath)&&ball.fallPath.length>0;}
@@ -136,7 +137,7 @@
         return 0;
     }
 
-    function contactComponent(live,seedA,seedB){
+    function interactionBand(live,seedA,seedB){
         const byId=new Map(live.map(q=>[q.ball.id,q]));
         const ids=new Set([seedA.ball.id,seedB.ball.id]);
         const queue=[seedA.ball.id,seedB.ball.id];
@@ -146,7 +147,9 @@
             if(!a)continue;
             for(const b of live){
                 if(ids.has(b.ball.id))continue;
-                if(physicalDistance(a,b)<=CONTACT_LINK){ids.add(b.ball.id);queue.push(b.ball.id);}
+                // If |dy| < one physical diameter, some X positions can make
+                // the pair touch. Include it now, even when currently far away.
+                if(requiredX(a,b)>EPS){ids.add(b.ball.id);queue.push(b.ball.id);}
             }
         }
         return live.filter(q=>ids.has(q.ball.id));
@@ -179,7 +182,7 @@
         return x;
     }
 
-    function solveComponent(component,fixed){
+    function solveBand(component,fixed){
         const order=component.slice().sort((a,b)=>a.v.x-b.v.x||a.x-b.x||a.ball.id-b.ball.id);
         const n=order.length;
         const corridors=order.map(q=>allowedIntervals(q,fixed).slice().sort((a,b)=>{
@@ -209,7 +212,7 @@
                     logicalCost+=l*l;
                 }
                 if(!best||cost<best.cost-1e-12||(Math.abs(cost-best.cost)<=1e-12&&logicalCost<best.logicalCost-1e-12)){
-                    best={x:x.slice(),cost,logicalCost,domains:domains.map(d=>({lo:d.lo,hi:d.hi}))};
+                    best={x:x.slice(),cost,logicalCost};
                 }
                 return;
             }
@@ -221,7 +224,7 @@
         }
         visit(0);
 
-        if(!best)return{ok:false,reason:combinations>=MAX_COMBINATIONS?"combination_limit":"ordered_component_infeasible",ids:order.map(q=>q.ball.id),corridorCounts:corridors.map(q=>q.length),combinations};
+        if(!best)return{ok:false,reason:combinations>=MAX_COMBINATIONS?"combination_limit":"ordered_band_infeasible",ids:order.map(q=>q.ball.id),corridorCounts:corridors.map(q=>q.length),combinations};
 
         let changed=0,maxShift=0,totalShift=0;
         for(let i=0;i<n;i++){
@@ -242,9 +245,9 @@
             const live=liveEntries(g,all);
             const worst=worstLivePair(live);
             if(!worst)break;
-            const component=contactComponent(live,worst.a,worst.b);
+            const component=interactionBand(live,worst.a,worst.b);
             const fixed=fixedEntries(g,all);
-            const result=solveComponent(component,fixed);
+            const result=solveBand(component,fixed);
             solved.push({pass,seed:[worst.a.ball.id,worst.b.ball.id],seedDistance:worst.d,...result});
             if(!result.ok||!result.changed){failure=result;break;}
             totalChanged+=result.changed;
@@ -257,7 +260,7 @@
         const final=minIncomingDistance(all,live);
         const info={
             changed:totalChanged,totalShift,maxShift,
-            components:solved,
+            bands:solved,
             failure,
             finalMinDistance:Number.isFinite(final.min)?final.min:null,
             finalPair:final.pair,
@@ -279,5 +282,5 @@
     };
 
     window.__sixBallGarbageMinDisplacementCrossingV1=true;
-    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.3";
+    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.4";
 })();
