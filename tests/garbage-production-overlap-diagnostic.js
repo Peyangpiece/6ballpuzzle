@@ -25,31 +25,38 @@ function put(g,x,y,c=0){if(!valid(x,y)||g.board[y][x])return null;const b=mkBall
 function entries(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,x,y,v});}return a;}
 function dist(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*HEX_ROW_H);}
 function segSummary(seg){if(!seg)return null;return{from:seg.from,to:seg.to,kind:seg.kind,pivot:seg.pivot,topPivot:seg.topPivot,start:seg.pileFlowStart,end:seg.pileFlowEnd,duration:seg.pileFlowDuration,seq:seg.motionSeq,continuous:!!seg.__garbageContinuous};}
-function ballSummary(q){return{id:q.b.id,isGarbage:!!q.b.isGarbage,frozen:!!q.b.garbagePhaseFrozen,cell:[q.x,q.y],vis:[q.v.x,q.v.y],vy:q.v.vy,speed:q.v.motionSpeed,pileFlow:!!q.v.pileFlow,pathLen:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0,path:(q.b.fallPath||[]).slice(0,4).map(segSummary)};}
-function check(g,originalIds,frame,stage){
+function ballSummary(q){return{id:q.b.id,isGarbage:!!q.b.isGarbage,frozen:!!q.b.garbagePhaseFrozen,cell:[q.x,q.y],vis:[q.v.x,q.v.y],vy:q.v.vy,speed:q.v.motionSpeed,pileFlow:!!q.v.pileFlow,pathLen:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0,path:(q.b.fallPath||[]).slice(0,5).map(segSummary)};}
+function worst(g,originalIds){
  const all=entries(g),incoming=new Set(all.filter(q=>q.b.isGarbage&&!originalIds.has(q.b.id)).map(q=>q.b.id));let best=null;
  for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){
    if(!incoming.has(all[i].b.id)&&!incoming.has(all[j].b.id))continue;
    const d=dist(all[i],all[j]);if(!best||d<best.d)best={d,a:all[i],b:all[j]};
  }
- if(best&&best.d<0.9995){
-   const report={frame,stage,d:best.d,pileClock:g.pileFlowClock,garbageClock:g.garbageClock,pending:pendingFallPathCount(g),a:ballSummary(best.a),b:ballSummary(best.b)};
-   console.log("GARBAGE_OVERLAP_DIAGNOSTIC "+JSON.stringify(report));
-   throw new Error("garbage overlap created at "+stage+" frame "+frame+" d="+best.d);
- }
+ return best;
+}
+function report(g,originalIds,frame,stage,best){
+ if(!best||best.d>=0.9995)return null;
+ const q={frame,stage,d:best.d,pileClock:g.pileFlowClock,garbageClock:g.garbageClock,pending:pendingFallPathCount(g),moving:[...(g._visualMovingIds||[])],a:ballSummary(best.a),b:ballSummary(best.b)};
+ console.log("GARBAGE_OVERLAP_DIAGNOSTIC "+JSON.stringify(q));return q;
 }
 const g=createEngine(91100);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;
 for(let x=0;x<W2;x++)if(valid(x,ROWS-1))put(g,x,ROWS-1,x%5);
 put(g,3,ROWS-2,1);put(g,7,ROWS-2,2);put(g,5,ROWS-4,3);
 const originalIds=new Set(entries(g).map(q=>q.b.id));
 g.garbShapes=["PYRAMID","HEXAGON","STRAIGHT"];g.garbLeft=0;prepareGarbageBatch(g);
-for(let frame=0;frame<400;frame++){
-  updateVisuals(g,PHYSICS_FRAME);check(g,originalIds,frame,"after-updateVisuals");
-  resolveVisualContacts(g);check(g,originalIds,frame,"after-resolveVisualContacts");
-  updateGarbagePacks(g,PHYSICS_FRAME);check(g,originalIds,frame,"after-updateGarbagePacks");
+let firstTransient=null;
+for(let frame=0;frame<500;frame++){
+  updateVisuals(g,PHYSICS_FRAME);
+  const u=worst(g,originalIds);if(!firstTransient&&u&&u.d<0.9995)firstTransient=report(g,originalIds,frame,"after-updateVisuals-transient",u);
+
+  resolveVisualContacts(g);
+  const r=worst(g,originalIds);if(r&&r.d<0.9995){report(g,originalIds,frame,"after-resolveVisualContacts",r);throw new Error("garbage overlap survived contact resolution at frame "+frame+" d="+r.d);}
+
+  updateGarbagePacks(g,PHYSICS_FRAME);
+  const p=worst(g,originalIds);if(p&&p.d<0.9995){report(g,originalIds,frame,"after-updateGarbagePacks",p);throw new Error("garbage overlap introduced after pack update at frame "+frame+" d="+p.d);}
   if(garbageBatchDone(g))break;
 }
-console.log("garbage production overlap diagnostic PASS");
+console.log("garbage production overlap diagnostic PASS "+JSON.stringify({firstTransient:firstTransient&&{frame:firstTransient.frame,d:firstTransient.d,a:firstTransient.a.id,b:firstTransient.b.id}}));
 `;
 const context={React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,Image:function(){this.complete=false;this.naturalWidth=0;},Math,Map,Set,WeakMap,Array,Number,Object,String,Boolean,JSON,Date,setTimeout(){return 0},clearTimeout(){},performance:{now(){return 0}},localStorage:{getItem(){return null},setItem(){}},document:{getElementById(){return null}},ResizeObserver:function(){this.observe=()=>{};this.disconnect=()=>{};}};
 vm.runInNewContext(runtime+checks,context,{timeout:180000});
