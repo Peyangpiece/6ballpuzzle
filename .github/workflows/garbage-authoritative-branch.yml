@@ -46,5 +46,8 @@ jobs:
           node tests/garbage-post-clear-collapse.js
           node tests/garbage-render-overlap-guard.js
 
+      - name: Bisect production layers against garbage freeze
+        run: node tests/garbage-production-layer-bisect.js
+
       - name: Run production-load-order garbage integration
         run: node tests/garbage-production-integration.js
