@@ -32,7 +32,8 @@ jobs:
             public/app-garbage-simultaneous-motion.js \
             public/app-garbage-render-overlap-guard.js \
             public/app-garbage-performance-v1.js \
-            public/app-garbage-continuous-v1.js; do
+            public/app-garbage-continuous-v1.js \
+            public/app-garbage-freeze-authoritative-v1.js; do
             node --check "$f"
           done
 
@@ -48,6 +49,9 @@ jobs:
 
       - name: Bisect production layers against garbage freeze
         run: node tests/garbage-production-layer-bisect.js
+
+      - name: Trace first production overlap stage
+        run: node tests/garbage-production-overlap-diagnostic.js
 
       - name: Run production-load-order garbage integration
         run: node tests/garbage-production-integration.js
