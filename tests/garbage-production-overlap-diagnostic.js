@@ -17,7 +17,7 @@ const files=[
   "app-rigidity-resolver-authoritative-v3.js","app-upconvex-contact-priority-v1.js",
   "app-upconvex-pocket-capture-v1.js","app-upconvex-rigid-until-contact-v1.js",
   "app-collapse-timing-authoritative-v2.js","app-runtime-performance-v3.js",
-  "app-garbage-freeze-authoritative-v1.js"
+  "app-garbage-freeze-authoritative-v1.js","app-garbage-min-displacement-crossing-v1.js"
 ];
 const runtime=files.map(read).join("\n");
 const checks=String.raw`
@@ -54,6 +54,7 @@ function report(g,originalIds,frame,stage,best){
    frame,stage,d:best.d,pileClock:g.pileFlowClock,garbageClock:g.garbageClock,
    pending:pendingFallPathCount(g),moving:[...(g._visualMovingIds||[])],
    constraintSolve:window.__sixBallLastGarbageConstraintSolve||null,
+   minDisplacement:window.__sixBallLastGarbageMinDisplacementRepair||null,
    segmentRepairs:window.__sixBallGarbageSegmentEndRepairs||0,
    constraintCorrections:window.__sixBallGarbageConstraintCorrections||0,
    a:ballSummary(best.a),b:ballSummary(best.b),nearby:neighborhood(g,originalIds,best)
