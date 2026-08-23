@@ -20,9 +20,9 @@
  *       pileFlowEnd === pileFlowStart + pileFlowDuration
  *    Stale extended end-times may not hold a ball at an internal contact cell
  *    after its physical segment duration has already completed.
- * 9. When two live balls need separation, displacement goes first to the member
- *    with the larger physically available clearance. A fixed-tangent member is
- *    not needlessly moved and then projected back into the same collision.
+ * 9. Live garbage is separated in one stable logical lane order. Corrections do
+ *    not alternate pair direction based on board-scan order, preventing dense
+ *    packs from cycling back into a previously solved overlap.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -220,15 +220,6 @@
         return true;
     }
 
-    function livePairSign(a,b){
-        let sign=Math.sign(a.x-b.x);
-        if(!sign)sign=Math.sign(a.v.x-b.v.x);
-        if(!sign&&a.ball.garbageSourceSeq===b.ball.garbageSourceSeq){
-            sign=Math.sign((Number(a.ball.garbageSourceRole)||0)-(Number(b.ball.garbageSourceRole)||0));
-        }
-        return sign||((a.ball.id>b.ball.id)?1:-1);
-    }
-
     function fixedDirectionalCapacity(live,dir,fixed){
         let cap=dir>0?(W2-1-live.v.x):live.v.x;
         const x=live.v.x;
@@ -262,47 +253,43 @@
         return Math.max(0,cap);
     }
 
-    function separateLivePair(a,b,fixed){
-        const dy=(a.v.y-b.v.y)*H;
+    function laneCompare(a,b){
+        if(a.x!==b.x)return a.x-b.x;
+        const as=Number(a.ball.garbageSourceSeq);
+        const bs=Number(b.ball.garbageSourceSeq);
+        if(Number.isFinite(as)&&Number.isFinite(bs)&&as!==bs)return as-bs;
+        const ar=Number(a.ball.garbageSourceRole);
+        const br=Number(b.ball.garbageSourceRole);
+        if(Number.isFinite(ar)&&Number.isFinite(br)&&ar!==br)return ar-br;
+        if(a.y!==b.y)return a.y-b.y;
+        return a.ball.id-b.ball.id;
+    }
+
+    function separateOrderedPair(left,right,fixed){
+        const dy=(left.v.y-right.v.y)*H;
         if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return false;
 
         const requiredPhysicalX=Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
         const requiredLatticeX=2*(requiredPhysicalX+SAFE_EPS);
-        const sign=livePairSign(a,b);
-        const signedCurrent=sign*(a.v.x-b.v.x);
-        let missing=requiredLatticeX-signedCurrent;
+        let missing=requiredLatticeX-(right.v.x-left.v.x);
         if(missing<=1e-8)return false;
 
-        const capA=fixedDirectionalCapacity(a,sign,fixed);
-        const capB=fixedDirectionalCapacity(b,-sign,fixed);
+        // Stable lane policy: propagate pressure toward increasing logical X.
+        // This is monotonic across every pair in the pass, unlike the former
+        // board-order solver where the same middle ball could be pushed right by
+        // one pair and immediately left by another pair.
+        let moveRight=Math.min(fixedDirectionalCapacity(right,1,fixed),missing);
+        right.v.x=Math.min(W2-1,right.v.x+moveRight);
+        missing-=moveRight;
 
-        // Do not split the correction 50/50 first. That old strategy repeatedly
-        // pushed a fixed-tangent member into its support and the fixed pass moved
-        // it back, creating a live/live <-> live/fixed correction cycle.
-        // Use the freer side first, then consume the remaining capacity on the
-        // other member only when necessary.
-        let moveA=0;
-        let moveB=0;
-
-        if(capA>=capB){
-            moveA=Math.min(capA,missing);
-            missing-=moveA;
-            if(missing>EPS){
-                moveB=Math.min(capB,missing);
-                missing-=moveB;
-            }
-        }else{
-            moveB=Math.min(capB,missing);
-            missing-=moveB;
-            if(missing>EPS){
-                moveA=Math.min(capA,missing);
-                missing-=moveA;
-            }
+        if(missing>EPS){
+            const moveLeft=Math.min(fixedDirectionalCapacity(left,-1,fixed),missing);
+            left.v.x=Math.max(0,left.v.x-moveLeft);
+            missing-=moveLeft;
+            return moveRight+moveLeft>EPS;
         }
 
-        a.v.x=Math.max(0,Math.min(W2-1,a.v.x+sign*moveA));
-        b.v.x=Math.max(0,Math.min(W2-1,b.v.x-sign*moveB));
-        return moveA+moveB>EPS;
+        return moveRight>EPS;
     }
 
     function enforceFixedContacts(g,frozen,maxPasses){
@@ -334,13 +321,16 @@
             let changed=false;
             const entries=boardEntries(g);
             const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
-            const live=entries.filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball));
+            const live=entries
+                .filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball))
+                .sort(laneCompare);
 
             for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
                 if(physicalDistance(live[i],live[j])>=MIN_DIST-1e-8)continue;
-                if(separateLivePair(live[i],live[j],fixed)){changed=true;corrections++;}
+                if(separateOrderedPair(live[i],live[j],fixed)){changed=true;corrections++;}
             }
 
+            // Fixed supports remain the final boundary after every lane sweep.
             for(const moving of live)for(const support of fixed){
                 if(moving.ball.id===support.ball.id)continue;
                 if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
@@ -422,8 +412,8 @@
     window.__sixBallGarbagePathYAuthoritative=true;
     window.__sixBallGarbageContinuousTimingPreserved=true;
     window.__sixBallGarbageSegmentEndInvariant=true;
-    window.__sixBallGarbageClearanceFirstSeparation=true;
+    window.__sixBallGarbageStableLaneSeparation=true;
     window.__sixBallGarbageFixedContactPriorityFinal=true;
     window.__sixBallGarbageFixedAwareLiveSeparation=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.13";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.14";
 })();
