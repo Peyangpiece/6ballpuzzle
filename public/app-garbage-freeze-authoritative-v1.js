@@ -27,6 +27,9 @@
  * 9. Exact tangency is legal. Dense STRAIGHT rows can span the full board only
  *    when neighbouring unit-radius contacts are allowed at exactly one physical
  *    diameter; no artificial positive spacing margin is added to contact radii.
+ * 10. If the dense disjunctive solver reaches its iteration budget, its best
+ *    corridor-valid contact state is retained. It must never be replaced by a
+ *    preferred-corridor clamp that can reintroduce an already-resolved overlap.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -342,6 +345,15 @@
         return reverse?{ax:reverse.leftX,bx:reverse.rightX,cost:reverse.cost,flipped:true}:null;
     }
 
+    function displacementSummary(live,start){
+        let changed=0,maxShift=0;
+        for(let i=0;i<live.length;i++){
+            const shift=Math.abs(live[i].v.x-start[i]);
+            if(shift>EPS){changed++;maxShift=Math.max(maxShift,shift);}
+        }
+        return{changed,maxShift};
+    }
+
     function solveDisjunctivePairs(live,corridors){
         const start=live.map(q=>q.v.x);
         let pairMoves=0;
@@ -357,17 +369,16 @@
                 if(deficit>1e-7&&(!worst||deficit>worst.deficit))worst={i,j,req,deficit};
             }
             if(!worst){
-                let changed=0,maxShift=0;
-                for(let i=0;i<live.length;i++){
-                    const shift=Math.abs(live[i].v.x-start[i]);
-                    if(shift>EPS){changed++;maxShift=Math.max(maxShift,shift);}
-                }
-                return{ok:true,changed,maxShift,pairMoves,iterations:iter};
+                const moved=displacementSummary(live,start);
+                return{ok:true,...moved,pairMoves,iterations:iter};
             }
 
             const a=live[worst.i],b=live[worst.j];
             const candidate=bestPairCandidate(a,b,corridors[worst.i],corridors[worst.j],worst.req);
-            if(!candidate)return{ok:false,reason:"pair_unresolvable",pair:[a.ball.id,b.ball.id],pairMoves,iterations:iter};
+            if(!candidate){
+                const moved=displacementSummary(live,start);
+                return{ok:false,reason:"pair_unresolvable",pair:[a.ball.id,b.ball.id],...moved,pairMoves,iterations:iter};
+            }
 
             if(Math.abs(a.v.x-candidate.ax)>EPS||Math.abs(b.v.x-candidate.bx)>EPS)pairMoves++;
             a.v.x=candidate.ax;
@@ -380,18 +391,8 @@
             const deficit=req-Math.abs(live[j].v.x-live[i].v.x);
             if(deficit>1e-7&&(!worst||deficit>worst.deficit))worst={i,j,req,deficit};
         }
-        return{ok:!worst,reason:worst?"iteration_limit":null,pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,pairMoves,iterations:limit};
-    }
-
-    function clampToPreferredCorridors(live,corridors){
-        let changed=0;
-        for(let i=0;i<live.length;i++){
-            const d=preferredInterval(corridors[i],live[i]);
-            if(!d)continue;
-            const nx=Math.max(d.lo,Math.min(d.hi,live[i].v.x));
-            if(Math.abs(nx-live[i].v.x)>EPS){live[i].v.x=nx;changed++;}
-        }
-        return changed;
+        const moved=displacementSummary(live,start);
+        return{ok:!worst,reason:worst?"iteration_limit":null,pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,...moved,pairMoves,iterations:limit};
     }
 
     function solveGarbageContactNetwork(g){
@@ -437,14 +438,15 @@
                 return disjunctive.changed;
             }
 
-            const fallback=clampToPreferredCorridors(live,corridors);
             window.__sixBallLastGarbageConstraintSolve={
-                ok:false,reason:disjunctive.reason||"corridor_infeasible",fallback,
+                ok:false,reason:disjunctive.reason||"corridor_infeasible",
+                retainedBest:true,changed:disjunctive.changed,maxShift:disjunctive.maxShift,
                 pair:disjunctive.pair||null,pairMoves:disjunctive.pairMoves||0,
                 iterations:disjunctive.iterations||0,
                 corridorCounts:corridors.map(q=>q.length),at:Date.now()
             };
-            return fallback;
+            if(disjunctive.changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+disjunctive.changed;
+            return disjunctive.changed;
         }
 
         let changed=0;
@@ -531,5 +533,6 @@
     window.__sixBallGarbageDisjunctivePairFallback=true;
     window.__sixBallGarbagePairSideStable=true;
     window.__sixBallGarbageExactTangency=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.20";
+    window.__sixBallGarbageRetainBestDenseSolution=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.21";
 })();
