@@ -1,19 +1,24 @@
 /* ============================================================
  * 6ball GARBAGE MIN-DISPLACEMENT CROSSING v1
  *
- * Final post-pass for dense garbage rows.
+ * Final post-pass for residual dense garbage contacts.
  *
- * The authoritative garbage solver keeps equal-height incoming rows coherent.
- * In dense crossings an outsider can be trapped between fixed support and a
- * tangent live row. The post-pass evaluates two physically legal responses:
- * move the outsider to the nearest legal side, or translate the whole tangent
- * row without changing its internal spacing. The response with the smaller
- * total horizontal displacement is selected.
+ * The base authoritative layer already protects the frozen pile, preserves the
+ * analytic Y/path timeline and resolves almost every live/live contact.  The
+ * remaining hard case is a moving outsider touching a wall-anchored tangent
+ * row: pair-by-pair correction can oscillate because every row member is also
+ * exactly touching its neighbour.
  *
- * This layer runs AFTER app-garbage-freeze-authoritative-v1.js and changes only
- * visual X positions of live incoming garbage during GARBAGE. Logical cells,
- * Y/path timing, segment metadata, the frozen pile and ordinary ball physics are
- * untouched. Exact tangency remains legal.
+ * This layer solves that residual contact as ONE connected contact component.
+ * Live balls linked by overlap or exact tangency are projected together into
+ * fixed-support-safe horizontal corridors.  Their instantaneous left-to-right
+ * order is preserved and every active pair constraint is solved at once.  All
+ * corridor combinations for the small contact component are considered and the
+ * legal solution with minimum total squared horizontal displacement is chosen.
+ *
+ * Only visual X of live incoming garbage is changed. Logical cells, visual Y,
+ * path timing, segment metadata, settled/frozen balls and ordinary physics are
+ * untouched. Exact tangency is legal.
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallGarbageMinDisplacementCrossingV1)return;
@@ -23,10 +28,11 @@
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const OVERLAP_LIMIT=0.9995;
-    const LEGAL_LIMIT=0.999999;
-    const SAME_Y_EPS=1e-8;
-    const ROW_GAP_MAX=2.01;
+    const CONTACT_LINK=1.000001;
     const EPS=1e-9;
+    const FEAS_EPS=1e-7;
+    const MAX_COMPONENT_PASSES=32;
+    const MAX_COMBINATIONS=50000;
 
     function garbagePhase(g){return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&g.board&&g.vis);}
     function hasLivePath(ball){return Array.isArray(ball?.fallPath)&&ball.fallPath.length>0;}
@@ -41,9 +47,21 @@
         return out;
     }
 
+    function frozenIds(board){
+        const out=new Set();
+        const cached=board?.__hexGarbageFrozenIds;
+        if(cached instanceof Set)for(const id of cached)out.add(id);
+        return out;
+    }
+
     function liveEntries(g,all){
-        const frozen=g.board?.__hexGarbageFrozenIds instanceof Set?g.board.__hexGarbageFrozenIds:new Set();
+        const frozen=frozenIds(g.board);
         return all.filter(q=>q.ball.isGarbage&&!q.ball.garbagePhaseFrozen&&!frozen.has(q.ball.id)&&hasLivePath(q.ball));
+    }
+
+    function fixedEntries(g,all){
+        const liveIds=new Set(liveEntries(g,all).map(q=>q.ball.id));
+        return all.filter(q=>!liveIds.has(q.ball.id));
     }
 
     function physicalDistance(a,b,ax=a.v.x,bx=b.v.x){
@@ -56,177 +74,11 @@
         return 2*Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
     }
 
-    function equalHeightMembership(live){
-        const order=live.slice().sort((a,b)=>a.v.y-b.v.y||a.v.x-b.v.x||a.ball.id-b.ball.id);
-        const membership=new Map();
-        const buckets=[];
-        let bucket=[];
-        let anchorY=null;
-
-        function flushBucket(){
-            if(bucket.length)buckets.push(bucket);
-            bucket=[];anchorY=null;
-        }
-
-        for(const q of order){
-            if(anchorY===null||Math.abs(q.v.y-anchorY)<=SAME_Y_EPS){
-                bucket.push(q);
-                if(anchorY===null)anchorY=q.v.y;
-            }else{
-                flushBucket();bucket=[q];anchorY=q.v.y;
-            }
-        }
-        flushBucket();
-
-        function markChain(chain){
-            if(chain.length<2)return;
-            const stable=chain.slice();
-            for(const q of stable)membership.set(q.ball.id,stable);
-        }
-
-        for(const sameY of buckets){
-            sameY.sort((a,b)=>a.v.x-b.v.x||a.ball.id-b.ball.id);
-            let chain=[];
-            for(const q of sameY){
-                if(chain.length&&q.v.x-chain[chain.length-1].v.x>ROW_GAP_MAX){
-                    markChain(chain);chain=[];
-                }
-                chain.push(q);
-            }
-            markChain(chain);
-        }
-        return membership;
-    }
-
-    function legalAtX(movable,x,blockers){
-        if(!Number.isFinite(x)||x<-EPS||x>W2-1+EPS)return false;
-        for(const b of blockers){
-            if(!b||b.ball.id===movable.ball.id)continue;
-            if(physicalDistance(movable,b,x,b.v.x)<LEGAL_LIMIT)return false;
-        }
-        return true;
-    }
-
-    function nearestLegalPinnedCandidate(movable,pinned,blockers){
-        const req=requiredX(movable,pinned);
-        if(req<=0)return null;
-        const current=movable.v.x;
-        const currentSide=current<=pinned.v.x?-1:1;
-        const raw=[];
-
-        function add(side,x){
-            if(!Number.isFinite(x))return;
-            const boundary=side<0?pinned.v.x-req:pinned.v.x+req;
-            const nx=side<0?Math.min(x,boundary):Math.max(x,boundary);
-            raw.push({side,x:nx});
-        }
-
-        for(const side of[-1,1]){
-            const boundary=side<0?pinned.v.x-req:pinned.v.x+req;
-            add(side,current);
-            add(side,boundary);
-            add(side,side<0?0:W2-1);
-            for(const b of blockers){
-                if(!b||b.ball.id===movable.ball.id)continue;
-                const r=requiredX(movable,b);
-                if(r<=0)continue;
-                add(side,b.v.x-r);
-                add(side,b.v.x+r);
-            }
-        }
-
-        let best=null;
-        const seen=new Set();
-        for(const c of raw){
-            const x=Math.max(0,Math.min(W2-1,c.x));
-            const sideBoundary=c.side<0?pinned.v.x-req:pinned.v.x+req;
-            if(c.side<0&&x>sideBoundary+1e-7)continue;
-            if(c.side>0&&x<sideBoundary-1e-7)continue;
-            const key=c.side+":"+x.toFixed(12);
-            if(seen.has(key))continue;
-            seen.add(key);
-            if(!legalAtX(movable,x,blockers))continue;
-            const cost=Math.abs(x-current);
-            const sidePenalty=c.side===currentSide?0:1;
-            const logicalPenalty=Math.abs(x-movable.x);
-            if(!best||cost<best.cost-1e-10||
-               (Math.abs(cost-best.cost)<=1e-10&&sidePenalty<best.sidePenalty)||
-               (Math.abs(cost-best.cost)<=1e-10&&sidePenalty===best.sidePenalty&&logicalPenalty<best.logicalPenalty-1e-10)){
-                best={x,side:c.side,cost,sidePenalty,logicalPenalty};
-            }
-        }
-        return best;
-    }
-
-    function legalRowShift(row,delta,blockers){
-        for(const q of row){
-            const x=q.v.x+delta;
-            if(!Number.isFinite(x)||x<-EPS||x>W2-1+EPS)return false;
-            for(const b of blockers){
-                if(!b)continue;
-                if(physicalDistance(q,b,x,b.v.x)<LEGAL_LIMIT)return false;
-            }
-        }
-        return true;
-    }
-
-    function nearestLegalRowShift(row,pinned,movable,all){
-        if(!Array.isArray(row)||row.length<2)return null;
-        const rowIds=new Set(row.map(q=>q.ball.id));
-        const blockers=all.filter(q=>!rowIds.has(q.ball.id));
-        const req=requiredX(pinned,movable);
-        if(req<=0)return null;
-
-        const outsiderLeft=movable.v.x<=pinned.v.x;
-        const direction=outsiderLeft?1:-1;
-        const boundary=outsiderLeft?(movable.v.x+req-pinned.v.x):(movable.v.x-req-pinned.v.x);
-        let minDelta=-Infinity,maxDelta=Infinity;
-        for(const q of row){
-            minDelta=Math.max(minDelta,-q.v.x);
-            maxDelta=Math.min(maxDelta,(W2-1)-q.v.x);
-        }
-        if(minDelta>maxDelta+EPS)return null;
-
-        const raw=[boundary,direction>0?maxDelta:minDelta,0];
-        for(const q of row)for(const b of blockers){
-            const r=requiredX(q,b);
-            if(r<=0)continue;
-            raw.push(b.v.x-r-q.v.x,b.v.x+r-q.v.x);
-        }
-
-        let best=null;
-        const seen=new Set();
-        for(let delta of raw){
-            if(!Number.isFinite(delta))continue;
-            delta=Math.max(minDelta,Math.min(maxDelta,delta));
-            if(direction>0&&delta<boundary-1e-7)continue;
-            if(direction<0&&delta>boundary+1e-7)continue;
-            const key=delta.toFixed(12);
-            if(seen.has(key))continue;
-            seen.add(key);
-            if(!legalRowShift(row,delta,blockers))continue;
-            const cost=Math.abs(delta)*row.length;
-            if(!best||cost<best.cost-1e-10||(Math.abs(cost-best.cost)<=1e-10&&Math.abs(delta)<Math.abs(best.delta)-1e-10)){
-                best={delta,cost};
-            }
-        }
-        return best;
-    }
-
-    function residualRowOutsider(live){
-        const membership=equalHeightMembership(live);
+    function worstLivePair(live){
         let worst=null;
         for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
-            const a=live[i],b=live[j];
-            const d=physicalDistance(a,b);
-            if(d>=OVERLAP_LIMIT)continue;
-            const aChain=membership.get(a.ball.id)||null;
-            const bChain=membership.get(b.ball.id)||null;
-            if(!!aChain===!!bChain)continue;
-            const pinned=aChain?a:b;
-            const movable=aChain?b:a;
-            const row=aChain||bChain;
-            if(!worst||d<worst.d)worst={d,pinned,movable,row};
+            const d=physicalDistance(live[i],live[j]);
+            if(d<OVERLAP_LIMIT&&(!worst||d<worst.d))worst={i,j,d,a:live[i],b:live[j]};
         }
         return worst;
     }
@@ -242,67 +94,182 @@
         return{min,pair};
     }
 
+    function allowedIntervals(live,fixed){
+        const forbidden=[];
+        for(const support of fixed){
+            if(!support||support.ball.id===live.ball.id)continue;
+            const dy=(live.v.y-support.v.y)*H;
+            if(Math.abs(dy)>=MIN_DIST)continue;
+            const radial=2*Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
+            const lo=Math.max(0,support.v.x-radial);
+            const hi=Math.min(W2-1,support.v.x+radial);
+            if(lo<hi-EPS)forbidden.push({lo,hi});
+        }
+        if(!forbidden.length)return[{lo:0,hi:W2-1}];
+
+        forbidden.sort((a,b)=>a.lo-b.lo||a.hi-b.hi);
+        const merged=[];
+        for(const f of forbidden){
+            const last=merged[merged.length-1];
+            if(!last||f.lo>last.hi+EPS)merged.push({lo:f.lo,hi:f.hi});
+            else last.hi=Math.max(last.hi,f.hi);
+        }
+
+        const allowed=[];
+        let cursor=0;
+        for(const f of merged){
+            if(f.lo>cursor+EPS)allowed.push({lo:cursor,hi:f.lo});
+            cursor=Math.max(cursor,f.hi);
+        }
+        if(cursor<W2-1-EPS)allowed.push({lo:cursor,hi:W2-1});
+        if(!allowed.length){
+            if(merged[0].lo>EPS)return[{lo:0,hi:0}];
+            const last=merged[merged.length-1];
+            if(last.hi<W2-1-EPS)return[{lo:W2-1,hi:W2-1}];
+        }
+        return allowed;
+    }
+
+    function intervalDistance(d,x){
+        if(x<d.lo)return d.lo-x;
+        if(x>d.hi)return x-d.hi;
+        return 0;
+    }
+
+    function contactComponent(live,seedA,seedB){
+        const byId=new Map(live.map(q=>[q.ball.id,q]));
+        const ids=new Set([seedA.ball.id,seedB.ball.id]);
+        const queue=[seedA.ball.id,seedB.ball.id];
+        while(queue.length){
+            const id=queue.shift();
+            const a=byId.get(id);
+            if(!a)continue;
+            for(const b of live){
+                if(ids.has(b.ball.id))continue;
+                if(physicalDistance(a,b)<=CONTACT_LINK){ids.add(b.ball.id);queue.push(b.ball.id);}
+            }
+        }
+        return live.filter(q=>ids.has(q.ball.id));
+    }
+
+    function solveDomains(order,req,domains){
+        const n=order.length;
+        const x=new Array(n);
+        for(let j=0;j<n;j++){
+            const d=domains[j];
+            let need=d.lo;
+            for(let i=0;i<j;i++)if(req[i][j]>0)need=Math.max(need,x[i]+req[i][j]);
+            if(need>d.hi+FEAS_EPS)return null;
+            x[j]=need;
+        }
+
+        for(let i=n-1;i>=0;i--){
+            const d=domains[i];
+            let maxAllowed=d.hi;
+            for(let j=i+1;j<n;j++)if(req[i][j]>0)maxAllowed=Math.min(maxAllowed,x[j]-req[i][j]);
+            if(maxAllowed<d.lo-FEAS_EPS)return null;
+            const target=Math.max(d.lo,Math.min(maxAllowed,order[i].v.x));
+            if(target>x[i])x[i]=target;
+        }
+
+        for(let i=0;i<n;i++){
+            if(x[i]<domains[i].lo-FEAS_EPS||x[i]>domains[i].hi+FEAS_EPS)return null;
+            for(let j=i+1;j<n;j++)if(req[i][j]>0&&x[j]-x[i]<req[i][j]-FEAS_EPS)return null;
+        }
+        return x;
+    }
+
+    function solveComponent(component,fixed){
+        const order=component.slice().sort((a,b)=>a.v.x-b.v.x||a.x-b.x||a.ball.id-b.ball.id);
+        const n=order.length;
+        const corridors=order.map(q=>allowedIntervals(q,fixed).slice().sort((a,b)=>{
+            const da=intervalDistance(a,q.v.x),db=intervalDistance(b,q.v.x);
+            return da-db||a.lo-b.lo;
+        }));
+        if(corridors.some(q=>!q.length))return{ok:false,reason:"no_fixed_corridor",ids:order.map(q=>q.ball.id)};
+
+        const req=Array.from({length:n},()=>Array(n).fill(0));
+        for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredX(order[i],order[j]);
+
+        let best=null;
+        let combinations=0;
+        const domains=new Array(n);
+
+        function visit(k){
+            if(combinations>=MAX_COMBINATIONS)return;
+            if(k===n){
+                combinations++;
+                const x=solveDomains(order,req,domains);
+                if(!x)return;
+                let cost=0,logicalCost=0;
+                for(let i=0;i<n;i++){
+                    const d=x[i]-order[i].v.x;
+                    cost+=d*d;
+                    const l=x[i]-order[i].x;
+                    logicalCost+=l*l;
+                }
+                if(!best||cost<best.cost-1e-12||(Math.abs(cost-best.cost)<=1e-12&&logicalCost<best.logicalCost-1e-12)){
+                    best={x:x.slice(),cost,logicalCost,domains:domains.map(d=>({lo:d.lo,hi:d.hi}))};
+                }
+                return;
+            }
+            for(const d of corridors[k]){
+                domains[k]=d;
+                visit(k+1);
+                if(combinations>=MAX_COMBINATIONS)return;
+            }
+        }
+        visit(0);
+
+        if(!best)return{ok:false,reason:combinations>=MAX_COMBINATIONS?"combination_limit":"ordered_component_infeasible",ids:order.map(q=>q.ball.id),corridorCounts:corridors.map(q=>q.length),combinations};
+
+        let changed=0,maxShift=0,totalShift=0;
+        for(let i=0;i<n;i++){
+            const shift=Math.abs(best.x[i]-order[i].v.x);
+            if(shift>EPS){order[i].v.x=best.x[i];changed++;maxShift=Math.max(maxShift,shift);totalShift+=shift;}
+        }
+        return{ok:true,ids:order.map(q=>q.ball.id),changed,maxShift,totalShift,cost:best.cost,corridorCounts:corridors.map(q=>q.length),combinations};
+    }
+
     function repairResidualCrossings(g){
         if(!garbagePhase(g))return 0;
-        let moves=0;
-        let flips=0;
-        let rowTranslations=0;
-        let totalShift=0;
-        const movedIds=[];
-        const maxIter=256;
+        let totalChanged=0,totalShift=0,maxShift=0;
+        const solved=[];
+        let failure=null;
 
-        for(let iter=0;iter<maxIter;iter++){
+        for(let pass=0;pass<MAX_COMPONENT_PASSES;pass++){
             const all=boardEntries(g);
             const live=liveEntries(g,all);
-            if(live.length<2)break;
-            const issue=residualRowOutsider(live);
-            if(!issue)break;
-
-            const outsiderBlockers=all.filter(q=>q.ball.id!==issue.movable.ball.id);
-            const outsiderCandidate=nearestLegalPinnedCandidate(issue.movable,issue.pinned,outsiderBlockers);
-            const rowCandidate=nearestLegalRowShift(issue.row,issue.pinned,issue.movable,all);
-            if(!outsiderCandidate&&!rowCandidate)break;
-
-            const useRow=!!rowCandidate&&(!outsiderCandidate||rowCandidate.cost<outsiderCandidate.cost-1e-10);
-            if(useRow){
-                if(Math.abs(rowCandidate.delta)<=EPS)break;
-                for(const q of issue.row){
-                    q.v.x+=rowCandidate.delta;
-                    movedIds.push(q.ball.id);
-                    moves++;
-                }
-                totalShift+=Math.abs(rowCandidate.delta)*issue.row.length;
-                rowTranslations++;
-                continue;
-            }
-
-            const before=issue.movable.v.x;
-            const beforeSide=before<=issue.pinned.v.x?-1:1;
-            if(!outsiderCandidate||Math.abs(outsiderCandidate.x-before)<=EPS)break;
-            issue.movable.v.x=outsiderCandidate.x;
-            moves++;
-            totalShift+=Math.abs(outsiderCandidate.x-before);
-            if(outsiderCandidate.side!==beforeSide)flips++;
-            movedIds.push(issue.movable.ball.id);
+            const worst=worstLivePair(live);
+            if(!worst)break;
+            const component=contactComponent(live,worst.a,worst.b);
+            const fixed=fixedEntries(g,all);
+            const result=solveComponent(component,fixed);
+            solved.push({pass,seed:[worst.a.ball.id,worst.b.ball.id],seedDistance:worst.d,...result});
+            if(!result.ok||!result.changed){failure=result;break;}
+            totalChanged+=result.changed;
+            totalShift+=result.totalShift||0;
+            maxShift=Math.max(maxShift,result.maxShift||0);
         }
 
         const all=boardEntries(g);
         const live=liveEntries(g,all);
         const final=minIncomingDistance(all,live);
         const info={
-            moves,flips,rowTranslations,totalShift,
-            movedIds:[...new Set(movedIds)],
+            changed:totalChanged,totalShift,maxShift,
+            components:solved,
+            failure,
             finalMinDistance:Number.isFinite(final.min)?final.min:null,
             finalPair:final.pair,
             ok:!Number.isFinite(final.min)||final.min>=OVERLAP_LIMIT,
             at:Date.now()
         };
         window.__sixBallLastGarbageMinDisplacementRepair=info;
-        if(moves)window.__sixBallGarbageMinDisplacementRepairs=(window.__sixBallGarbageMinDisplacementRepairs||0)+moves;
+        if(totalChanged)window.__sixBallGarbageMinDisplacementRepairs=(window.__sixBallGarbageMinDisplacementRepairs||0)+totalChanged;
         if(window.__sixBallLastGarbageConstraintSolve&&typeof window.__sixBallLastGarbageConstraintSolve==="object"){
             window.__sixBallLastGarbageConstraintSolve.postMinDisplacement=info;
         }
-        return moves;
+        return totalChanged;
     }
 
     resolveVisualContacts=function(g){
@@ -312,5 +279,5 @@
     };
 
     window.__sixBallGarbageMinDisplacementCrossingV1=true;
-    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.2";
+    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.3";
 })();
