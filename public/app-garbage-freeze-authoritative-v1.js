@@ -18,7 +18,9 @@
  *       pileFlowEnd === pileFlowStart + pileFlowDuration
  * 8. The complete live garbage contact network is solved as one ordered set of
  *    horizontal constraints. Fixed supports define allowed horizontal corridors
- *    instead of contradictory one-sided bounds.
+ *    instead of contradictory one-sided bounds. The order is the instantaneous
+ *    analytic left-to-right order, so two trajectories may cross without a stale
+ *    logical destination order forcing the correction to the wrong side.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -165,6 +167,8 @@
     }
 
     function laneCompare(a,b){
+        const visualDx=a.v.x-b.v.x;
+        if(Math.abs(visualDx)>1e-7)return visualDx;
         if(a.x!==b.x)return a.x-b.x;
         const as=Number(a.ball.garbageSourceSeq),bs=Number(b.ball.garbageSourceSeq);
         if(Number.isFinite(as)&&Number.isFinite(bs)&&as!==bs)return as-bs;
@@ -425,5 +429,6 @@
     window.__sixBallGarbageSegmentEndInvariant=true;
     window.__sixBallGarbageConstraintNetworkFinal=true;
     window.__sixBallGarbageFixedCorridorSolver=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.16";
+    window.__sixBallGarbageInstantaneousLaneOrder=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.17";
 })();
