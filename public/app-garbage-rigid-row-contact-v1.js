@@ -1,14 +1,14 @@
 /* ============================================================
- * 6ball GARBAGE PHYSICAL CONTACT HOLD v3
+ * 6ball GARBAGE PHYSICAL CONTACT HOLD v3.1
  *
  * The main garbage contact network intentionally keeps each live ball on its
- * authored Y trajectory and repairs contact horizontally.  In a dense staggered
+ * authored Y trajectory and repairs contact horizontally. In a dense staggered
  * STRAIGHT landing that can become geometrically impossible: a moving upper ball
  * may already be tangent to a settled neighbour on one side and to a wall row on
  * the other, leaving no horizontal solution at the current Y.
  *
- * Real ball physics does not force the centre through that contact.  Downward
- * progress pauses.  This late GARBAGE-only layer therefore activates only when
+ * Real ball physics does not force the centre through that contact. Downward
+ * progress pauses. This late GARBAGE-only layer therefore activates only when
  * the authoritative horizontal network reports failure and gives live balls the
  * minimum upward-in-time contact hold needed to restore non-penetration.
  *
@@ -21,13 +21,13 @@
  * - same-height contacts remain the horizontal solver's responsibility.
  * - exact tangency is legal.
  * ============================================================ */
-(function installGarbagePhysicalContactHoldV3(){
+(function installGarbagePhysicalContactHoldV31(){
     if(typeof window==="undefined"||window.__sixBallGarbageRigidRowContactV1)return;
     if(typeof resolveVisualContacts!=="function")return;
 
     window.__sixBallGarbageRigidRowContactV1=true;
 
-    const baseResolveVisualContactsContactHoldV3=resolveVisualContacts;
+    const baseResolveVisualContactsContactHoldV31=resolveVisualContacts;
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const FRAME=typeof PHYSICS_FRAME==="number"?PHYSICS_FRAME:1/120;
     const MIN_DIST=1.0;
@@ -107,7 +107,7 @@
 
         for(const q of live){
             const prev=predictedPoint(g,q,prevTime);
-            // The correction is a contact hold, never an upward bounce.  One
+            // The correction is a contact hold, never an upward bounce. One
             // frame of authored travel is the maximum amount that may be undone.
             const lower=prev&&Number.isFinite(prev[1])?Math.min(0,prev[1]-q.v.y):0;
             const index=vars.length;
@@ -121,7 +121,17 @@
         if(Number.isFinite(c))list.push({a,b,c,meta});
     }
 
-    // Constraints use d[a] - d[b] <= c.  The final variable is fixed at zero.
+    function variableMeta(index,fixed,vars){
+        if(index===fixed)return{fixed:true,index};
+        const v=vars[index];
+        return{
+            fixed:false,index,id:v?.q?.ball?.id,
+            x:v?.q?.v?.x,y:v?.q?.v?.y,
+            lowerBound:v?.lower,upperBound:v?.upper,prevY:v?.prevY
+        };
+    }
+
+    // Constraints use d[a] - d[b] <= c. The final variable is fixed at zero.
     // Because d<=0, satisfying an upper-vs-lower contact naturally rewinds only
     // the upper body's downward progress.
     function buildConstraints(all,live,vars,byId){
@@ -149,7 +159,11 @@
             const dy=b.v.y-a.v.y;
             if(Math.abs(dy)<=SAME_Y_EPS){
                 if(physicalDistance(a,b)<LEGAL_DIST-SOLVE_TOL){
-                    sameHeightIllegal={ids:[a.ball.id,b.ball.id],distance:physicalDistance(a,b)};
+                    sameHeightIllegal={
+                        ids:[a.ball.id,b.ball.id],distance:physicalDistance(a,b),
+                        a:{id:a.ball.id,x:a.v.x,y:a.v.y,live:ai!==fixed},
+                        b:{id:b.ball.id,x:b.v.x,y:b.v.y,live:bi!==fixed}
+                    };
                 }
                 continue;
             }
@@ -158,9 +172,19 @@
                 // a is above b:
                 // (a.y + da) + req <= (b.y + db)
                 // da - db <= (b.y - a.y) - req
-                pushConstraint(constraints,ai,bi,dy-req,{kind:"vertical_pair",ids:[a.ball.id,b.ball.id],upper:a.ball.id,lower:b.ball.id,req});
+                pushConstraint(constraints,ai,bi,dy-req,{
+                    kind:"vertical_pair",ids:[a.ball.id,b.ball.id],upper:a.ball.id,lower:b.ball.id,
+                    req,currentDy:dy,currentDistance:physicalDistance(a,b),
+                    upperPoint:[a.v.x,a.v.y],lowerPoint:[b.v.x,b.v.y],
+                    upperVariable:variableMeta(ai,fixed,vars),lowerVariable:variableMeta(bi,fixed,vars)
+                });
             }else{
-                pushConstraint(constraints,bi,ai,(-dy)-req,{kind:"vertical_pair",ids:[a.ball.id,b.ball.id],upper:b.ball.id,lower:a.ball.id,req});
+                pushConstraint(constraints,bi,ai,(-dy)-req,{
+                    kind:"vertical_pair",ids:[a.ball.id,b.ball.id],upper:b.ball.id,lower:a.ball.id,
+                    req,currentDy:-dy,currentDistance:physicalDistance(a,b),
+                    upperPoint:[b.v.x,b.v.y],lowerPoint:[a.v.x,a.v.y],
+                    upperVariable:variableMeta(bi,fixed,vars),lowerVariable:variableMeta(ai,fixed,vars)
+                });
             }
         }
 
@@ -195,26 +219,38 @@
         const upper=vars.map(v=>v.upper).concat([0]);
         const pref=vars.map(v=>v.pref).concat([0]);
         const values=pref.slice();
-        let infeasible=false,passes=0;
+        let infeasible=false,passes=0,infeasibleConstraint=null;
 
         for(;passes<MAX_PASSES;passes++){
-            let maxViolation=0;
+            let maxPassViolation=0;
             for(const q of built.constraints){
                 const r=project(values,lower,upper,pref,q);
-                if(r===Infinity){infeasible=true;break;}
-                maxViolation=Math.max(maxViolation,r);
+                if(r===Infinity){
+                    infeasible=true;
+                    infeasibleConstraint={
+                        ...q,
+                        valueA:values[q.a],valueB:values[q.b],
+                        lowerA:lower[q.a],upperA:upper[q.a],
+                        lowerB:lower[q.b],upperB:upper[q.b],
+                        violation:(values[q.a]-values[q.b])-q.c
+                    };
+                    break;
+                }
+                maxPassViolation=Math.max(maxPassViolation,r);
             }
             values[fixed]=0;
-            if(infeasible||maxViolation<=SOLVE_TOL)break;
+            if(infeasible||maxPassViolation<=SOLVE_TOL)break;
         }
 
-        let maxViolation=0,failedConstraint=null;
+        let maxViolation=0,failedConstraint=infeasibleConstraint;
         if(!infeasible){
             for(const q of built.constraints){
                 const v=values[q.a]-values[q.b]-q.c;
                 if(v>maxViolation){maxViolation=v;failedConstraint=q;}
             }
             if(maxViolation>1e-6)infeasible=true;
+        }else if(infeasibleConstraint){
+            maxViolation=Math.max(0,infeasibleConstraint.violation||0);
         }
         return{ok:!infeasible,values:values.slice(0,vars.length),passes:passes+1,maxViolation,failedConstraint};
     }
@@ -242,7 +278,7 @@
     }
 
     resolveVisualContacts=function(g){
-        const result=baseResolveVisualContactsContactHoldV3(g);
+        const result=baseResolveVisualContactsContactHoldV31(g);
         if(!garbagePhase(g))return result;
 
         const baseState=window.__sixBallLastGarbageConstraintSolve||null;
@@ -272,8 +308,15 @@
             window.__sixBallLastGarbageRigidRowContactV1={
                 active:true,ok:false,reason:"one_frame_vertical_hold_infeasible",
                 before:before.min,beforePair:before.pair,passes:solved.passes,maxViolation:solved.maxViolation,
-                failedConstraint:solved.failedConstraint?.meta||null,
-                bounds:builtVars.vars.map(v=>({id:v.q.ball.id,lower:v.lower,prevY:v.prevY,y:v.q.v.y})),at:Date.now()
+                failedConstraint:solved.failedConstraint?{
+                    a:solved.failedConstraint.a,b:solved.failedConstraint.b,c:solved.failedConstraint.c,
+                    valueA:solved.failedConstraint.valueA,valueB:solved.failedConstraint.valueB,
+                    lowerA:solved.failedConstraint.lowerA,upperA:solved.failedConstraint.upperA,
+                    lowerB:solved.failedConstraint.lowerB,upperB:solved.failedConstraint.upperB,
+                    violation:solved.failedConstraint.violation,
+                    meta:solved.failedConstraint.meta||null
+                }:null,
+                bounds:builtVars.vars.map(v=>({id:v.q.ball.id,lower:v.lower,prevY:v.prevY,y:v.q.v.y,x:v.q.v.x})),at:Date.now()
             };
             return result;
         }
@@ -302,5 +345,5 @@
         return result;
     };
 
-    window.__sixBallGarbageRigidRowContactVersion="garbage-physical-contact-hold-v3";
+    window.__sixBallGarbageRigidRowContactVersion="garbage-physical-contact-hold-v3.1";
 })();
