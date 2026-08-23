@@ -15,6 +15,9 @@
  * 6. Continuous garbage motion stays simultaneous when safe, but a fresh wave
  *    is delayed to the earliest collision-free instant instead of being forced
  *    through an already moving garbage trajectory.
+ * 7. Fixed accumulated-pile contact has final priority over live/live visual
+ *    separation, so a later live-pair correction can never leave a garbage ball
+ *    penetrating an immutable pile support at the end of the frame.
  *
  * Logical destinations and fallPath geometry are never rewritten here. Contact
  * correction changes only the already-resolved visual centres for this frame.
@@ -226,15 +229,9 @@
         return moveA+moveB>EPS;
     }
 
-    function enforceGarbageContacts(g){
-        if(!garbagePhase(g))return 0;
-        const frozen=frozenIds(g.board);
+    function enforceFixedContacts(g,frozen,maxPasses){
         let corrections=0;
-
-        // Dense simultaneous packs can propagate a tiny correction through a
-        // long neighbour chain. Iterate to convergence with a hard finite cap;
-        // the GARBAGE set is small and this runs only during the garbage phase.
-        for(let pass=0;pass<96;pass++){
+        for(let pass=0;pass<maxPasses;pass++){
             let changed=false;
             const entries=boardEntries(g);
             const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
@@ -246,13 +243,44 @@
                 if(pushLiveFromFixed(moving,support)){changed=true;corrections++;}
             }
 
+            if(!changed)break;
+        }
+        return corrections;
+    }
+
+    function enforceGarbageContacts(g){
+        if(!garbagePhase(g))return 0;
+        const frozen=frozenIds(g.board);
+        let corrections=0;
+
+        // Live/live spacing is provisional. Immutable accumulated-pile support
+        // is resolved AFTER it in every pass so a pair correction cannot be the
+        // final operation that pushes a live garbage ball through fixed matter.
+        for(let pass=0;pass<96;pass++){
+            let changed=false;
+            const entries=boardEntries(g);
+            const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
+            const live=entries.filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball));
+
             for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
                 if(physicalDistance(live[i],live[j])>=MIN_DIST-1e-8)continue;
                 if(separateLivePair(live[i],live[j])){changed=true;corrections++;}
             }
 
+            for(const moving of live)for(const support of fixed){
+                if(moving.ball.id===support.ball.id)continue;
+                if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
+                if(pushLiveFromFixed(moving,support)){changed=true;corrections++;}
+            }
+
             if(!changed)break;
         }
+
+        // Hard final invariant: the frame may finish with unresolved live/live
+        // pressure, but never with an incoming garbage ball inside immutable
+        // accumulated pile. Scheduling resolves the remaining moving/moving
+        // conflict on subsequent frames without sacrificing fixed support.
+        corrections+=enforceFixedContacts(g,frozen,16);
 
         if(corrections)window.__sixBallGarbageFinalContactCorrections=(window.__sixBallGarbageFinalContactCorrections||0)+corrections;
         return corrections;
@@ -439,5 +467,6 @@
     window.__sixBallGarbageLiveVsLiveContactFinal=true;
     window.__sixBallGarbagePathYAuthoritative=true;
     window.__sixBallGarbageCollisionAwareScheduleFinal=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.8";
+    window.__sixBallGarbageFixedContactPriorityFinal=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.9";
 })();
