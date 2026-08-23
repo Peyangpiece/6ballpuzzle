@@ -16,27 +16,20 @@
  *    never inserts an internal wait between two segments of a ball trajectory.
  * 7. A scheduled segment has one clock interval only:
  *       pileFlowEnd === pileFlowStart + pileFlowDuration
- * 8. The complete live garbage contact network is solved as one ordered set of
- *    horizontal constraints. Fixed supports define allowed horizontal corridors
- *    instead of contradictory one-sided bounds. The order is the instantaneous
- *    analytic left-to-right order. If that total order is impossible in a dense
- *    crossing, a disjunctive pair solver may choose either side per contact while
- *    preserving the same analytic Y and every fixed-support corridor. A pair's
- *    current left/right side is preserved whenever that side is physically
- *    feasible, preventing dense contact chains from oscillating between mirrors.
- * 9. Exact tangency is legal. Dense STRAIGHT rows can span the full board only
- *    when neighbouring unit-radius contacts are allowed at exactly one physical
- *    diameter; no artificial positive spacing margin is added to contact radii.
- * 10. Before the non-convex live/live solve starts, every live garbage centre is
- *    first projected into its nearest fixed-support-safe corridor. Therefore the
- *    iterative pair solver can never preserve an initially illegal live/fixed
- *    penetration merely because that ball was not part of the worst live pair.
- * 11. Dense contact resolution propagates through the entire current contact
- *    network in alternating left-to-right and right-to-left sweeps. A wall
- *    correction therefore travels through a touching chain in one outer pass
- *    instead of bouncing between one worst pair at a time.
- * 12. If the dense disjunctive solver reaches its iteration budget, its best
- *    corridor-valid contact state is retained instead of being reset afterward.
+ * 8. Fixed supports define allowed horizontal corridors instead of contradictory
+ *    one-sided bounds. Exact tangency is legal; no artificial positive margin is
+ *    added to unit-radius contacts.
+ * 9. Before live/live solving, every live garbage centre is projected into its
+ *    nearest fixed-support-safe corridor.
+ * 10. Near-touching live balls are grouped into contact components. Each whole
+ *    component is projected in its instantaneous physical left-to-right order,
+ *    so a wall correction propagates through an entire touching row at once
+ *    rather than bouncing between one worst pair at a time.
+ * 11. If a component order cannot be represented by one convex corridor choice,
+ *    alternate fixed-safe corridors are tried. Only residual non-convex contacts
+ *    fall back to alternating full-network pair sweeps.
+ * 12. If a residual solver reaches its budget, its best corridor-valid state is
+ *    retained instead of being reset afterward.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -59,6 +52,7 @@
     const MIN_DIST=1.0;
     const EPS=1e-9;
     const SAFE_EPS=0;
+    const CONTACT_LINK_EPS=1e-6;
 
     function frozenIds(board){
         const out=new Set();
@@ -189,7 +183,7 @@
         const as=Number(a.ball.garbageSourceSeq),bs=Number(b.ball.garbageSourceSeq);
         if(Number.isFinite(as)&&Number.isFinite(bs)&&as!==bs)return as-bs;
         const ar=Number(a.ball.garbageSourceRole),br=Number(b.ball.garbageSourceRole);
-        if(Number.isFinite(ar)&&Number.isFinite(br)&&ar!==br)return ar-br;
+        if(Number.isFinite(ar)&&Number.isFinite(bs)&&ar!==br)return ar-br;
         if(a.y!==b.y)return a.y-b.y;
         return a.ball.id-b.ball.id;
     }
@@ -197,7 +191,7 @@
     function requiredLatticeX(a,b){
         const dy=(a.v.y-b.v.y)*H;
         if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return 0;
-        return 2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
+        return 2*Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
     }
 
     function allowedIntervals(live,fixed){
@@ -206,7 +200,7 @@
             if(!support||support.ball.id===live.ball.id)continue;
             const dy=(live.v.y-support.v.y)*H;
             if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)continue;
-            const radial=2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
+            const radial=2*Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
             const lo=Math.max(0,support.v.x-radial);
             const hi=Math.min(W2-1,support.v.x+radial);
             if(lo<hi-EPS)forbidden.push({lo,hi});
@@ -383,6 +377,97 @@
         return worst;
     }
 
+    function activeContactComponents(live){
+        const n=live.length;
+        const adj=Array.from({length:n},()=>[]);
+        for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+            const req=requiredLatticeX(live[i],live[j]);
+            if(req<=0)continue;
+            const sep=Math.abs(live[j].v.x-live[i].v.x);
+            if(sep>req+CONTACT_LINK_EPS)continue;
+            adj[i].push(j);adj[j].push(i);
+        }
+
+        const seen=new Set();
+        const components=[];
+        for(let i=0;i<n;i++){
+            if(seen.has(i)||!adj[i].length)continue;
+            const stack=[i],component=[];seen.add(i);
+            while(stack.length){
+                const q=stack.pop();component.push(q);
+                for(const next of adj[q])if(!seen.has(next)){seen.add(next);stack.push(next);}
+            }
+            if(component.length>1)components.push(component);
+        }
+        return components;
+    }
+
+    function solveOrderedComponent(live,corridors,component){
+        const order=component.slice().sort((ia,ib)=>laneCompare(live[ia],live[ib]));
+        const localLive=order.map(i=>live[i]);
+        const localCorridors=order.map(i=>corridors[i]);
+        const n=localLive.length;
+        const req=Array.from({length:n},()=>Array(n).fill(0));
+        for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredLatticeX(localLive[i],localLive[j]);
+
+        const preferred=localCorridors.map((list,i)=>preferredInterval(list,localLive[i]));
+        let x=solveConvexDomains(localLive,req,preferred);
+        let mode="preferred";
+        if(!x){
+            const alt=solveAcrossCorridors(localLive,req,localCorridors);
+            if(alt){x=alt.x;mode="alternate";}
+        }
+        if(!x)return{ok:false,order};
+
+        let changed=0,maxShift=0;
+        for(let i=0;i<n;i++){
+            const shift=Math.abs(x[i]-localLive[i].v.x);
+            if(shift>EPS){localLive[i].v.x=x[i];changed++;maxShift=Math.max(maxShift,shift);}
+        }
+        return{ok:true,mode,order,changed,maxShift};
+    }
+
+    function projectContactComponents(live,corridors){
+        const start=live.map(q=>q.v.x);
+        const passes=Math.max(16,Math.min(64,live.length*2));
+        let componentSolves=0,componentFailures=0;
+
+        for(let pass=0;pass<passes;pass++){
+            const components=activeContactComponents(live);
+            let passMoves=0;
+            for(const component of components){
+                const r=solveOrderedComponent(live,corridors,component);
+                if(!r.ok){componentFailures++;continue;}
+                componentSolves++;
+                passMoves+=r.changed;
+            }
+
+            const worst=unresolvedLivePair(live);
+            if(!worst){
+                const moved=displacementSummary(live,start);
+                return{ok:true,...moved,passes:pass+1,componentSolves,componentFailures};
+            }
+            if(passMoves===0){
+                const moved=displacementSummary(live,start);
+                return{
+                    ok:false,reason:"component_stalled",
+                    pair:[live[worst.i].ball.id,live[worst.j].ball.id],
+                    deficit:worst.deficit,...moved,passes:pass+1,
+                    componentSolves,componentFailures
+                };
+            }
+        }
+
+        const worst=unresolvedLivePair(live);
+        const moved=displacementSummary(live,start);
+        return{
+            ok:!worst,reason:worst?"component_limit":null,
+            pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,
+            deficit:worst?.deficit||0,...moved,passes,
+            componentSolves,componentFailures
+        };
+    }
+
     function currentXOrder(live,reverse=false){
         const order=live.map((q,i)=>i).sort((ia,ib)=>laneCompare(live[ia],live[ib]));
         if(reverse)order.reverse();
@@ -392,60 +477,39 @@
     function sweepDisjunctivePairs(live,corridors,reverse=false){
         const order=currentXOrder(live,reverse);
         let moves=0;
-        let unsolved=null;
-
         for(let ai=0;ai<order.length;ai++)for(let bj=ai+1;bj<order.length;bj++){
             const i=order[ai],j=order[bj];
             const a=live[i],b=live[j];
             const req=requiredLatticeX(a,b);
             if(req<=0||Math.abs(b.v.x-a.v.x)>=req-1e-7)continue;
             const candidate=bestPairCandidate(a,b,corridors[i],corridors[j],req);
-            if(!candidate){
-                if(!unsolved)unsolved={i,j,req};
-                continue;
-            }
+            if(!candidate)continue;
             if(Math.abs(a.v.x-candidate.ax)>EPS||Math.abs(b.v.x-candidate.bx)>EPS){
-                a.v.x=candidate.ax;
-                b.v.x=candidate.bx;
-                moves++;
+                a.v.x=candidate.ax;b.v.x=candidate.bx;moves++;
             }
         }
-        return{moves,unsolved};
+        return moves;
     }
 
     function solveDisjunctivePairs(live,corridors){
         const start=live.map(q=>q.v.x);
         let pairMoves=0;
         const passes=Math.max(64,Math.min(192,live.length*8));
-        let lastWorst=null;
-        let stagnant=0;
 
         for(let pass=0;pass<passes;pass++){
-            const forward=sweepDisjunctivePairs(live,corridors,false);
-            const backward=sweepDisjunctivePairs(live,corridors,true);
-            pairMoves+=forward.moves+backward.moves;
-
+            const moves=sweepDisjunctivePairs(live,corridors,false)+sweepDisjunctivePairs(live,corridors,true);
+            pairMoves+=moves;
             const worst=unresolvedLivePair(live);
             if(!worst){
                 const moved=displacementSummary(live,start);
-                return{ok:true,...moved,pairMoves,passes:pass+1,iterations:(pass+1)*2};
+                return{ok:true,...moved,pairMoves,passes:pass+1};
             }
-
-            const signature=[
-                live[worst.i].ball.id,live[worst.j].ball.id,
-                Math.round(worst.deficit*1e9)
-            ].join(":");
-            if(lastWorst===signature&&forward.moves+backward.moves===0)stagnant++;
-            else stagnant=0;
-            lastWorst=signature;
-
-            if(stagnant>=2){
+            if(moves===0){
                 const moved=displacementSummary(live,start);
                 return{
                     ok:false,reason:"sweep_stalled",
                     pair:[live[worst.i].ball.id,live[worst.j].ball.id],
-                    deficit:worst.deficit,...moved,pairMoves,
-                    passes:pass+1,iterations:(pass+1)*2
+                    deficit:worst.deficit,...moved,pairMoves,passes:pass+1
                 };
             }
         }
@@ -455,8 +519,7 @@
         return{
             ok:!worst,reason:worst?"sweep_limit":null,
             pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,
-            deficit:worst?.deficit||0,...moved,pairMoves,
-            passes,iterations:passes*2
+            deficit:worst?.deficit||0,...moved,pairMoves,passes
         };
     }
 
@@ -491,31 +554,54 @@
         }
 
         if(!x){
+            const fallbackStart=live.map(q=>q.v.x);
             const fixedClamp=clampToPreferredCorridors(live,corridors);
-            const disjunctive=solveDisjunctivePairs(live,corridors);
-            const totalChanged=Math.max(fixedClamp,disjunctive.changed||0);
-            if(disjunctive.ok){
+            const components=projectContactComponents(live,corridors);
+            let worst=unresolvedLivePair(live);
+
+            if(!worst){
+                const moved=displacementSummary(live,fallbackStart);
                 window.__sixBallLastGarbageConstraintSolve={
-                    ok:true,mode:"disjunctive_sweeps",live:n,fixed:fixed.length,
-                    fixedClamp,changed:totalChanged,maxShift:disjunctive.maxShift,
-                    pairMoves:disjunctive.pairMoves,passes:disjunctive.passes,
-                    iterations:disjunctive.iterations,
+                    ok:true,mode:"contact_components",live:n,fixed:fixed.length,
+                    fixedClamp,changed:moved.changed,maxShift:moved.maxShift,
+                    componentPasses:components.passes,
+                    componentSolves:components.componentSolves,
+                    componentFailures:components.componentFailures,
                     corridorCounts:corridors.map(q=>q.length),at:Date.now()
                 };
-                if(totalChanged)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+totalChanged;
-                return totalChanged;
+                if(moved.changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+moved.changed;
+                return moved.changed;
+            }
+
+            const disjunctive=solveDisjunctivePairs(live,corridors);
+            worst=unresolvedLivePair(live);
+            const moved=displacementSummary(live,fallbackStart);
+            if(!worst){
+                window.__sixBallLastGarbageConstraintSolve={
+                    ok:true,mode:"components_plus_sweeps",live:n,fixed:fixed.length,
+                    fixedClamp,changed:moved.changed,maxShift:moved.maxShift,
+                    componentPasses:components.passes,
+                    componentSolves:components.componentSolves,
+                    componentFailures:components.componentFailures,
+                    pairMoves:disjunctive.pairMoves, sweepPasses:disjunctive.passes,
+                    corridorCounts:corridors.map(q=>q.length),at:Date.now()
+                };
+                if(moved.changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+moved.changed;
+                return moved.changed;
             }
 
             window.__sixBallLastGarbageConstraintSolve={
-                ok:false,reason:disjunctive.reason||"corridor_infeasible",
-                retainedBest:true,fixedClamp,changed:totalChanged,maxShift:disjunctive.maxShift,
-                pair:disjunctive.pair||null,deficit:disjunctive.deficit||0,
-                pairMoves:disjunctive.pairMoves||0,passes:disjunctive.passes||0,
-                iterations:disjunctive.iterations||0,
+                ok:false,reason:disjunctive.reason||components.reason||"corridor_infeasible",
+                retainedBest:true,fixedClamp,changed:moved.changed,maxShift:moved.maxShift,
+                pair:[live[worst.i].ball.id,live[worst.j].ball.id],deficit:worst.deficit,
+                componentPasses:components.passes,
+                componentSolves:components.componentSolves,
+                componentFailures:components.componentFailures,
+                pairMoves:disjunctive.pairMoves||0,sweepPasses:disjunctive.passes||0,
                 corridorCounts:corridors.map(q=>q.length),at:Date.now()
             };
-            if(totalChanged)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+totalChanged;
-            return totalChanged;
+            if(moved.changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+moved.changed;
+            return moved.changed;
         }
 
         let changed=0;
@@ -599,11 +685,12 @@
     window.__sixBallGarbageConstraintNetworkFinal=true;
     window.__sixBallGarbageFixedCorridorSolver=true;
     window.__sixBallGarbageInstantaneousLaneOrder=true;
+    window.__sixBallGarbageContactComponentProjection=true;
     window.__sixBallGarbageDisjunctivePairFallback=true;
     window.__sixBallGarbagePairSideStable=true;
     window.__sixBallGarbageExactTangency=true;
     window.__sixBallGarbagePreClampFixedCorridors=true;
     window.__sixBallGarbageFullContactSweeps=true;
     window.__sixBallGarbageRetainBestDenseSolution=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.23";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.24";
 })();
