@@ -12,6 +12,9 @@
  * 5. Generic contact correction may not pull a live garbage centre away from
  *    its analytic fallPath in Y. Garbage contact separation is horizontal-only
  *    after the authoritative path position for the frame has been evaluated.
+ * 6. Continuous garbage motion stays simultaneous when safe, but a fresh wave
+ *    is delayed to the earliest collision-free instant instead of being forced
+ *    through an already moving garbage trajectory.
  *
  * Logical destinations and fallPath geometry are never rewritten here. Contact
  * correction changes only the already-resolved visual centres for this frame.
@@ -27,12 +30,15 @@
     const baseSettlePass=settlePass;
     const baseBoardHasIllegalFloat=typeof boardHasIllegalFloat==="function"?boardHasIllegalFloat:null;
     const baseResolveVisualContacts=typeof resolveVisualContacts==="function"?resolveVisualContacts:null;
+    const baseScheduleFreshPileFlowWave=typeof scheduleFreshPileFlowWave==="function"?scheduleFreshPileFlowWave:null;
+    const finalPileFlowWaveSafe=typeof pileFlowWaveSafe==="function"?pileFlowWaveSafe:null;
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const EPS=1e-9;
     // Keep a tiny sub-pixel margin so a later neighbouring projection cannot
     // leave the just-resolved pair numerically inside the 0.9995 hard gate.
     const SAFE_EPS=5e-4;
+    const SCHEDULE_STEP=typeof PILE_FLOW_SCHEDULE_STEP==="number"?PILE_FLOW_SCHEDULE_STEP:1/240;
 
     function frozenIds(board){
         const out=new Set();
@@ -252,6 +258,133 @@
         return corrections;
     }
 
+    function groupFreshBySeq(fresh){
+        const map=new Map();
+        for(const q of fresh||[]){
+            const seq=Number.isFinite(q?.seq)?q.seq:0;
+            if(!map.has(seq))map.set(seq,[]);
+            map.get(seq).push(q);
+        }
+        return[...map.entries()].sort((a,b)=>a[0]-b[0]);
+    }
+
+    function previousScheduledEnd(ball,seg,base){
+        let earliest=base;
+        const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
+        const index=path.indexOf(seg);
+        if(index<=0)return earliest;
+        for(let i=index-1;i>=0;i--){
+            const prev=path[i];
+            if(Number.isFinite(prev?.pileFlowEnd)){
+                earliest=Math.max(earliest,prev.pileFlowEnd);
+                break;
+            }
+        }
+        return earliest;
+    }
+
+    function latestScheduledEnd(g){
+        let end=Math.max(0,Number(g?.pileFlowClock)||0);
+        if(!g?.board)return end;
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            if(!ball?.fallPath)continue;
+            for(const seg of ball.fallPath){
+                if(Number.isFinite(seg?.pileFlowEnd))end=Math.max(end,seg.pileFlowEnd);
+            }
+        }
+        return end;
+    }
+
+    if(baseScheduleFreshPileFlowWave&&finalPileFlowWaveSafe){
+        scheduleFreshPileFlowWave=function(g,fresh){
+            // First let the continuous-gravity layer attach its velocity metadata
+            // and nominal durations. We only replace the timestamps it chose.
+            const r=baseScheduleFreshPileFlowWave(g,fresh);
+            if(!garbagePhase(g)||!Array.isArray(fresh)||!fresh.length)return r;
+
+            const base=Math.max(0,Number(g.pileFlowClock)||0);
+            const groups=groupFreshBySeq(fresh);
+
+            // The continuous scheduler has already timestamped every fresh
+            // segment. Clear those timestamps so later groups do not appear as
+            // physical obstacles while an earlier group is finding its earliest
+            // safe start. Metadata such as __garbageContinuous is preserved.
+            for(const q of fresh){
+                const seg=q?.seg;
+                if(!seg)continue;
+                delete seg.pileFlowStart;
+                delete seg.pileFlowDuration;
+                delete seg.pileFlowEnd;
+            }
+
+            let delayedGroups=0;
+            let safetyChecks=0;
+            let fallbackGroups=0;
+
+            for(const[,entries]of groups){
+                const segs=entries.map(q=>q?.seg).filter(Boolean);
+                if(!segs.length)continue;
+
+                const duration=Math.max(
+                    1/120,
+                    ...segs.map(seg=>Number(seg?._pileNominalDuration)||1/120)
+                );
+
+                let earliest=base;
+                for(const q of entries){
+                    if(!q?.ball||!q?.seg)continue;
+                    earliest=Math.max(earliest,previousScheduledEnd(q.ball,q.seg,base));
+                }
+
+                // Once every already-scheduled path has ended, this wave cannot
+                // collide with an older moving trajectory. Search only up to that
+                // finite point; normally the first candidate is already safe.
+                const fallback=Math.max(earliest,latestScheduledEnd(g));
+                let start=earliest;
+                let safe=false;
+                let attempts=0;
+                const maxAttempts=4096;
+
+                while(start<=fallback+SCHEDULE_STEP+1e-9&&attempts<maxAttempts){
+                    safetyChecks++;
+                    attempts++;
+                    if(finalPileFlowWaveSafe(g,segs,start,duration)){
+                        safe=true;
+                        break;
+                    }
+                    start+=SCHEDULE_STEP;
+                }
+
+                if(!safe){
+                    fallbackGroups++;
+                    start=fallback+SCHEDULE_STEP;
+                    for(const seg of segs){
+                        seg.pileFlowStart=start;
+                        seg.pileFlowDuration=duration;
+                        seg.pileFlowEnd=start+duration;
+                    }
+                }
+
+                if(start>earliest+1e-9)delayedGroups++;
+
+                for(const seg of segs){
+                    seg.pileFlowWaveDelay=Math.max(0,start-base);
+                    seg.pileFlowGarbageContinuous=true;
+                }
+            }
+
+            window.__sixBallLastGarbageCollisionAwareSchedule={
+                groups:groups.length,
+                delayedGroups,
+                safetyChecks,
+                fallbackGroups,
+                at:Date.now()
+            };
+            return r;
+        };
+    }
+
     hexPhysContactEntries=function(board,excluded=new Set()){
         const blocked=new Set(excluded||[]);
         for(const id of frozenIds(board))blocked.add(id);
@@ -305,5 +438,6 @@
     window.__sixBallGarbageLiveVsFixedContactFinal=true;
     window.__sixBallGarbageLiveVsLiveContactFinal=true;
     window.__sixBallGarbagePathYAuthoritative=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.7";
+    window.__sixBallGarbageCollisionAwareScheduleFinal=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.8";
 })();
