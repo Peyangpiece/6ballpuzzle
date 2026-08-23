@@ -24,6 +24,9 @@
  *    preserving the same analytic Y and every fixed-support corridor. A pair's
  *    current left/right side is preserved whenever that side is physically
  *    feasible, preventing dense contact chains from oscillating between mirrors.
+ * 9. Exact tangency is legal. Dense STRAIGHT rows can span the full board only
+ *    when neighbouring unit-radius contacts are allowed at exactly one physical
+ *    diameter; no artificial positive spacing margin is added to contact radii.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -45,7 +48,7 @@
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const EPS=1e-9;
-    const SAFE_EPS=1e-3;
+    const SAFE_EPS=0;
 
     function frozenIds(board){
         const out=new Set();
@@ -527,5 +530,6 @@
     window.__sixBallGarbageInstantaneousLaneOrder=true;
     window.__sixBallGarbageDisjunctivePairFallback=true;
     window.__sixBallGarbagePairSideStable=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.19";
+    window.__sixBallGarbageExactTangency=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.20";
 })();
