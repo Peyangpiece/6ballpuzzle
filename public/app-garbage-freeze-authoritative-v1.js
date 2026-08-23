@@ -16,9 +16,14 @@
  *    never inserts an internal wait between two segments of a ball trajectory.
  * 7. Fixed accumulated-pile contact has final priority. Live/live correction
  *    uses only horizontal clearance reachable without crossing a fixed support.
+ * 8. A scheduled segment has one clock interval only:
+ *       pileFlowEnd === pileFlowStart + pileFlowDuration
+ *    Stale extended end-times may not hold a ball at an internal contact cell
+ *    after its physical segment duration has already completed.
  *
- * Logical destinations and fallPath geometry/timing are never rewritten here.
- * Contact correction changes only already-resolved visual centres for the frame.
+ * Logical destinations, pivots, segment starts and segment durations are not
+ * rewritten here. Only impossible stale end metadata and per-frame visual
+ * contact positions are repaired.
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallGarbageFreezeAuthoritativeV1)return;
@@ -31,6 +36,8 @@
     const baseSettlePass=settlePass;
     const baseBoardHasIllegalFloat=typeof boardHasIllegalFloat==="function"?boardHasIllegalFloat:null;
     const baseResolveVisualContacts=typeof resolveVisualContacts==="function"?resolveVisualContacts:null;
+    const baseMarkPileFlowPaths=typeof markPileFlowPaths==="function"?markPileFlowPaths:null;
+    const baseScheduleFreshPileFlowWave=typeof scheduleFreshPileFlowWave==="function"?scheduleFreshPileFlowWave:null;
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const EPS=1e-9;
@@ -87,6 +94,36 @@
             if(ball&&v&&Number.isFinite(v.x)&&Number.isFinite(v.y))out.push({ball,v,x,y});
         }
         return out;
+    }
+
+    function normalizeGarbageSegmentEnds(g){
+        if(!garbagePhase(g))return 0;
+        let fixed=0;
+
+        for(const q of boardEntries(g)){
+            const ball=q.ball;
+            if(!ball?.isGarbage||!Array.isArray(ball.fallPath))continue;
+
+            for(const seg of ball.fallPath){
+                if(!seg)continue;
+                const start=Number(seg.pileFlowStart);
+                const duration=Number(seg.pileFlowDuration);
+                if(!Number.isFinite(start)||!Number.isFinite(duration)||duration<0)continue;
+
+                const exactEnd=start+duration;
+                const oldEnd=Number(seg.pileFlowEnd);
+                if(!Number.isFinite(oldEnd)||Math.abs(oldEnd-exactEnd)>1e-9){
+                    seg.pileFlowEnd=exactEnd;
+                    fixed++;
+                }
+            }
+        }
+
+        if(fixed){
+            window.__sixBallGarbageSegmentEndRepairs=(window.__sixBallGarbageSegmentEndRepairs||0)+fixed;
+            window.__sixBallLastGarbageSegmentEndRepair={fixed,at:Date.now()};
+        }
+        return fixed;
     }
 
     function liveGarbageEntries(g){
@@ -306,6 +343,22 @@
         return corrections;
     }
 
+    if(baseScheduleFreshPileFlowWave){
+        scheduleFreshPileFlowWave=function(g,fresh){
+            const result=baseScheduleFreshPileFlowWave(g,fresh);
+            normalizeGarbageSegmentEnds(g);
+            return result;
+        };
+    }
+
+    if(baseMarkPileFlowPaths){
+        markPileFlowPaths=function(g,...rest){
+            const result=baseMarkPileFlowPaths(g,...rest);
+            normalizeGarbageSegmentEnds(g);
+            return result;
+        };
+    }
+
     hexPhysContactEntries=function(board,excluded=new Set()){
         const blocked=new Set(excluded||[]);
         for(const id of frozenIds(board))blocked.add(id);
@@ -337,6 +390,9 @@
         resolveVisualContacts=function(g){
             if(!garbagePhase(g))return baseResolveVisualContacts(g);
 
+            // Defensive invariant check. Normally all segment ends were already
+            // repaired when markPileFlowPaths/scheduleFreshPileFlowWave returned.
+            normalizeGarbageSegmentEnds(g);
             normalizeReceivingGarbage(g);
             const free=captureLiveFreePositions(g);
             const r=baseResolveVisualContacts(g);
@@ -354,7 +410,8 @@
     window.__sixBallGarbageLiveVsLiveContactFinal=true;
     window.__sixBallGarbagePathYAuthoritative=true;
     window.__sixBallGarbageContinuousTimingPreserved=true;
+    window.__sixBallGarbageSegmentEndInvariant=true;
     window.__sixBallGarbageFixedContactPriorityFinal=true;
     window.__sixBallGarbageFixedAwareLiveSeparation=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.11";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.12";
 })();
