@@ -24,7 +24,8 @@ const runtimeNames=[
   "app-slope-upconvex-authoritative-v3.js","app-intentional-hexagon-stability-v1.js",
   "app-rigidity-resolver-authoritative-v3.js","app-upconvex-contact-priority-v1.js",
   "app-upconvex-pocket-capture-v1.js","app-upconvex-rigid-until-contact-v1.js",
-  "app-collapse-timing-authoritative-v2.js","app-runtime-performance-v3.js"
+  "app-collapse-timing-authoritative-v2.js","app-runtime-performance-v3.js",
+  "app-garbage-freeze-authoritative-v1.js"
 ];
 
 for(const name of runtimeNames){
@@ -91,6 +92,7 @@ expect(window.__hexGarbageUnitLocalTimeline===true,"unit-local garbage timeline 
 expect(window.__hexGarbageNoChainFreeze===true,"deep-settle layer missing");
 expect(window.__sixBallGarbageContinuousV1===true,"continuous garbage layer missing");
 expect(window.__sixBallGarbageCollisionReservationV1===true,"garbage collision reservation missing");
+expect(window.__sixBallGarbagePreBatchFreezeFinal===true,"final pre-batch garbage freeze guard missing");
 
 const shapes=["PYRAMID","HEXAGON","STRAIGHT"];
 const reports=[];
@@ -123,9 +125,6 @@ for(let type=1;type<=6;type++)for(let variant=0;variant<3;variant++){
 
     const md=minDistanceAgainstBoard(g,originalIds);
     if(md.min<minDistance){minDistance=md.min;minPair=md.pair;}
-    // Production invariant: no visually meaningful penetration. 0.9995 leaves
-    // only sub-pixel floating tolerance while rejecting the previously observed
-    // 0.996-class chain-settle overlap.
     expect(!Number.isFinite(md.min)||md.min>=0.9995,"production garbage overlap: "+JSON.stringify({type,variant,frame,d:md.min,pair:md.pair}));
 
     const incoming=currentGarbage(g,originalIds);
