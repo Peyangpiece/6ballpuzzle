@@ -11,7 +11,7 @@ const files=[
   "app-garbage-render-overlap-guard.js","app-runtime-performance.js","app-physics-safety-invariants.js",
   "app-mass-motion-safety.js","app-gravity-priority-v1.js","app-garbage-performance-v1.js",
   "app-post-clear-two-stage-v1.js","app-simultaneous-collapse-v1.js","app-garbage-continuous-v1.js",
-  "app-contact-separation-v1.js","app-floor-bridge-collapse-v1.js","app-lattice-finalize-v2.js",
+  "app-contact-separation-v1.js","app-garbage-temporal-safety-v2.js","app-floor-bridge-collapse-v1.js","app-lattice-finalize-v2.js",
   "app-coherent-collapse-v1.js","app-wall-boundary-authoritative-v1.js",
   "app-slope-upconvex-authoritative-v3.js","app-intentional-hexagon-stability-v1.js",
   "app-rigidity-resolver-authoritative-v3.js","app-upconvex-contact-priority-v1.js",
@@ -24,7 +24,7 @@ const checks=String.raw`
 function put(g,x,y,c=0){if(!valid(x,y)||g.board[y][x])return null;const b=mkBall(g,c);g.board[y][x]=b;noteBoardCell(g.board,y,b);setVis(g,b,x,y,0);return b;}
 function entries(g){const a=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(b&&v)a.push({b,x,y,v});}return a;}
 function dist(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*HEX_ROW_H);}
-function segSummary(seg){if(!seg)return null;return{from:seg.from,to:seg.to,kind:seg.kind,pivot:seg.pivot,topPivot:seg.topPivot,followSupportIds:seg.followSupportIds,movingSupportId:seg.movingSupportId,start:seg.pileFlowStart,end:seg.pileFlowEnd,duration:seg.pileFlowDuration,seq:seg.motionSeq,originalSeq:seg.pileFlowOriginalSeq,temporalSeparated:!!seg.pileFlowTemporalSeparated,waveDelay:seg.pileFlowWaveDelay,continuous:!!seg.__garbageContinuous};}
+function segSummary(seg){if(!seg)return null;return{from:seg.from,to:seg.to,kind:seg.kind,pivot:seg.pivot,topPivot:seg.topPivot,followSupportIds:seg.followSupportIds,movingSupportId:seg.movingSupportId,start:seg.pileFlowStart,end:seg.pileFlowEnd,duration:seg.pileFlowDuration,seq:seg.motionSeq,originalSeq:seg.pileFlowOriginalSeq,temporalSeparated:!!seg.pileFlowTemporalSeparated,waveDelay:seg.pileFlowWaveDelay,safeV2:!!seg.__garbageTemporalSafeV2,deferredV2:!!seg.__garbageTemporalDeferredV2,continuous:!!seg.__garbageContinuous};}
 function ballSummary(q){return{id:q.b.id,isGarbage:!!q.b.isGarbage,type:q.b.garbageType||null,sourceSeq:q.b.garbageSourceSeq,sourceRole:q.b.garbageSourceRole,splitReleased:!!q.b.garbageSplitReleased,frozen:!!q.b.garbagePhaseFrozen,cell:[q.x,q.y],vis:[q.v.x,q.v.y],vy:q.v.vy,speed:q.v.motionSpeed,pileFlow:!!q.v.pileFlow,pathLen:Array.isArray(q.b.fallPath)?q.b.fallPath.length:0,path:(q.b.fallPath||[]).slice(0,5).map(segSummary)};}
 function worst(g,originalIds){
  const all=entries(g),incoming=new Set(all.filter(q=>q.b.isGarbage&&!originalIds.has(q.b.id)).map(q=>q.b.id));let best=null;
@@ -56,6 +56,8 @@ function report(g,originalIds,frame,stage,best){
  const q={
    frame,stage,d:best.d,pileClock:g.pileFlowClock,garbageClock:g.garbageClock,
    pending:pendingFallPathCount(g),moving:[...(g._visualMovingIds||[])],
+   temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,
+   deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null,
    temporalSchedule:window.__sixBallLastGarbageTemporalScheduleV1||null,
    presentationSchedule:window.__sixBallLastGarbagePresentationSchedule||null,
    continuousSchedule:window.__sixBallLastGarbageSchedule||null,
@@ -85,7 +87,7 @@ for(let frame=0;frame<500;frame++){
   const p=worst(g,originalIds);if(p&&p.d<0.9995){report(g,originalIds,frame,"after-updateGarbagePacks",p);throw new Error("garbage overlap introduced after pack update at frame "+frame+" d="+p.d);}
   if(garbageBatchDone(g))break;
 }
-console.log("garbage production overlap diagnostic PASS "+JSON.stringify({firstTransient:firstTransient&&{frame:firstTransient.frame,d:firstTransient.d,a:firstTransient.a.id,b:firstTransient.b.id}}));
+console.log("garbage production overlap diagnostic PASS "+JSON.stringify({firstTransient:firstTransient&&{frame:firstTransient.frame,d:firstTransient.d,a:firstTransient.a.id,b:firstTransient.b.id},temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null}));
 `;
 const context={React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,Image:function(){this.complete=false;this.naturalWidth=0;},Math,Map,Set,WeakMap,Array,Number,Object,String,Boolean,JSON,Date,setTimeout(){return 0},clearTimeout(){},performance:{now(){return 0}},localStorage:{getItem(){return null},setItem(){}},document:{getElementById(){return null}},ResizeObserver:function(){this.observe=()=>{};this.disconnect=()=>{};}};
 vm.runInNewContext(runtime+checks,context,{timeout:180000});
