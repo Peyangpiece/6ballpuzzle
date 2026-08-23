@@ -5,14 +5,14 @@
  *
  * The authoritative garbage solver keeps equal-height incoming rows coherent.
  * In one dense crossing case an outsider can become trapped between a tangent
- * fixed support and a wall-anchored live row.  Preserving the outsider's
- * current side then has no legal infinitesimal correction: the nearest legal
- * solution is to pass the outsider to the opposite side of the pinned row.
+ * fixed support and a wall-anchored live row. Preserving the outsider's current
+ * side then has no legal infinitesimal correction: the nearest legal solution
+ * is to pass the outsider to the opposite side of the pinned row.
  *
  * This layer runs AFTER app-garbage-freeze-authoritative-v1.js and changes only
- * visual X positions of live incoming garbage during GARBAGE.  Logical cells,
+ * visual X positions of live incoming garbage during GARBAGE. Logical cells,
  * Y/path timing, segment metadata, the frozen pile and ordinary ball physics are
- * untouched.  For a residual row/outsider overlap it evaluates BOTH sides and
+ * untouched. For a residual row/outsider overlap it evaluates BOTH sides and
  * chooses the globally legal candidate with the smallest horizontal movement.
  * Exact tangency remains legal.
  * ============================================================ */
@@ -26,6 +26,7 @@
     const OVERLAP_LIMIT=0.9995;
     const LEGAL_LIMIT=0.999999;
     const SAME_Y_EPS=1e-8;
+    const ROW_GAP_MAX=2.01;
     const EPS=1e-9;
 
     function garbagePhase(g){return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&g.board&&g.vis);}
@@ -59,24 +60,42 @@
     function equalHeightMembership(live){
         const order=live.slice().sort((a,b)=>a.v.y-b.v.y||a.v.x-b.v.x||a.ball.id-b.ball.id);
         const membership=new Map();
-        let group=[];
-        let anchor=null;
-        function flush(){
-            if(group.length>1){
-                const ids=group.map(q=>q.ball.id);
-                for(const q of group)membership.set(q.ball.id,ids);
-            }
-            group=[];anchor=null;
+        const buckets=[];
+        let bucket=[];
+        let anchorY=null;
+
+        function flushBucket(){
+            if(bucket.length)buckets.push(bucket);
+            bucket=[];anchorY=null;
         }
+
         for(const q of order){
-            if(anchor===null||Math.abs(q.v.y-anchor)<=SAME_Y_EPS){
-                group.push(q);
-                if(anchor===null)anchor=q.v.y;
+            if(anchorY===null||Math.abs(q.v.y-anchorY)<=SAME_Y_EPS){
+                bucket.push(q);
+                if(anchorY===null)anchorY=q.v.y;
             }else{
-                flush();group=[q];anchor=q.v.y;
+                flushBucket();bucket=[q];anchorY=q.v.y;
             }
         }
-        flush();
+        flushBucket();
+
+        function markChain(chain){
+            if(chain.length<2)return;
+            const ids=chain.map(q=>q.ball.id);
+            for(const q of chain)membership.set(q.ball.id,ids);
+        }
+
+        for(const sameY of buckets){
+            sameY.sort((a,b)=>a.v.x-b.v.x||a.ball.id-b.ball.id);
+            let chain=[];
+            for(const q of sameY){
+                if(chain.length&&q.v.x-chain[chain.length-1].v.x>ROW_GAP_MAX){
+                    markChain(chain);chain=[];
+                }
+                chain.push(q);
+            }
+            markChain(chain);
+        }
         return membership;
     }
 
@@ -221,5 +240,5 @@
     };
 
     window.__sixBallGarbageMinDisplacementCrossingV1=true;
-    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.0";
+    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.1";
 })();
