@@ -6,20 +6,22 @@
  * must not become motion candidates until the whole batch has settled.
  *
  * app-garbage-normal-physics establishes that invariant early in the load
- * order. Later global gravity layers replace both hexPhysContactEntries and
- * hexPhysResolveEvent, including a rescue path that can otherwise select an
- * unsupported frozen pile ball directly. This final guard re-applies the same
- * exclusion to the FINAL production resolver without changing incoming
+ * order. Later global gravity layers replace contact/event resolution AND
+ * settlePass itself, including last-resort gravity fallbacks that can otherwise
+ * select an unsupported frozen pile ball directly. This final guard re-applies
+ * the phase boundary to the FINAL production stack without changing incoming
  * garbage physics.
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallGarbageFreezeAuthoritativeV1)return;
-    if(typeof hexPhysContactEntries!=="function"||typeof hexPhysResolveEvent!=="function")return;
+    if(typeof hexPhysContactEntries!=="function"||typeof hexPhysResolveEvent!=="function"||typeof settlePass!=="function")return;
 
     window.__sixBallGarbageFreezeAuthoritativeV1=true;
 
     const baseContactEntries=hexPhysContactEntries;
     const baseResolveEvent=hexPhysResolveEvent;
+    const baseSettlePass=settlePass;
+    const baseBoardHasIllegalFloat=typeof boardHasIllegalFloat==="function"?boardHasIllegalFloat:null;
 
     function frozenIds(board){
         const out=new Set();
@@ -48,6 +50,29 @@
         return out;
     }
 
+    function withFrozenHeld(board,fn){
+        const ids=frozenIds(board);
+        if(!ids.size)return{ids,value:fn()};
+
+        // Every late gravity rescue/fallback already treats garbageBubbleHold as
+        // an absolute no-motion marker. Borrow it only for the duration of the
+        // resolver call, then restore the exact prior property state.
+        const held=[];
+        for(const ball of frozenBalls(board,ids)){
+            held.push([ball,Object.prototype.hasOwnProperty.call(ball,"garbageBubbleHold"),ball.garbageBubbleHold]);
+            ball.garbageBubbleHold=true;
+        }
+
+        try{
+            return{ids,value:fn()};
+        }finally{
+            for(const[ball,had,value]of held){
+                if(had)ball.garbageBubbleHold=value;
+                else delete ball.garbageBubbleHold;
+            }
+        }
+    }
+
     hexPhysContactEntries=function(board,excluded=new Set()){
         const blocked=new Set(excluded||[]);
         for(const id of frozenIds(board))blocked.add(id);
@@ -55,34 +80,23 @@
     };
 
     hexPhysResolveEvent=function(board,preview=false){
-        const ids=frozenIds(board);
-        if(!ids.size)return baseResolveEvent(board,preview);
-
-        // Gravity Priority v2's rescue scan is intentionally broader than
-        // hexPhysNaturalMotion and only skips garbageBubbleHold. Temporarily
-        // applying that existing "do not move" marker to the immutable
-        // pre-batch snapshot prevents the rescue path from bypassing the phase
-        // freeze. The balls remain present in occupancy and continue to act as
-        // real supports/collision obstacles.
-        const held=[];
-        for(const ball of frozenBalls(board,ids)){
-            held.push([ball,Object.prototype.hasOwnProperty.call(ball,"garbageBubbleHold"),ball.garbageBubbleHold]);
-            ball.garbageBubbleHold=true;
-        }
-
-        let accepted=[];
-        try{
-            accepted=baseResolveEvent(board,preview)||[];
-        }finally{
-            for(const[ball,had,value]of held){
-                if(had)ball.garbageBubbleHold=value;
-                else delete ball.garbageBubbleHold;
-            }
-        }
-
+        const r=withFrozenHeld(board,()=>baseResolveEvent(board,preview)||[]);
         // Defensive final barrier for any future direct-rescue helper.
-        return accepted.filter(p=>p?.ball&&!ids.has(p.ball.id));
+        return (r.value||[]).filter(p=>p?.ball&&!r.ids.has(p.ball.id));
     };
+
+    settlePass=function(board,preview=false){
+        // Gravity Priority v5 has a private findFinalGravity fallback inside
+        // settlePass, so guarding only hexPhysResolveEvent is insufficient.
+        // Hold the immutable snapshot across the complete settle pass.
+        return withFrozenHeld(board,()=>baseSettlePass(board,preview)).value;
+    };
+
+    if(baseBoardHasIllegalFloat){
+        boardHasIllegalFloat=function(board){
+            return withFrozenHeld(board,()=>baseBoardHasIllegalFloat(board)).value;
+        };
+    }
 
     if(typeof unstableFrozenBalls==="function"){
         const baseUnstableFrozenBalls=unstableFrozenBalls;
@@ -93,5 +107,5 @@
     }
 
     window.__sixBallGarbagePreBatchFreezeFinal=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-freeze-authoritative-v1.1";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-freeze-authoritative-v1.2";
 })();
