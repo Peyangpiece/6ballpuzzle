@@ -1,17 +1,27 @@
 /* ============================================================
- * 6ball GARBAGE DEEP CONTACT HOLD v1
+ * 6ball GARBAGE DEEP CONTACT RESCUE v2
  *
  * Last-resort GARBAGE-only contact projection for dense staggered landings.
- * The ordinary horizontal contact solver and persistent one-frame hold run
- * first.  This layer activates only if an overlap still survives afterwards.
+ * The ordinary horizontal solver, monotonic guard and persistent path-time hold
+ * run first. This layer activates only when a real visual overlap still survives.
  *
- * Physics rule: an incoming live garbage ball may lose downward progress when
- * another ball blocks it.  A contact chain can therefore hold several live
- * balls upward together.  This layer never moves the frozen/existing pile,
- * never changes logical cells, fallPath data, pivots/supports or X, and never
- * pushes a ball farther downward than its authored trajectory.
+ * Resolution order:
+ *  1. Prefer physical vertical contact hold when the visually upper body is a
+ *     live incoming garbage ball.
+ *  2. If vertical hold cannot resolve the contact (notably live-lower against a
+ *     fixed/completed upper ball), perform a minimum-displacement horizontal
+ *     rescue. The rescue preserves live-ball X order and can propagate through a
+ *     live contact chain, but never moves a fixed/frozen/completed body.
+ *
+ * Invariants:
+ * - existing/frozen/completed bodies never move;
+ * - logical cells, fallPath data, pivots/supports and authored times never change;
+ * - vertical rescue only removes downward progress;
+ * - horizontal rescue moves only live garbage and remains inside board bounds;
+ * - no live-ball X-order inversion is permitted;
+ * - a trial is committed only when every incoming contact is legal afterwards.
  * ============================================================ */
-(function installGarbageDeepContactHoldV1(){
+(function installGarbageDeepContactRescueV2(){
     if(typeof window==="undefined"||window.__sixBallGarbageDeepContactHoldV1)return;
     if(typeof resolveVisualContacts!=="function")return;
 
@@ -22,8 +32,11 @@
     const LEGAL_DIST=.9995;
     const TARGET_DIST=.9998;
     const EPS=1e-9;
-    const MAX_PASSES=96;
+    const X_MARGIN=2e-6;
+    const MAX_PASSES=128;
+    const MAX_HORIZONTAL_PASSES=256;
     const MAX_TOTAL_HOLD_ROWS=2.25;
+    const MAX_HORIZONTAL_SHIFT_PER_BALL=4.0;
 
     function garbagePhase(g){
         return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&Array.isArray(g.board)&&g.vis);
@@ -60,8 +73,8 @@
         return ids;
     }
 
-    function distance(a,b){
-        return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*H);
+    function distance(a,b,ax=a.v.x,bx=b.v.x){
+        return Math.hypot((ax-bx)*.5,(a.v.y-b.v.y)*H);
     }
 
     function worstIncoming(all,liveIds){
@@ -81,6 +94,12 @@
         return Math.sqrt(Math.max(0,TARGET_DIST*TARGET_DIST-dx*dx))/H;
     }
 
+    function requiredXSeparation(a,b){
+        const dy=Math.abs((a.v.y-b.v.y)*H);
+        if(dy>=TARGET_DIST-EPS)return 0;
+        return 2*Math.sqrt(Math.max(0,TARGET_DIST*TARGET_DIST-dy*dy));
+    }
+
     function chooseUpper(pair,liveIds){
         const {a,b}=pair;
         const dy=a.v.y-b.v.y;
@@ -93,7 +112,7 @@
 
     function holdForPair(pair,liveIds,heldRows){
         const chosen=chooseUpper(pair,liveIds);
-        if(!chosen)return{ok:false,reason:"horizontal_or_fixed_required"};
+        if(!chosen)return{ok:false,reason:"horizontal_required"};
 
         const {upper,lower}=chosen;
         const req=requiredRowSeparation(upper,lower);
@@ -102,7 +121,6 @@
         let need=req-current;
         if(need<=EPS)return{ok:true,changed:false};
 
-        // Tiny margin avoids exact floating-point re-entry below .9995.
         need+=2e-6;
         const used=heldRows.get(upper.ball.id)||0;
         const remaining=Math.max(0,MAX_TOTAL_HOLD_ROWS-used);
@@ -114,21 +132,175 @@
         return{ok:shift+EPS>=need,changed:shift>EPS,id:upper.ball.id,shift};
     }
 
+    function liveEntries(all,liveIds){
+        return all.filter(q=>liveIds.has(q.ball.id));
+    }
+
+    function xSnapshot(live){
+        return new Map(live.map(q=>[q.ball.id,q.v.x]));
+    }
+
+    function restoreX(live,snap){
+        for(const q of live){
+            const x=snap.get(q.ball.id);
+            if(Number.isFinite(x))q.v.x=x;
+        }
+    }
+
+    function orderRanks(live,snap){
+        const sorted=live.slice().sort((a,b)=>(snap.get(a.ball.id)-snap.get(b.ball.id))||(a.ball.id-b.ball.id));
+        return new Map(sorted.map((q,i)=>[q.ball.id,i]));
+    }
+
+    function shiftBudgetOk(q,snap,target){
+        const origin=snap.get(q.ball.id);
+        return Number.isFinite(origin)&&Math.abs(target-origin)<=MAX_HORIZONTAL_SHIFT_PER_BALL+EPS;
+    }
+
+    function inBounds(x){
+        return Number.isFinite(x)&&x>=-EPS&&x<=W2-1+EPS;
+    }
+
+    function chooseSide(pair,dir,liveIds,ranks){
+        const a=pair.a,b=pair.b;
+        if(dir>0){
+            if(a.v.x<b.v.x-EPS)return liveIds.has(b.ball.id)?{move:b,other:a}:null;
+            if(b.v.x<a.v.x-EPS)return liveIds.has(a.ball.id)?{move:a,other:b}:null;
+            if(liveIds.has(a.ball.id)&&!liveIds.has(b.ball.id))return{move:a,other:b};
+            if(liveIds.has(b.ball.id)&&!liveIds.has(a.ball.id))return{move:b,other:a};
+            if(liveIds.has(a.ball.id)&&liveIds.has(b.ball.id))return (ranks.get(a.ball.id)>ranks.get(b.ball.id))?{move:a,other:b}:{move:b,other:a};
+        }else{
+            if(a.v.x<b.v.x-EPS)return liveIds.has(a.ball.id)?{move:a,other:b}:null;
+            if(b.v.x<a.v.x-EPS)return liveIds.has(b.ball.id)?{move:b,other:a}:null;
+            if(liveIds.has(a.ball.id)&&!liveIds.has(b.ball.id))return{move:a,other:b};
+            if(liveIds.has(b.ball.id)&&!liveIds.has(a.ball.id))return{move:b,other:a};
+            if(liveIds.has(a.ball.id)&&liveIds.has(b.ball.id))return (ranks.get(a.ball.id)<ranks.get(b.ball.id))?{move:a,other:b}:{move:b,other:a};
+        }
+        return null;
+    }
+
+    function enforceOrder(live,dir,ranks,snap){
+        const sorted=live.slice().sort((a,b)=>ranks.get(a.ball.id)-ranks.get(b.ball.id));
+        let moved=0;
+        if(dir>0){
+            for(let i=1;i<sorted.length;i++){
+                if(sorted[i].v.x+EPS<sorted[i-1].v.x){
+                    const target=sorted[i-1].v.x;
+                    if(!inBounds(target)||!shiftBudgetOk(sorted[i],snap,target))return{ok:false};
+                    sorted[i].v.x=target;moved++;
+                }
+            }
+        }else{
+            for(let i=sorted.length-2;i>=0;i--){
+                if(sorted[i].v.x-EPS>sorted[i+1].v.x){
+                    const target=sorted[i+1].v.x;
+                    if(!inBounds(target)||!shiftBudgetOk(sorted[i],snap,target))return{ok:false};
+                    sorted[i].v.x=target;moved++;
+                }
+            }
+        }
+        return{ok:true,moved};
+    }
+
+    function directionalHorizontalTrial(g,seedPair,liveIds,dir){
+        let all=entries(g);
+        const live=liveEntries(all,liveIds);
+        const snap=xSnapshot(live);
+        const ranks=orderRanks(live,snap);
+        let pushes=0;
+
+        function fail(reason){restoreX(live,snap);return{ok:false,reason};}
+
+        const seed=chooseSide(seedPair,dir,liveIds,ranks);
+        if(!seed)return fail("fixed_blocks_direction");
+        const seedReq=requiredXSeparation(seed.move,seed.other);
+        if(seedReq<=EPS)return fail("no_horizontal_requirement");
+        let seedTarget=seed.other.v.x+dir*(seedReq+X_MARGIN);
+        if(dir>0)seedTarget=Math.max(seed.move.v.x,seedTarget);
+        else seedTarget=Math.min(seed.move.v.x,seedTarget);
+        if(!inBounds(seedTarget)||!shiftBudgetOk(seed.move,snap,seedTarget))return fail("seed_out_of_range");
+        seed.move.v.x=seedTarget;pushes++;
+
+        for(let pass=0;pass<MAX_HORIZONTAL_PASSES;pass++){
+            const ord=enforceOrder(live,dir,ranks,snap);
+            if(!ord.ok)return fail("order_or_budget_block");
+            pushes+=ord.moved;
+
+            all=entries(g);
+            const overlap=worstIncoming(all,liveIds);
+            if(!overlap){
+                const positions=new Map(live.map(q=>[q.ball.id,q.v.x]));
+                let cost=0,maxShift=0;
+                for(const q of live){
+                    const dx=q.v.x-snap.get(q.ball.id);
+                    cost+=dx*dx;maxShift=Math.max(maxShift,Math.abs(dx));
+                }
+                restoreX(live,snap);
+                return{ok:true,dir,positions,cost,maxShift,pushes,passes:pass+1};
+            }
+
+            const side=chooseSide(overlap,dir,liveIds,ranks);
+            if(!side)return fail("fixed_contact_chain_block");
+            const req=requiredXSeparation(side.move,side.other);
+            if(req<=EPS)return fail("unresolvable_vertical_geometry");
+            let target=side.other.v.x+dir*(req+X_MARGIN);
+            if(dir>0)target=Math.max(side.move.v.x,target);
+            else target=Math.min(side.move.v.x,target);
+            if(Math.abs(target-side.move.v.x)<=EPS)return fail("horizontal_no_progress");
+            if(!inBounds(target)||!shiftBudgetOk(side.move,snap,target))return fail("wall_or_budget_block");
+            side.move.v.x=target;pushes++;
+        }
+        return fail("horizontal_pass_limit");
+    }
+
+    function horizontalRescue(g,pair,liveIds){
+        const trials=[];
+        for(const dir of [-1,1]){
+            const r=directionalHorizontalTrial(g,pair,liveIds,dir);
+            if(r.ok)trials.push(r);
+        }
+        if(!trials.length)return{ok:false,reason:"no_horizontal_chain_solution"};
+        trials.sort((a,b)=>a.cost-b.cost||a.maxShift-b.maxShift||a.pushes-b.pushes);
+        const best=trials[0];
+        const all=entries(g),live=liveEntries(all,liveIds);
+        for(const q of live){
+            const x=best.positions.get(q.ball.id);
+            if(Number.isFinite(x))q.v.x=x;
+        }
+        return{ok:true,changed:true,dir:best.dir,cost:best.cost,maxShift:best.maxShift,pushes:best.pushes,passes:best.passes};
+    }
+
     function solve(g){
         let all=entries(g);
         const liveIds=liveSet(g,all);
-        if(!liveIds.size)return{ok:true,changed:0,passes:0,min:null,pair:null,held:[]};
+        if(!liveIds.size)return{ok:true,changed:0,verticalChanges:0,horizontalChanges:0,passes:0,min:null,pair:null,held:[],horizontal:[]};
 
         const heldRows=new Map();
-        let changed=0,passes=0,failure=null;
+        const horizontal=[];
+        let changed=0,verticalChanges=0,horizontalChanges=0,passes=0,failure=null;
         for(;passes<MAX_PASSES;passes++){
             all=entries(g);
             const worst=worstIncoming(all,liveIds);
             if(!worst)break;
-            const r=holdForPair(worst,liveIds,heldRows);
-            if(!r.ok){failure={reason:r.reason,pair:[worst.a.ball.id,worst.b.ball.id],distance:worst.d,id:r.id||null};break;}
-            if(!r.changed){failure={reason:"no_vertical_progress",pair:[worst.a.ball.id,worst.b.ball.id],distance:worst.d};break;}
-            changed++;
+
+            const v=holdForPair(worst,liveIds,heldRows);
+            if(v.ok&&v.changed){changed++;verticalChanges++;continue;}
+
+            const h=horizontalRescue(g,worst,liveIds);
+            if(h.ok&&h.changed){
+                changed++;horizontalChanges++;
+                horizontal.push({pair:[worst.a.ball.id,worst.b.ball.id],distance:worst.d,...h});
+                continue;
+            }
+
+            failure={
+                reason:h.reason||v.reason||"no_contact_progress",
+                verticalReason:v.reason||null,
+                pair:[worst.a.ball.id,worst.b.ball.id],
+                distance:worst.d,
+                id:v.id||null
+            };
+            break;
         }
 
         all=entries(g);
@@ -136,11 +308,14 @@
         return{
             ok:!final,
             changed,
+            verticalChanges,
+            horizontalChanges,
             passes,
             min:final?final.d:null,
             pair:final?[final.a.ball.id,final.b.ball.id]:null,
             failure,
-            held:[...heldRows].map(([id,rows])=>({id,rows}))
+            held:[...heldRows].map(([id,rows])=>({id,rows})),
+            horizontal
         };
     }
 
@@ -163,8 +338,9 @@
             at:Date.now()
         };
         if(info.changed)window.__sixBallGarbageDeepContactCorrections=(window.__sixBallGarbageDeepContactCorrections||0)+info.changed;
+        if(info.horizontalChanges)window.__sixBallGarbageEmergencyHorizontalCorrections=(window.__sixBallGarbageEmergencyHorizontalCorrections||0)+info.horizontalChanges;
         return result;
     };
 
-    window.__sixBallGarbageDeepContactHoldVersion="garbage-deep-contact-hold-v1";
+    window.__sixBallGarbageDeepContactHoldVersion="garbage-deep-contact-rescue-v2";
 })();
