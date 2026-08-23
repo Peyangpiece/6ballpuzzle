@@ -3,10 +3,12 @@ name: Garbage Authoritative Branch Gate
 on:
   push:
     branches: [garbage-authoritative-v1]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
-  group: garbage-authoritative-v1
+  group: garbage-authoritative-v1-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
