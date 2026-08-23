@@ -27,9 +27,12 @@
  * 9. Exact tangency is legal. Dense STRAIGHT rows can span the full board only
  *    when neighbouring unit-radius contacts are allowed at exactly one physical
  *    diameter; no artificial positive spacing margin is added to contact radii.
- * 10. If the dense disjunctive solver reaches its iteration budget, its best
- *    corridor-valid contact state is retained. It must never be replaced by a
- *    preferred-corridor clamp that can reintroduce an already-resolved overlap.
+ * 10. Before the non-convex live/live solve starts, every live garbage centre is
+ *    first projected into its nearest fixed-support-safe corridor. Therefore the
+ *    iterative pair solver can never preserve an initially illegal live/fixed
+ *    penetration merely because that ball was not part of the worst live pair.
+ * 11. If the dense disjunctive solver reaches its iteration budget, its best
+ *    corridor-valid contact state is retained instead of being reset afterward.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -253,6 +256,17 @@
         return best;
     }
 
+    function clampToPreferredCorridors(live,corridors){
+        let changed=0;
+        for(let i=0;i<live.length;i++){
+            const d=preferredInterval(corridors[i],live[i]);
+            if(!d)continue;
+            const nx=Math.max(d.lo,Math.min(d.hi,live[i].v.x));
+            if(Math.abs(nx-live[i].v.x)>EPS){live[i].v.x=nx;changed++;}
+        }
+        return changed;
+    }
+
     function solveConvexDomains(live,req,domains){
         const n=live.length;
         const x=new Array(n);
@@ -426,27 +440,29 @@
         }
 
         if(!x){
+            const fixedClamp=clampToPreferredCorridors(live,corridors);
             const disjunctive=solveDisjunctivePairs(live,corridors);
+            const totalChanged=Math.max(fixedClamp,disjunctive.changed||0);
             if(disjunctive.ok){
                 window.__sixBallLastGarbageConstraintSolve={
                     ok:true,mode:"disjunctive_pairs",live:n,fixed:fixed.length,
-                    changed:disjunctive.changed,maxShift:disjunctive.maxShift,
+                    fixedClamp,changed:totalChanged,maxShift:disjunctive.maxShift,
                     pairMoves:disjunctive.pairMoves,iterations:disjunctive.iterations,
                     corridorCounts:corridors.map(q=>q.length),at:Date.now()
                 };
-                if(disjunctive.changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+disjunctive.changed;
-                return disjunctive.changed;
+                if(totalChanged)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+totalChanged;
+                return totalChanged;
             }
 
             window.__sixBallLastGarbageConstraintSolve={
                 ok:false,reason:disjunctive.reason||"corridor_infeasible",
-                retainedBest:true,changed:disjunctive.changed,maxShift:disjunctive.maxShift,
+                retainedBest:true,fixedClamp,changed:totalChanged,maxShift:disjunctive.maxShift,
                 pair:disjunctive.pair||null,pairMoves:disjunctive.pairMoves||0,
                 iterations:disjunctive.iterations||0,
                 corridorCounts:corridors.map(q=>q.length),at:Date.now()
             };
-            if(disjunctive.changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+disjunctive.changed;
-            return disjunctive.changed;
+            if(totalChanged)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+totalChanged;
+            return totalChanged;
         }
 
         let changed=0;
@@ -533,6 +549,7 @@
     window.__sixBallGarbageDisjunctivePairFallback=true;
     window.__sixBallGarbagePairSideStable=true;
     window.__sixBallGarbageExactTangency=true;
+    window.__sixBallGarbagePreClampFixedCorridors=true;
     window.__sixBallGarbageRetainBestDenseSolution=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.21";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.22";
 })();
