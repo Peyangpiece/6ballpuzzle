@@ -16,8 +16,8 @@
  *    is delayed to the earliest collision-free instant instead of being forced
  *    through an already moving garbage trajectory.
  * 7. Fixed accumulated-pile contact has final priority over live/live visual
- *    separation, so a later live-pair correction can never leave a garbage ball
- *    penetrating an immutable pile support at the end of the frame.
+ *    separation. Live/live correction uses only horizontal clearance that is
+ *    physically reachable without crossing an immutable fixed support.
  *
  * Logical destinations and fallPath geometry are never rewritten here. Contact
  * correction changes only the already-resolved visual centres for this frame.
@@ -38,8 +38,6 @@
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const EPS=1e-9;
-    // Keep a tiny sub-pixel margin so a later neighbouring projection cannot
-    // leave the just-resolved pair numerically inside the 0.9995 hard gate.
     const SAFE_EPS=5e-4;
     const SCHEDULE_STEP=typeof PILE_FLOW_SCHEDULE_STEP==="number"?PILE_FLOW_SCHEDULE_STEP:1/240;
 
@@ -176,9 +174,6 @@
     function pushLiveFromFixed(live,fixed){
         const dy=(live.v.y-fixed.v.y)*H;
         if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return false;
-
-        // Garbage Y is authoritative from the analytic fallPath. Resolve a
-        // contact only by moving sideways to the nearest tangent at this Y.
         const nextX=horizontalTangentX(live,fixed,dy);
         if(Math.abs(nextX-live.v.x)<=EPS)return false;
         live.v.x=nextX;
@@ -186,9 +181,6 @@
     }
 
     function livePairSign(a,b){
-        // Keep the same left/right order as the solver's logical destinations.
-        // For members of one shaped unit this also preserves source-role order
-        // when their target x happens to be equal.
         let sign=Math.sign(a.x-b.x);
         if(!sign)sign=Math.sign(a.v.x-b.v.x);
         if(!sign&&a.ball.garbageSourceSeq===b.ball.garbageSourceSeq){
@@ -197,7 +189,40 @@
         return sign||((a.ball.id>b.ball.id)?1:-1);
     }
 
-    function separateLivePair(a,b){
+    function fixedDirectionalCapacity(live,dir,fixed){
+        let cap=dir>0?(W2-1-live.v.x):live.v.x;
+        const x=live.v.x;
+
+        for(const support of fixed){
+            if(!support||support.ball.id===live.ball.id)continue;
+            const dy=(live.v.y-support.v.y)*H;
+            if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)continue;
+
+            const radial=2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
+            const left=support.v.x-radial;
+            const right=support.v.x+radial;
+
+            if(dir>0){
+                if(x>=right-EPS)continue;
+                if(x<=left+EPS){
+                    cap=Math.min(cap,Math.max(0,left-x));
+                    continue;
+                }
+                return 0;
+            }
+
+            if(x<=left+EPS)continue;
+            if(x>=right-EPS){
+                cap=Math.min(cap,Math.max(0,x-right));
+                continue;
+            }
+            return 0;
+        }
+
+        return Math.max(0,cap);
+    }
+
+    function separateLivePair(a,b,fixed){
         const dy=(a.v.y-b.v.y)*H;
         if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return false;
 
@@ -208,20 +233,25 @@
         let missing=requiredLatticeX-signedCurrent;
         if(missing<=1e-8)return false;
 
-        // Separate horizontally only. This guarantees contact correction cannot
-        // create the old visual upward/downward kick while paths are in motion.
-        const capA=sign>0?(W2-1-a.v.x):a.v.x;
-        const capB=sign>0?b.v.x:(W2-1-b.v.x);
-        let moveA=Math.min(Math.max(0,capA),missing*.5);
-        let moveB=Math.min(Math.max(0,capB),missing-moveA);
+        // Each member may move only as far as the first fixed-support tangent in
+        // the requested direction. If one side is pinned at a support, the other
+        // member absorbs the whole live/live separation instead of pushing the
+        // pinned member through the pile and relying on a later correction.
+        const capA=fixedDirectionalCapacity(a,sign,fixed);
+        const capB=fixedDirectionalCapacity(b,-sign,fixed);
+        let moveA=Math.min(capA,missing*.5);
+        let moveB=Math.min(capB,missing-moveA);
         missing-=moveA+moveB;
+
         if(missing>EPS){
             const moreA=Math.min(Math.max(0,capA-moveA),missing);
-            moveA+=moreA;missing-=moreA;
+            moveA+=moreA;
+            missing-=moreA;
         }
         if(missing>EPS){
             const moreB=Math.min(Math.max(0,capB-moveB),missing);
-            moveB+=moreB;missing-=moreB;
+            moveB+=moreB;
+            missing-=moreB;
         }
 
         a.v.x=Math.max(0,Math.min(W2-1,a.v.x+sign*moveA));
@@ -253,9 +283,10 @@
         const frozen=frozenIds(g.board);
         let corrections=0;
 
-        // Live/live spacing is provisional. Immutable accumulated-pile support
-        // is resolved AFTER it in every pass so a pair correction cannot be the
-        // final operation that pushes a live garbage ball through fixed matter.
+        // Establish the immutable pile boundary first. Live/live correction can
+        // then calculate how much sideways space is actually reachable.
+        corrections+=enforceFixedContacts(g,frozen,16);
+
         for(let pass=0;pass<96;pass++){
             let changed=false;
             const entries=boardEntries(g);
@@ -264,9 +295,12 @@
 
             for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
                 if(physicalDistance(live[i],live[j])>=MIN_DIST-1e-8)continue;
-                if(separateLivePair(live[i],live[j])){changed=true;corrections++;}
+                if(separateLivePair(live[i],live[j],fixed)){changed=true;corrections++;}
             }
 
+            // Keep this as a defensive polish. With fixed-aware pair capacities
+            // it should normally do nothing, but it guarantees fixed support is
+            // still the final invariant if several neighbouring constraints meet.
             for(const moving of live)for(const support of fixed){
                 if(moving.ball.id===support.ball.id)continue;
                 if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
@@ -276,10 +310,6 @@
             if(!changed)break;
         }
 
-        // Hard final invariant: the frame may finish with unresolved live/live
-        // pressure, but never with an incoming garbage ball inside immutable
-        // accumulated pile. Scheduling resolves the remaining moving/moving
-        // conflict on subsequent frames without sacrificing fixed support.
         corrections+=enforceFixedContacts(g,frozen,16);
 
         if(corrections)window.__sixBallGarbageFinalContactCorrections=(window.__sixBallGarbageFinalContactCorrections||0)+corrections;
@@ -326,18 +356,12 @@
 
     if(baseScheduleFreshPileFlowWave&&finalPileFlowWaveSafe){
         scheduleFreshPileFlowWave=function(g,fresh){
-            // First let the continuous-gravity layer attach its velocity metadata
-            // and nominal durations. We only replace the timestamps it chose.
             const r=baseScheduleFreshPileFlowWave(g,fresh);
             if(!garbagePhase(g)||!Array.isArray(fresh)||!fresh.length)return r;
 
             const base=Math.max(0,Number(g.pileFlowClock)||0);
             const groups=groupFreshBySeq(fresh);
 
-            // The continuous scheduler has already timestamped every fresh
-            // segment. Clear those timestamps so later groups do not appear as
-            // physical obstacles while an earlier group is finding its earliest
-            // safe start. Metadata such as __garbageContinuous is preserved.
             for(const q of fresh){
                 const seg=q?.seg;
                 if(!seg)continue;
@@ -365,9 +389,6 @@
                     earliest=Math.max(earliest,previousScheduledEnd(q.ball,q.seg,base));
                 }
 
-                // Once every already-scheduled path has ended, this wave cannot
-                // collide with an older moving trajectory. Search only up to that
-                // finite point; normally the first candidate is already safe.
                 const fallback=Math.max(earliest,latestScheduledEnd(g));
                 let start=earliest;
                 let safe=false;
@@ -445,12 +466,6 @@
             if(!garbagePhase(g))return baseResolveVisualContacts(g);
 
             normalizeReceivingGarbage(g);
-
-            // updateVisuals has already evaluated the authoritative analytic
-            // position for every live garbage ball this frame. Preserve it while
-            // the generic all-ball contact layer runs, then discard only the
-            // generic displacement of those live centres. Our phase-specific
-            // solver below handles non-penetration without changing path Y.
             const free=captureLiveFreePositions(g);
             const r=baseResolveVisualContacts(g);
 
@@ -468,5 +483,6 @@
     window.__sixBallGarbagePathYAuthoritative=true;
     window.__sixBallGarbageCollisionAwareScheduleFinal=true;
     window.__sixBallGarbageFixedContactPriorityFinal=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.9";
+    window.__sixBallGarbageFixedAwareLiveSeparation=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.10";
 })();
