@@ -1,44 +1,41 @@
 /* ============================================================
- * 6ball GARBAGE COUPLED ROW CONTACT v2
+ * 6ball GARBAGE PHYSICAL CONTACT HOLD v3
  *
- * The authoritative garbage solver can reach a dense STRAIGHT frame where
- * several staggered tangent rows all need a tiny coordinated correction.  A
- * one-pair or one-row fallback cannot solve that state: moving one row while
- * every other live row is treated as fixed can make the admissible interval
- * empty, even though the authored continuous trajectories form a legal tangent
- * lattice.
+ * The main garbage contact network intentionally keeps each live ball on its
+ * authored Y trajectory and repairs contact horizontally.  In a dense staggered
+ * STRAIGHT landing that can become geometrically impossible: a moving upper ball
+ * may already be tangent to a settled neighbour on one side and to a wall row on
+ * the other, leaving no horizontal solution at the current Y.
  *
- * This final GARBAGE-only layer activates ONLY after the authoritative contact
- * network reports failure.  It then solves one scalar horizontal translation
- * per live tangent chain, simultaneously.
+ * Real ball physics does not force the centre through that contact.  Downward
+ * progress pauses.  This late GARBAGE-only layer therefore activates only when
+ * the authoritative horizontal network reports failure and gives live balls the
+ * minimum upward-in-time contact hold needed to restore non-penetration.
  *
  * Invariants:
- * - Y never changes here.
- * - logical board cells never change here.
- * - fallPath timing, pivots and support metadata never change here.
- * - existing/frozen pile balls are fixed.
- * - tangent same-height chains keep their internal spacing exactly.
- * - chain preferences come from the authored pileFlowPositionAt() X at the
- *   current clock, but preferences are never allowed to violate contact.
- * - current/predicted left-right order is preserved, making every contact a
- *   convex difference constraint.
+ * - X is never changed here.
+ * - logical board cells are never changed here.
+ * - existing/frozen/finished garbage is fixed.
+ * - a live ball may move only upward relative to this frame's free trajectory,
+ *   and never above its authored position one physics frame earlier.
+ * - same-height contacts remain the horizontal solver's responsibility.
+ * - exact tangency is legal.
  * ============================================================ */
-(function installGarbageCoupledRowContactV2(){
+(function installGarbagePhysicalContactHoldV3(){
     if(typeof window==="undefined"||window.__sixBallGarbageRigidRowContactV1)return;
     if(typeof resolveVisualContacts!=="function")return;
 
     window.__sixBallGarbageRigidRowContactV1=true;
 
-    const baseResolveVisualContactsCoupledV2=resolveVisualContacts;
+    const baseResolveVisualContactsContactHoldV3=resolveVisualContacts;
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
+    const FRAME=typeof PHYSICS_FRAME==="number"?PHYSICS_FRAME:1/120;
     const MIN_DIST=1.0;
     const LEGAL_DIST=0.9995;
     const SAME_Y_EPS=1e-8;
-    const ROW_LINK_MIN=1.999;
-    const ROW_LINK_MAX=2.05;
     const EPS=1e-9;
     const SOLVE_TOL=1e-8;
-    const MAX_PASSES=512;
+    const MAX_PASSES=256;
 
     function garbagePhase(g){
         return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&Array.isArray(g.board)&&g.vis);
@@ -72,14 +69,8 @@
         return all.filter(q=>q.ball.isGarbage&&!q.ball.garbagePhaseFrozen&&!frozen.has(q.ball.id)&&hasLivePath(q.ball));
     }
 
-    function physicalDistance(a,b,ax=a.v.x,bx=b.v.x){
-        return Math.hypot((ax-bx)*0.5,(a.v.y-b.v.y)*H);
-    }
-
-    function requiredX(a,b){
-        const dy=(a.v.y-b.v.y)*H;
-        if(Math.abs(dy)>=MIN_DIST-EPS)return 0;
-        return 2*Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
+    function physicalDistance(a,b){
+        return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*H);
     }
 
     function minIncomingDistance(all,live){
@@ -93,144 +84,91 @@
         return{min,pair};
     }
 
-    function predictedX(g,q){
+    function predictedPoint(g,q,t){
         if(typeof pileFlowPositionAt!=="function")return null;
         try{
-            const p=pileFlowPositionAt(g,q.ball,Math.max(0,Number(g.pileFlowClock)||0));
-            if(Array.isArray(p)&&Number.isFinite(p[0]))return p[0];
+            const p=pileFlowPositionAt(g,q.ball,Math.max(0,t));
+            if(Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1]))return p;
         }catch(_){ }
         return null;
     }
 
-    function median(values){
-        const a=values.filter(Number.isFinite).sort((x,y)=>x-y);
-        if(!a.length)return 0;
-        const m=Math.floor(a.length/2);
-        return a.length%2?a[m]:(a[m-1]+a[m])*.5;
-    }
-
-    // Return every live ball exactly once.  Same-height neighbours are grouped
-    // only when they are already tangent (or microscopically corrected around
-    // tangency).  Real gaps and same-row penetrations remain separate variables.
-    function tangentChains(live){
-        const sorted=live.slice().sort((a,b)=>a.v.y-b.v.y||a.v.x-b.v.x||a.ball.id-b.ball.id);
-        const groups=[];
-        let level=[];
-        let anchor=null;
-
-        function flush(){
-            if(!level.length)return;
-            level.sort((a,b)=>a.v.x-b.v.x||a.ball.id-b.ball.id);
-            let chain=[level[0]];
-            for(let i=1;i<level.length;i++){
-                const prev=level[i-1],current=level[i];
-                const gap=current.v.x-prev.v.x;
-                if(gap>=ROW_LINK_MIN-EPS&&gap<=ROW_LINK_MAX+EPS)chain.push(current);
-                else{groups.push(chain);chain=[current];}
-            }
-            groups.push(chain);
-            level=[];
-        }
-
-        for(const q of sorted){
-            if(anchor===null||Math.abs(q.v.y-anchor)<=SAME_Y_EPS){
-                level.push(q);
-                if(anchor===null)anchor=q.v.y;
-            }else{
-                flush();
-                level=[q];anchor=q.v.y;
-            }
-        }
-        flush();
-        return groups;
+    function requiredYRows(a,b){
+        const dx=Math.abs((a.v.x-b.v.x)*.5);
+        if(dx>=MIN_DIST-EPS)return 0;
+        return Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dx*dx))/H;
     }
 
     function buildVariables(g,live){
-        const groups=tangentChains(live);
+        const clock=Math.max(0,Number(g.pileFlowClock)||0);
+        const prevTime=Math.max(0,clock-FRAME);
         const vars=[];
         const byId=new Map();
 
-        for(const members of groups){
-            let lower=-Infinity,upper=Infinity;
-            const prefSamples=[];
-            for(const q of members){
-                lower=Math.max(lower,-q.v.x);
-                upper=Math.min(upper,(W2-1)-q.v.x);
-                const px=predictedX(g,q);
-                if(Number.isFinite(px))prefSamples.push(px-q.v.x);
-            }
-            const pref=Math.max(lower,Math.min(upper,median(prefSamples)));
-            const variable={members,lower,upper,pref,d:pref};
+        for(const q of live){
+            const prev=predictedPoint(g,q,prevTime);
+            // The correction is a contact hold, never an upward bounce.  One
+            // frame of authored travel is the maximum amount that may be undone.
+            const lower=prev&&Number.isFinite(prev[1])?Math.min(0,prev[1]-q.v.y):0;
             const index=vars.length;
-            vars.push(variable);
-            for(const q of members)byId.set(q.ball.id,index);
+            vars.push({q,lower,upper:0,pref:0,d:0,prevY:prev?.[1]});
+            byId.set(q.ball.id,index);
         }
         return{vars,byId};
     }
 
-    function referenceX(g,q){
-        const px=predictedX(g,q);
-        return Number.isFinite(px)?px:q.v.x;
-    }
-
     function pushConstraint(list,a,b,c,meta){
-        if(!Number.isFinite(c))return;
-        list.push({a,b,c,meta});
+        if(Number.isFinite(c))list.push({a,b,c,meta});
     }
 
-    // Difference constraints use the form d[a] - d[b] <= c.  A final fixed
-    // variable with d==0 represents the walls and every non-live support.
-    function buildConstraints(g,all,live,vars,byId){
+    // Constraints use d[a] - d[b] <= c.  The final variable is fixed at zero.
+    // Because d<=0, satisfying an upper-vs-lower contact naturally rewinds only
+    // the upper body's downward progress.
+    function buildConstraints(all,live,vars,byId){
         const fixed=vars.length;
         const constraints=[];
+        const liveIds=new Set(live.map(q=>q.ball.id));
+        let sameHeightIllegal=null;
 
         for(let i=0;i<vars.length;i++){
-            pushConstraint(constraints,i,fixed,vars[i].upper,{kind:"wall_right",i});
-            pushConstraint(constraints,fixed,i,-vars[i].lower,{kind:"wall_left",i});
+            pushConstraint(constraints,i,fixed,0,{kind:"no_downward_push",id:vars[i].q.ball.id});
+            pushConstraint(constraints,fixed,i,-vars[i].lower,{kind:"one_frame_rewind",id:vars[i].q.ball.id});
         }
-
-        const liveIds=new Set(live.map(q=>q.ball.id));
-        let sameVariableIllegal=null;
 
         for(let i=0;i<all.length;i++)for(let j=i+1;j<all.length;j++){
             const a=all[i],b=all[j];
             if(!liveIds.has(a.ball.id)&&!liveIds.has(b.ball.id))continue;
-            const req=requiredX(a,b);
+
+            const req=requiredYRows(a,b);
             if(req<=EPS)continue;
 
             const ai=byId.has(a.ball.id)?byId.get(a.ball.id):fixed;
             const bi=byId.has(b.ball.id)?byId.get(b.ball.id):fixed;
             if(ai===fixed&&bi===fixed)continue;
 
-            if(ai===bi){
+            const dy=b.v.y-a.v.y;
+            if(Math.abs(dy)<=SAME_Y_EPS){
                 if(physicalDistance(a,b)<LEGAL_DIST-SOLVE_TOL){
-                    sameVariableIllegal={ids:[a.ball.id,b.ball.id],distance:physicalDistance(a,b)};
+                    sameHeightIllegal={ids:[a.ball.id,b.ball.id],distance:physicalDistance(a,b)};
                 }
                 continue;
             }
 
-            const ar=ai===fixed?a.v.x:referenceX(g,a);
-            const br=bi===fixed?b.v.x:referenceX(g,b);
-            let leftA;
-            if(Math.abs(ar-br)>1e-7)leftA=ar<br;
-            else if(Math.abs(a.v.x-b.v.x)>1e-7)leftA=a.v.x<b.v.x;
-            else leftA=(a.x!==b.x)?a.x<b.x:a.ball.id<b.ball.id;
-
-            if(leftA){
-                // (a.x + da) + req <= (b.x + db)
-                // da - db <= (b.x - a.x) - req
-                pushConstraint(constraints,ai,bi,(b.v.x-a.v.x)-req,{kind:"pair",ids:[a.ball.id,b.ball.id],side:"a_left",req});
+            if(dy>0){
+                // a is above b:
+                // (a.y + da) + req <= (b.y + db)
+                // da - db <= (b.y - a.y) - req
+                pushConstraint(constraints,ai,bi,dy-req,{kind:"vertical_pair",ids:[a.ball.id,b.ball.id],upper:a.ball.id,lower:b.ball.id,req});
             }else{
-                pushConstraint(constraints,bi,ai,(a.v.x-b.v.x)-req,{kind:"pair",ids:[a.ball.id,b.ball.id],side:"b_left",req});
+                pushConstraint(constraints,bi,ai,(-dy)-req,{kind:"vertical_pair",ids:[a.ball.id,b.ball.id],upper:b.ball.id,lower:a.ball.id,req});
             }
         }
 
-        return{constraints,fixed,sameVariableIllegal};
+        return{constraints,fixed,sameHeightIllegal};
     }
 
-    function projectConstraint(values,lower,upper,q){
-        const lhs=values[q.a]-values[q.b];
-        const violation=lhs-q.c;
+    function project(values,lower,upper,pref,q){
+        const violation=(values[q.a]-values[q.b])-q.c;
         if(violation<=SOLVE_TOL)return 0;
 
         const downA=Math.max(0,values[q.a]-lower[q.a]);
@@ -241,10 +179,8 @@
         const hi=Math.min(violation,downA);
         if(lo>hi+SOLVE_TOL)return Infinity;
 
-        // Minimise squared displacement from each variable's preferred target
-        // for this projection step.
-        const pA=values[q.a]-projectConstraint.pref[q.a];
-        const pB=values[q.b]-projectConstraint.pref[q.b];
+        const pA=values[q.a]-pref[q.a];
+        const pB=values[q.b]-pref[q.b];
         let takeA=(pA+pB+violation)*.5;
         takeA=Math.max(lo,Math.min(hi,takeA));
         const takeB=violation-takeA;
@@ -253,23 +189,18 @@
         return violation;
     }
 
-    function solveDifferenceSystem(vars,built){
-        const n=vars.length+1;
+    function solve(vars,built){
         const fixed=built.fixed;
         const lower=vars.map(v=>v.lower).concat([0]);
         const upper=vars.map(v=>v.upper).concat([0]);
         const pref=vars.map(v=>v.pref).concat([0]);
         const values=pref.slice();
-        projectConstraint.pref=pref;
-
-        let passes=0;
-        let infeasible=false;
-        let maxViolation=Infinity;
+        let infeasible=false,passes=0;
 
         for(;passes<MAX_PASSES;passes++){
-            maxViolation=0;
+            let maxViolation=0;
             for(const q of built.constraints){
-                const r=projectConstraint(values,lower,upper,q);
+                const r=project(values,lower,upper,pref,q);
                 if(r===Infinity){infeasible=true;break;}
                 maxViolation=Math.max(maxViolation,r);
             }
@@ -277,46 +208,41 @@
             if(infeasible||maxViolation<=SOLVE_TOL)break;
         }
 
-        let finalMax=0,failedConstraint=null;
+        let maxViolation=0,failedConstraint=null;
         if(!infeasible){
             for(const q of built.constraints){
                 const v=values[q.a]-values[q.b]-q.c;
-                if(v>finalMax){finalMax=v;failedConstraint=q;}
+                if(v>maxViolation){maxViolation=v;failedConstraint=q;}
             }
-            if(finalMax>1e-6)infeasible=true;
+            if(maxViolation>1e-6)infeasible=true;
         }
-
-        return{ok:!infeasible,values:values.slice(0,vars.length),passes:passes+1,maxViolation:finalMax,failedConstraint};
+        return{ok:!infeasible,values:values.slice(0,vars.length),passes:passes+1,maxViolation,failedConstraint};
     }
 
-    function snapshotXs(live){return new Map(live.map(q=>[q.ball.id,q.v.x]));}
-    function restoreXs(live,snapshot){for(const q of live){const x=snapshot.get(q.ball.id);if(Number.isFinite(x))q.v.x=x;}}
+    function snapshotYs(live){return new Map(live.map(q=>[q.ball.id,{y:q.v.y,vy:q.v.vy}]));}
+    function restoreYs(live,snapshot){
+        for(const q of live){const s=snapshot.get(q.ball.id);if(s){q.v.y=s.y;q.v.vy=s.vy;}}
+    }
 
-    function applySolution(vars,values){
-        let changed=0,totalShift=0,maxShift=0;
+    function apply(vars,values){
+        let changed=0,totalHold=0,maxHold=0;
+        const held=[];
         for(let i=0;i<vars.length;i++){
-            const dx=values[i];
-            if(Math.abs(dx)<=EPS)continue;
-            for(const q of vars[i].members)q.v.x+=dx;
-            changed+=vars[i].members.length;
-            totalShift+=Math.abs(dx)*vars[i].members.length;
-            maxShift=Math.max(maxShift,Math.abs(dx));
+            const dy=values[i];
+            if(dy>=-EPS)continue;
+            const q=vars[i].q;
+            q.v.y+=dy;
+            // Remove the blocked part of this frame's downward velocity rather
+            // than preserving an impossible penetration speed.
+            if(Number.isFinite(q.v.vy))q.v.vy=Math.max(0,q.v.vy+dy/Math.max(EPS,FRAME));
+            changed++;totalHold+=-dy;maxHold=Math.max(maxHold,-dy);
+            held.push({id:q.ball.id,dy,prevY:vars[i].prevY,newY:q.v.y});
         }
-        return{changed,totalShift,maxShift};
-    }
-
-    function variableSummary(vars,values){
-        return vars.map((v,i)=>({
-            ids:v.members.map(q=>q.ball.id),
-            y:v.members[0]?.v?.y,
-            pref:v.pref,
-            solved:values?.[i],
-            lower:v.lower,upper:v.upper
-        }));
+        return{changed,totalHold,maxHold,held};
     }
 
     resolveVisualContacts=function(g){
-        const result=baseResolveVisualContactsCoupledV2(g);
+        const result=baseResolveVisualContactsContactHoldV3(g);
         if(!garbagePhase(g))return result;
 
         const baseState=window.__sixBallLastGarbageConstraintSolve||null;
@@ -324,69 +250,57 @@
         let live=liveEntries(g,all);
         const before=minIncomingDistance(all,live);
 
-        // A late coupled correction is deliberately exceptional.  If the main
-        // network converged, keep its answer untouched.
         if(!live.length||baseState?.ok!==false){
-            window.__sixBallLastGarbageRigidRowContactV1={
-                active:false,reason:"base_solver_ok",before:before.min,beforePair:before.pair,at:Date.now()
-            };
+            window.__sixBallLastGarbageRigidRowContactV1={active:false,reason:"base_solver_ok",before:before.min,beforePair:before.pair,at:Date.now()};
             return result;
         }
 
-        const snapshot=snapshotXs(live);
+        const snapshot=snapshotYs(live);
         const builtVars=buildVariables(g,live);
-        const built=buildConstraints(g,all,live,builtVars.vars,builtVars.byId);
+        const built=buildConstraints(all,live,builtVars.vars,builtVars.byId);
 
-        if(built.sameVariableIllegal){
+        if(built.sameHeightIllegal){
             window.__sixBallLastGarbageRigidRowContactV1={
-                active:true,ok:false,reason:"illegal_inside_rigid_chain",
-                before:before.min,beforePair:before.pair,
-                sameVariableIllegal:built.sameVariableIllegal,
-                variables:variableSummary(builtVars.vars),at:Date.now()
+                active:true,ok:false,reason:"same_height_requires_horizontal_solution",
+                before:before.min,beforePair:before.pair,sameHeightIllegal:built.sameHeightIllegal,at:Date.now()
             };
             return result;
         }
 
-        const solved=solveDifferenceSystem(builtVars.vars,built);
+        const solved=solve(builtVars.vars,built);
         if(!solved.ok){
             window.__sixBallLastGarbageRigidRowContactV1={
-                active:true,ok:false,reason:"coupled_constraints_infeasible",
-                before:before.min,beforePair:before.pair,
-                passes:solved.passes,maxViolation:solved.maxViolation,
+                active:true,ok:false,reason:"one_frame_vertical_hold_infeasible",
+                before:before.min,beforePair:before.pair,passes:solved.passes,maxViolation:solved.maxViolation,
                 failedConstraint:solved.failedConstraint?.meta||null,
-                variables:variableSummary(builtVars.vars,solved.values),at:Date.now()
+                bounds:builtVars.vars.map(v=>({id:v.q.ball.id,lower:v.lower,prevY:v.prevY,y:v.q.v.y})),at:Date.now()
             };
             return result;
         }
 
-        const movement=applySolution(builtVars.vars,solved.values);
+        const movement=apply(builtVars.vars,solved.values);
         all=entries(g);live=liveEntries(g,all);
         const after=minIncomingDistance(all,live);
 
         if(Number.isFinite(after.min)&&after.min<LEGAL_DIST-SOLVE_TOL){
-            restoreXs(live,snapshot);
+            restoreYs(live,snapshot);
             window.__sixBallLastGarbageRigidRowContactV1={
-                active:true,ok:false,reason:"post_verify_overlap",
-                before:before.min,beforePair:before.pair,after:after.min,afterPair:after.pair,
-                movement,passes:solved.passes,
-                variables:variableSummary(builtVars.vars,solved.values),at:Date.now()
+                active:true,ok:false,reason:"post_hold_overlap",before:before.min,beforePair:before.pair,
+                after:after.min,afterPair:after.pair,movement,passes:solved.passes,at:Date.now()
             };
             return result;
         }
 
         window.__sixBallLastGarbageRigidRowContactV1={
-            active:true,ok:true,mode:"coupled_difference_projection",
-            before:before.min,beforePair:before.pair,
-            after:after.min,afterPair:after.pair,
-            movement,passes:solved.passes,maxViolation:solved.maxViolation,
-            variables:variableSummary(builtVars.vars,solved.values),at:Date.now()
+            active:true,ok:true,mode:"physical_vertical_contact_hold",
+            before:before.min,beforePair:before.pair,after:after.min,afterPair:after.pair,
+            movement,passes:solved.passes,maxViolation:solved.maxViolation,at:Date.now()
         };
         if(movement.changed){
-            window.__sixBallGarbageRigidRowContactCorrections=
-                (window.__sixBallGarbageRigidRowContactCorrections||0)+movement.changed;
+            window.__sixBallGarbageRigidRowContactCorrections=(window.__sixBallGarbageRigidRowContactCorrections||0)+movement.changed;
         }
         return result;
     };
 
-    window.__sixBallGarbageRigidRowContactVersion="garbage-coupled-row-contact-v2";
+    window.__sixBallGarbageRigidRowContactVersion="garbage-physical-contact-hold-v3";
 })();
