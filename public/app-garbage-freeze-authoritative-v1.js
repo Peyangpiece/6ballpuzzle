@@ -24,9 +24,13 @@
  *    projected into its nearest fixed-support-safe corridor.
  * 11. Equal-height live rows are solved as whole ordered chains. Any correction
  *    to one member is immediately propagated through the row, so a right-wall
- *    anchor cannot leave 2-3 neighbouring STRAIGHT balls slightly interpenetrated.
- * 12. The residual non-convex solver preserves a pair's current left/right side
- *    whenever feasible and re-polishes equal-height rows after each correction.
+ *    anchor cannot leave neighbouring STRAIGHT balls slightly interpenetrated.
+ * 12. When an outsider contacts a tangent row that cannot move farther in the
+ *    required direction, the row remains intact and the outsider is moved to
+ *    the nearest legal side of that row member. This resolves real path
+ *    crossings without repeatedly pulling a wall-anchored row apart.
+ * 13. Residual non-convex contacts preserve a pair's current side whenever the
+ *    full row/corridor constraints allow it.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -331,6 +335,12 @@
         return groups;
     }
 
+    function equalHeightMembership(live){
+        const out=new Map();
+        for(const group of equalHeightGroups(live))for(const i of group)out.set(i,group);
+        return out;
+    }
+
     function solveEqualHeightGroup(live,corridors,indices){
         const order=indices.slice().sort((ia,ib)=>laneCompare(live[ia],live[ib]));
         const row=order.map(i=>live[i]);
@@ -405,6 +415,27 @@
         return reverse?{ax:reverse.leftX,bx:reverse.rightX,cost:reverse.cost,flipped:true}:null;
     }
 
+    function nearestPinnedSeparation(movable,intervals,pinnedX,req){
+        const current=movable.v.x;
+        const currentSide=current<=pinnedX?-1:1;
+
+        function onSide(side){
+            let best=null;
+            for(const d of intervals){
+                let lo=d.lo,hi=d.hi;
+                if(side<0)hi=Math.min(hi,pinnedX-req);
+                else lo=Math.max(lo,pinnedX+req);
+                if(lo>hi+1e-7)continue;
+                const x=clamp(current,lo,hi);
+                const cost=(x-current)*(x-current);
+                if(!best||cost<best.cost-1e-12)best={x,cost,side};
+            }
+            return best;
+        }
+
+        return onSide(currentSide)||onSide(-currentSide);
+    }
+
     function displacementSummary(live,start){
         let changed=0,maxShift=0;
         for(let i=0;i<live.length;i++){
@@ -427,23 +458,44 @@
 
     function solveDisjunctivePairs(live,corridors){
         const start=live.map(q=>q.v.x);
-        let pairMoves=0,rowMoves=0;
+        let pairMoves=0,rowMoves=0,pinnedMoves=0,pinnedFlips=0;
         const initialRows=polishEqualHeightRows(live,corridors);
         rowMoves+=initialRows.changed;
+        const membership=equalHeightMembership(live);
         const limit=Math.max(128,live.length*live.length*8);
 
         for(let iter=0;iter<limit;iter++){
             const worst=unresolvedLivePair(live);
             if(!worst){
                 const moved=displacementSummary(live,start);
-                return{ok:true,...moved,pairMoves,rowMoves,iterations:iter};
+                return{ok:true,...moved,pairMoves,rowMoves,pinnedMoves,pinnedFlips,iterations:iter};
             }
 
             const a=live[worst.i],b=live[worst.j];
+            const aRow=membership.get(worst.i)||null;
+            const bRow=membership.get(worst.j)||null;
+
+            if(!!aRow!==!!bRow){
+                const pinnedIndex=aRow?worst.i:worst.j;
+                const movableIndex=aRow?worst.j:worst.i;
+                const pinned=live[pinnedIndex],movable=live[movableIndex];
+                const beforeSide=movable.v.x<=pinned.v.x?-1:1;
+                const pinnedCandidate=nearestPinnedSeparation(movable,corridors[movableIndex],pinned.v.x,worst.req);
+                if(pinnedCandidate){
+                    if(Math.abs(movable.v.x-pinnedCandidate.x)>EPS){
+                        movable.v.x=pinnedCandidate.x;pinnedMoves++;
+                        if(pinnedCandidate.side!==beforeSide)pinnedFlips++;
+                    }
+                    const rows=polishEqualHeightRows(live,corridors);
+                    rowMoves+=rows.changed;
+                    continue;
+                }
+            }
+
             const candidate=bestPairCandidate(a,b,corridors[worst.i],corridors[worst.j],worst.req);
             if(!candidate){
                 const moved=displacementSummary(live,start);
-                return{ok:false,reason:"pair_unresolvable",pair:[a.ball.id,b.ball.id],deficit:worst.deficit,...moved,pairMoves,rowMoves,iterations:iter};
+                return{ok:false,reason:"pair_unresolvable",pair:[a.ball.id,b.ball.id],deficit:worst.deficit,...moved,pairMoves,rowMoves,pinnedMoves,pinnedFlips,iterations:iter};
             }
 
             if(Math.abs(a.v.x-candidate.ax)>EPS||Math.abs(b.v.x-candidate.bx)>EPS){
@@ -455,7 +507,7 @@
 
         const worst=unresolvedLivePair(live);
         const moved=displacementSummary(live,start);
-        return{ok:!worst,reason:worst?"iteration_limit":null,pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,deficit:worst?.deficit||0,...moved,pairMoves,rowMoves,iterations:limit};
+        return{ok:!worst,reason:worst?"iteration_limit":null,pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,deficit:worst?.deficit||0,...moved,pairMoves,rowMoves,pinnedMoves,pinnedFlips,iterations:limit};
     }
 
     function solveGarbageContactNetwork(g){
@@ -510,10 +562,11 @@
             const moved=displacementSummary(live,fallbackStart);
             if(!worst){
                 window.__sixBallLastGarbageConstraintSolve={
-                    ok:true,mode:"rows_plus_pairs",live:n,fixed:fixed.length,
+                    ok:true,mode:"rows_plus_pinned_crossings",live:n,fixed:fixed.length,
                     fixedClamp,rowChanged:rows.changed,rowSolved:rows.solved,rowFailed:rows.failed,
                     changed:moved.changed,maxShift:moved.maxShift,
                     pairMoves:disjunctive.pairMoves,rowMoves:disjunctive.rowMoves,
+                    pinnedMoves:disjunctive.pinnedMoves,pinnedFlips:disjunctive.pinnedFlips,
                     iterations:disjunctive.iterations,
                     corridorCounts:corridors.map(q=>q.length),at:Date.now()
                 };
@@ -527,6 +580,7 @@
                 changed:moved.changed,maxShift:moved.maxShift,
                 pair:[live[worst.i].ball.id,live[worst.j].ball.id],deficit:worst.deficit,
                 pairMoves:disjunctive.pairMoves||0,rowMoves:disjunctive.rowMoves||0,
+                pinnedMoves:disjunctive.pinnedMoves||0,pinnedFlips:disjunctive.pinnedFlips||0,
                 iterations:disjunctive.iterations||0,
                 corridorCounts:corridors.map(q=>q.length),at:Date.now()
             };
@@ -616,10 +670,11 @@
     window.__sixBallGarbageFixedCorridorSolver=true;
     window.__sixBallGarbageInstantaneousLaneOrder=true;
     window.__sixBallGarbageEqualHeightRowProjection=true;
+    window.__sixBallGarbagePinnedRowCrossingResolution=true;
     window.__sixBallGarbageDisjunctivePairFallback=true;
     window.__sixBallGarbagePairSideStable=true;
     window.__sixBallGarbageExactTangency=true;
     window.__sixBallGarbagePreClampFixedCorridors=true;
     window.__sixBallGarbageRetainBestDenseSolution=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.25";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.26";
 })();
