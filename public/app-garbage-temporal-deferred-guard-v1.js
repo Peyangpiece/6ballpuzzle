@@ -1,20 +1,19 @@
 /* ============================================================
- * 6ball GARBAGE TEMPORAL DEFERRED GUARD v1
+ * 6ball GARBAGE TEMPORAL DEFERRED GUARD v1.1
  *
- * app-garbage-temporal-safety-v2 can deliberately defer a segment by removing
- * its absolute pileFlow start/end times.  An unscheduled segment is a WAITING
- * physical state and must never be evaluated as an active trajectory: doing so
- * feeds undefined timing into updateVisuals and can produce NaN positions.
+ * app-garbage-temporal-safety-v2 deliberately removes absolute times while a
+ * segment is deferred.  Such a segment is a WAITING physical state and must not
+ * be evaluated by updateVisuals until a safe absolute interval is selected.
  *
- * This compatibility guard makes that state explicit:
- * - deferred + no legal time  -> pileFlow=false (park at current visual point)
- * - temporal-safe scheduled   -> pileFlow=true with explicit finite start/end
+ * v1.1 also fixes the inverse side of that rule: when temporal-safety probes a
+ * parked candidate, the candidate must be evaluated AS IF it were active at the
+ * exact trial start/duration.  Otherwise a parked pileFlow=false segment can be
+ * falsely accepted as safe and then collide when it is released.
  *
- * It does not change logical cells, path geometry, pivots, supports, durations,
- * collision decisions, or the frozen pile.  It only makes the v2 scheduler's
- * already-authored wait/release decision executable by the visual runtime.
+ * No logical cells, path geometry, pivots/supports, collision destinations or
+ * frozen-pile state are changed here.
  * ============================================================ */
-(function installGarbageTemporalDeferredGuardV1(){
+(function installGarbageTemporalDeferredGuardV11(){
     if(typeof window==="undefined"||window.__sixBallGarbageTemporalDeferredGuardV1)return;
     if(typeof scheduleFreshPileFlowWave!=="function")return;
 
@@ -22,6 +21,7 @@
 
     const baseSchedule=scheduleFreshPileFlowWave;
     const baseUpdate=typeof updateGarbagePacks==="function"?updateGarbagePacks:null;
+    const baseWaveSafe=typeof pileFlowWaveSafe==="function"?pileFlowWaveSafe:null;
     const EPS=1e-9;
 
     function garbagePhase(g){
@@ -59,8 +59,6 @@
     function normalizeSeg(seg,baseClock){
         if(!seg)return;
         if(seg.__garbageTemporalDeferredV2){
-            // A deferred segment has no authored absolute time yet.  It is a
-            // parked future trajectory, not an active pileFlow segment.
             seg.pileFlow=false;
             delete seg.pileFlowStart;
             delete seg.pileFlowDuration;
@@ -85,6 +83,49 @@
         }
     }
 
+    if(baseWaveSafe){
+        pileFlowWaveSafe=function(g,segs,start,durationArg){
+            if(!garbagePhase(g)||!Array.isArray(segs)||!segs.length){
+                return baseWaveSafe(g,segs,start,durationArg);
+            }
+
+            const d=Number.isFinite(Number(durationArg))&&Number(durationArg)>EPS
+                ?Number(durationArg)
+                :1/120;
+            const saved=[];
+            for(const seg of segs){
+                if(!seg)continue;
+                saved.push({
+                    seg,
+                    pileFlow:seg.pileFlow,
+                    hasStart:Object.prototype.hasOwnProperty.call(seg,"pileFlowStart"),
+                    start:seg.pileFlowStart,
+                    hasDuration:Object.prototype.hasOwnProperty.call(seg,"pileFlowDuration"),
+                    duration:seg.pileFlowDuration,
+                    hasEnd:Object.prototype.hasOwnProperty.call(seg,"pileFlowEnd"),
+                    end:seg.pileFlowEnd
+                });
+                // Safety must sample the exact candidate trajectory being tested,
+                // even when this segment is currently parked as deferred.
+                seg.pileFlow=true;
+                seg.pileFlowStart=start;
+                seg.pileFlowDuration=d;
+                seg.pileFlowEnd=start+d;
+            }
+
+            try{
+                return baseWaveSafe(g,segs,start,d);
+            }finally{
+                for(const s of saved){
+                    s.seg.pileFlow=s.pileFlow;
+                    if(s.hasStart)s.seg.pileFlowStart=s.start;else delete s.seg.pileFlowStart;
+                    if(s.hasDuration)s.seg.pileFlowDuration=s.duration;else delete s.seg.pileFlowDuration;
+                    if(s.hasEnd)s.seg.pileFlowEnd=s.end;else delete s.seg.pileFlowEnd;
+                }
+            }
+        };
+    }
+
     scheduleFreshPileFlowWave=function(g,fresh){
         const baseClock=Math.max(0,Number(g?.pileFlowClock)||0);
         const result=baseSchedule(g,fresh);
@@ -96,14 +137,15 @@
         updateGarbagePacks=function(g,dt){
             const result=baseUpdate(g,dt);
             if(garbagePhase(g)){
-                // retryDeferred() in temporal-safety-v2 runs inside baseUpdate.
-                // Its release clock is the current pileFlowClock on return.
+                // retryDeferred() in temporal-safety-v2 ran inside baseUpdate.
+                // pileFlowWaveDelay is relative to this same current base clock.
                 normalizeBoard(g,Math.max(0,Number(g.pileFlowClock)||0));
             }
             return result;
         };
     }
 
-    window.__sixBallGarbageTemporalDeferredGuardVersion="garbage-temporal-deferred-guard-v1";
+    window.__sixBallGarbageTemporalDeferredGuardVersion="garbage-temporal-deferred-guard-v1.1";
     window.__sixBallGarbageDeferredSegmentsAreInactive=true;
+    window.__sixBallGarbageDeferredSafetyProbeActive=true;
 })();
