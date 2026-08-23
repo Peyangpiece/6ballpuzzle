@@ -4,17 +4,16 @@
  * Final post-pass for dense garbage rows.
  *
  * The authoritative garbage solver keeps equal-height incoming rows coherent.
- * In one dense crossing case an outsider can become trapped between a tangent
- * fixed support and a wall-anchored live row. Preserving the outsider's current
- * side then has no legal infinitesimal correction: the nearest legal solution
- * is to pass the outsider to the opposite side of the pinned row.
+ * In dense crossings an outsider can be trapped between fixed support and a
+ * tangent live row. The post-pass evaluates two physically legal responses:
+ * move the outsider to the nearest legal side, or translate the whole tangent
+ * row without changing its internal spacing. The response with the smaller
+ * total horizontal displacement is selected.
  *
  * This layer runs AFTER app-garbage-freeze-authoritative-v1.js and changes only
  * visual X positions of live incoming garbage during GARBAGE. Logical cells,
  * Y/path timing, segment metadata, the frozen pile and ordinary ball physics are
- * untouched. For a residual row/outsider overlap it evaluates BOTH sides and
- * chooses the globally legal candidate with the smallest horizontal movement.
- * Exact tangency remains legal.
+ * untouched. Exact tangency remains legal.
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallGarbageMinDisplacementCrossingV1)return;
@@ -47,8 +46,8 @@
         return all.filter(q=>q.ball.isGarbage&&!q.ball.garbagePhaseFrozen&&!frozen.has(q.ball.id)&&hasLivePath(q.ball));
     }
 
-    function physicalDistance(a,b,ax=a.v.x){
-        return Math.hypot((ax-b.v.x)*0.5,(a.v.y-b.v.y)*H);
+    function physicalDistance(a,b,ax=a.v.x,bx=b.v.x){
+        return Math.hypot((ax-bx)*0.5,(a.v.y-b.v.y)*H);
     }
 
     function requiredX(a,b){
@@ -81,8 +80,8 @@
 
         function markChain(chain){
             if(chain.length<2)return;
-            const ids=chain.map(q=>q.ball.id);
-            for(const q of chain)membership.set(q.ball.id,ids);
+            const stable=chain.slice();
+            for(const q of stable)membership.set(q.ball.id,stable);
         }
 
         for(const sameY of buckets){
@@ -103,7 +102,7 @@
         if(!Number.isFinite(x)||x<-EPS||x>W2-1+EPS)return false;
         for(const b of blockers){
             if(!b||b.ball.id===movable.ball.id)continue;
-            if(physicalDistance(movable,b,x)<LEGAL_LIMIT)return false;
+            if(physicalDistance(movable,b,x,b.v.x)<LEGAL_LIMIT)return false;
         }
         return true;
     }
@@ -159,6 +158,61 @@
         return best;
     }
 
+    function legalRowShift(row,delta,blockers){
+        for(const q of row){
+            const x=q.v.x+delta;
+            if(!Number.isFinite(x)||x<-EPS||x>W2-1+EPS)return false;
+            for(const b of blockers){
+                if(!b)continue;
+                if(physicalDistance(q,b,x,b.v.x)<LEGAL_LIMIT)return false;
+            }
+        }
+        return true;
+    }
+
+    function nearestLegalRowShift(row,pinned,movable,all){
+        if(!Array.isArray(row)||row.length<2)return null;
+        const rowIds=new Set(row.map(q=>q.ball.id));
+        const blockers=all.filter(q=>!rowIds.has(q.ball.id));
+        const req=requiredX(pinned,movable);
+        if(req<=0)return null;
+
+        const outsiderLeft=movable.v.x<=pinned.v.x;
+        const direction=outsiderLeft?1:-1;
+        const boundary=outsiderLeft?(movable.v.x+req-pinned.v.x):(movable.v.x-req-pinned.v.x);
+        let minDelta=-Infinity,maxDelta=Infinity;
+        for(const q of row){
+            minDelta=Math.max(minDelta,-q.v.x);
+            maxDelta=Math.min(maxDelta,(W2-1)-q.v.x);
+        }
+        if(minDelta>maxDelta+EPS)return null;
+
+        const raw=[boundary,direction>0?maxDelta:minDelta,0];
+        for(const q of row)for(const b of blockers){
+            const r=requiredX(q,b);
+            if(r<=0)continue;
+            raw.push(b.v.x-r-q.v.x,b.v.x+r-q.v.x);
+        }
+
+        let best=null;
+        const seen=new Set();
+        for(let delta of raw){
+            if(!Number.isFinite(delta))continue;
+            delta=Math.max(minDelta,Math.min(maxDelta,delta));
+            if(direction>0&&delta<boundary-1e-7)continue;
+            if(direction<0&&delta>boundary+1e-7)continue;
+            const key=delta.toFixed(12);
+            if(seen.has(key))continue;
+            seen.add(key);
+            if(!legalRowShift(row,delta,blockers))continue;
+            const cost=Math.abs(delta)*row.length;
+            if(!best||cost<best.cost-1e-10||(Math.abs(cost-best.cost)<=1e-10&&Math.abs(delta)<Math.abs(best.delta)-1e-10)){
+                best={delta,cost};
+            }
+        }
+        return best;
+    }
+
     function residualRowOutsider(live){
         const membership=equalHeightMembership(live);
         let worst=null;
@@ -166,11 +220,13 @@
             const a=live[i],b=live[j];
             const d=physicalDistance(a,b);
             if(d>=OVERLAP_LIMIT)continue;
-            const aRow=membership.has(a.ball.id),bRow=membership.has(b.ball.id);
-            if(aRow===bRow)continue;
-            const pinned=aRow?a:b;
-            const movable=aRow?b:a;
-            if(!worst||d<worst.d)worst={d,pinned,movable};
+            const aChain=membership.get(a.ball.id)||null;
+            const bChain=membership.get(b.ball.id)||null;
+            if(!!aChain===!!bChain)continue;
+            const pinned=aChain?a:b;
+            const movable=aChain?b:a;
+            const row=aChain||bChain;
+            if(!worst||d<worst.d)worst={d,pinned,movable,row};
         }
         return worst;
     }
@@ -190,6 +246,7 @@
         if(!garbagePhase(g))return 0;
         let moves=0;
         let flips=0;
+        let rowTranslations=0;
         let totalShift=0;
         const movedIds=[];
         const maxIter=256;
@@ -201,16 +258,31 @@
             const issue=residualRowOutsider(live);
             if(!issue)break;
 
-            const blockers=all.filter(q=>q.ball.id!==issue.movable.ball.id);
+            const outsiderBlockers=all.filter(q=>q.ball.id!==issue.movable.ball.id);
+            const outsiderCandidate=nearestLegalPinnedCandidate(issue.movable,issue.pinned,outsiderBlockers);
+            const rowCandidate=nearestLegalRowShift(issue.row,issue.pinned,issue.movable,all);
+            if(!outsiderCandidate&&!rowCandidate)break;
+
+            const useRow=!!rowCandidate&&(!outsiderCandidate||rowCandidate.cost<outsiderCandidate.cost-1e-10);
+            if(useRow){
+                if(Math.abs(rowCandidate.delta)<=EPS)break;
+                for(const q of issue.row){
+                    q.v.x+=rowCandidate.delta;
+                    movedIds.push(q.ball.id);
+                    moves++;
+                }
+                totalShift+=Math.abs(rowCandidate.delta)*issue.row.length;
+                rowTranslations++;
+                continue;
+            }
+
             const before=issue.movable.v.x;
             const beforeSide=before<=issue.pinned.v.x?-1:1;
-            const candidate=nearestLegalPinnedCandidate(issue.movable,issue.pinned,blockers);
-            if(!candidate||Math.abs(candidate.x-before)<=EPS)break;
-
-            issue.movable.v.x=candidate.x;
+            if(!outsiderCandidate||Math.abs(outsiderCandidate.x-before)<=EPS)break;
+            issue.movable.v.x=outsiderCandidate.x;
             moves++;
-            totalShift+=Math.abs(candidate.x-before);
-            if(candidate.side!==beforeSide)flips++;
+            totalShift+=Math.abs(outsiderCandidate.x-before);
+            if(outsiderCandidate.side!==beforeSide)flips++;
             movedIds.push(issue.movable.ball.id);
         }
 
@@ -218,7 +290,7 @@
         const live=liveEntries(g,all);
         const final=minIncomingDistance(all,live);
         const info={
-            moves,flips,totalShift,
+            moves,flips,rowTranslations,totalShift,
             movedIds:[...new Set(movedIds)],
             finalMinDistance:Number.isFinite(final.min)?final.min:null,
             finalPair:final.pair,
@@ -240,5 +312,5 @@
     };
 
     window.__sixBallGarbageMinDisplacementCrossingV1=true;
-    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.1";
+    window.__sixBallGarbageMinDisplacementCrossingVersion="garbage-min-displacement-crossing-v1.2";
 })();
