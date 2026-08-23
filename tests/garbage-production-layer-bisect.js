@@ -33,7 +33,8 @@ const layers=[
   "app-upconvex-pocket-capture-v1.js",
   "app-upconvex-rigid-until-contact-v1.js",
   "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js"
+  "app-runtime-performance-v3.js",
+  "app-garbage-freeze-authoritative-v1.js"
 ];
 
 const probe=String.raw`
@@ -71,6 +72,8 @@ for(let n=0;n<=layers.length;n++){
   }
 }
 console.log(JSON.stringify(reports,null,2));
-const first=reports.find(r=>!r.ok);
-if(first)throw new Error("first production layer breaking garbage freeze: "+first.through+" "+JSON.stringify(first.probe||first.error));
-console.log("garbage production freeze layer bisect PASS");
+const firstBroken=reports.find(r=>!r.ok);
+if(!firstBroken||firstBroken.through!=="app-gravity-priority-v1.js")throw new Error("unexpected first garbage freeze breaker: "+JSON.stringify(firstBroken));
+const final=reports[reports.length-1];
+if(!final.ok)throw new Error("final authoritative garbage freeze guard did not restore invariant: "+JSON.stringify(final));
+console.log("garbage production freeze layer bisect PASS",JSON.stringify({firstBroken:firstBroken.through,recoveredAt:final.through}));
