@@ -17,7 +17,8 @@ const files=[
   "app-rigidity-resolver-authoritative-v3.js","app-upconvex-contact-priority-v1.js",
   "app-upconvex-pocket-capture-v1.js","app-upconvex-rigid-until-contact-v1.js",
   "app-collapse-timing-authoritative-v2.js","app-runtime-performance-v3.js",
-  "app-garbage-freeze-authoritative-v1.js","app-garbage-min-displacement-crossing-v1.js"
+  "app-garbage-freeze-authoritative-v1.js","app-garbage-min-displacement-crossing-v1.js",
+  "app-garbage-contact-monotonic-v1.js"
 ];
 const runtime=files.map(read).join("\n");
 const checks=String.raw`
@@ -58,6 +59,7 @@ function report(g,originalIds,frame,stage,best){
    pending:pendingFallPathCount(g),moving:[...(g._visualMovingIds||[])],
    temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,
    deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null,
+   contactMonotonic:window.__sixBallLastGarbageContactMonotonicV1||null,
    temporalSchedule:window.__sixBallLastGarbageTemporalScheduleV1||null,
    presentationSchedule:window.__sixBallLastGarbagePresentationSchedule||null,
    continuousSchedule:window.__sixBallLastGarbageSchedule||null,
@@ -87,7 +89,7 @@ for(let frame=0;frame<500;frame++){
   const p=worst(g,originalIds);if(p&&p.d<0.9995){report(g,originalIds,frame,"after-updateGarbagePacks",p);throw new Error("garbage overlap introduced after pack update at frame "+frame+" d="+p.d);}
   if(garbageBatchDone(g))break;
 }
-console.log("garbage production overlap diagnostic PASS "+JSON.stringify({firstTransient:firstTransient&&{frame:firstTransient.frame,d:firstTransient.d,a:firstTransient.a.id,b:firstTransient.b.id},temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null}));
+console.log("garbage production overlap diagnostic PASS "+JSON.stringify({firstTransient:firstTransient&&{frame:firstTransient.frame,d:firstTransient.d,a:firstTransient.a.id,b:firstTransient.b.id},temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null,contactMonotonic:window.__sixBallLastGarbageContactMonotonicV1||null}));
 `;
 const context={React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,Image:function(){this.complete=false;this.naturalWidth=0;},Math,Map,Set,WeakMap,Array,Number,Object,String,Boolean,JSON,Date,setTimeout(){return 0},clearTimeout(){},performance:{now(){return 0}},localStorage:{getItem(){return null},setItem(){}},document:{getElementById(){return null}},ResizeObserver:function(){this.observe=()=>{};this.disconnect=()=>{};}};
 vm.runInNewContext(runtime+checks,context,{timeout:180000});
