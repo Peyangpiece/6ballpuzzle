@@ -675,3 +675,277 @@
         false;
 
 })();
+
+
+/* ============================================================
+ * 6ball GARBAGE TEMPORAL TRAJECTORY SCHEDULER v1
+ *
+ * The continuous garbage layer intentionally removes global lattice-wave waits,
+ * but that also removed app-07's sampled path-safety gate. Two logically legal
+ * neighbouring segments can therefore be tangent on the lattice while a real
+ * pivot/FOLLOW_SUPPORT arc cuts inside that tangent and creates visual overlap.
+ *
+ * Restore only the missing temporal collision rule:
+ * - keep a whole logical event simultaneous when its authored trajectories are safe
+ * - if the event is unsafe, keep every non-conflicting member simultaneous
+ * - delay only the conflicting member to the first safe already-authored end time
+ * - lower garbage has priority, so an upper ball never pushes through a lower one
+ * - never alter logical cells, pivots, durations, gravity curves or settled pile
+ * ============================================================ */
+(function installGarbageTemporalTrajectorySchedulerV1(){
+
+    if(
+        typeof window==="undefined" ||
+        window.__sixBallGarbageTemporalTrajectorySchedulerV1
+    ){
+        return;
+    }
+
+    if(
+        typeof scheduleFreshPileFlowWave!=="function" ||
+        typeof pileFlowWaveSafe!=="function"
+    ){
+        return;
+    }
+
+    window.__sixBallGarbageTemporalTrajectorySchedulerV1=true;
+
+    const baseSchedulerTemporalV1=
+        scheduleFreshPileFlowWave;
+
+    const SAFE_GAP=
+        typeof PILE_FLOW_MIN_WAVE_GAP==="number"
+            ?PILE_FLOW_MIN_WAVE_GAP
+            :1/120;
+
+    const EPS_TIME=1e-9;
+
+
+    function garbagePhase(g){
+        return !!(
+            g &&
+            g.state==="RESOLVING" &&
+            g.phase==="GARBAGE"
+        );
+    }
+
+
+    function ownPreviousEnd(ball,seg,base){
+        const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
+        const index=path.indexOf(seg);
+        if(index<=0)return base;
+        for(let i=index-1;i>=0;i--){
+            const prev=path[i];
+            if(Number.isFinite(prev?.pileFlowEnd)){
+                return Math.max(base,prev.pileFlowEnd);
+            }
+        }
+        return base;
+    }
+
+
+    function groupedBySeq(fresh){
+        const map=new Map();
+        for(const q of fresh){
+            const seq=Number.isFinite(q?.seq)?q.seq:0;
+            if(!map.has(seq))map.set(seq,[]);
+            map.get(seq).push(q);
+        }
+        return [...map.entries()].sort((a,b)=>a[0]-b[0]);
+    }
+
+
+    function groupDuration(entries){
+        return Math.max(
+            1/120,
+            ...entries.map(q=>Number(q?.seg?._pileNominalDuration)||1/120)
+        );
+    }
+
+
+    function clearSchedule(entries){
+        for(const {seg} of entries){
+            if(!seg)continue;
+            delete seg.pileFlowStart;
+            delete seg.pileFlowDuration;
+            delete seg.pileFlowEnd;
+        }
+    }
+
+
+    function scheduledEndCandidates(g,earliest,excludeSeg){
+        const ends=[];
+        const seen=new Set();
+        if(!Array.isArray(g?.board))return ends;
+        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?g.board[y][x]:null;
+            if(!ball||seen.has(ball)||!Array.isArray(ball.fallPath))continue;
+            seen.add(ball);
+            for(const seg of ball.fallPath){
+                if(seg===excludeSeg)continue;
+                const end=Number(seg?.pileFlowEnd);
+                if(!Number.isFinite(end)||end<earliest-EPS_TIME)continue;
+                ends.push(end);
+            }
+        }
+        ends.sort((a,b)=>a-b);
+        const unique=[];
+        for(const end of ends){
+            if(!unique.length||Math.abs(end-unique[unique.length-1])>EPS_TIME){
+                unique.push(end);
+            }
+        }
+        return unique;
+    }
+
+
+    function lowerFirst(entries){
+        return entries.slice().sort((a,b)=>{
+            const ay=Number(a?.seg?.from?.[1]);
+            const by=Number(b?.seg?.from?.[1]);
+            if(Number.isFinite(ay)&&Number.isFinite(by)&&Math.abs(ay-by)>EPS_TIME){
+                return by-ay;
+            }
+            const aty=Number(a?.seg?.to?.[1]);
+            const bty=Number(b?.seg?.to?.[1]);
+            if(Number.isFinite(aty)&&Number.isFinite(bty)&&Math.abs(aty-bty)>EPS_TIME){
+                return bty-aty;
+            }
+            const ax=Number(a?.seg?.from?.[0]);
+            const bx=Number(b?.seg?.from?.[0]);
+            if(Number.isFinite(ax)&&Number.isFinite(bx)&&Math.abs(ax-bx)>EPS_TIME){
+                return ax-bx;
+            }
+            return Number(a?.ball?.id||0)-Number(b?.ball?.id||0);
+        });
+    }
+
+
+    function scheduleSingleSafely(g,entry,earliest,duration){
+        const {seg}=entry;
+        const candidates=[earliest];
+        for(const end of scheduledEndCandidates(g,earliest,seg)){
+            candidates.push(end);
+            candidates.push(end+SAFE_GAP);
+        }
+
+        let last=earliest;
+        for(const start of candidates){
+            if(start<earliest-EPS_TIME)continue;
+            if(start<last-EPS_TIME)continue;
+            last=start;
+            if(pileFlowWaveSafe(g,[seg],start,duration)){
+                return start;
+            }
+        }
+
+        const fallback=Math.max(
+            earliest,
+            ...scheduledEndCandidates(g,earliest,seg),
+            earliest
+        )+SAFE_GAP;
+
+        if(pileFlowWaveSafe(g,[seg],fallback,duration)){
+            return fallback;
+        }
+
+        // The remaining impossible case is a genuinely impossible final corridor,
+        // not a temporal crossing. Keep the canonical segment rather than inventing
+        // a new trajectory; the final non-penetration layer remains authoritative.
+        seg.pileFlowStart=earliest;
+        seg.pileFlowDuration=duration;
+        seg.pileFlowEnd=earliest+duration;
+        return earliest;
+    }
+
+
+    scheduleFreshPileFlowWave=function(g,fresh){
+
+        if(!fresh?.length){
+            return baseSchedulerTemporalV1(g,fresh);
+        }
+
+        if(!garbagePhase(g)){
+            return baseSchedulerTemporalV1(g,fresh);
+        }
+
+        // First let the continuous layer author its exact durations, gravity
+        // metadata and canonical segment flags. We only replace absolute starts.
+        const result=baseSchedulerTemporalV1(g,fresh);
+
+        const base=Math.max(0,Number(g.pileFlowClock)||0);
+        const groups=groupedBySeq(fresh);
+
+        // Remove only this fresh batch's absolute times. Existing older paths stay
+        // scheduled and therefore participate as moving obstacles in safety tests.
+        for(const [,entries] of groups)clearSchedule(entries);
+
+        let intactEvents=0;
+        let splitEvents=0;
+        let delayedSegments=0;
+        let maxDelay=0;
+
+        for(const [,entries] of groups){
+            const segs=entries.map(q=>q.seg).filter(Boolean);
+            if(!segs.length)continue;
+
+            const duration=groupDuration(entries);
+            let earliest=base;
+            for(const {ball,seg} of entries){
+                earliest=Math.max(earliest,ownPreviousEnd(ball,seg,base));
+            }
+
+            // Preserve full simultaneous motion whenever the real sampled paths
+            // are safe. This is the normal case and adds no visual delay.
+            if(pileFlowWaveSafe(g,segs,earliest,duration)){
+                for(const seg of segs){
+                    seg.pileFlowWaveDelay=Math.max(0,earliest-base);
+                    seg.pileFlowGarbageContinuous=true;
+                    seg.pileFlowTemporalSeparated=false;
+                }
+                intactEvents++;
+                continue;
+            }
+
+            splitEvents++;
+
+            // pileFlowWaveSafe deletes the failed tentative schedule. Give the
+            // physically lower members first access to the same event time, then
+            // schedule only colliding neighbours behind an existing path end.
+            clearSchedule(entries);
+
+            for(const entry of lowerFirst(entries)){
+                const seg=entry.seg;
+                const ownEarliest=ownPreviousEnd(entry.ball,seg,base);
+                const start=scheduleSingleSafely(g,entry,ownEarliest,duration);
+                const delay=Math.max(0,start-ownEarliest);
+                seg.pileFlowWaveDelay=Math.max(0,start-base);
+                seg.pileFlowGarbageContinuous=true;
+                seg.pileFlowTemporalSeparated=delay>EPS_TIME;
+                if(delay>EPS_TIME){
+                    delayedSegments++;
+                    maxDelay=Math.max(maxDelay,delay);
+                }
+            }
+        }
+
+        window.__sixBallLastGarbageTemporalScheduleV1={
+            segments:fresh.length,
+            events:groups.length,
+            intactEvents,
+            splitEvents,
+            delayedSegments,
+            maxDelay,
+            at:Date.now()
+        };
+
+        window.__sixBallGarbageTemporalSeparatedSegments=
+            (window.__sixBallGarbageTemporalSeparatedSegments||0)+delayedSegments;
+
+        return result;
+    };
+
+    window.__sixBallGarbageTemporalTrajectoryVersion=
+        "garbage-temporal-trajectory-v1";
+
+})();
