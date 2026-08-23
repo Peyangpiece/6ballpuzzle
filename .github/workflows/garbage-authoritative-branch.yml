@@ -34,7 +34,9 @@ jobs:
             public/app-garbage-performance-v1.js \
             public/app-garbage-continuous-v1.js \
             public/app-garbage-freeze-authoritative-v1.js \
-            public/app-garbage-min-displacement-crossing-v1.js; do
+            public/app-garbage-min-displacement-crossing-v1.js \
+            public/app-garbage-contact-monotonic-v1.js \
+            public/app-garbage-rigid-row-contact-v1.js; do
             node --check "$f"
           done
 
@@ -51,8 +53,37 @@ jobs:
       - name: Bisect production layers against garbage freeze
         run: node tests/garbage-production-layer-bisect.js
 
-      - name: Trace first production overlap stage
-        run: node tests/garbage-production-overlap-diagnostic.js
+      - name: Trace first production overlap stage with rigid-row finalizer
+        run: |
+          set -e
+          cp tests/garbage-production-overlap-diagnostic.js tests/.garbage-row-diagnostic.tmp.js
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tests/.garbage-row-diagnostic.tmp.js')
+          s=p.read_text()
+          needle='"app-garbage-contact-monotonic-v1.js"\n];'
+          repl='"app-garbage-contact-monotonic-v1.js",\n  "app-garbage-rigid-row-contact-v1.js"\n];'
+          if needle not in s:
+              raise SystemExit('diagnostic runtime tail not found')
+          p.write_text(s.replace(needle,repl,1))
+          PY
+          node tests/.garbage-row-diagnostic.tmp.js
+          rm tests/.garbage-row-diagnostic.tmp.js
 
-      - name: Run production-load-order garbage integration
-        run: node tests/garbage-production-integration.js
+      - name: Run production-load-order garbage integration with branch finalizers
+        run: |
+          set -e
+          cp tests/garbage-production-integration.js tests/.garbage-row-integration.tmp.js
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('tests/.garbage-row-integration.tmp.js')
+          s=p.read_text()
+          s=s.replace('"app-garbage-continuous-v1.js","app-contact-separation-v1.js",','"app-garbage-continuous-v1.js","app-contact-separation-v1.js","app-garbage-temporal-safety-v2.js",',1)
+          needle='"app-garbage-freeze-authoritative-v1.js","app-garbage-min-displacement-crossing-v1.js"\n];'
+          repl='"app-garbage-freeze-authoritative-v1.js","app-garbage-min-displacement-crossing-v1.js",\n  "app-garbage-contact-monotonic-v1.js","app-garbage-rigid-row-contact-v1.js"\n];'
+          if needle not in s:
+              raise SystemExit('integration runtime tail not found')
+          p.write_text(s.replace(needle,repl,1))
+          PY
+          node tests/.garbage-row-integration.tmp.js
+          rm tests/.garbage-row-integration.tmp.js
