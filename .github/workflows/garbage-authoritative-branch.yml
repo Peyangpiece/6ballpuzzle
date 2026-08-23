@@ -1,0 +1,49 @@
+name: Garbage Authoritative Branch Gate
+
+on:
+  push:
+    branches: [garbage-authoritative-v1]
+  workflow_dispatch:
+
+concurrency:
+  group: garbage-authoritative-v1
+  cancel-in-progress: true
+
+jobs:
+  garbage-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check garbage runtime syntax
+        run: |
+          set -e
+          for f in \
+            public/app-garbage-normal-physics.js \
+            public/app-garbage-presentation.js \
+            public/app-garbage-zero-rigidity.js \
+            public/app-garbage-deep-settle.js \
+            public/app-garbage-simultaneous-motion.js \
+            public/app-garbage-render-overlap-guard.js \
+            public/app-garbage-performance-v1.js \
+            public/app-garbage-continuous-v1.js; do
+            node --check "$f"
+          done
+
+      - name: Run current focused garbage regressions
+        run: |
+          set -e
+          node tests/garbage-normal-physics.js
+          node tests/garbage-presentation.js
+          node tests/garbage-zero-rigidity.js
+          node tests/garbage-diagonal-settle.js
+          node tests/garbage-post-clear-collapse.js
+          node tests/garbage-render-overlap-guard.js
+          node tests/garbage-swept-tunnel.js
+
+      - name: Run production-load-order garbage integration
+        run: node tests/garbage-production-integration.js
