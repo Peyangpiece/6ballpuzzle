@@ -33,7 +33,8 @@ jobs:
             public/app-garbage-render-overlap-guard.js \
             public/app-garbage-performance-v1.js \
             public/app-garbage-continuous-v1.js \
-            public/app-garbage-freeze-authoritative-v1.js; do
+            public/app-garbage-freeze-authoritative-v1.js \
+            public/app-garbage-min-displacement-crossing-v1.js; do
             node --check "$f"
           done
 
