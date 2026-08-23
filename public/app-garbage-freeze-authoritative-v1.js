@@ -6,10 +6,12 @@
  *
  * 1. Balls already accumulated when GARBAGE began are immutable supports.
  * 2. Current-batch garbage with no fallPath rests exactly on its logical cell.
- * 3. A live incoming garbage ball may never visually penetrate either of those
- *    fixed receiving-pile members; only the live ball is projected away.
+ * 3. A live incoming garbage ball may never visually penetrate the fixed pile.
+ * 4. Two live incoming garbage balls may never visually interpenetrate, even
+ *    when their solver-authored unit-local paths cross in the same frame.
  *
- * Logical destinations and live fallPath geometry are not rewritten.
+ * Logical destinations and fallPath geometry are never rewritten here. Contact
+ * correction changes only the already-resolved visual centres for this frame.
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallGarbageFreezeAuthoritativeV1)return;
@@ -25,6 +27,7 @@
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const EPS=1e-9;
+    const SAFE_EPS=2e-7;
 
     function frozenIds(board){
         const out=new Set();
@@ -139,8 +142,6 @@
             live.v.x=horizontalTangentX(live,fixed,0);
         }
 
-        // Wall/floor clamping can shorten the projection. Finish with a legal
-        // horizontal tangent if needed; fixed receiving members never move.
         dx=(live.v.x-fixed.v.x)*.5;
         dy=(live.v.y-fixed.v.y)*H;
         if(Math.hypot(dx,dy)<MIN_DIST-1e-8&&Math.abs(dy)<MIN_DIST){
@@ -149,22 +150,77 @@
         return true;
     }
 
-    function enforceLiveVsFixedContacts(g){
+    function livePairSign(a,b){
+        // Keep the same left/right order as the solver's logical destinations.
+        // For members of one shaped unit this also preserves source-role order
+        // when their target x happens to be equal.
+        let sign=Math.sign(a.x-b.x);
+        if(!sign)sign=Math.sign(a.v.x-b.v.x);
+        if(!sign&&a.ball.garbageSourceSeq===b.ball.garbageSourceSeq){
+            sign=Math.sign((Number(a.ball.garbageSourceRole)||0)-(Number(b.ball.garbageSourceRole)||0));
+        }
+        return sign||((a.ball.id>b.ball.id)?1:-1);
+    }
+
+    function separateLivePair(a,b){
+        const dy=(a.v.y-b.v.y)*H;
+        if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return false;
+
+        const requiredPhysicalX=Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
+        const requiredLatticeX=2*(requiredPhysicalX+SAFE_EPS);
+        const sign=livePairSign(a,b);
+        const signedCurrent=sign*(a.v.x-b.v.x);
+        let missing=requiredLatticeX-signedCurrent;
+        if(missing<=1e-8)return false;
+
+        // Separate horizontally only. This guarantees contact correction cannot
+        // create the old visual upward kick while both balls are falling/arcing.
+        const capA=sign>0?(W2-1-a.v.x):a.v.x;
+        const capB=sign>0?b.v.x:(W2-1-b.v.x);
+        let moveA=Math.min(Math.max(0,capA),missing*.5);
+        let moveB=Math.min(Math.max(0,capB),missing-moveA);
+        missing-=moveA+moveB;
+        if(missing>EPS){
+            const moreA=Math.min(Math.max(0,capA-moveA),missing);
+            moveA+=moreA;missing-=moreA;
+        }
+        if(missing>EPS){
+            const moreB=Math.min(Math.max(0,capB-moveB),missing);
+            moveB+=moreB;missing-=moreB;
+        }
+
+        a.v.x=Math.max(0,Math.min(W2-1,a.v.x+sign*moveA));
+        b.v.x=Math.max(0,Math.min(W2-1,b.v.x-sign*moveB));
+        return moveA+moveB>EPS;
+    }
+
+    function enforceGarbageContacts(g){
         if(!garbagePhase(g))return 0;
         const frozen=frozenIds(g.board);
         let corrections=0;
-        for(let pass=0;pass<8;pass++){
+
+        // Each correction can expose a neighbouring contact, so iterate the
+        // small GARBAGE set to convergence. No logical cell/path is changed.
+        for(let pass=0;pass<16;pass++){
             let changed=false;
             const entries=boardEntries(g);
             const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
             const live=entries.filter(q=>q.ball.isGarbage&&!frozen.has(q.ball.id)&&!q.ball.garbagePhaseFrozen&&hasLivePath(q.ball));
+
             for(const moving of live)for(const support of fixed){
                 if(moving.ball.id===support.ball.id)continue;
                 if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
                 if(pushLiveFromFixed(moving,support)){changed=true;corrections++;}
             }
+
+            for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
+                if(physicalDistance(live[i],live[j])>=MIN_DIST-1e-8)continue;
+                if(separateLivePair(live[i],live[j])){changed=true;corrections++;}
+            }
+
             if(!changed)break;
         }
+
         if(corrections)window.__sixBallGarbageFinalContactCorrections=(window.__sixBallGarbageFinalContactCorrections||0)+corrections;
         return corrections;
     }
@@ -202,7 +258,7 @@
             normalizeReceivingGarbage(g);
             const r=baseResolveVisualContacts(g);
             normalizeReceivingGarbage(g);
-            enforceLiveVsFixedContacts(g);
+            enforceGarbageContacts(g);
             return r;
         };
     }
@@ -210,5 +266,6 @@
     window.__sixBallGarbagePreBatchFreezeFinal=true;
     window.__sixBallGarbageReceivingPileFinal=true;
     window.__sixBallGarbageLiveVsFixedContactFinal=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.4";
+    window.__sixBallGarbageLiveVsLiveContactFinal=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.5";
 })();
