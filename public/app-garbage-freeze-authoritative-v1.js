@@ -19,8 +19,9 @@
  * 8. The complete live garbage contact network is solved as one ordered set of
  *    horizontal constraints. Fixed supports define allowed horizontal corridors
  *    instead of contradictory one-sided bounds. The order is the instantaneous
- *    analytic left-to-right order, so two trajectories may cross without a stale
- *    logical destination order forcing the correction to the wrong side.
+ *    analytic left-to-right order. If that total order is impossible in a dense
+ *    crossing, a disjunctive pair solver may choose either side per contact while
+ *    preserving the same analytic Y and every fixed-support corridor.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -213,8 +214,6 @@
         }
         if(cursor<W2-1-EPS)allowed.push({lo:cursor,hi:W2-1});
 
-        // A tangent endpoint is valid. Preserve a zero-width endpoint corridor
-        // only when the union leaves exactly one legal wall/tangent coordinate.
         if(!allowed.length){
             if(merged[0].lo>EPS)return[{lo:0,hi:0}];
             const last=merged[merged.length-1];
@@ -273,9 +272,6 @@
         const x=new Array(n);
         const chosen=new Array(n);
 
-        // Choose the leftmost corridor that can satisfy all already-fixed
-        // earlier lanes. Because each constraint is a lower bound from i -> j,
-        // this forward construction is the globally minimal feasible placement.
         for(let j=0;j<n;j++){
             let need=0;
             for(let i=0;i<j;i++)if(req[i][j]>0)need=Math.max(need,x[i]+req[i][j]);
@@ -297,6 +293,90 @@
             if(target>x[i])x[i]=target;
         }
         return{x,chosen};
+    }
+
+    function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+
+    function pairOrderCandidate(left,right,leftIntervals,rightIntervals,req){
+        let best=null;
+        const leftNow=left.v.x,rightNow=right.v.x;
+        for(const a of leftIntervals)for(const b of rightIntervals){
+            const aHi=Math.min(a.hi,b.hi-req);
+            if(a.lo>aHi+1e-7)continue;
+            const seeds=[
+                clamp(leftNow,a.lo,aHi),
+                clamp(rightNow-req,a.lo,aHi),
+                clamp((leftNow+rightNow-req)/2,a.lo,aHi),
+                a.lo,aHi
+            ];
+            for(const seed of seeds){
+                let lx=clamp(seed,a.lo,aHi);
+                let rx=clamp(rightNow,Math.max(b.lo,lx+req),b.hi);
+                if(rx-lx<req-1e-7)continue;
+                lx=clamp(leftNow,a.lo,Math.min(aHi,rx-req));
+                rx=clamp(rightNow,Math.max(b.lo,lx+req),b.hi);
+                if(rx-lx<req-1e-7)continue;
+                const cost=(lx-leftNow)*(lx-leftNow)+(rx-rightNow)*(rx-rightNow);
+                if(!best||cost<best.cost-1e-12)best={leftX:lx,rightX:rx,cost};
+            }
+        }
+        return best;
+    }
+
+    function bestPairCandidate(a,b,aIntervals,bIntervals,req){
+        const normal=pairOrderCandidate(a,b,aIntervals,bIntervals,req);
+        const reversed=pairOrderCandidate(b,a,bIntervals,aIntervals,req);
+        let best=null;
+        if(normal)best={ax:normal.leftX,bx:normal.rightX,cost:normal.cost,flipped:false};
+        if(reversed){
+            const candidate={ax:reversed.rightX,bx:reversed.leftX,cost:reversed.cost,flipped:true};
+            const currentAFirst=a.v.x<=b.v.x;
+            const normalPenalty=best&&best.flipped===!currentAFirst?1e-10:0;
+            const reversePenalty=candidate.flipped===!currentAFirst?1e-10:0;
+            if(!best||candidate.cost+reversePenalty<best.cost+normalPenalty-1e-12)best=candidate;
+        }
+        return best;
+    }
+
+    function solveDisjunctivePairs(live,corridors){
+        const start=live.map(q=>q.v.x);
+        let pairMoves=0;
+        const limit=Math.max(96,live.length*live.length*6);
+
+        for(let iter=0;iter<limit;iter++){
+            let worst=null;
+            for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
+                const req=requiredLatticeX(live[i],live[j]);
+                if(req<=0)continue;
+                const sep=Math.abs(live[j].v.x-live[i].v.x);
+                const deficit=req-sep;
+                if(deficit>1e-7&&(!worst||deficit>worst.deficit))worst={i,j,req,deficit};
+            }
+            if(!worst){
+                let changed=0,maxShift=0;
+                for(let i=0;i<live.length;i++){
+                    const shift=Math.abs(live[i].v.x-start[i]);
+                    if(shift>EPS){changed++;maxShift=Math.max(maxShift,shift);}
+                }
+                return{ok:true,changed,maxShift,pairMoves,iterations:iter};
+            }
+
+            const a=live[worst.i],b=live[worst.j];
+            const candidate=bestPairCandidate(a,b,corridors[worst.i],corridors[worst.j],worst.req);
+            if(!candidate)return{ok:false,reason:"pair_unresolvable",pair:[a.ball.id,b.ball.id],pairMoves,iterations:iter};
+
+            if(Math.abs(a.v.x-candidate.ax)>EPS||Math.abs(b.v.x-candidate.bx)>EPS)pairMoves++;
+            a.v.x=candidate.ax;
+            b.v.x=candidate.bx;
+        }
+
+        let worst=null;
+        for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
+            const req=requiredLatticeX(live[i],live[j]);
+            const deficit=req-Math.abs(live[j].v.x-live[i].v.x);
+            if(deficit>1e-7&&(!worst||deficit>worst.deficit))worst={i,j,req,deficit};
+        }
+        return{ok:!worst,reason:worst?"iteration_limit":null,pair:worst?[live[worst.i].ball.id,live[worst.j].ball.id]:null,pairMoves,iterations:limit};
     }
 
     function clampToPreferredCorridors(live,corridors){
@@ -341,9 +421,23 @@
         }
 
         if(!x){
+            const disjunctive=solveDisjunctivePairs(live,corridors);
+            if(disjunctive.ok){
+                window.__sixBallLastGarbageConstraintSolve={
+                    ok:true,mode:"disjunctive_pairs",live:n,fixed:fixed.length,
+                    changed:disjunctive.changed,maxShift:disjunctive.maxShift,
+                    pairMoves:disjunctive.pairMoves,iterations:disjunctive.iterations,
+                    corridorCounts:corridors.map(q=>q.length),at:Date.now()
+                };
+                if(disjunctive.changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+disjunctive.changed;
+                return disjunctive.changed;
+            }
+
             const fallback=clampToPreferredCorridors(live,corridors);
             window.__sixBallLastGarbageConstraintSolve={
-                ok:false,reason:"corridor_infeasible",fallback,
+                ok:false,reason:disjunctive.reason||"corridor_infeasible",fallback,
+                pair:disjunctive.pair||null,pairMoves:disjunctive.pairMoves||0,
+                iterations:disjunctive.iterations||0,
                 corridorCounts:corridors.map(q=>q.length),at:Date.now()
             };
             return fallback;
@@ -430,5 +524,6 @@
     window.__sixBallGarbageConstraintNetworkFinal=true;
     window.__sixBallGarbageFixedCorridorSolver=true;
     window.__sixBallGarbageInstantaneousLaneOrder=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.17";
+    window.__sixBallGarbageDisjunctivePairFallback=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.18";
 })();
