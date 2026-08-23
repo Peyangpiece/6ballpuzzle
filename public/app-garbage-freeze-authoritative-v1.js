@@ -30,7 +30,9 @@
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const EPS=1e-9;
-    const SAFE_EPS=2e-7;
+    // Keep a tiny sub-pixel margin so a later neighbouring projection cannot
+    // leave the just-resolved pair numerically inside the 0.9995 hard gate.
+    const SAFE_EPS=5e-4;
 
     function frozenIds(board){
         const out=new Set();
@@ -150,7 +152,7 @@
     }
 
     function horizontalTangentX(live,fixed,dy){
-        const needX=Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy));
+        const needX=Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS;
         let sign=Math.sign((live.v.x-fixed.v.x)*.5);
         if(!sign)sign=Math.sign((live.x-fixed.x)*.5)||((live.ball.id&1)?1:-1);
         const candidates=[sign,-sign].map(s=>fixed.v.x+(s*needX)/.5);
@@ -223,9 +225,10 @@
         const frozen=frozenIds(g.board);
         let corrections=0;
 
-        // Each correction can expose a neighbouring contact, so iterate the
-        // small GARBAGE set to convergence. No logical cell/path/Y is changed.
-        for(let pass=0;pass<24;pass++){
+        // Dense simultaneous packs can propagate a tiny correction through a
+        // long neighbour chain. Iterate to convergence with a hard finite cap;
+        // the GARBAGE set is small and this runs only during the garbage phase.
+        for(let pass=0;pass<96;pass++){
             let changed=false;
             const entries=boardEntries(g);
             const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
@@ -302,5 +305,5 @@
     window.__sixBallGarbageLiveVsFixedContactFinal=true;
     window.__sixBallGarbageLiveVsLiveContactFinal=true;
     window.__sixBallGarbagePathYAuthoritative=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.6";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.7";
 })();
