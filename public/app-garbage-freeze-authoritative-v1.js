@@ -17,8 +17,8 @@
  * 7. A scheduled segment has one clock interval only:
  *       pileFlowEnd === pileFlowStart + pileFlowDuration
  * 8. The complete live garbage contact network is solved as one ordered set of
- *    horizontal constraints. Pair-by-pair correction loops are not allowed to
- *    undo each other in dense packs.
+ *    horizontal constraints. Fixed supports define allowed horizontal corridors
+ *    instead of contradictory one-sided bounds.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -164,8 +164,6 @@
         return fixed;
     }
 
-    function physicalDistance(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*H);}
-
     function laneCompare(a,b){
         if(a.x!==b.x)return a.x-b.x;
         const as=Number(a.ball.garbageSourceSeq),bs=Number(b.ball.garbageSourceSeq);
@@ -182,38 +180,128 @@
         return 2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
     }
 
-    function sideForFixed(live,support){
-        const dx=live.v.x-support.v.x;
-        if(dx<-EPS)return-1;
-        if(dx>EPS)return 1;
-        const logical=live.x-support.x;
-        if(logical)return Math.sign(logical);
-        return(live.ball.id&1)?1:-1;
-    }
-
-    function fixedBounds(live,fixed){
-        let lo=0,hi=W2-1;
+    function allowedIntervals(live,fixed){
+        const forbidden=[];
         for(const support of fixed){
             if(!support||support.ball.id===live.ball.id)continue;
             const dy=(live.v.y-support.v.y)*H;
             if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)continue;
             const radial=2*(Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dy*dy))+SAFE_EPS);
-            const left=support.v.x-radial;
-            const right=support.v.x+radial;
-            if(sideForFixed(live,support)<0)hi=Math.min(hi,left);
-            else lo=Math.max(lo,right);
+            const lo=Math.max(0,support.v.x-radial);
+            const hi=Math.min(W2-1,support.v.x+radial);
+            if(lo<hi-EPS)forbidden.push({lo,hi});
         }
-        lo=Math.max(0,lo);hi=Math.min(W2-1,hi);
-        return{lo,hi,ok:lo<=hi+1e-8};
+
+        if(!forbidden.length)return[{lo:0,hi:W2-1}];
+        forbidden.sort((a,b)=>a.lo-b.lo||a.hi-b.hi);
+        const merged=[];
+        for(const f of forbidden){
+            const last=merged[merged.length-1];
+            if(!last||f.lo>last.hi+EPS)merged.push({...f});
+            else last.hi=Math.max(last.hi,f.hi);
+        }
+
+        const allowed=[];
+        let cursor=0;
+        for(const f of merged){
+            if(f.lo>cursor+EPS)allowed.push({lo:cursor,hi:f.lo});
+            cursor=Math.max(cursor,f.hi);
+        }
+        if(cursor<W2-1-EPS)allowed.push({lo:cursor,hi:W2-1});
+
+        // A tangent endpoint is valid. Preserve a zero-width endpoint corridor
+        // only when the union leaves exactly one legal wall/tangent coordinate.
+        if(!allowed.length){
+            if(merged[0].lo>EPS)return[{lo:0,hi:0}];
+            const last=merged[merged.length-1];
+            if(last.hi<W2-1-EPS)return[{lo:W2-1,hi:W2-1}];
+        }
+        return allowed;
     }
 
-    function fallbackFixedOnly(live,fixed){
+    function intervalDistance(interval,x){
+        if(x<interval.lo)return interval.lo-x;
+        if(x>interval.hi)return x-interval.hi;
+        return 0;
+    }
+
+    function preferredInterval(intervals,live){
+        if(!intervals.length)return null;
+        let best=intervals[0];
+        let bestD=intervalDistance(best,live.v.x);
+        for(let i=1;i<intervals.length;i++){
+            const q=intervals[i];
+            const d=intervalDistance(q,live.v.x);
+            if(d<bestD-EPS){best=q;bestD=d;continue;}
+            if(Math.abs(d-bestD)<=EPS){
+                const qLogical=intervalDistance(q,live.x);
+                const bLogical=intervalDistance(best,live.x);
+                if(qLogical<bLogical-EPS){best=q;bestD=d;}
+            }
+        }
+        return best;
+    }
+
+    function solveConvexDomains(live,req,domains){
+        const n=live.length;
+        const x=new Array(n);
+        for(let j=0;j<n;j++){
+            const d=domains[j];
+            if(!d)return null;
+            let need=d.lo;
+            for(let i=0;i<j;i++)if(req[i][j]>0)need=Math.max(need,x[i]+req[i][j]);
+            if(need>d.hi+1e-7)return null;
+            x[j]=need;
+        }
+
+        for(let i=n-1;i>=0;i--){
+            const d=domains[i];
+            let maxAllowed=d.hi;
+            for(let j=i+1;j<n;j++)if(req[i][j]>0)maxAllowed=Math.min(maxAllowed,x[j]-req[i][j]);
+            const target=Math.max(d.lo,Math.min(maxAllowed,live[i].v.x));
+            if(target>x[i])x[i]=target;
+        }
+        return x;
+    }
+
+    function solveAcrossCorridors(live,req,corridors){
+        const n=live.length;
+        const x=new Array(n);
+        const chosen=new Array(n);
+
+        // Choose the leftmost corridor that can satisfy all already-fixed
+        // earlier lanes. Because each constraint is a lower bound from i -> j,
+        // this forward construction is the globally minimal feasible placement.
+        for(let j=0;j<n;j++){
+            let need=0;
+            for(let i=0;i<j;i++)if(req[i][j]>0)need=Math.max(need,x[i]+req[i][j]);
+            let pick=null;
+            for(const d of corridors[j]){
+                if(d.hi>=need-1e-7){pick=d;break;}
+            }
+            if(!pick)return null;
+            chosen[j]=pick;
+            x[j]=Math.max(pick.lo,need);
+            if(x[j]>pick.hi+1e-7)return null;
+        }
+
+        for(let i=n-1;i>=0;i--){
+            const d=chosen[i];
+            let maxAllowed=d.hi;
+            for(let j=i+1;j<n;j++)if(req[i][j]>0)maxAllowed=Math.min(maxAllowed,x[j]-req[i][j]);
+            const target=Math.max(d.lo,Math.min(maxAllowed,live[i].v.x));
+            if(target>x[i])x[i]=target;
+        }
+        return{x,chosen};
+    }
+
+    function clampToPreferredCorridors(live,corridors){
         let changed=0;
-        for(const q of live){
-            const b=fixedBounds(q,fixed);
-            if(!b.ok)continue;
-            const nx=Math.max(b.lo,Math.min(b.hi,q.v.x));
-            if(Math.abs(nx-q.v.x)>EPS){q.v.x=nx;changed++;}
+        for(let i=0;i<live.length;i++){
+            const d=preferredInterval(corridors[i],live[i]);
+            if(!d)continue;
+            const nx=Math.max(d.lo,Math.min(d.hi,live[i].v.x));
+            if(Math.abs(nx-live[i].v.x)>EPS){live[i].v.x=nx;changed++;}
         }
         return changed;
     }
@@ -228,41 +316,33 @@
             .sort(laneCompare);
 
         if(!live.length)return 0;
-        const bounds=live.map(q=>fixedBounds(q,fixed));
-        if(bounds.some(b=>!b.ok)){
-            const fallback=fallbackFixedOnly(live,fixed);
-            window.__sixBallLastGarbageConstraintSolve={ok:false,reason:"fixed_bounds",fallback,at:Date.now()};
-            return fallback;
+        const corridors=live.map(q=>allowedIntervals(q,fixed));
+        if(corridors.some(q=>!q.length)){
+            window.__sixBallLastGarbageConstraintSolve={ok:false,reason:"no_fixed_corridor",at:Date.now()};
+            return 0;
         }
 
         const n=live.length;
         const req=Array.from({length:n},()=>Array(n).fill(0));
         for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)req[i][j]=requiredLatticeX(live[i],live[j]);
 
-        // Minimal feasible ordered solution. This cannot cycle because every
-        // constraint points from an earlier logical lane to a later one.
-        const x=bounds.map(b=>b.lo);
-        let feasible=true;
-        for(let j=0;j<n;j++){
-            let need=bounds[j].lo;
-            for(let i=0;i<j;i++)if(req[i][j]>0)need=Math.max(need,x[i]+req[i][j]);
-            x[j]=need;
-            if(x[j]>bounds[j].hi+1e-7){feasible=false;break;}
+        const preferred=corridors.map((list,i)=>preferredInterval(list,live[i]));
+        let x=solveConvexDomains(live,req,preferred);
+        let mode="preferred";
+        let chosen=preferred;
+
+        if(!x){
+            const alternate=solveAcrossCorridors(live,req,corridors);
+            if(alternate){x=alternate.x;chosen=alternate.chosen;mode="alternate_corridor";}
         }
 
-        if(!feasible){
-            const fallback=fallbackFixedOnly(live,fixed);
-            window.__sixBallLastGarbageConstraintSolve={ok:false,reason:"ordered_infeasible",fallback,at:Date.now()};
+        if(!x){
+            const fallback=clampToPreferredCorridors(live,corridors);
+            window.__sixBallLastGarbageConstraintSolve={
+                ok:false,reason:"corridor_infeasible",fallback,
+                corridorCounts:corridors.map(q=>q.length),at:Date.now()
+            };
             return fallback;
-        }
-
-        // Starting from the guaranteed-feasible leftmost solution, move each
-        // lane back toward its analytic X as far as later-lane constraints allow.
-        for(let i=n-1;i>=0;i--){
-            let maxAllowed=bounds[i].hi;
-            for(let j=i+1;j<n;j++)if(req[i][j]>0)maxAllowed=Math.min(maxAllowed,x[j]-req[i][j]);
-            const target=Math.max(bounds[i].lo,Math.min(maxAllowed,live[i].v.x));
-            if(target>x[i])x[i]=target;
         }
 
         let changed=0;
@@ -272,7 +352,11 @@
             if(shift>EPS){live[i].v.x=x[i];changed++;maxShift=Math.max(maxShift,shift);}
         }
 
-        window.__sixBallLastGarbageConstraintSolve={ok:true,live:n,fixed:fixed.length,changed,maxShift,at:Date.now()};
+        window.__sixBallLastGarbageConstraintSolve={
+            ok:true,mode,live:n,fixed:fixed.length,changed,maxShift,
+            corridorCounts:corridors.map(q=>q.length),
+            chosen:chosen.map(q=>q?[q.lo,q.hi]:null),at:Date.now()
+        };
         if(changed)window.__sixBallGarbageConstraintCorrections=(window.__sixBallGarbageConstraintCorrections||0)+changed;
         return changed;
     }
@@ -340,5 +424,6 @@
     window.__sixBallGarbageContinuousTimingPreserved=true;
     window.__sixBallGarbageSegmentEndInvariant=true;
     window.__sixBallGarbageConstraintNetworkFinal=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.15";
+    window.__sixBallGarbageFixedCorridorSolver=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.16";
 })();
