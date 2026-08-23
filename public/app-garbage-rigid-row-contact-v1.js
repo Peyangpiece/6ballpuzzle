@@ -2,7 +2,7 @@
  * 6ball GARBAGE RIGID ROW CONTACT v1.1
  *
  * Dense STRAIGHT garbage often reaches a frame as multiple tangent horizontal
- * chains at the same visual height.  Treating every same-height ball as one
+ * chains at the same visual height. Treating every same-height ball as one
  * giant row is too strict: a real gap between two subchains can make the whole
  * level immovable even though the locally colliding chain has a legal shift.
  *
@@ -25,9 +25,6 @@
     const MIN_DIST=1.0;
     const LEGAL_DIST=0.9995;
     const SAME_Y_EPS=1e-8;
-    // Same-height tangent neighbours are exactly 2 lattice-X units apart.
-    // Keep a small tolerance for already-applied visual corrections, but split
-    // real gaps such as the 2.183-unit gap from the production STRAIGHT trace.
     const ROW_LINK_MAX=2.05;
     const EPS=1e-9;
     const MAX_PASSES=64;
@@ -99,9 +96,8 @@
             for(let i=1;i<level.length;i++){
                 const prev=level[i-1],current=level[i];
                 const gap=current.v.x-prev.v.x;
-                if(gap<=ROW_LINK_MAX+EPS){
-                    chain.push(current);
-                }else{
+                if(gap<=ROW_LINK_MAX+EPS)chain.push(current);
+                else{
                     if(chain.length>1)chains.push(chain);
                     chain=[current];
                 }
@@ -189,6 +185,18 @@
         return{row,dx,cost:dx*dx};
     }
 
+    function rowProbe(row,all){
+        if(!row)return null;
+        const intervals=allowedRowShifts(row,all);
+        return{
+            ids:row.map(q=>q.ball.id),
+            xs:row.map(q=>q.v.x),
+            y:row[0]?.v?.y,
+            intervals:intervals.map(d=>[d.lo,d.hi]),
+            nearest:nearestNonZeroShift(intervals)
+        };
+    }
+
     function applyCandidate(candidate){
         for(const q of candidate.row)q.v.x+=candidate.dx;
     }
@@ -217,6 +225,7 @@
         let totalShift=0;
         let maxShift=0;
         let passes=0;
+        let blocked=null;
 
         for(;passes<MAX_PASSES;passes++){
             const worst=worstIncomingPair(all,live);
@@ -230,7 +239,14 @@
             if(aRow)candidates.push(candidateForRow(aRow,all));
             if(bRow&&bRow!==aRow)candidates.push(candidateForRow(bRow,all));
             const valid=candidates.filter(Boolean).sort((a,b)=>a.cost-b.cost||Math.abs(a.dx)-Math.abs(b.dx));
-            if(!valid.length)break;
+            if(!valid.length){
+                blocked={
+                    pair:[worst.a.ball.id,worst.b.ball.id],distance:worst.d,
+                    chains:rows.map(row=>row.map(q=>q.ball.id)),
+                    a:rowProbe(aRow,all),b:rowProbe(bRow,all)
+                };
+                break;
+            }
 
             const chosen=valid[0];
             applyCandidate(chosen);
@@ -246,7 +262,7 @@
         window.__sixBallLastGarbageRigidRowContactV1={
             before:before.min,beforePair:before.pair,
             after:after.min,afterPair:after.pair,
-            movedRows,totalShift,maxShift,passes,at:Date.now()
+            movedRows,totalShift,maxShift,passes,blocked,at:Date.now()
         };
         if(movedRows){
             window.__sixBallGarbageRigidRowContactCorrections=
@@ -255,5 +271,5 @@
         return result;
     };
 
-    window.__sixBallGarbageRigidRowContactVersion="garbage-rigid-row-contact-v1.1";
+    window.__sixBallGarbageRigidRowContactVersion="garbage-rigid-row-contact-v1.1-diagnostic";
 })();
