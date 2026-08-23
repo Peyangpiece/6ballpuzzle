@@ -5,23 +5,21 @@
  * and `settleAll` compiles the canonical ordinary fallPath, including the
  * original motionSeq waves, topPivot arcs and FOLLOW_SUPPORT dependencies.
  *
- * Different incoming units may overlap in wall-clock time, so the global
- * motionSeq queue cannot be used to render them. Instead, each unit's ordinary
- * event waves are mapped to absolute pileFlowStart/End times beginning at the
- * unit's own spawn time. `pileFlowPointForBall` then evaluates the SAME solver-
- * authored paths and moving-support relations on that unit-local timeline.
- * This preserves normal-ball causality inside a six-ball unit without delaying
- * the next unit beyond the requested 0.600 s cadence.
+ * Different incoming units may overlap in wall-clock time. The unit therefore
+ * keeps its own start boundary, but every freshly compiled segment is now passed
+ * through the CURRENT pile-flow scheduler instead of assigning absolute times
+ * here. That scheduler owns real swept-path collision checks, continuous gravity
+ * timing and selective temporal separation of only conflicting members.
  *
- * The bubble/pop appearance is visual-only. There is no garbageBubbleHold or
- * spawn hold, so the effect never freezes gravity.
+ * This is important: presentation must never manufacture a second unswept
+ * timeline beside the authoritative garbage physics. The bubble/pop appearance
+ * remains visual-only; there is no garbageBubbleHold or spawn hold.
  */
 (function installGarbagePresentation(){
     if(typeof window==="undefined"||window.__hexGarbagePresentation)return;
     window.__hexGarbagePresentation=true;
 
     const GARBAGE_UNIT_INTERVAL=0.600;
-    const MIN_EVENT_DURATION=1/120;
     window.__hexGarbageUnitInterval=GARBAGE_UNIT_INTERVAL;
     window.__hexGarbageSpawnEffectPreserved=true;
     window.__hexGarbageTimedUnitsUseOrdinarySolver=true;
@@ -97,62 +95,71 @@
         // Compile exactly the same logical path ordinary balls receive.
         settleAll(g.board);
 
-        const entries=[];
+        const fresh=[];
         for(const id of ids){
             const ball=findBallById(g,id);
             if(!ball||!Array.isArray(ball.fallPath))continue;
+            let first=true;
             for(let index=0;index<ball.fallPath.length;index++){
                 const seg=ball.fallPath[index];
-                if(!seg?.to)continue;
-                entries.push({ball,seg,index,seq:Number(seg.motionSeq)||0});
-            }
-        }
-        if(!entries.length){g.ver++;return;}
+                if(!seg?.to||seg.pileFlow)continue;
 
-        // settleAll's event sequence is the canonical dependency order. Every
-        // member of one event gets the same real-time duration, matching the
-        // ordinary liveBatch renderer. A later event starts only after the prior
-        // event of THIS UNIT, not after another 0.600 s unit.
-        const seqs=[...new Set(entries.map(e=>e.seq))].sort((a,b)=>a-b);
-        const stateByBall=new Map();
-        for(const id of ids){
-            const ball=findBallById(g,id),v=ball&&g.vis.get(id);
-            stateByBall.set(id,{vy:Math.max(0,v?.vy||RELEASE_INITIAL_VY),speed:Math.max(0,v?.motionSpeed||RELEASE_INITIAL_VY)});
-        }
-        let cursor=Math.max(0,g.pileFlowClock||0);
-        for(const seq of seqs){
-            const wave=entries.filter(e=>e.seq===seq);
-            let waveDuration=MIN_EVENT_DURATION;
-            const endStates=new Map();
-            for(const e of wave){
-                const start=stateByBall.get(e.ball.id)||{vy:RELEASE_INITIAL_VY,speed:RELEASE_INITIAL_VY};
-                const end={...start};
-                const natural=Math.max(MIN_EVENT_DURATION,hexMotionDuration(e.seg,end));
-                waveDuration=Math.max(waveDuration,natural);
-                endStates.set(e.ball.id,end);
+                if(typeof repairPileFlowSegmentGeometry==="function"){
+                    repairPileFlowSegmentGeometry(g,ball,seg,"garbage_unit_timeline");
+                }
+
+                const seq=Number(seg.motionSeq)||0;
+                seg.pileFlowOriginalSeq=seq;
+                seg.pileFlow=true;
+                seg.pileFlowEntry=first;
+                seg.pileFlowReason="garbage_unit_timeline";
+                seg.garbageUnitTimeline=true;
+                seg.garbageUnitSeq=unitSeq;
+                seg.garbageOriginalMotionSeq=seq;
+
+                // pileFlowWaveSafe evaluates the real path only when this owner
+                // reference is present. Keep it through scheduling, then remove
+                // it just like markPileFlowPaths does.
+                seg._pileFlowBall=ball;
+                fresh.push({ball,seg,seq});
+                first=false;
             }
-            for(const e of wave){
-                e.seg.pileFlow=true;
-                e.seg.pileFlowStart=cursor;
-                e.seg.pileFlowDuration=waveDuration;
-                e.seg.pileFlowEnd=cursor+waveDuration;
-                e.seg.garbageUnitTimeline=true;
-                e.seg.garbageUnitSeq=unitSeq;
-                e.seg.garbageOriginalMotionSeq=e.seq;
-                // Keep motionSeq for diagnostics/dependency identity. Scheduled
-                // pileFlow segments are explicitly excluded from liveBatch.
-            }
-            for(const [id,end] of endStates)stateByBall.set(id,end);
-            cursor+=waveDuration;
         }
-        for(const id of ids){
-            const ball=findBallById(g,id),v=ball&&g.vis.get(id);
-            if(v&&ball?.fallPath?.length){
+
+        if(!fresh.length){
+            g.ver++;
+            return;
+        }
+
+        // CRITICAL: do not assign pileFlowStart/End in this presentation layer.
+        // At runtime this symbol points at the final wrapped garbage scheduler:
+        // continuous gravity + real swept-path temporal separation.
+        scheduleFreshPileFlowWave(g,fresh);
+
+        const liveIds=new Set();
+        for(const {ball,seg} of fresh){
+            liveIds.add(ball.id);
+            const v=g.vis.get(ball.id);
+            if(v){
                 v.pileFlow=true;
                 v.vy=Math.max(v.vy||0,RELEASE_INITIAL_VY);
                 v.motionSpeed=Math.max(v.motionSpeed||0,v.vy||0,0.0001);
             }
+            delete seg._pileNominalDuration;
+            delete seg._pileFlowBall;
         }
+
+        window.__sixBallLastGarbagePresentationSchedule={
+            unitSeq,
+            balls:liveIds.size,
+            segments:fresh.length,
+            scheduler:
+                window.__sixBallGarbageTemporalTrajectoryVersion||
+                window.__sixBallGarbageContinuousVersion||
+                "pile-flow",
+            at:Date.now()
+        };
+
         g.ver++;
     }
 
@@ -230,4 +237,5 @@
     window.__hexGarbageTopPivotExpandedForIndependentUnits=false;
     window.__hexGarbageFollowSupportResolvedForIndependentUnits=false;
     window.__hexGarbagePresentationUsesPhaseCache=true;
+    window.__hexGarbagePresentationDelegatesPathSchedule=true;
 })();
