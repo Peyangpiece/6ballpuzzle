@@ -50,7 +50,14 @@ function neighborhood(g,originalIds,best){
 }
 function report(g,originalIds,frame,stage,best){
  if(!best||best.d>=0.9995)return null;
- const q={frame,stage,d:best.d,pileClock:g.pileFlowClock,garbageClock:g.garbageClock,pending:pendingFallPathCount(g),moving:[...(g._visualMovingIds||[])],a:ballSummary(best.a),b:ballSummary(best.b),nearby:neighborhood(g,originalIds,best)};
+ const q={
+   frame,stage,d:best.d,pileClock:g.pileFlowClock,garbageClock:g.garbageClock,
+   pending:pendingFallPathCount(g),moving:[...(g._visualMovingIds||[])],
+   constraintSolve:window.__sixBallLastGarbageConstraintSolve||null,
+   segmentRepairs:window.__sixBallGarbageSegmentEndRepairs||0,
+   constraintCorrections:window.__sixBallGarbageConstraintCorrections||0,
+   a:ballSummary(best.a),b:ballSummary(best.b),nearby:neighborhood(g,originalIds,best)
+ };
  console.log("GARBAGE_OVERLAP_DIAGNOSTIC "+JSON.stringify(q));return q;
 }
 const g=createEngine(91100);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;
