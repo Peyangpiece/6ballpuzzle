@@ -1,15 +1,15 @@
 /* ============================================================
- * 6ball GARBAGE RIGID ROW CONTACT v1
+ * 6ball GARBAGE RIGID ROW CONTACT v1.1
  *
- * Dense STRAIGHT garbage often reaches a frame as two tangent horizontal rows.
- * The generic pair fallback may repair an unrelated crossing by nudging one
- * member of a row, after which equal-height polishing restores the row and can
- * leave a different row/row contact slightly interpenetrating.
+ * Dense STRAIGHT garbage often reaches a frame as multiple tangent horizontal
+ * chains at the same visual height.  Treating every same-height ball as one
+ * giant row is too strict: a real gap between two subchains can make the whole
+ * level immovable even though the locally colliding chain has a legal shift.
  *
  * Final rule for GARBAGE presentation only:
- * - equal-height live garbage is treated as one horizontal contact row
- * - internal row spacing is never changed here
- * - when a residual overlap involves such a row, translate the WHOLE row by
+ * - same-height live garbage is split into contiguous tangent/contact chains
+ * - internal chain spacing is never changed here
+ * - when a residual overlap involves such a chain, translate the WHOLE chain by
  *   the smallest horizontal amount that is legal against every external ball
  * - exact tangency is legal
  * - Y, logical cells, fallPath timing, pivots and frozen pile balls are untouched
@@ -25,6 +25,10 @@
     const MIN_DIST=1.0;
     const LEGAL_DIST=0.9995;
     const SAME_Y_EPS=1e-8;
+    // Same-height tangent neighbours are exactly 2 lattice-X units apart.
+    // Keep a small tolerance for already-applied visual corrections, but split
+    // real gaps such as the 2.183-unit gap from the production STRAIGHT trace.
+    const ROW_LINK_MAX=2.05;
     const EPS=1e-9;
     const MAX_PASSES=64;
     const MAX_ROW_SHIFT=1.25;
@@ -82,22 +86,42 @@
         return worst;
     }
 
-    function equalHeightRows(live){
+    function equalHeightContactChains(live){
         const sorted=live.slice().sort((a,b)=>a.v.y-b.v.y||a.v.x-b.v.x||a.ball.id-b.ball.id);
-        const rows=[];
-        let current=[];
+        const chains=[];
+        let level=[];
         let anchor=null;
+
+        function flushLevel(){
+            if(level.length<2){level=[];return;}
+            level.sort((a,b)=>a.v.x-b.v.x||a.ball.id-b.ball.id);
+            let chain=[level[0]];
+            for(let i=1;i<level.length;i++){
+                const prev=level[i-1],current=level[i];
+                const gap=current.v.x-prev.v.x;
+                if(gap<=ROW_LINK_MAX+EPS){
+                    chain.push(current);
+                }else{
+                    if(chain.length>1)chains.push(chain);
+                    chain=[current];
+                }
+            }
+            if(chain.length>1)chains.push(chain);
+            level=[];
+        }
+
         for(const q of sorted){
             if(anchor===null||Math.abs(q.v.y-anchor)<=SAME_Y_EPS){
-                current.push(q);
+                level.push(q);
                 if(anchor===null)anchor=q.v.y;
                 continue;
             }
-            if(current.length>1)rows.push(current);
-            current=[q];anchor=q.v.y;
+            flushLevel();
+            level=[q];
+            anchor=q.v.y;
         }
-        if(current.length>1)rows.push(current);
-        return rows;
+        flushLevel();
+        return chains;
     }
 
     function rowMembership(rows){
@@ -198,7 +222,7 @@
             const worst=worstIncomingPair(all,live);
             if(!worst)break;
 
-            const rows=equalHeightRows(live);
+            const rows=equalHeightContactChains(live);
             const membership=rowMembership(rows);
             const aRow=membership.get(worst.a.ball.id)||null;
             const bRow=membership.get(worst.b.ball.id)||null;
@@ -231,5 +255,5 @@
         return result;
     };
 
-    window.__sixBallGarbageRigidRowContactVersion="garbage-rigid-row-contact-v1";
+    window.__sixBallGarbageRigidRowContactVersion="garbage-rigid-row-contact-v1.1";
 })();
