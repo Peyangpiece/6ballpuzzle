@@ -21,7 +21,9 @@
  *    instead of contradictory one-sided bounds. The order is the instantaneous
  *    analytic left-to-right order. If that total order is impossible in a dense
  *    crossing, a disjunctive pair solver may choose either side per contact while
- *    preserving the same analytic Y and every fixed-support corridor.
+ *    preserving the same analytic Y and every fixed-support corridor. A pair's
+ *    current left/right side is preserved whenever that side is physically
+ *    feasible, preventing dense contact chains from oscillating between mirrors.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -324,18 +326,17 @@
     }
 
     function bestPairCandidate(a,b,aIntervals,bIntervals,req){
-        const normal=pairOrderCandidate(a,b,aIntervals,bIntervals,req);
-        const reversed=pairOrderCandidate(b,a,bIntervals,aIntervals,req);
-        let best=null;
-        if(normal)best={ax:normal.leftX,bx:normal.rightX,cost:normal.cost,flipped:false};
-        if(reversed){
-            const candidate={ax:reversed.rightX,bx:reversed.leftX,cost:reversed.cost,flipped:true};
-            const currentAFirst=a.v.x<=b.v.x;
-            const normalPenalty=best&&best.flipped===!currentAFirst?1e-10:0;
-            const reversePenalty=candidate.flipped===!currentAFirst?1e-10:0;
-            if(!best||candidate.cost+reversePenalty<best.cost+normalPenalty-1e-12)best=candidate;
+        const aFirst=a.v.x<=b.v.x;
+        if(aFirst){
+            const same=pairOrderCandidate(a,b,aIntervals,bIntervals,req);
+            if(same)return{ax:same.leftX,bx:same.rightX,cost:same.cost,flipped:false};
+            const reverse=pairOrderCandidate(b,a,bIntervals,aIntervals,req);
+            return reverse?{ax:reverse.rightX,bx:reverse.leftX,cost:reverse.cost,flipped:true}:null;
         }
-        return best;
+        const same=pairOrderCandidate(b,a,bIntervals,aIntervals,req);
+        if(same)return{ax:same.rightX,bx:same.leftX,cost:same.cost,flipped:false};
+        const reverse=pairOrderCandidate(a,b,aIntervals,bIntervals,req);
+        return reverse?{ax:reverse.leftX,bx:reverse.rightX,cost:reverse.cost,flipped:true}:null;
     }
 
     function solveDisjunctivePairs(live,corridors){
@@ -525,5 +526,6 @@
     window.__sixBallGarbageFixedCorridorSolver=true;
     window.__sixBallGarbageInstantaneousLaneOrder=true;
     window.__sixBallGarbageDisjunctivePairFallback=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.18";
+    window.__sixBallGarbagePairSideStable=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.19";
 })();
