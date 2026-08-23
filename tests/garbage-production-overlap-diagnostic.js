@@ -48,6 +48,9 @@ function neighborhood(g,originalIds,best){
  }
  return out.sort((a,b)=>Math.min(a.da,a.db)-Math.min(b.da,b.db));
 }
+function liveAll(g,originalIds){
+ return entries(g).filter(q=>q.b.isGarbage&&!originalIds.has(q.b.id)&&!q.b.garbagePhaseFrozen&&Array.isArray(q.b.fallPath)&&q.b.fallPath.length>0).map(q=>({id:q.b.id,type:q.b.garbageType||null,sourceSeq:q.b.garbageSourceSeq,sourceRole:q.b.garbageSourceRole,cell:[q.x,q.y],vis:[q.v.x,q.v.y],pathLen:q.b.fallPath.length})).sort((a,b)=>a.vis[1]-b.vis[1]||a.vis[0]-b.vis[0]||a.id-b.id);
+}
 function report(g,originalIds,frame,stage,best){
  if(!best||best.d>=0.9995)return null;
  const q={
@@ -57,7 +60,7 @@ function report(g,originalIds,frame,stage,best){
    minDisplacement:window.__sixBallLastGarbageMinDisplacementRepair||null,
    segmentRepairs:window.__sixBallGarbageSegmentEndRepairs||0,
    constraintCorrections:window.__sixBallGarbageConstraintCorrections||0,
-   a:ballSummary(best.a),b:ballSummary(best.b),nearby:neighborhood(g,originalIds,best)
+   a:ballSummary(best.a),b:ballSummary(best.b),nearby:neighborhood(g,originalIds,best),liveAll:liveAll(g,originalIds)
  };
  console.log("GARBAGE_OVERLAP_DIAGNOSTIC "+JSON.stringify(q));return q;
 }
