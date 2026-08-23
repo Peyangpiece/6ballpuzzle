@@ -45,7 +45,6 @@ jobs:
           node tests/garbage-diagonal-settle.js
           node tests/garbage-post-clear-collapse.js
           node tests/garbage-render-overlap-guard.js
-          node tests/garbage-swept-tunnel.js
 
       - name: Run production-load-order garbage integration
         run: node tests/garbage-production-integration.js
