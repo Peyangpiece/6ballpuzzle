@@ -1,5 +1,5 @@
 /* ============================================================
- * 6ball GARBAGE PHYSICAL CONTACT HOLD v3.1
+ * 6ball GARBAGE PHYSICAL CONTACT HOLD v3.2
  *
  * The main garbage contact network intentionally keeps each live ball on its
  * authored Y trajectory and repairs contact horizontally. In a dense staggered
@@ -19,19 +19,19 @@
  * - a live ball may move only upward relative to this frame's free trajectory,
  *   and never above its authored position one physics frame earlier.
  * - same-height contacts remain the horizontal solver's responsibility.
- * - exact tangency is legal.
+ * - the production legal-distance tolerance is authoritative.
  * ============================================================ */
-(function installGarbagePhysicalContactHoldV31(){
+(function installGarbagePhysicalContactHoldV32(){
     if(typeof window==="undefined"||window.__sixBallGarbageRigidRowContactV1)return;
     if(typeof resolveVisualContacts!=="function")return;
 
     window.__sixBallGarbageRigidRowContactV1=true;
 
-    const baseResolveVisualContactsContactHoldV31=resolveVisualContacts;
+    const baseResolveVisualContactsContactHoldV32=resolveVisualContacts;
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const FRAME=typeof PHYSICS_FRAME==="number"?PHYSICS_FRAME:1/120;
-    const MIN_DIST=1.0;
     const LEGAL_DIST=0.9995;
+    const CONTACT_DIST=LEGAL_DIST;
     const SAME_Y_EPS=1e-8;
     const EPS=1e-9;
     const SOLVE_TOL=1e-8;
@@ -95,8 +95,8 @@
 
     function requiredYRows(a,b){
         const dx=Math.abs((a.v.x-b.v.x)*.5);
-        if(dx>=MIN_DIST-EPS)return 0;
-        return Math.sqrt(Math.max(0,MIN_DIST*MIN_DIST-dx*dx))/H;
+        if(dx>=CONTACT_DIST-EPS)return 0;
+        return Math.sqrt(Math.max(0,CONTACT_DIST*CONTACT_DIST-dx*dx))/H;
     }
 
     function buildVariables(g,live){
@@ -107,8 +107,6 @@
 
         for(const q of live){
             const prev=predictedPoint(g,q,prevTime);
-            // The correction is a contact hold, never an upward bounce. One
-            // frame of authored travel is the maximum amount that may be undone.
             const lower=prev&&Number.isFinite(prev[1])?Math.min(0,prev[1]-q.v.y):0;
             const index=vars.length;
             vars.push({q,lower,upper:0,pref:0,d:0,prevY:prev?.[1]});
@@ -131,9 +129,6 @@
         };
     }
 
-    // Constraints use d[a] - d[b] <= c. The final variable is fixed at zero.
-    // Because d<=0, satisfying an upper-vs-lower contact naturally rewinds only
-    // the upper body's downward progress.
     function buildConstraints(all,live,vars,byId){
         const fixed=vars.length;
         const constraints=[];
@@ -169,9 +164,6 @@
             }
 
             if(dy>0){
-                // a is above b:
-                // (a.y + da) + req <= (b.y + db)
-                // da - db <= (b.y - a.y) - req
                 pushConstraint(constraints,ai,bi,dy-req,{
                     kind:"vertical_pair",ids:[a.ball.id,b.ball.id],upper:a.ball.id,lower:b.ball.id,
                     req,currentDy:dy,currentDistance:physicalDistance(a,b),
@@ -268,8 +260,6 @@
             if(dy>=-EPS)continue;
             const q=vars[i].q;
             q.v.y+=dy;
-            // Remove the blocked part of this frame's downward velocity rather
-            // than preserving an impossible penetration speed.
             if(Number.isFinite(q.v.vy))q.v.vy=Math.max(0,q.v.vy+dy/Math.max(EPS,FRAME));
             changed++;totalHold+=-dy;maxHold=Math.max(maxHold,-dy);
             held.push({id:q.ball.id,dy,prevY:vars[i].prevY,newY:q.v.y});
@@ -278,7 +268,7 @@
     }
 
     resolveVisualContacts=function(g){
-        const result=baseResolveVisualContactsContactHoldV31(g);
+        const result=baseResolveVisualContactsContactHoldV32(g);
         if(!garbagePhase(g))return result;
 
         const baseState=window.__sixBallLastGarbageConstraintSolve||null;
@@ -345,5 +335,5 @@
         return result;
     };
 
-    window.__sixBallGarbageRigidRowContactVersion="garbage-physical-contact-hold-v3.1";
+    window.__sixBallGarbageRigidRowContactVersion="garbage-physical-contact-hold-v3.2";
 })();
