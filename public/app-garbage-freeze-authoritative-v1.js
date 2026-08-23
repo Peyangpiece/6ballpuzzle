@@ -9,6 +9,9 @@
  * 3. A live incoming garbage ball may never visually penetrate the fixed pile.
  * 4. Two live incoming garbage balls may never visually interpenetrate, even
  *    when their solver-authored unit-local paths cross in the same frame.
+ * 5. Generic contact correction may not pull a live garbage centre away from
+ *    its analytic fallPath in Y. Garbage contact separation is horizontal-only
+ *    after the authoritative path position for the frame has been evaluated.
  *
  * Logical destinations and fallPath geometry are never rewritten here. Contact
  * correction changes only the already-resolved visual centres for this frame.
@@ -82,6 +85,50 @@
         return out;
     }
 
+    function liveGarbageEntries(g){
+        if(!garbagePhase(g))return[];
+        const frozen=frozenIds(g.board);
+        return boardEntries(g).filter(q=>
+            q.ball.isGarbage&&
+            !frozen.has(q.ball.id)&&
+            !q.ball.garbagePhaseFrozen&&
+            hasLivePath(q.ball)
+        );
+    }
+
+    function captureLiveFreePositions(g){
+        const out=new Map();
+        for(const q of liveGarbageEntries(g)){
+            out.set(q.ball.id,{
+                x:q.v.x,
+                y:q.v.y,
+                vy:q.v.vy,
+                motionSpeed:q.v.motionSpeed,
+                pileFlow:q.v.pileFlow
+            });
+        }
+        return out;
+    }
+
+    function restoreLiveFreePositions(g,snapshot){
+        if(!(snapshot instanceof Map)||!snapshot.size)return 0;
+        let restored=0;
+        for(const q of liveGarbageEntries(g)){
+            const s=snapshot.get(q.ball.id);
+            if(!s)continue;
+            if(Math.abs(q.v.x-s.x)>EPS||Math.abs(q.v.y-s.y)>EPS)restored++;
+            q.v.x=s.x;
+            q.v.y=s.y;
+            q.v.vy=s.vy;
+            q.v.motionSpeed=s.motionSpeed;
+            q.v.pileFlow=s.pileFlow;
+        }
+        if(restored){
+            window.__sixBallGarbageGenericContactRestores=(window.__sixBallGarbageGenericContactRestores||0)+restored;
+        }
+        return restored;
+    }
+
     function normalizeReceivingGarbage(g){
         if(!garbagePhase(g))return 0;
         const frozen=frozenIds(g.board);
@@ -116,37 +163,14 @@
     }
 
     function pushLiveFromFixed(live,fixed){
-        let dx=(live.v.x-fixed.v.x)*.5;
-        let dy=(live.v.y-fixed.v.y)*H;
-        let d=Math.hypot(dx,dy);
-        if(d>=MIN_DIST-1e-8)return false;
+        const dy=(live.v.y-fixed.v.y)*H;
+        if(Math.abs(dy)>=MIN_DIST-SAFE_EPS)return false;
 
-        // Never push a falling garbage ball upward. Above a fixed support, use
-        // the exact horizontal tangent at the current height instead.
-        if(dy<0){
-            live.v.x=horizontalTangentX(live,fixed,dy);
-            return true;
-        }
-
-        if(d<=1e-10){
-            dx=(live.x-fixed.x)*.5;
-            dy=(live.y-fixed.y)*H;
-            d=Math.hypot(dx,dy);
-        }
-
-        if(d>1e-10&&dy>=0){
-            const nx=dx/d,ny=dy/d;
-            live.v.x=Math.max(0,Math.min(W2-1,fixed.v.x+(nx*MIN_DIST)/.5));
-            live.v.y=Math.min((FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/H,Math.max(live.v.y,fixed.v.y+(ny*MIN_DIST)/H));
-        }else{
-            live.v.x=horizontalTangentX(live,fixed,0);
-        }
-
-        dx=(live.v.x-fixed.v.x)*.5;
-        dy=(live.v.y-fixed.v.y)*H;
-        if(Math.hypot(dx,dy)<MIN_DIST-1e-8&&Math.abs(dy)<MIN_DIST){
-            live.v.x=horizontalTangentX(live,fixed,dy);
-        }
+        // Garbage Y is authoritative from the analytic fallPath. Resolve a
+        // contact only by moving sideways to the nearest tangent at this Y.
+        const nextX=horizontalTangentX(live,fixed,dy);
+        if(Math.abs(nextX-live.v.x)<=EPS)return false;
+        live.v.x=nextX;
         return true;
     }
 
@@ -174,7 +198,7 @@
         if(missing<=1e-8)return false;
 
         // Separate horizontally only. This guarantees contact correction cannot
-        // create the old visual upward kick while both balls are falling/arcing.
+        // create the old visual upward/downward kick while paths are in motion.
         const capA=sign>0?(W2-1-a.v.x):a.v.x;
         const capB=sign>0?b.v.x:(W2-1-b.v.x);
         let moveA=Math.min(Math.max(0,capA),missing*.5);
@@ -200,8 +224,8 @@
         let corrections=0;
 
         // Each correction can expose a neighbouring contact, so iterate the
-        // small GARBAGE set to convergence. No logical cell/path is changed.
-        for(let pass=0;pass<16;pass++){
+        // small GARBAGE set to convergence. No logical cell/path/Y is changed.
+        for(let pass=0;pass<24;pass++){
             let changed=false;
             const entries=boardEntries(g);
             const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
@@ -255,9 +279,19 @@
     if(baseResolveVisualContacts){
         resolveVisualContacts=function(g){
             if(!garbagePhase(g))return baseResolveVisualContacts(g);
+
             normalizeReceivingGarbage(g);
+
+            // updateVisuals has already evaluated the authoritative analytic
+            // position for every live garbage ball this frame. Preserve it while
+            // the generic all-ball contact layer runs, then discard only the
+            // generic displacement of those live centres. Our phase-specific
+            // solver below handles non-penetration without changing path Y.
+            const free=captureLiveFreePositions(g);
             const r=baseResolveVisualContacts(g);
+
             normalizeReceivingGarbage(g);
+            restoreLiveFreePositions(g,free);
             enforceGarbageContacts(g);
             return r;
         };
@@ -267,5 +301,6 @@
     window.__sixBallGarbageReceivingPileFinal=true;
     window.__sixBallGarbageLiveVsFixedContactFinal=true;
     window.__sixBallGarbageLiveVsLiveContactFinal=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.5";
+    window.__sixBallGarbagePathYAuthoritative=true;
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.6";
 })();
