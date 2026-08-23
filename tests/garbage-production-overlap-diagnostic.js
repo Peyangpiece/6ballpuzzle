@@ -84,6 +84,7 @@ function report(g,originalIds,frame,stage,best){
    deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null,
    contactMonotonic:window.__sixBallLastGarbageContactMonotonicV1||null,
    rigidRowContact:window.__sixBallLastGarbageRigidRowContactV1||null,
+   deepContactRescue:window.__sixBallLastGarbageDeepContactHoldV1||null,
    temporalSchedule:window.__sixBallLastGarbageTemporalScheduleV1||null,
    presentationSchedule:window.__sixBallLastGarbagePresentationSchedule||null,
    continuousSchedule:window.__sixBallLastGarbageSchedule||null,
@@ -92,6 +93,8 @@ function report(g,originalIds,frame,stage,best){
    minDisplacement:window.__sixBallLastGarbageMinDisplacementRepair||null,
    segmentRepairs:window.__sixBallGarbageSegmentEndRepairs||0,
    constraintCorrections:window.__sixBallGarbageConstraintCorrections||0,
+   deepCorrections:window.__sixBallGarbageDeepContactCorrections||0,
+   emergencyHorizontalCorrections:window.__sixBallGarbageEmergencyHorizontalCorrections||0,
    a:ballSummary(best.a),b:ballSummary(best.b),nearby:neighborhood(g,originalIds,best),liveAll:liveAll(g,originalIds)
  };
  console.log("GARBAGE_OVERLAP_DIAGNOSTIC "+JSON.stringify(q));return q;
@@ -113,7 +116,7 @@ for(let frame=0;frame<500;frame++){
   const p=worst(g,originalIds);if(p&&p.d<0.9995){report(g,originalIds,frame,"after-updateGarbagePacks",p);throw new Error("garbage overlap introduced after pack update at frame "+frame+" d="+p.d);}
   if(garbageBatchDone(g))break;
 }
-console.log("garbage production overlap diagnostic PASS "+JSON.stringify({firstTransient:firstTransient&&{frame:firstTransient.frame,d:firstTransient.d,a:firstTransient.a.id,b:firstTransient.b.id},temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null,contactMonotonic:window.__sixBallLastGarbageContactMonotonicV1||null,rigidRowContact:window.__sixBallLastGarbageRigidRowContactV1||null}));
+console.log("garbage production overlap diagnostic PASS "+JSON.stringify({firstTransient:firstTransient&&{frame:firstTransient.frame,d:firstTransient.d,a:firstTransient.a.id,b:firstTransient.b.id},temporalSafetyV2:window.__sixBallLastGarbageTemporalSafetyV2||null,deferredRetryV2:window.__sixBallLastGarbageTemporalDeferredRetryV2||null,contactMonotonic:window.__sixBallLastGarbageContactMonotonicV1||null,rigidRowContact:window.__sixBallLastGarbageRigidRowContactV1||null,deepContactRescue:window.__sixBallLastGarbageDeepContactHoldV1||null}));
 `;
 const context={React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,Image:function(){this.complete=false;this.naturalWidth=0;},Math,Map,Set,WeakMap,Array,Number,Object,String,Boolean,JSON,Date,setTimeout(){return 0},clearTimeout(){},performance:{now(){return 0}},localStorage:{getItem(){return null},setItem(){}},document:{getElementById(){return null}},ResizeObserver:function(){this.observe=()=>{};this.disconnect=()=>{};}};
 vm.runInNewContext(runtime+checks,context,{timeout:180000});
