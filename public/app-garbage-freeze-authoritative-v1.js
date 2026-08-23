@@ -20,6 +20,9 @@
  *       pileFlowEnd === pileFlowStart + pileFlowDuration
  *    Stale extended end-times may not hold a ball at an internal contact cell
  *    after its physical segment duration has already completed.
+ * 9. When two live balls need separation, displacement goes first to the member
+ *    with the larger physically available clearance. A fixed-tangent member is
+ *    not needlessly moved and then projected back into the same collision.
  *
  * Logical destinations, pivots, segment starts and segment durations are not
  * rewritten here. Only impossible stale end metadata and per-frame visual
@@ -272,19 +275,29 @@
 
         const capA=fixedDirectionalCapacity(a,sign,fixed);
         const capB=fixedDirectionalCapacity(b,-sign,fixed);
-        let moveA=Math.min(capA,missing*.5);
-        let moveB=Math.min(capB,missing-moveA);
-        missing-=moveA+moveB;
 
-        if(missing>EPS){
-            const moreA=Math.min(Math.max(0,capA-moveA),missing);
-            moveA+=moreA;
-            missing-=moreA;
-        }
-        if(missing>EPS){
-            const moreB=Math.min(Math.max(0,capB-moveB),missing);
-            moveB+=moreB;
-            missing-=moreB;
+        // Do not split the correction 50/50 first. That old strategy repeatedly
+        // pushed a fixed-tangent member into its support and the fixed pass moved
+        // it back, creating a live/live <-> live/fixed correction cycle.
+        // Use the freer side first, then consume the remaining capacity on the
+        // other member only when necessary.
+        let moveA=0;
+        let moveB=0;
+
+        if(capA>=capB){
+            moveA=Math.min(capA,missing);
+            missing-=moveA;
+            if(missing>EPS){
+                moveB=Math.min(capB,missing);
+                missing-=moveB;
+            }
+        }else{
+            moveB=Math.min(capB,missing);
+            missing-=moveB;
+            if(missing>EPS){
+                moveA=Math.min(capA,missing);
+                missing-=moveA;
+            }
         }
 
         a.v.x=Math.max(0,Math.min(W2-1,a.v.x+sign*moveA));
@@ -390,8 +403,6 @@
         resolveVisualContacts=function(g){
             if(!garbagePhase(g))return baseResolveVisualContacts(g);
 
-            // Defensive invariant check. Normally all segment ends were already
-            // repaired when markPileFlowPaths/scheduleFreshPileFlowWave returned.
             normalizeGarbageSegmentEnds(g);
             normalizeReceivingGarbage(g);
             const free=captureLiveFreePositions(g);
@@ -411,7 +422,8 @@
     window.__sixBallGarbagePathYAuthoritative=true;
     window.__sixBallGarbageContinuousTimingPreserved=true;
     window.__sixBallGarbageSegmentEndInvariant=true;
+    window.__sixBallGarbageClearanceFirstSeparation=true;
     window.__sixBallGarbageFixedContactPriorityFinal=true;
     window.__sixBallGarbageFixedAwareLiveSeparation=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.12";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.13";
 })();
