@@ -8,19 +8,17 @@
  * 2. Current-batch garbage with no fallPath rests exactly on its logical cell.
  * 3. A live incoming garbage ball may never visually penetrate the fixed pile.
  * 4. Two live incoming garbage balls may never visually interpenetrate, even
- *    when their solver-authored unit-local paths cross in the same frame.
+ *    when their continuous solver-authored trajectories cross in one frame.
  * 5. Generic contact correction may not pull a live garbage centre away from
  *    its analytic fallPath in Y. Garbage contact separation is horizontal-only
  *    after the authoritative path position for the frame has been evaluated.
- * 6. Continuous garbage motion stays simultaneous when safe, but a fresh wave
- *    is delayed to the earliest collision-free instant instead of being forced
- *    through an already moving garbage trajectory.
- * 7. Fixed accumulated-pile contact has final priority over live/live visual
- *    separation. Live/live correction uses only horizontal clearance that is
- *    physically reachable without crossing an immutable fixed support.
+ * 6. The continuous garbage scheduler remains authoritative. This final layer
+ *    never inserts an internal wait between two segments of a ball trajectory.
+ * 7. Fixed accumulated-pile contact has final priority. Live/live correction
+ *    uses only horizontal clearance reachable without crossing a fixed support.
  *
- * Logical destinations and fallPath geometry are never rewritten here. Contact
- * correction changes only the already-resolved visual centres for this frame.
+ * Logical destinations and fallPath geometry/timing are never rewritten here.
+ * Contact correction changes only already-resolved visual centres for the frame.
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallGarbageFreezeAuthoritativeV1)return;
@@ -33,13 +31,10 @@
     const baseSettlePass=settlePass;
     const baseBoardHasIllegalFloat=typeof boardHasIllegalFloat==="function"?boardHasIllegalFloat:null;
     const baseResolveVisualContacts=typeof resolveVisualContacts==="function"?resolveVisualContacts:null;
-    const baseScheduleFreshPileFlowWave=typeof scheduleFreshPileFlowWave==="function"?scheduleFreshPileFlowWave:null;
-    const finalPileFlowWaveSafe=typeof pileFlowWaveSafe==="function"?pileFlowWaveSafe:null;
     const H=typeof HEX_ROW_H==="number"?HEX_ROW_H:Math.sqrt(3)/2;
     const MIN_DIST=1.0;
     const EPS=1e-9;
-    const SAFE_EPS=5e-4;
-    const SCHEDULE_STEP=typeof PILE_FLOW_SCHEDULE_STEP==="number"?PILE_FLOW_SCHEDULE_STEP:1/240;
+    const SAFE_EPS=1e-3;
 
     function frozenIds(board){
         const out=new Set();
@@ -146,8 +141,13 @@
             const{ball,v,x,y}=q;
             if(!ball.isGarbage||frozen.has(ball.id)||ball.garbagePhaseFrozen||hasLivePath(ball))continue;
             if(Math.abs(v.x-x)>EPS||Math.abs(v.y-y)>EPS||Math.abs(v.vy||0)>EPS||Math.abs(v.motionSpeed||0)>EPS)fixed++;
-            v.x=x;v.y=y;v.vy=0;v.motionSpeed=0;v.pileFlow=false;
-            delete v.gravityMismatch;delete v._pendingPathComplete;
+            v.x=x;
+            v.y=y;
+            v.vy=0;
+            v.motionSpeed=0;
+            v.pileFlow=false;
+            delete v.gravityMismatch;
+            delete v._pendingPathComplete;
             if(g._visualMovingIds instanceof Set)g._visualMovingIds.delete(ball.id);
         }
         if(fixed)window.__sixBallGarbageReceivingFinalizations=(window.__sixBallGarbageReceivingFinalizations||0)+fixed;
@@ -233,10 +233,6 @@
         let missing=requiredLatticeX-signedCurrent;
         if(missing<=1e-8)return false;
 
-        // Each member may move only as far as the first fixed-support tangent in
-        // the requested direction. If one side is pinned at a support, the other
-        // member absorbs the whole live/live separation instead of pushing the
-        // pinned member through the pile and relying on a later correction.
         const capA=fixedDirectionalCapacity(a,sign,fixed);
         const capB=fixedDirectionalCapacity(b,-sign,fixed);
         let moveA=Math.min(capA,missing*.5);
@@ -272,7 +268,6 @@
                 if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
                 if(pushLiveFromFixed(moving,support)){changed=true;corrections++;}
             }
-
             if(!changed)break;
         }
         return corrections;
@@ -283,11 +278,9 @@
         const frozen=frozenIds(g.board);
         let corrections=0;
 
-        // Establish the immutable pile boundary first. Live/live correction can
-        // then calculate how much sideways space is actually reachable.
         corrections+=enforceFixedContacts(g,frozen,16);
 
-        for(let pass=0;pass<96;pass++){
+        for(let pass=0;pass<128;pass++){
             let changed=false;
             const entries=boardEntries(g);
             const fixed=entries.filter(q=>frozen.has(q.ball.id)||q.ball.garbagePhaseFrozen||(q.ball.isGarbage&&!hasLivePath(q.ball)));
@@ -298,9 +291,6 @@
                 if(separateLivePair(live[i],live[j],fixed)){changed=true;corrections++;}
             }
 
-            // Keep this as a defensive polish. With fixed-aware pair capacities
-            // it should normally do nothing, but it guarantees fixed support is
-            // still the final invariant if several neighbouring constraints meet.
             for(const moving of live)for(const support of fixed){
                 if(moving.ball.id===support.ball.id)continue;
                 if(physicalDistance(moving,support)>=MIN_DIST-1e-8)continue;
@@ -314,124 +304,6 @@
 
         if(corrections)window.__sixBallGarbageFinalContactCorrections=(window.__sixBallGarbageFinalContactCorrections||0)+corrections;
         return corrections;
-    }
-
-    function groupFreshBySeq(fresh){
-        const map=new Map();
-        for(const q of fresh||[]){
-            const seq=Number.isFinite(q?.seq)?q.seq:0;
-            if(!map.has(seq))map.set(seq,[]);
-            map.get(seq).push(q);
-        }
-        return[...map.entries()].sort((a,b)=>a[0]-b[0]);
-    }
-
-    function previousScheduledEnd(ball,seg,base){
-        let earliest=base;
-        const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
-        const index=path.indexOf(seg);
-        if(index<=0)return earliest;
-        for(let i=index-1;i>=0;i--){
-            const prev=path[i];
-            if(Number.isFinite(prev?.pileFlowEnd)){
-                earliest=Math.max(earliest,prev.pileFlowEnd);
-                break;
-            }
-        }
-        return earliest;
-    }
-
-    function latestScheduledEnd(g){
-        let end=Math.max(0,Number(g?.pileFlowClock)||0);
-        if(!g?.board)return end;
-        for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-            const ball=valid(x,y)?g.board[y][x]:null;
-            if(!ball?.fallPath)continue;
-            for(const seg of ball.fallPath){
-                if(Number.isFinite(seg?.pileFlowEnd))end=Math.max(end,seg.pileFlowEnd);
-            }
-        }
-        return end;
-    }
-
-    if(baseScheduleFreshPileFlowWave&&finalPileFlowWaveSafe){
-        scheduleFreshPileFlowWave=function(g,fresh){
-            const r=baseScheduleFreshPileFlowWave(g,fresh);
-            if(!garbagePhase(g)||!Array.isArray(fresh)||!fresh.length)return r;
-
-            const base=Math.max(0,Number(g.pileFlowClock)||0);
-            const groups=groupFreshBySeq(fresh);
-
-            for(const q of fresh){
-                const seg=q?.seg;
-                if(!seg)continue;
-                delete seg.pileFlowStart;
-                delete seg.pileFlowDuration;
-                delete seg.pileFlowEnd;
-            }
-
-            let delayedGroups=0;
-            let safetyChecks=0;
-            let fallbackGroups=0;
-
-            for(const[,entries]of groups){
-                const segs=entries.map(q=>q?.seg).filter(Boolean);
-                if(!segs.length)continue;
-
-                const duration=Math.max(
-                    1/120,
-                    ...segs.map(seg=>Number(seg?._pileNominalDuration)||1/120)
-                );
-
-                let earliest=base;
-                for(const q of entries){
-                    if(!q?.ball||!q?.seg)continue;
-                    earliest=Math.max(earliest,previousScheduledEnd(q.ball,q.seg,base));
-                }
-
-                const fallback=Math.max(earliest,latestScheduledEnd(g));
-                let start=earliest;
-                let safe=false;
-                let attempts=0;
-                const maxAttempts=4096;
-
-                while(start<=fallback+SCHEDULE_STEP+1e-9&&attempts<maxAttempts){
-                    safetyChecks++;
-                    attempts++;
-                    if(finalPileFlowWaveSafe(g,segs,start,duration)){
-                        safe=true;
-                        break;
-                    }
-                    start+=SCHEDULE_STEP;
-                }
-
-                if(!safe){
-                    fallbackGroups++;
-                    start=fallback+SCHEDULE_STEP;
-                    for(const seg of segs){
-                        seg.pileFlowStart=start;
-                        seg.pileFlowDuration=duration;
-                        seg.pileFlowEnd=start+duration;
-                    }
-                }
-
-                if(start>earliest+1e-9)delayedGroups++;
-
-                for(const seg of segs){
-                    seg.pileFlowWaveDelay=Math.max(0,start-base);
-                    seg.pileFlowGarbageContinuous=true;
-                }
-            }
-
-            window.__sixBallLastGarbageCollisionAwareSchedule={
-                groups:groups.length,
-                delayedGroups,
-                safetyChecks,
-                fallbackGroups,
-                at:Date.now()
-            };
-            return r;
-        };
     }
 
     hexPhysContactEntries=function(board,excluded=new Set()){
@@ -481,8 +353,8 @@
     window.__sixBallGarbageLiveVsFixedContactFinal=true;
     window.__sixBallGarbageLiveVsLiveContactFinal=true;
     window.__sixBallGarbagePathYAuthoritative=true;
-    window.__sixBallGarbageCollisionAwareScheduleFinal=true;
+    window.__sixBallGarbageContinuousTimingPreserved=true;
     window.__sixBallGarbageFixedContactPriorityFinal=true;
     window.__sixBallGarbageFixedAwareLiveSeparation=true;
-    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.10";
+    window.__sixBallGarbageFreezeAuthoritativeVersion="garbage-phase-authoritative-v1.11";
 })();
