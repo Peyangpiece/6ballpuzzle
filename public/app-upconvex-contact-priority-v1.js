@@ -334,6 +334,30 @@
         }
     }
 
+    /*
+     * The final rigid-until-impossible wrapper may complete a common slope
+     * step without delegating to this wrapper.  Expose the same pre-arc
+     * observation path so that early rigid continuation still records the
+     * side decision before the triangle crosses its support.
+     */
+    window.__sixBallRememberUpConvexPreArcSideV31 = function(
+        board,
+        members
+    ){
+        const observed = observeLocks(
+            board,
+            members
+        );
+
+        persistLocks(
+            members,
+            observed
+        );
+
+        return [...observed.values()]
+            .map(lock => ({...lock}));
+    };
+
     function readPersistentLock(members, supportId){
         if(
             !isUpTriplet(members) ||
@@ -658,6 +682,8 @@
 
     window.__sixBallUpConvexContactPriorityVersion =
         "upconvex-pre-arc-side-lock-v3.1";
+
+    window.__sixBallUpConvexPreArcObserverExposed = true;
 
     window.__sixBallUpConvexPreArcSideAuthoritative =
         true;

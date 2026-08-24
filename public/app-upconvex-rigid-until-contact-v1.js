@@ -1,10 +1,12 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.5
+ * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.6
  * ============================================================ */
 (function(){
-    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV25)return;
+    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV26)return;
     if(typeof hexPhysPlanGroup!=="function")return;
 
+    window.__sixBallUpConvexRigidUntilImpossibleV26=true;
+    /* Compatibility marker for diagnostics written against v2.5. */
     window.__sixBallUpConvexRigidUntilImpossibleV25=true;
     /* Compatibility marker for diagnostics written against v2.4. */
     window.__sixBallUpConvexRigidUntilImpossibleV24=true;
@@ -186,7 +188,7 @@
     }
 
     function isContinuingRigidSlope(members){
-        return members.every(m=>m.ball.rigid&&Number(m.ball.motionGroupSize)===3)&&members.some(m=>m.ball._smoothSlopeRigidV39||m.ball._upConvexRigidUntilImpossibleV24||m.ball._upConvexRigidUntilImpossibleV25);
+        return members.every(m=>m.ball.rigid&&Number(m.ball.motionGroupSize)===3)&&members.some(m=>m.ball._smoothSlopeRigidV39||m.ball._upConvexRigidUntilImpossibleV24||m.ball._upConvexRigidUntilImpossibleV25||m.ball._upConvexRigidUntilImpossibleV26);
     }
 
     function keepRigidSlope(members,plan,preview,reason){
@@ -197,13 +199,16 @@
                 m.ball.motionGroupOrientation="up";
                 m.ball._upConvexRigidUntilImpossibleV24=true;
                 m.ball._upConvexRigidUntilImpossibleV25=true;
+                m.ball._upConvexRigidUntilImpossibleV26=true;
             }
-            window.__sixBallLastUpConvexRigidContinuationV25={
+            const info={
                 ids:members.map(m=>m.ball.id),
                 vector:[plan[0].tx-plan[0].x,plan[0].ty-plan[0].y],
                 reason,
                 at:Date.now()
             };
+            window.__sixBallLastUpConvexRigidContinuationV26=info;
+            window.__sixBallLastUpConvexRigidContinuationV25=info;
         }
         return plan;
     }
@@ -211,6 +216,19 @@
     hexPhysPlanGroup=function(board,members,preview=false){
         const g=layout(members);
         if(!g)return basePlanGroup(board,members,preview)||[];
+
+        if(
+            !preview &&
+            typeof window.__sixBallRememberUpConvexPreArcSideV31===
+                "function"
+        ){
+            try{
+                window.__sixBallRememberUpConvexPreArcSideV31(
+                    board,
+                    members
+                );
+            }catch(_){}
+        }
 
         let motions=null;
 
@@ -245,13 +263,14 @@
     window.__sixBallUpConvexRigidUntilContactV1=true;
     window.__sixBallUpConvexRigidUntilContactVersion="upconvex-rigidity-partial-release-v2.3";
     window.__sixBallUpConvexRigidUntilImpossibleVersion="upconvex-rigidity-partial-release-v2.3";
-    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.5";
+    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.6";
     window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
     window.__sixBallUpConvexRequiresRealCurrentPivot=true;
     window.__sixBallUpRestAloneDoesNotChooseSolo=true;
     window.__sixBallUpPocketCaptureHasPriority=true;
     window.__sixBallUpPocketCaptureWaitsForActiveSlopeFailure=true;
     window.__sixBallUpActiveSlopeCommonStepHasPriority=true;
+    window.__sixBallUpActiveSlopeRecordsPreArcSide=true;
     window.__sixBallUpInwardPocketChoosesSolo=true;
     window.__sixBallUpContinuousPocketDisambiguation=true;
     window.__sixBallUpRemainingTwoKeepRigidity=true;

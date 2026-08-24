@@ -107,6 +107,65 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
   expect(members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3),"active downhill triplet lost rigidity metadata");
 }
 
+/*
+ * Recording regression (purple top / red left / green right): the first
+ * common slope step must retain the PRE-ARC side decision.  Even if the
+ * continuous offset has crossed the support by the next frame, RED remains
+ * the solo and PURPLE+GREEN remain the right rigid pair.
+ */
+{
+  const b=board();
+  const common={isGarbage:false,motionGroupId:600,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,impactOffsetX:.35,_smoothSlopeRigidV39:true};
+  const purple={...common,id:200,c:4,motionGroupRole:0};
+  const red={...common,id:201,c:0,motionGroupRole:1};
+  const green={...common,id:202,c:2,motionGroupRole:2};
+  const members=[
+    {ball:purple,x:6,y:3,role:0,orientation:"up"},
+    {ball:red,x:5,y:4,role:1,orientation:"up"},
+    {ball:green,x:7,y:4,role:2,orientation:"up"}
+  ];
+  for(const m of members)b[m.y][m.x]=m.ball;
+  const support={id:980,c:1,isGarbage:false};
+  b[5][6]=support;
+
+  let canContinue=true;
+  const ctx={console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,Error,TypeError,valid};
+  ctx.hexPhysClearGroupBall=clearGroup;
+  ctx.hexPhysEmpty=(bb,x,y,ignore)=>valid(x,y)&&(!bb[y][x]||(ignore&&ignore.has(bb[y][x].id)));
+  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"ROLL_RIGHT",pivot:[6,5],topPivot:null});
+  ctx.hexPhysRigidSlopePlan=(bb,mm)=>canContinue?mm.map(m=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",pivot:[6,5],topPivot:null,bundleId:600,groupSize:3})):null;
+  ctx.hexPhysUpConvexSeparator=(bb,mm,motions)=>({
+    support,px:6,py:5,hitFraction:.5,dir:-1,
+    top:mm[0],pairLower:mm[1],solo:mm[2],soloMotion:motions[2]
+  });
+  ctx.hexPhysPlanGroup=(bb,mm,preview=false)=>{
+    const motions=mm.map(m=>ctx.hexPhysIndependentMemberMotion(bb,mm,m));
+    const info=ctx.hexPhysUpConvexSeparator(bb,mm,motions);
+    const pair=[info.top,info.pairLower].map(m=>({x:m.x,y:m.y,tx:m.x+info.dir,ty:m.y+1,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",bundleId:600,groupSize:2}));
+    const solo={...info.soloMotion,bundleId:0,groupSize:0};
+    if(!preview){
+      clearGroup(info.solo.ball);
+      for(const m of[info.top,info.pairLower]){m.ball.motionGroupId=600;m.ball.motionGroupSize=2;m.ball.rigid=true;}
+    }
+    return[...pair,solo];
+  };
+
+  install(ctx,sideSource,"app-upconvex-contact-priority-v1.js");
+  vm.runInContext(rigidSource,ctx,{filename:"app-upconvex-rigid-until-contact-v1.js"});
+
+  const first=ctx.hexPhysPlanGroup(b,members,false);
+  expect(first.length===3&&first.every(p=>p.groupSize===3),"recording triplet did not complete its first common slope step");
+
+  for(const m of members)m.ball.impactOffsetX=-.35;
+  canContinue=false;
+  const split=ctx.hexPhysPlanGroup(b,members,false);
+  const solo=split.find(p=>p.groupSize===0);
+  const pair=split.filter(p=>p.groupSize===2);
+
+  expect(solo&&solo.ball.id===red.id,"recording split chose GREEN instead of RED as solo");
+  expect(pair.length===2&&pair.every(p=>[purple.id,green.id].includes(p.ball.id)&&p.tx-p.x===1),"recording split did not preserve PURPLE+GREEN as the right rigid pair");
+}
+
 /* Empty collision-safe space cannot invent rigidity. */
 {
   const {ctx,out}=rigidCase({realPivot:false,canonicalRigid:true});
