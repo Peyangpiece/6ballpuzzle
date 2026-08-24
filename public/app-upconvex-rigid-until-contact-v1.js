@@ -1,10 +1,12 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.6
+ * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.7
  * ============================================================ */
 (function(){
-    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV26)return;
+    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV27)return;
     if(typeof hexPhysPlanGroup!=="function")return;
 
+    window.__sixBallUpConvexRigidUntilImpossibleV27=true;
+    /* Compatibility marker for diagnostics written against v2.6. */
     window.__sixBallUpConvexRigidUntilImpossibleV26=true;
     /* Compatibility marker for diagnostics written against v2.5. */
     window.__sixBallUpConvexRigidUntilImpossibleV25=true;
@@ -188,7 +190,7 @@
     }
 
     function isContinuingRigidSlope(members){
-        return members.every(m=>m.ball.rigid&&Number(m.ball.motionGroupSize)===3)&&members.some(m=>m.ball._smoothSlopeRigidV39||m.ball._upConvexRigidUntilImpossibleV24||m.ball._upConvexRigidUntilImpossibleV25||m.ball._upConvexRigidUntilImpossibleV26);
+        return members.every(m=>m.ball.rigid&&Number(m.ball.motionGroupSize)===3)&&members.some(m=>m.ball._smoothSlopeRigidV39||m.ball._upConvexRigidUntilImpossibleV24||m.ball._upConvexRigidUntilImpossibleV25||m.ball._upConvexRigidUntilImpossibleV26||m.ball._upConvexRigidUntilImpossibleV27);
     }
 
     function keepRigidSlope(members,plan,preview,reason){
@@ -200,6 +202,10 @@
                 m.ball._upConvexRigidUntilImpossibleV24=true;
                 m.ball._upConvexRigidUntilImpossibleV25=true;
                 m.ball._upConvexRigidUntilImpossibleV26=true;
+                m.ball._upConvexRigidUntilImpossibleV27=true;
+            }
+            if(typeof window.__sixBallRememberUpConvexRigidApproachV32==="function"){
+                try{window.__sixBallRememberUpConvexRigidApproachV32(members,plan);}catch(_){}
             }
             const info={
                 ids:members.map(m=>m.ball.id),
@@ -207,6 +213,7 @@
                 reason,
                 at:Date.now()
             };
+            window.__sixBallLastUpConvexRigidContinuationV27=info;
             window.__sixBallLastUpConvexRigidContinuationV26=info;
             window.__sixBallLastUpConvexRigidContinuationV25=info;
         }
@@ -263,7 +270,7 @@
     window.__sixBallUpConvexRigidUntilContactV1=true;
     window.__sixBallUpConvexRigidUntilContactVersion="upconvex-rigidity-partial-release-v2.3";
     window.__sixBallUpConvexRigidUntilImpossibleVersion="upconvex-rigidity-partial-release-v2.3";
-    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.6";
+    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.7";
     window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
     window.__sixBallUpConvexRequiresRealCurrentPivot=true;
     window.__sixBallUpRestAloneDoesNotChooseSolo=true;
@@ -271,6 +278,7 @@
     window.__sixBallUpPocketCaptureWaitsForActiveSlopeFailure=true;
     window.__sixBallUpActiveSlopeCommonStepHasPriority=true;
     window.__sixBallUpActiveSlopeRecordsPreArcSide=true;
+    window.__sixBallUpActiveSlopeRecordsCrossSupportDirection=true;
     window.__sixBallUpInwardPocketChoosesSolo=true;
     window.__sixBallUpContinuousPocketDisambiguation=true;
     window.__sixBallUpRemainingTwoKeepRigidity=true;

@@ -1,5 +1,5 @@
 /* ============================================================
- * 6ball UP-CONVEX PRE-ARC SIDE LOCK v3.1
+ * 6ball UP-CONVEX PRE-ARC SIDE LOCK v3.2
  *
  * The split side is decided from the continuous UP-triplet
  * position BEFORE the first rigid arc around the protruding pile
@@ -14,7 +14,7 @@
 (function(){
     if(
         typeof window === "undefined" ||
-        window.__sixBallUpConvexPreArcSideLockV31
+        window.__sixBallUpConvexPreArcSideLockV32
     ){
         return;
     }
@@ -29,11 +29,14 @@
         return;
     }
 
+    window.__sixBallUpConvexPreArcSideLockV32 = true;
+    /* Compatibility marker for diagnostics written against v3.1. */
     window.__sixBallUpConvexPreArcSideLockV31 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
     const baseSeparator = hexPhysUpConvexSeparator;
     const STORE = "_upConvexPreArcSideLocksV31";
+    const APPROACH_STORE = "_upConvexRigidApproachDirectionV32";
 
     let activeLocks = null;
 
@@ -358,6 +361,72 @@
             .map(lock => ({...lock}));
     };
 
+    /*
+     * A rigid slope can move from one support ball to the next before the
+     * canonical separator becomes legal.  Support-id locks cannot cover that
+     * hand-off, so also retain the direction of the last common rigid step.
+     * This never decides split timing; it is only a side fallback after the
+     * canonical separator has already confirmed a real 1+2 event.
+     */
+    window.__sixBallRememberUpConvexRigidApproachV32 = function(
+        members,
+        plan
+    ){
+        const base = tripletBase(members);
+
+        if(
+            !base ||
+            !Array.isArray(plan) ||
+            plan.length !== 3
+        ){
+            return null;
+        }
+
+        const pairDir = Math.sign(
+            Number(plan[0]?.tx) -
+            Number(plan[0]?.x)
+        );
+
+        if(
+            !pairDir ||
+            !plan.every(p =>
+                Math.sign(
+                    Number(p?.tx) -
+                    Number(p?.x)
+                ) === pairDir
+            )
+        ){
+            return null;
+        }
+
+        const record = {
+            pieceKey: base.key,
+            pairDir,
+            releaseOffsetX: base.offset,
+            triangleCenter: base.triangleCenter,
+            source: "last-common-rigid-slope-direction"
+        };
+
+        for(const m of members)
+            m.ball[APPROACH_STORE] = {...record};
+
+        window.__sixBallLastUpConvexRigidApproachV32 = {
+            ...record,
+            pairSide:
+                pairDir > 0
+                    ? "right"
+                    : "left",
+            soloSide:
+                pairDir > 0
+                    ? "left"
+                    : "right",
+            ids: members.map(m => m.ball.id),
+            at: Date.now()
+        };
+
+        return {...record};
+    };
+
     function readPersistentLock(members, supportId){
         if(
             !isUpTriplet(members) ||
@@ -411,6 +480,62 @@
         )
             ? lock
             : null;
+    }
+
+    function rigidApproachLockFor(
+        members,
+        supportId,
+        info
+    ){
+        if(
+            supportId == null ||
+            !isUpTriplet(members)
+        ){
+            return null;
+        }
+
+        const pkey = pieceKey(members);
+        const records = members
+            .map(m => m?.ball?.[APPROACH_STORE])
+            .filter(Boolean);
+
+        if(records.length !== 3)
+            return null;
+
+        const first = records[0];
+        const pairDir = Math.sign(
+            Number(first.pairDir)
+        );
+
+        if(
+            !pairDir ||
+            first.pieceKey !== pkey ||
+            !records.every(record =>
+                record.pieceKey === pkey &&
+                Math.sign(
+                    Number(record.pairDir)
+                ) === pairDir
+            )
+        ){
+            return null;
+        }
+
+        return {
+            supportId,
+            pieceKey: pkey,
+            pairDir,
+            releaseOffsetX:
+                first.releaseOffsetX,
+            triangleCenter:
+                first.triangleCenter,
+            protrusionCenter:
+                Number(info?.px),
+            /* Only the sign is authoritative for this cross-support lock. */
+            delta: pairDir,
+            source:
+                first.source ||
+                "last-common-rigid-slope-direction"
+        };
     }
 
     function outwardSoloMotion(
@@ -539,6 +664,11 @@
             activeLockFor(
                 members,
                 supportId
+            ) ||
+            rigidApproachLockFor(
+                members,
+                supportId,
+                info
             );
 
         if(!lock)
@@ -681,9 +811,13 @@
     };
 
     window.__sixBallUpConvexContactPriorityVersion =
-        "upconvex-pre-arc-side-lock-v3.1";
+        "upconvex-pre-arc-side-lock-v3.2";
 
     window.__sixBallUpConvexPreArcObserverExposed = true;
+
+    window.__sixBallUpConvexRigidApproachObserverExposed = true;
+
+    window.__sixBallUpConvexCrossSupportSideLock = true;
 
     window.__sixBallUpConvexPreArcSideAuthoritative =
         true;
