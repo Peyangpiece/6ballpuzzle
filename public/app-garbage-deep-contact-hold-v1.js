@@ -1,15 +1,19 @@
 /* ============================================================
- * 6ball GARBAGE DEEP CONTACT RESCUE v2.1
+ * 6ball GARBAGE DEEP CONTACT RESCUE v2.2
  *
  * Last-resort GARBAGE-only contact projection for dense staggered landings.
  * Ordinary contact solving, monotonic protection and persistent path-time hold
  * run first. This layer activates only if a real overlap still survives.
  *
  * Resolution order:
- *  1. Hold a visually-upper live incoming ball upward when contact blocks fall.
- *  2. If vertical hold cannot solve the contact, minimally separate live garbage
- *     horizontally and propagate that displacement only through bodies in the
- *     same physical-height corridor. Unrelated rows do not participate.
+ *  1. If a live FOLLOW_SUPPORT segment overlaps a support explicitly named by
+ *     that segment, keep the follower on the physically-above tangent side of
+ *     that support. A completed/fixed support is never moved sideways to make
+ *     room for its own follower.
+ *  2. Otherwise hold a visually-upper live incoming ball upward when contact
+ *     blocks fall.
+ *  3. Only if vertical contact cannot solve the pair, minimally separate live
+ *     garbage horizontally inside the same physical-height corridor.
  *
  * Invariants:
  * - existing/frozen/completed bodies never move;
@@ -19,7 +23,7 @@
  * - local physical X order cannot be crossed through another nearby body;
  * - a trial commits only when every incoming contact is legal afterwards.
  * ============================================================ */
-(function installGarbageDeepContactRescueV21(){
+(function installGarbageDeepContactRescueV22(){
     if(typeof window==="undefined"||window.__sixBallGarbageDeepContactHoldV1)return;
     if(typeof resolveVisualContacts!=="function")return;
 
@@ -83,27 +87,89 @@
         if(dy>=TARGET_DIST-EPS)return 0;
         return 2*Math.sqrt(Math.max(0,TARGET_DIST*TARGET_DIST-dy*dy));
     }
+
+    function segmentNamesSupport(seg,supportId){
+        if(!seg||supportId===undefined||supportId===null)return false;
+        if(Number(seg.movingSupportId)===Number(supportId))return true;
+        return Array.isArray(seg.followSupportIds)&&seg.followSupportIds.some(id=>Number(id)===Number(supportId));
+    }
+    function activeSupportSegment(g,ball,supportId){
+        const path=Array.isArray(ball?.fallPath)?ball.fallPath:[];
+        const clock=Math.max(0,Number(g?.pileFlowClock)||0);
+        for(const seg of path){
+            if(!segmentNamesSupport(seg,supportId))continue;
+            const start=Number(seg.pileFlowStart),end=Number(seg.pileFlowEnd);
+            if(Number.isFinite(start)&&Number.isFinite(end)&&clock+EPS>=start&&clock<=end+EPS)return seg;
+        }
+        /*
+         * Deferred support segments may intentionally have no absolute time yet.
+         * If such a segment is at the head of the still-live path, it is the
+         * current blocked physical relation and must still be honoured.
+         */
+        const head=path[0];
+        return segmentNamesSupport(head,supportId)?head:null;
+    }
+    function explicitSupportFollower(g,pair,liveIds){
+        const candidates=[[pair.a,pair.b],[pair.b,pair.a]];
+        for(const [follower,support] of candidates){
+            if(!liveIds.has(follower.ball.id))continue;
+            const seg=activeSupportSegment(g,follower.ball,support.ball.id);
+            if(seg)return{follower,support,seg};
+        }
+        return null;
+    }
+    function applyUpwardHold(q,need,heldRows,reason,extra={}){
+        need=Math.max(0,Number(need)||0);
+        if(need<=EPS)return{ok:true,changed:false,id:q.ball.id,reason,...extra};
+        need+=2e-6;
+        const used=heldRows.get(q.ball.id)||0;
+        const remaining=Math.max(0,MAX_TOTAL_HOLD_ROWS-used);
+        if(remaining<=EPS)return{ok:false,reason:"deep_hold_budget_exhausted",id:q.ball.id,...extra};
+        const shift=Math.min(need,remaining);
+        q.v.y-=shift;
+        if(Number.isFinite(q.v.vy))q.v.vy=0;
+        heldRows.set(q.ball.id,used+shift);
+        return{ok:shift+EPS>=need,changed:shift>EPS,id:q.ball.id,shift,reason,...extra};
+    }
+    function holdExplicitSupport(g,pair,liveIds,heldRows){
+        const rel=explicitSupportFollower(g,pair,liveIds);
+        if(!rel)return null;
+        const {follower,support,seg}=rel;
+        const req=requiredRowSeparation(follower,support);
+        if(req<=EPS)return{ok:true,changed:false,id:follower.ball.id,reason:"explicit_support_tangent_already_horizontal"};
+
+        /*
+         * A FOLLOW_SUPPORT follower belongs on the physically-above tangent
+         * branch while downward gravity is blocked by that support. This remains
+         * true when numerical/contact correction has brought both centres to
+         * nearly the same visual height; generic chooseUpper() cannot infer this.
+         */
+        const allowedMaxY=support.v.y-req;
+        const need=follower.v.y-allowedMaxY;
+        return applyUpwardHold(follower,need,heldRows,"explicit_support_vertical_hold",{
+            supportId:support.ball.id,
+            movingSupportId:Number(seg.movingSupportId)||0,
+            supportIds:Array.isArray(seg.followSupportIds)?seg.followSupportIds.slice():[],
+            requiredRows:req,
+            targetY:allowedMaxY
+        });
+    }
     function chooseUpper(pair,liveIds){
         const {a,b}=pair,dy=a.v.y-b.v.y;
         if(Math.abs(dy)<=1e-8)return null;
         const upper=dy<0?a:b,lower=dy<0?b:a;
         return liveIds.has(upper.ball.id)?{upper,lower}:null;
     }
-    function holdForPair(pair,liveIds,heldRows){
+    function holdForPair(g,pair,liveIds,heldRows){
+        const supportHold=holdExplicitSupport(g,pair,liveIds,heldRows);
+        if(supportHold)return supportHold;
+
         const chosen=chooseUpper(pair,liveIds);
         if(!chosen)return{ok:false,reason:"horizontal_required"};
         const {upper,lower}=chosen,req=requiredRowSeparation(upper,lower);
         if(req<=EPS)return{ok:true,changed:false};
-        let need=req-Math.max(0,lower.v.y-upper.v.y);
-        if(need<=EPS)return{ok:true,changed:false};
-        need+=2e-6;
-        const used=heldRows.get(upper.ball.id)||0,remaining=Math.max(0,MAX_TOTAL_HOLD_ROWS-used);
-        if(remaining<=EPS)return{ok:false,reason:"deep_hold_budget_exhausted",id:upper.ball.id};
-        const shift=Math.min(need,remaining);
-        upper.v.y-=shift;
-        if(Number.isFinite(upper.v.vy))upper.v.vy=0;
-        heldRows.set(upper.ball.id,used+shift);
-        return{ok:shift+EPS>=need,changed:shift>EPS,id:upper.ball.id,shift};
+        const need=req-Math.max(0,lower.v.y-upper.v.y);
+        return applyUpwardHold(upper,need,heldRows,"generic_vertical_hold");
     }
 
     function xSnapshot(live){return new Map(live.map(q=>[q.ball.id,q.v.x]));}
@@ -202,6 +268,11 @@
     }
 
     function horizontalRescue(g,pair,liveIds){
+        /* Explicit support contacts are never solved by pushing the follower
+         * through its support chain. If the support-aware vertical hold ran out
+         * of budget, report that physical blockage instead. */
+        if(explicitSupportFollower(g,pair,liveIds))return{ok:false,reason:"explicit_support_blocks_horizontal_rescue"};
+
         const trials=[];
         for(const dir of [-1,1]){const r=directionalHorizontalTrial(g,pair,liveIds,dir);if(r.ok)trials.push(r);}
         if(!trials.length)return{ok:false,reason:"no_horizontal_chain_solution"};
@@ -213,20 +284,24 @@
 
     function solve(g){
         let all=entries(g);const liveIds=liveSet(g,all);
-        if(!liveIds.size)return{ok:true,changed:0,verticalChanges:0,horizontalChanges:0,passes:0,min:null,pair:null,held:[],horizontal:[]};
+        if(!liveIds.size)return{ok:true,changed:0,verticalChanges:0,horizontalChanges:0,supportChanges:0,passes:0,min:null,pair:null,held:[],horizontal:[]};
         const heldRows=new Map(),horizontal=[];
-        let changed=0,verticalChanges=0,horizontalChanges=0,passes=0,failure=null;
+        let changed=0,verticalChanges=0,horizontalChanges=0,supportChanges=0,passes=0,failure=null;
         for(;passes<MAX_PASSES;passes++){
             all=entries(g);const worst=worstIncoming(all,liveIds);if(!worst)break;
-            const v=holdForPair(worst,liveIds,heldRows);
-            if(v.ok&&v.changed){changed++;verticalChanges++;continue;}
+            const v=holdForPair(g,worst,liveIds,heldRows);
+            if(v.ok&&v.changed){
+                changed++;verticalChanges++;
+                if(v.reason==="explicit_support_vertical_hold")supportChanges++;
+                continue;
+            }
             const h=horizontalRescue(g,worst,liveIds);
             if(h.ok&&h.changed){changed++;horizontalChanges++;horizontal.push({pair:[worst.a.ball.id,worst.b.ball.id],distance:worst.d,...h});continue;}
-            failure={reason:h.reason||v.reason||"no_contact_progress",verticalReason:v.reason||null,pair:[worst.a.ball.id,worst.b.ball.id],distance:worst.d,id:v.id||null};
+            failure={reason:h.reason||v.reason||"no_contact_progress",verticalReason:v.reason||null,pair:[worst.a.ball.id,worst.b.ball.id],distance:worst.d,id:v.id||null,supportId:v.supportId||null};
             break;
         }
         all=entries(g);const final=worstIncoming(all,liveIds);
-        return{ok:!final,changed,verticalChanges,horizontalChanges,passes,min:final?final.d:null,pair:final?[final.a.ball.id,final.b.ball.id]:null,failure,held:[...heldRows].map(([id,rows])=>({id,rows})),horizontal};
+        return{ok:!final,changed,verticalChanges,horizontalChanges,supportChanges,passes,min:final?final.d:null,pair:final?[final.a.ball.id,final.b.ball.id]:null,failure,held:[...heldRows].map(([id,rows])=>({id,rows})),horizontal};
     }
 
     resolveVisualContacts=function(g){
@@ -236,9 +311,11 @@
         const info=solve(g);
         window.__sixBallLastGarbageDeepContactHoldV1={active:true,before:before.d,beforePair:[before.a.ball.id,before.b.ball.id],...info,at:Date.now()};
         if(info.changed)window.__sixBallGarbageDeepContactCorrections=(window.__sixBallGarbageDeepContactCorrections||0)+info.changed;
+        if(info.supportChanges)window.__sixBallGarbageExplicitSupportHolds=(window.__sixBallGarbageExplicitSupportHolds||0)+info.supportChanges;
         if(info.horizontalChanges)window.__sixBallGarbageEmergencyHorizontalCorrections=(window.__sixBallGarbageEmergencyHorizontalCorrections||0)+info.horizontalChanges;
         return result;
     };
 
-    window.__sixBallGarbageDeepContactHoldVersion="garbage-deep-contact-rescue-v2.1";
+    window.__sixBallGarbageExplicitSupportHold=true;
+    window.__sixBallGarbageDeepContactHoldVersion="garbage-deep-contact-rescue-v2.2-support-aware";
 })();
