@@ -5,14 +5,17 @@
  * Earlier layers may choose the physical split side or path, but
  * they may not violate these final invariants:
  *
- * 1. If every member independently has the same legal movement
- *    vector, the whole set keeps one rigid constraint.
- * 2. A member with no proposal in the chosen physical event has
+ * 1. A selected three-ball rigid slope event always keeps the
+ *    complete triangle, even when a lower-level independent probe
+ *    temporarily reports one member as stopped.
+ * 2. An explicit upward-convex 2+1 split is never rejoined: a split
+ *    on the left keeps the pair on the right, and vice versa.
+ * 3. A member with no proposal in the chosen physical event has
  *    reached its position for that event and is detached before
  *    the other members move.
- * 3. A declared moving pair is always normalized to one two-ball
+ * 4. A declared moving pair is always normalized to one two-ball
  *    constraint; solo movers always have zero rigidity.
- * 4. If no coordinated plan exists, different independent
+ * 5. If no coordinated plan exists, different independent
  *    directions are released instead of leaving a frozen group.
  *
  * Garbage has its own zero-rigidity pipeline and is never changed
@@ -109,14 +112,6 @@
         return gid;
     }
 
-    function mapPreviewBalls(plan,members){
-        const originals=new Map(members.map(m=>[m.ball.id,m.ball]));
-        return(plan||[]).map(step=>{
-            const original=originals.get(memberId(step));
-            return original?{...step,ball:original}:{...step};
-        });
-    }
-
     function declaredCohorts(plan,members){
         const ids=new Set(members.map(memberId));
         const buckets=new Map();
@@ -141,6 +136,59 @@
             const unique=new Set(steps.map(memberId));
             return unique.size>=2&&!!sameVector(steps);
         });
+    }
+
+    function upwardTriangle(members){
+        if(!Array.isArray(members)||members.length!==3)return null;
+        const ordered=[...members].sort((a,b)=>a.y-b.y||a.x-b.x);
+        const top=ordered[0];
+        const lower=ordered.slice(1).sort((a,b)=>a.x-b.x);
+        if(
+            !top||lower.length!==2||
+            lower[0].y!==lower[1].y||
+            !(top.y<lower[0].y)||
+            !(lower[0].x<top.x&&top.x<lower[1].x)
+        )return null;
+        return{top,left:lower[0],right:lower[1]};
+    }
+
+    /* A genuine upward-convex split is encoded by a rigid pair containing
+       the top ball and exactly one lower ball. The other lower ball is the
+       split/contact side, so the pair is necessarily on the opposite side.
+       Recognize both pair+solo plans and pair-only plans; the latter means
+       the omitted solo has already finalized its position for this event. */
+    function upwardOppositeSideSplit(plan,members){
+        const layout=upwardTriangle(members);
+        if(!layout)return null;
+
+        const pairSteps=(plan||[]).filter(step=>
+            Number(step?.groupSize)===2&&!!vectorOf(step)
+        );
+        const pairIds=new Set(pairSteps.map(memberId));
+        if(pairIds.size!==2||!sameVector(pairSteps))return null;
+
+        const topId=memberId(layout.top);
+        const leftId=memberId(layout.left);
+        const rightId=memberId(layout.right);
+        if(!pairIds.has(topId))return null;
+
+        if(pairIds.has(rightId)&&!pairIds.has(leftId)){
+            return{
+                splitSide:"left",
+                pairSide:"right",
+                pairIds:[topId,rightId],
+                soloId:leftId
+            };
+        }
+        if(pairIds.has(leftId)&&!pairIds.has(rightId)){
+            return{
+                splitSide:"right",
+                pairSide:"left",
+                pairIds:[topId,leftId],
+                soloId:rightId
+            };
+        }
+        return null;
     }
 
     function normalizePlan(
@@ -232,58 +280,6 @@
         return plan;
     }
 
-    function planMovingSubset(
-        board,
-        members,
-        motions,
-        preview,
-        fallbackGroupId=0
-    ){
-        const moving=members.filter((_,i)=>!!motions[i]);
-        if(!moving.length)return[];
-
-        if(moving.length===1){
-            let motion=null;
-            try{
-                motion=typeof hexPhysNaturalMotion==="function"
-                    ?hexPhysNaturalMotion(board,moving[0].x,moving[0].y,null)
-                    :motions[members.indexOf(moving[0])];
-            }catch(_){
-                motion=null;
-            }
-            return motion&&vectorOf(motion)
-                ?[{...motion,ball:moving[0].ball,bundleId:0,groupSize:0}]
-                :[];
-        }
-
-        const working=preview
-            ?moving.map(member=>({...member,ball:{...member.ball}}))
-            :moving;
-        let plan=[];
-        try{
-            plan=basePlanGroup(board,working,preview)||[];
-        }catch(_){
-            plan=[];
-        }
-        plan=mapPreviewBalls(plan,moving);
-
-        if(plan.length){
-            return normalizePlan(plan,moving,preview,false,fallbackGroupId);
-        }
-
-        const recalculated=independentMotions(board,moving);
-        const common=commonIndependentPlan(board,moving,recalculated);
-        if(common)return normalizePlan(common,moving,preview,true,fallbackGroupId);
-
-        return normalizePlan(
-            independentReleasePlan(board,moving,recalculated),
-            moving,
-            preview,
-            false,
-            fallbackGroupId
-        );
-    }
-
     hexPhysPlanGroup=function(board,members,preview=false){
         if(!ordinaryGroup(members))return basePlanGroup(board,members,preview)||[];
 
@@ -300,40 +296,59 @@
 
         const knownIds=new Set(members.map(memberId));
         const movingBase=basePlan.filter(step=>knownIds.has(memberId(step))&&vectorOf(step));
-        const baseMovesWholeGroup=movingBase.length===members.length;
+        const baseMovesWholeGroup=
+            movingBase.length===members.length&&
+            new Set(movingBase.map(memberId)).size===members.length;
         const baseDeclaresWholeRigid=
             baseMovesWholeGroup&&
             movingBase.every(step=>Number(step.groupSize)===members.length)&&
             sameVector(movingBase);
-        const hasPinnedIndependent=motions.some(motion=>!motion);
 
-        /* A stale slope wrapper may synthesize a full-body move from only one
-           member's pivot. A member with no independent move may participate in
-           an explicit partial pair, but it may not silently remain in a newly
-           synthesized full triplet. */
-        if(baseDeclaresWholeRigid&&hasPinnedIndependent){
-            if(!preview){
-                for(let i=0;i<members.length;i++)if(!motions[i])clearMember(members[i]);
-            }
-            const partial=planMovingSubset(
-                board,
+        /* The selected coordinated event is authoritative. Independent probes
+           inspect balls in isolation and therefore cannot invalidate a legal
+           three-ball slope translation that already contains every member. */
+        if(baseDeclaresWholeRigid){
+            const normalized=normalizePlan(
+                movingBase,
                 members,
-                motions,
                 preview,
+                true,
                 authorityGroupId
             );
             if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                reason:"release-pinned-from-synthetic-whole-group",
-                released:members.filter((_,i)=>!motions[i]).map(memberId),
+                reason:"selected-whole-triangle-has-priority",
+                ids:members.map(memberId),
+                kind:movingBase[0]?.kind||"",
                 at:Date.now()
             };
-            return partial;
+            return normalized;
+        }
+
+        /* This must run before same-direction recovery. Otherwise identical
+           independent vectors can accidentally rejoin an intentional 2+1
+           contact split. Geometry proves that the retained pair is opposite
+           the lower ball where the upward triangle split. */
+        const explicitUpSplit=upwardOppositeSideSplit(movingBase,members);
+        if(explicitUpSplit){
+            const normalized=normalizePlan(
+                movingBase,
+                members,
+                preview,
+                false,
+                authorityGroupId
+            );
+            if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
+                reason:"upward-convex-opposite-pair-has-priority",
+                ...explicitUpSplit,
+                at:Date.now()
+            };
+            return normalized;
         }
 
         /* All members independently prove the same legal vector. This is the
-           strongest possible same-direction evidence and outranks an earlier
-           2+1 metadata split. Preserve richer authored pivots when the base
-           plan already moves every member by that same vector. */
+           fallback for plans that did not already select a full rigid slope or
+           an intentional upward-convex split. Preserve richer authored pivots
+           when the base plan already moves every member by that same vector. */
         const independentVector=motions.every(Boolean)?sameVector(motions):null;
         if(independentVector){
             const baseVector=baseMovesWholeGroup?sameVector(movingBase):null;
@@ -386,6 +401,9 @@
 
     window.__sixBallSameDirectionAlwaysKeepsRigidity=true;
     window.__sixBallPositionFinalAlwaysReleasesRigidity=true;
+    window.__sixBallSlopeTriangleAlwaysKeepsRigidity=true;
+    window.__sixBallUpConvexSplitKeepsOppositePair=true;
+    window.__sixBallPositionFinalMeansMissingSelectedProposal=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v1";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v2";
 })();

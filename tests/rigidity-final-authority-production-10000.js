@@ -74,9 +74,36 @@ function metadata(members){
   }));
 }
 function vector(step){return`${step.dx},${step.dy}`;}
+function upwardLayout(members){
+  if(!Array.isArray(members)||members.length!==3)return null;
+  const ordered=[...members].sort((a,b)=>a.y-b.y||a.x-b.x);
+  const top=ordered[0];
+  const lower=ordered.slice(1).sort((a,b)=>a.x-b.x);
+  if(
+    lower.length!==2||lower[0].y!==lower[1].y||
+    !(top.y<lower[0].y)||
+    !(lower[0].x<top.x&&top.x<lower[1].x)
+  )return null;
+  return{top,left:lower[0],right:lower[1]};
+}
+function upwardOppositeSplit(plan,members){
+  const layout=upwardLayout(members);
+  if(!layout)return null;
+  const pair=plan.filter(step=>step.groupSize===2);
+  const pairIds=new Set(pair.map(step=>step.id));
+  if(pairIds.size!==2||new Set(pair.map(vector)).size!==1||!pairIds.has(layout.top.id))return null;
+  if(pairIds.has(layout.right.id)&&!pairIds.has(layout.left.id)){
+    return{splitSide:"left",pairSide:"right",soloId:layout.left.id};
+  }
+  if(pairIds.has(layout.left.id)&&!pairIds.has(layout.right.id)){
+    return{splitSide:"right",pairSide:"left",soloId:layout.right.id};
+  }
+  return null;
+}
 
 let sameDirection=0;
 let releasedFixed=0;
+let oppositeSplits=0;
 
 for(const input of cases){
   const previewFixture=build(input);
@@ -123,7 +150,15 @@ for(const input of cases){
   }
 
   const vectors=independent.map(step=>step&&`${step.tx-step.x},${step.ty-step.y}`);
-  if(independent.every(Boolean)&&new Set(vectors).size===1){
+  const explicitUpSplit=upwardOppositeSplit(preview,input.members);
+  if(explicitUpSplit){
+    oppositeSplits++;
+    const soloState=stateById.get(explicitUpSplit.soloId);
+    expect(
+      !soloState.rigid&&soloState.group===0&&soloState.size===0,
+      `case ${input.index}: ${explicitUpSplit.splitSide} split solo retained rigidity`
+    );
+  }else if(independent.every(Boolean)&&new Set(vectors).size===1){
     let common=null;
     const [dx,dy]=vectors[0].split(",").map(Number);
     try{
@@ -141,4 +176,8 @@ for(const input of cases){
 expect(ctx.__sixBallFinalRigidityAuthorityV1===true,"final authority marker missing");
 expect(ctx.__sixBallSameDirectionAlwaysKeepsRigidity===true,"same-direction invariant marker missing");
 expect(ctx.__sixBallPositionFinalAlwaysReleasesRigidity===true,"position-final invariant marker missing");
-console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} releasedFixed=${releasedFixed}`);
+expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope triangle invariant marker missing");
+expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex side invariant marker missing");
+expect(ctx.__sixBallPositionFinalMeansMissingSelectedProposal===true,"selected-event finalization marker missing");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v2","final authority version mismatch");
+console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} releasedFixed=${releasedFixed}`);

@@ -25,6 +25,17 @@ function makeMembers(gid=700){
     x:5+i*2,y:4,role:i,orientation:"up"
   }));
 }
+function makeUpMembers(gid=800){
+  const positions=[{x:6,y:3},{x:5,y:4},{x:7,y:4}];
+  return positions.map((position,i)=>({
+    ball:{
+      id:200+i,c:i,isGarbage:false,
+      motionGroupId:gid,motionGroupRole:i,
+      motionGroupOrientation:"up",motionGroupSize:3,rigid:true
+    },
+    ...position,role:i,orientation:"up"
+  }));
+}
 function motion(member,dx=1,dy=1){
   return{
     x:member.x,y:member.y,tx:member.x+dx,ty:member.y+dy,
@@ -67,10 +78,14 @@ function install({base,independent,natural,groupPlan}){
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v2","v2 final authority marker missing");
+  expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
+  expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
 }
 
-/* A stale slope layer invented a full triplet motion from the two moving
-   members. The pinned member must release before the pair moves. */
+/* A lower-level independent probe can report one member as stopped while the
+   selected slope event legally moves the whole triangle. The selected event
+   wins and all three balls remain rigid. */
 {
   const members=makeMembers(710);
   const ctx=install({
@@ -78,13 +93,51 @@ function install({base,independent,natural,groupPlan}){
       ?null
       :motion(member,0,2),
     base:(board,group)=>group.map(member=>({
-      ...motion(member,0,2),bundleId:710,groupSize:group.length
+      ...motion(member,0,2),kind:"GROUP_SLOPE_TRANSLATE",bundleId:710,groupSize:group.length
     }))
   });
   const out=ctx.hexPhysPlanGroup([],members,false);
-  expect(out.length===2&&out.every(step=>step.groupSize===2&&step.bundleId===710),"moving pair did not remain rigid after pinned release");
-  expect(!members[0].ball.rigid&&members[0].ball.motionGroupId===0,"pinned member retained rigidity");
-  expect(members[1].ball.rigid&&members[2].ball.rigid,"moving pair lost rigidity");
+  expect(out.length===3&&out.every(step=>step.groupSize===3&&step.bundleId===710),"selected slope triangle was split by an independent stop probe");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"selected slope triangle lost rigidity");
+}
+
+/* Upward-convex LEFT split: even if all independent probes point in the same
+   direction, the top+RIGHT pair must remain a pair and the left ball releases. */
+{
+  const members=makeUpMembers(810);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>motion(member,1,1),
+    base:()=>[
+      {...motion(top,1,1),bundleId:810,groupSize:2},
+      {...motion(right,1,1),bundleId:810,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,right.ball.id].sort()),"left split did not keep the pair on the right");
+  expect(!left.ball.rigid&&left.ball.motionGroupId===0,"left split solo retained rigidity");
+  expect(top.ball.rigid&&right.ball.rigid,"right-side pair lost rigidity");
+}
+
+/* Upward-convex RIGHT split: a pair-only selected event keeps top+LEFT, while
+   the omitted right ball is position-final and releases immediately. */
+{
+  const members=makeUpMembers(820);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>motion(member,-1,1),
+    base:()=>[
+      {...motion(top,-1,1),bundleId:820,groupSize:2},
+      {...motion(left,-1,1),bundleId:820,groupSize:2}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,left.ball.id].sort()),"right split did not keep the pair on the left");
+  expect(!right.ball.rigid&&right.ball.motionGroupId===0,"omitted right split ball retained rigidity");
+  expect(top.ball.rigid&&left.ball.rigid,"left-side pair lost rigidity");
 }
 
 /* If the selected event omits one member, omission itself finalizes that
@@ -131,4 +184,4 @@ function install({base,independent,natural,groupPlan}){
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v1 PASS");
+console.log("final rigidity authority v2 PASS");
