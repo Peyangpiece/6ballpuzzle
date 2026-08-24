@@ -92,7 +92,12 @@ jobs:
           new='if(!(Number.isFinite(q.v.x)&&Number.isFinite(q.v.y))){console.log("GARBAGE_NONFINITE_DIAGNOSTIC "+JSON.stringify({label,id:q.b.id,cell:[q.x,q.y],vis:{x:q.v.x,y:q.v.y,vx:q.v.vx,vy:q.v.vy,pileFlow:q.v.pileFlow,motionSpeed:q.v.motionSpeed},ball:{type:q.b.garbageType,seq:q.b.garbageSourceSeq,role:q.b.garbageSourceRole,path:q.b.fallPath},rigid:window.__sixBallLastGarbageRigidRowContactV1||null,deep:window.__sixBallLastGarbageDeepContactHoldV1||null,constraint:window.__sixBallLastGarbageConstraintSolve||null,minDisplacement:window.__sixBallLastGarbageMinDisplacementRepair||null}));throw new Error(label+": non-finite visual "+q.b.id);}'
           if old not in s:
               raise SystemExit('finite visual assertion not found')
-          p.write_text(s.replace(old,new,1))
+          s=s.replace(old,new,1)
+          old2='expect(done>=0,"production garbage batch did not converge: "+JSON.stringify({type,variant,maxPending,maxMoving}));'
+          new2='if(done<0){const stuck=currentGarbage(g,originalIds).filter(q=>Array.isArray(q.b.fallPath)&&q.b.fallPath.length).map(q=>({id:q.b.id,type:q.b.garbageType,seq:q.b.garbageSourceSeq,role:q.b.garbageSourceRole,cell:[q.x,q.y],vis:q.v&&[q.v.x,q.v.y],path:q.b.fallPath.slice(0,3)}));console.log("GARBAGE_STALL_DIAGNOSTIC "+JSON.stringify({type,variant,clock:g.pileFlowClock,garbageClock:g.garbageClock,pending:pendingFallPathCount(g),moving:stuck.length,stuck:stuck.slice(0,20),activePath:window.__sixBallLastGarbageActivePathReservationV1||null,temporal:window.__sixBallLastGarbageTemporalSafetyV2||null,deferred:window.__sixBallLastGarbageTemporalDeferredGuardV1||null,deep:window.__sixBallLastGarbageDeepContactHoldV1||null,rigid:window.__sixBallLastGarbageRigidRowContactV1||null}));throw new Error("production garbage batch did not converge: "+JSON.stringify({type,variant,maxPending,maxMoving}));}'
+          if old2 not in s:
+              raise SystemExit('convergence assertion not found')
+          p.write_text(s.replace(old2,new2,1))
           PY
           node tests/.garbage-row-integration.tmp.js
           rm tests/.garbage-row-integration.tmp.js
