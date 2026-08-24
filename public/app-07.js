@@ -217,7 +217,22 @@ function markPileFlowPaths(g,reason="pile_flow"){
 function updateScheduledPileFlowVisual(g,cell,v,dt){
     const path=Array.isArray(cell.fallPath)?cell.fallPath:null;if(!path||!path.length)return false;
     while(path.length&&path[0]?.pileFlow&&Number.isFinite(path[0].pileFlowEnd)&&g.pileFlowClock>=path[0].pileFlowEnd-1e-10){v.x=path[0].to[0];v.y=path[0].to[1];path.shift();}
-    if(!path.length){delete cell.fallPath;v.pileFlow=false;v.vy=0;v.motionSpeed=0;return true;}
+    if(!path.length){
+        delete cell.fallPath;
+        v.pileFlow=false;v.vy=0;v.motionSpeed=0;
+
+        // updateVisuals builds this frame's moving snapshot before consuming
+        // scheduled paths.  If several balls finish together, leaving a
+        // completed ball in that stale snapshot lets the contact solver move
+        // it away from its now-authoritative logical cell.  On the next frame
+        // the displaced peers can block one another from ever returning and
+        // SETTLE waits forever with no fallPath left.  A completed path is a
+        // true rest boundary, so make it static for the contact pass that runs
+        // later in this same frame.
+        g._visualMovingIds?.delete(cell.id);
+        g._visualMotionSeqById?.delete(cell.id);
+        return true;
+    }
     const seg=path[0];if(!seg?.pileFlow)return false;const oldX=v.x,oldY=v.y;if(g.pileFlowClock<seg.pileFlowStart)return true;
     const q=(g.pileFlowClock-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration),[nx,ny]=pileFlowPointForBall(g,cell,seg,q,g.pileFlowClock);v.x=nx;v.y=Math.max(oldY,ny);const physicalSpeed=Math.hypot((v.x-oldX)*0.5,(v.y-oldY)*HEX_ROW_H)/Math.max(1e-9,dt);v.motionSpeed=physicalSpeed;v.vy=Math.max(0,(v.y-oldY)/Math.max(1e-9,dt));return true;
 }

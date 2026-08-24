@@ -62,7 +62,19 @@ function stepEngine(g, dt) {
             // still being shown. This prevents future logical positions from
             // becoming obstacles to current animation.
             const pending=pendingFallPathCount(g);
-            if(pending>0 || !nearlySettled(g,SETTLE_TOL)){
+            if(pending>0){
+                g.stateT=0;
+                return;
+            }
+
+            // All paths in the current batch have completed. Commit the whole
+            // visual batch atomically before the next logical gravity pass.
+            // Without this boundary, the contact solver's stale "moving" set can
+            // leave simultaneously finished balls assigned to one another's
+            // neighbourhood, where their individual snap-back paths deadlock.
+            finalizeCompletedVisualBatch(g,"SETTLE_PATH_BOUNDARY");
+
+            if(!nearlySettled(g,SETTLE_TOL)){
                 g.stateT=0;
                 return;
             }

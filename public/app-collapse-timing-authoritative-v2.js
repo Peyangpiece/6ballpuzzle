@@ -984,18 +984,41 @@
 
                 for(const seg of out){
 
+                    const d =
+                        durationOf(seg);
+
                     seg.start =
                         cursor;
 
+                    /*
+                     * Scheduled pile rendering is authoritative on
+                     * pileFlowStart / pileFlowDuration / pileFlowEnd.
+                     * Rewriting only the legacy start field leaves the
+                     * old end time attached to the new compacted start.
+                     * With several balls moving together that makes one
+                     * trajectory outlive another, lets contact separation
+                     * permute their visual identities, and SETTLE then waits
+                     * forever for visuals that can no longer reach their
+                     * logical cells.
+                     *
+                     * Keep the three absolute-time fields atomic whenever
+                     * this is a scheduled pile-flow segment.
+                     */
                     if(
-                        "pileFlowStart" in seg
+                        seg.pileFlow ||
+                        "pileFlowStart" in seg ||
+                        "pileFlowDuration" in seg ||
+                        "pileFlowEnd" in seg
                     ){
                         seg.pileFlowStart =
                             cursor;
-                    }
 
-                    const d =
-                        durationOf(seg);
+                        seg.pileFlowDuration =
+                            d;
+
+                        seg.pileFlowEnd =
+                            cursor + d;
+                    }
 
                     cursor += d;
                 }

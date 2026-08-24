@@ -572,6 +572,50 @@ function pendingFallPathCount(g) {
     return n;
 }
 
+function finalizeCompletedVisualBatch(g, reason = "SETTLE_PATH_BOUNDARY") {
+    if (!g?.board || pendingFallPathCount(g) !== 0) return 0;
+
+    let fixed = 0;
+    for (let y = boardScanMin(g.board); y < ROWS; y++) for (let x = 0; x < W2; x++) {
+        const cell = valid(x, y) ? g.board[y][x] : null;
+        if (!cell) continue;
+        let v = g.vis.get(cell.id);
+        if (!v) {
+            v = { x, y, vy: 0, sq: 0 };
+            g.vis.set(cell.id, v);
+        }
+        if (Math.abs(v.x - x) > 1e-9 || Math.abs(v.y - y) > 1e-9) fixed++;
+        v.x = x;
+        v.y = y;
+        v.vy = 0;
+        v.motionSpeed = 0;
+        v.gravityMismatch = false;
+        v.pileFlow = false;
+        delete v._segKey;
+        delete v._segP;
+        delete v._segStartVisualY;
+        delete v._segAngle;
+        delete v._segProgress;
+        delete v._segArcTotal;
+        delete v._segStartAngle;
+        delete v._segTargetAngle;
+        delete v._segDir;
+        delete v._pendingPathComplete;
+    }
+
+    // This is a batch boundary, not per-frame lattice attraction. Every authored
+    // path has finished, so the logical cells are now the exact rest positions.
+    // Clearing the stale snapshot prevents the following contact pass from
+    // treating already-completed peers as mutually movable bodies.
+    g._visualMovingIds = new Set();
+    g._visualMotionSeqById = new Map();
+
+    if (fixed && typeof window !== "undefined") {
+        window.__sixBallLastCompletedVisualBatch = { fixed, reason, at: Date.now() };
+    }
+    return fixed;
+}
+
 function forceSyncVisualsToLogical(g, reason = "SETTLE_WATCHDOG") {
     for (let y = boardScanMin(g.board); y < ROWS; y++) for (let x = 0; x < W2; x++) {
         const cell = valid(x, y) ? g.board[y][x] : null;
