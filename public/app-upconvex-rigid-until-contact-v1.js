@@ -1,10 +1,12 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.4
+ * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.5
  * ============================================================ */
 (function(){
-    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV24)return;
+    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV25)return;
     if(typeof hexPhysPlanGroup!=="function")return;
 
+    window.__sixBallUpConvexRigidUntilImpossibleV25=true;
+    /* Compatibility marker for diagnostics written against v2.4. */
     window.__sixBallUpConvexRigidUntilImpossibleV24=true;
     const basePlanGroup=hexPhysPlanGroup;
 
@@ -183,9 +185,47 @@
         return plan;
     }
 
+    function isContinuingRigidSlope(members){
+        return members.every(m=>m.ball.rigid&&Number(m.ball.motionGroupSize)===3)&&members.some(m=>m.ball._smoothSlopeRigidV39||m.ball._upConvexRigidUntilImpossibleV24||m.ball._upConvexRigidUntilImpossibleV25);
+    }
+
+    function keepRigidSlope(members,plan,preview,reason){
+        if(!preview){
+            for(const m of members){
+                m.ball.rigid=true;
+                m.ball.motionGroupSize=3;
+                m.ball.motionGroupOrientation="up";
+                m.ball._upConvexRigidUntilImpossibleV24=true;
+                m.ball._upConvexRigidUntilImpossibleV25=true;
+            }
+            window.__sixBallLastUpConvexRigidContinuationV25={
+                ids:members.map(m=>m.ball.id),
+                vector:[plan[0].tx-plan[0].x,plan[0].ty-plan[0].y],
+                reason,
+                at:Date.now()
+            };
+        }
+        return plan;
+    }
+
     hexPhysPlanGroup=function(board,members,preview=false){
         const g=layout(members);
         if(!g)return basePlanGroup(board,members,preview)||[];
+
+        let motions=null;
+
+        /*
+         * The previous committed slope step is direct physical evidence that
+         * this triplet is already descending as one body.  If the canonical
+         * current-contact solver still proves another common step, a nearby
+         * V-pocket is only a future release candidate and must not split the
+         * body during the current fall.
+         */
+        if(isContinuingRigidSlope(members)){
+            motions=memberMotions(board,members);
+            const continuing=canonicalRigidSlope(board,members,motions);
+            if(continuing)return keepRigidSlope(members,continuing,preview,"active-slope-common-step-before-pocket");
+        }
 
         const capture=inwardPocketCapture(board,members,g);
         if(capture){const partial=capturePlan(board,g,capture,preview);if(partial)return partial;}
@@ -193,10 +233,10 @@
         let baselinePreview=[];try{baselinePreview=basePlanGroup(board,members,true)||[];}catch(_){baselinePreview=[];}
         if(isThreeBallRigidPlan(baselinePreview,members))return preview?baselinePreview:(basePlanGroup(board,members,false)||[]);
 
-        const motions=memberMotions(board,members),rigid=canonicalRigidSlope(board,members,motions);
+        if(!motions)motions=memberMotions(board,members);
+        const rigid=canonicalRigidSlope(board,members,motions);
         if(rigid){
-            if(!preview)for(const m of members){m.ball.rigid=true;m.ball.motionGroupSize=3;m.ball.motionGroupOrientation="up";m.ball._upConvexRigidUntilImpossibleV24=true;}
-            return rigid;
+            return keepRigidSlope(members,rigid,preview,"current-common-slope-rescue");
         }
         return preview?baselinePreview:(basePlanGroup(board,members,false)||[]);
     };
@@ -205,11 +245,13 @@
     window.__sixBallUpConvexRigidUntilContactV1=true;
     window.__sixBallUpConvexRigidUntilContactVersion="upconvex-rigidity-partial-release-v2.3";
     window.__sixBallUpConvexRigidUntilImpossibleVersion="upconvex-rigidity-partial-release-v2.3";
-    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.4";
+    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.5";
     window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
     window.__sixBallUpConvexRequiresRealCurrentPivot=true;
     window.__sixBallUpRestAloneDoesNotChooseSolo=true;
     window.__sixBallUpPocketCaptureHasPriority=true;
+    window.__sixBallUpPocketCaptureWaitsForActiveSlopeFailure=true;
+    window.__sixBallUpActiveSlopeCommonStepHasPriority=true;
     window.__sixBallUpInwardPocketChoosesSolo=true;
     window.__sixBallUpContinuousPocketDisambiguation=true;
     window.__sixBallUpRemainingTwoKeepRigidity=true;

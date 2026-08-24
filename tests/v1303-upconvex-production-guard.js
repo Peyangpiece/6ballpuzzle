@@ -65,6 +65,48 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
   expect(out.length===3&&out.every(p=>p.groupSize===3&&p.kind==="GROUP_SLOPE_TRANSLATE"),"genuine current rigid slope was not preserved");
 }
 
+/*
+ * A triplet already descending a slope must finish every still-legal common
+ * slope step before an inward V-pocket is allowed to release one member.
+ * The pocket candidate describes a possible later split, not the current
+ * physical event.
+ */
+{
+  const b=board(),members=upMembers(-.35);
+  for(const m of members){
+    m.ball._smoothSlopeRigidV39=true;
+    b[m.y][m.x]=m.ball;
+  }
+  b[6][5]={id:971,c:0,isGarbage:false};
+  b[6][7]={id:972,c:1,isGarbage:false};
+
+  const ctx={console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,Error,TypeError,valid};
+  ctx.hexPhysClearGroupBall=clearGroup;
+  ctx.hexPhysPlanGroup=(bb,mm)=>baseSplit(mm);
+  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({
+    x:m.x,y:m.y,tx:m.x-1,ty:m.y+1,ball:m.ball,
+    kind:"ROLL_LEFT",pivot:[7,6],topPivot:null
+  });
+  ctx.hexPhysRigidSlopePlan=(bb,mm)=>mm.map(m=>({
+    x:m.x,y:m.y,tx:m.x-1,ty:m.y+1,ball:m.ball,
+    kind:"GROUP_SLOPE_TRANSLATE",pivot:[7,6],topPivot:null,
+    bundleId:500,groupSize:3
+  }));
+  ctx.hexPhysGroupTranslationPlan=(bb,mm,dx,dy,kind)=>mm.map(m=>({
+    x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,
+    kind,pivot:null,topPivot:null,bundleId:500,groupSize:mm.length
+  }));
+
+  install(ctx,rigidSource,"app-upconvex-rigid-until-contact-v1.js");
+  const out=ctx.hexPhysPlanGroup(b,members,false);
+
+  expect(
+    out.length===3&&out.every(p=>p.groupSize===3&&p.kind==="GROUP_SLOPE_TRANSLATE"&&p.tx-p.x===-1&&p.ty-p.y===1),
+    "active downhill rigid step split early at a future pocket: "+JSON.stringify(out.map(p=>({id:p.ball.id,kind:p.kind,groupSize:p.groupSize,to:[p.tx,p.ty]})))
+  );
+  expect(members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3),"active downhill triplet lost rigidity metadata");
+}
+
 /* Empty collision-safe space cannot invent rigidity. */
 {
   const {ctx,out}=rigidCase({realPivot:false,canonicalRigid:true});
