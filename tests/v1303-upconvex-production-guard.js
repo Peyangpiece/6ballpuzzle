@@ -409,6 +409,11 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
     groupSize:mm.length
   }));
 
+  ctx.hexPhysUpConvexSeparator=(bb,mm,motions)=>({
+    hitFraction:.5,top:mm[0],pairLower:mm[2],solo:mm[1],
+    soloMotion:motions[1],dir:-1,support:pileRed,px:6,py:5
+  });
+
   ctx.hexPhysGroupTranslationPlan=(bb,mm,dx,dy,kind)=>mm.map(m=>({
     x:m.x,y:m.y,
     tx:m.x+dx,ty:m.y+dy,
@@ -426,6 +431,8 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
   const solo=out.find(p=>p.ball.id===101);
 
   expect(ctx.__sixBallUpPocketCaptureHasPriority===true,"pocket-capture priority missing");
+  expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"pocket capture can bypass the central separator");
+  expect(ctx.__sixBallUpContactSideChoosesSolo===true&&ctx.__sixBallUpInwardPocketChoosesSolo===false,"pocket still chooses the solo side");
   expect(ctx.__sixBallUpRestAloneDoesNotChooseSolo===true,"REST-alone rejection policy missing");
   expect(pair.length===2&&pair.every(p=>[100,102].includes(p.ball.id)&&p.tx-p.x===-1&&p.ty-p.y===1),"blue+yellow did not remain paired and move left");
   expect(solo&&solo.groupSize===0&&solo.tx===6&&solo.ty===5,"red did not release into the pile red/green pocket");
@@ -433,7 +440,7 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
   expect(members[2].ball.motionGroupSize===2&&members[0].ball.motionGroupSize===2&&members[2].ball.rigid&&members[0].ball.rigid,"blue+yellow lost their two-ball rigidity");
 }
 
-/* Separator-level pocket override remains valid too. */
+/* A projected pocket may not override an already selected contact side. */
 {
   const b=board(),members=upMembers(0);
   for(const m of members)b[m.y][m.x]=m.ball;
@@ -453,8 +460,11 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
   install(ctx,pocketSource,"app-upconvex-pocket-capture-v1.js");
   const info=ctx.hexPhysUpConvexSeparator(b,members,motions);
 
-  expect(info&&info.projectedPocketCapture===true,"separator-level projected pocket was not detected");
-  expect(info.solo.ball.id===101&&info.pairLower.ball.id===102&&info.dir===-1,"separator-level pocket override selected the wrong 1+2 split");
+  expect(info&&!info.projectedPocketCapture,"projected pocket overrode the selected contact side");
+  expect(info.solo.ball.id===102&&info.pairLower.ball.id===101&&info.dir===1,"selected RIGHT pair + LEFT solo was changed by pocket capture");
+  expect(ctx.__sixBallLastUpProjectedPocketConflictIgnoredV2?.projectedSoloId===101,"pocket-side conflict was not diagnosed");
+  expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"obsolete geometric override marker remains enabled");
+  expect(ctx.__sixBallUpPocketCaptureNeverOverridesSelectedSide===true,"selected-side protection marker missing");
 }
 
 function sideCase(offset){
@@ -478,6 +488,8 @@ function sideCase(offset){
 {
   const {ctx,info}=sideCase(-.4);
   expect(ctx.__sixBallUpConvexContactPriorityVersion==="upconvex-pre-arc-side-lock-v3.3","pre-arc side lock wrapper did not install");
+  expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction can still choose the split side");
+  expect(ctx.__sixBallUpConvexMotionDirectionNeverChoosesSplitSide===true,"contact-only side marker missing");
   expect(info&&info.preArcSideLocked===true&&info.pairSide==="left"&&info.soloSide==="right"&&info.dir===-1&&info.solo.x===7,"right-side protrusion did not produce LEFT pair + RIGHT solo from pre-arc position");
 }
 {

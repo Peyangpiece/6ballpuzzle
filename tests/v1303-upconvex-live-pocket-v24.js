@@ -68,13 +68,17 @@ function install(ctx){
     x:q.x,y:q.y,tx:q.x+dx,ty:q.y+dy,ball:q.ball,
     kind,bundleId:500,groupSize:mm.length,pivot:null,topPivot:null
   }));
+  ctx.hexPhysUpConvexSeparator=(bb,mm,motions)=>({
+    hitFraction:.675,top:mm[0],pairLower:mm[2],solo:mm[1],
+    soloMotion:motions[1],dir:-1,support:b[6][5],px:6,py:5
+  });
 
   install(ctx);
   const out=ctx.hexPhysPlanGroup(b,m,false);
   const pair=out.filter(p=>p.groupSize===2);
   const solo=out.find(p=>p.ball.id===101);
 
-  expect(ctx.__sixBallUpConvexRigidImplementationVersion==="upconvex-rigidity-partial-release-v2.8","v2.8 implementation not installed");
+  expect(ctx.__sixBallUpConvexRigidImplementationVersion==="upconvex-rigidity-partial-release-v2.9","v2.9 implementation not installed");
   expect(ctx.__sixBallUpContinuousPocketDisambiguation===true,"continuous pocket disambiguation missing");
   expect(pair.length===2&&pair.every(p=>[100,102].includes(p.ball.id)),"wrong remaining pair; expected BLUE+YELLOW");
   expect(pair.every(p=>p.tx-p.x===-1&&p.ty-p.y===1),"BLUE+YELLOW did not move left together");
@@ -96,6 +100,10 @@ function install(ctx){
   ctx.hexPhysRigidSlopePlan=()=>null;
   ctx.hexPhysPlanGroup=(bb,mm)=>[];
   ctx.hexPhysGroupTranslationPlan=(bb,mm,dx,dy,kind)=>mm.map(q=>({x:q.x,y:q.y,tx:q.x+dx,ty:q.y+dy,ball:q.ball,kind,bundleId:500,groupSize:mm.length,pivot:null,topPivot:null}));
+  ctx.hexPhysUpConvexSeparator=(bb,mm,motions)=>({
+    hitFraction:.325,top:mm[0],pairLower:mm[1],solo:mm[2],
+    soloMotion:motions[2]||null,dir:1,support:b[6][7],px:6,py:5
+  });
   install(ctx);
   const out=ctx.hexPhysPlanGroup(b,m,false);
   const solo=out.find(p=>p.groupSize===0);
@@ -118,4 +126,4 @@ function install(ctx){
   expect(out.length===3&&out.every(p=>p.groupSize===3&&p.tx-p.x===1),"3-ball rigidity changed without an immediate V-pocket");
 }
 
-console.log("v1303 live red-pocket v2.8 PASS");
+console.log("v1303 live red-pocket v2.9 PASS");

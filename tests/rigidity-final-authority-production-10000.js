@@ -104,6 +104,9 @@ function upwardOppositeSplit(plan,members){
 let sameDirection=0;
 let releasedFixed=0;
 let oppositeSplits=0;
+let rejectedOutsideBand=0;
+let activeCentralSplits=0;
+let positionFinalSplits=0;
 
 for(const input of cases){
   const previewFixture=build(input);
@@ -117,9 +120,18 @@ for(const input of cases){
   expect(JSON.stringify(metadata(previewFixture.members))===before,`case ${input.index}: preview mutated state`);
 
   const commitFixture=build(input);
+  ctx.__sixBallLastFinalRigidityCorrectionV1=null;
   const commit=canonical(ctx.hexPhysPlanGroup(
     commitFixture.board,commitFixture.members,false
   ));
+  const finalCorrection=ctx.__sixBallLastFinalRigidityCorrectionV1;
+  const waitingRigid=
+    commit.length===0&&
+    [
+      "reject-upward-split-outside-middle-fifty-percent",
+      "wait-instead-of-opposite-upward-split"
+    ].includes(finalCorrection?.reason);
+  if(waitingRigid)rejectedOutsideBand++;
   expect(
     JSON.stringify(preview)===JSON.stringify(commit),
     `case ${input.index}: preview/commit mismatch ${JSON.stringify({preview,commit,input})}`
@@ -141,7 +153,9 @@ for(const input of cases){
   for(const member of commitFixture.members){
     const step=planById.get(member.ball.id);
     const state=stateById.get(member.ball.id);
-    if(step?.groupSize>=2){
+    if(waitingRigid){
+      expect(state.rigid&&state.size===3,`case ${input.index}: rejected split did not restore triplet`);
+    }else if(step?.groupSize>=2){
       expect(state.rigid&&state.size===step.groupSize,`case ${input.index}: moving cohort lost rigidity`);
     }else{
       expect(!state.rigid&&state.group===0&&state.size===0,`case ${input.index}: fixed/solo member retained rigidity`);
@@ -158,6 +172,24 @@ for(const input of cases){
       !soloState.rigid&&soloState.group===0&&soloState.size===0,
       `case ${input.index}: ${explicitUpSplit.splitSide} split solo retained rigidity`
     );
+    const soloMoves=preview.some(step=>step.id===explicitUpSplit.soloId);
+    if(soloMoves){
+      activeCentralSplits++;
+      expect(
+        [
+          "selected-upward-contact-side-preserved",
+          "opposite-upward-split-side-corrected"
+        ].includes(finalCorrection?.reason),
+        `case ${input.index}: active split lacks central-contact authority`
+      );
+      expect(
+        finalCorrection.hitFraction>=.25-1e-9&&
+        finalCorrection.hitFraction<=.75+1e-9,
+        `case ${input.index}: active split escaped middle 50%`
+      );
+    }else{
+      positionFinalSplits++;
+    }
   }else if(independent.every(Boolean)&&new Set(vectors).size===1){
     let common=null;
     const [dx,dy]=vectors[0].split(",").map(Number);
@@ -179,5 +211,11 @@ expect(ctx.__sixBallPositionFinalAlwaysReleasesRigidity===true,"position-final i
 expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope triangle invariant marker missing");
 expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex side invariant marker missing");
 expect(ctx.__sixBallPositionFinalMeansMissingSelectedProposal===true,"selected-event finalization marker missing");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v2","final authority version mismatch");
-console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} releasedFixed=${releasedFixed}`);
+expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
+expect(ctx.__sixBallUpConvexPositionFinalReleaseExemptsContactBand===true,"position-final band exemption marker missing");
+expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geometric override remains enabled");
+expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
+expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
+expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v3","final authority version mismatch");
+console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);

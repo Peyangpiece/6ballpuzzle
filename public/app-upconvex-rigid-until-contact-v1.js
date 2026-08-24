@@ -1,5 +1,5 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.8
+ * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.9
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV28)return;
@@ -169,6 +169,29 @@
         return motions;
     }
 
+    function selectedSplitSide(board,members,motions){
+        if(typeof hexPhysUpConvexSeparator!=="function")return null;
+        let info=null;
+        try{info=hexPhysUpConvexSeparator(board,members,motions);}catch(_){info=null;}
+        if(!info?.top?.ball||!info?.pairLower?.ball||!info?.solo?.ball)return null;
+        const hitFraction=Number(info.hitFraction);
+        if(
+            !Number.isFinite(hitFraction)||
+            hitFraction<.25-1e-9||
+            hitFraction>.75+1e-9
+        )return null;
+
+        const g=layout(members);
+        if(!g||info.top.ball.id!==g.top.ball.id)return null;
+        const lowerIds=new Set(g.lower.map(m=>m.ball.id));
+        if(
+            !lowerIds.has(info.pairLower.ball.id)||
+            !lowerIds.has(info.solo.ball.id)||
+            info.pairLower.ball.id===info.solo.ball.id
+        )return null;
+        return info;
+    }
+
     function hasRealCurrentPivot(board,members,motions){
         const own=ownIds(members);
         for(const p of motions||[]){
@@ -316,7 +339,26 @@
         }
 
         const capture=inwardPocketCapture(board,members,g);
-        if(capture){const partial=capturePlan(board,g,capture,preview);if(partial)return partial;}
+        if(capture){
+            const selected=selectedSplitSide(board,members,motions);
+            const conflicts=
+                !selected||
+                selected.solo.ball.id!==capture.solo.ball.id;
+            if(!conflicts){
+                const partial=capturePlan(board,g,capture,preview);
+                if(partial)return partial;
+            }else if(!preview){
+                window.__sixBallLastUpInwardPocketConflictIgnoredV29={
+                    selectedSoloId:selected?.solo?.ball?.id??null,
+                    pocketSoloId:capture.solo.ball.id,
+                    selectedPairLowerId:selected?.pairLower?.ball?.id??null,
+                    reason:selected
+                        ?"contact-side-is-authoritative"
+                        :"wait-for-authoritative-contact-side",
+                    at:Date.now()
+                };
+            }
+        }
 
         let baselinePreview=[];try{baselinePreview=basePlanGroup(board,members,true)||[];}catch(_){baselinePreview=[];}
         if(isThreeBallRigidPlan(baselinePreview,members))return preview?baselinePreview:(basePlanGroup(board,members,false)||[]);
@@ -333,7 +375,7 @@
     window.__sixBallUpConvexRigidUntilContactV1=true;
     window.__sixBallUpConvexRigidUntilContactVersion="upconvex-rigidity-partial-release-v2.3";
     window.__sixBallUpConvexRigidUntilImpossibleVersion="upconvex-rigidity-partial-release-v2.3";
-    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.8";
+    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.9";
     window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
     window.__sixBallUpConvexRequiresRealCurrentPivot=true;
     window.__sixBallUpRestAloneDoesNotChooseSolo=true;
@@ -344,7 +386,10 @@
     window.__sixBallUpActiveSlopeRecordsCrossSupportDirection=true;
     window.__sixBallUpOuterLowerSideContactHasPriority=true;
     window.__sixBallUpOuterSideContactPreventsPocketSplit=true;
-    window.__sixBallUpInwardPocketChoosesSolo=true;
+    window.__sixBallUpInwardPocketChoosesSolo=false;
+    window.__sixBallUpContactSideChoosesSolo=true;
+    window.__sixBallUpContactSideOverridesPocketChoice=true;
+    window.__sixBallUpPocketCaptureRequiresCentralSeparator=true;
     window.__sixBallUpContinuousPocketDisambiguation=true;
     window.__sixBallUpRemainingTwoKeepRigidity=true;
 })();

@@ -768,11 +768,6 @@
             firstPieceGeometryLockFor(
                 members,
                 supportId
-            ) ||
-            rigidApproachLockFor(
-                members,
-                supportId,
-                info
             );
 
         if(!lock)
@@ -930,6 +925,9 @@
         true;
 
     window.__sixBallUpConvexRigidApproachIsLastResort =
+        false;
+
+    window.__sixBallUpConvexMotionDirectionNeverChoosesSplitSide =
         true;
 
     window.__sixBallUpConvexPreArcSideAuthoritative =

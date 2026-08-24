@@ -7,8 +7,9 @@
  * that must release from the 3-ball constraint.
  *
  * The remaining TOP + opposite LOWER member keep a 2-ball rigid pair
- * and move away from the captured member. This overrides geometric
- * protrusion-side selection only for this concrete physical event.
+ * and move away from the captured member. Pocket detection may confirm
+ * split timing, but it must never override an already selected geometric
+ * side: split LEFT keeps the pair RIGHT, split RIGHT keeps the pair LEFT.
  *
  * Example from the reported clip:
  *   red lower-right -> projected into pile red/green pocket -> SOLO
@@ -156,6 +157,15 @@
         if(!info)
             return info;
 
+        const hitFraction=Number(info.hitFraction);
+        if(
+            !Number.isFinite(hitFraction)||
+            hitFraction<.25-1e-9||
+            hitFraction>.75+1e-9
+        ){
+            return info;
+        }
+
         const capture=projectedPocket(
             board,
             members,
@@ -176,6 +186,37 @@
             solo.x > pairLower.x
                 ? -1
                 : 1;
+
+        /* The wrapped separator is the authority for WHICH SIDE split. A
+           projected pocket is only allowed to enrich that decision when it
+           names the same solo lower ball. The old override here was able to
+           invert a pre-arc LEFT/RIGHT decision in otherwise valid layouts. */
+        const selectedSoloId=info?.solo?.ball?.id;
+        const selectedPairLowerId=info?.pairLower?.ball?.id;
+        const selectedTopId=info?.top?.ball?.id;
+        const hasSelectedSide=
+            selectedSoloId!=null&&
+            selectedPairLowerId!=null&&
+            selectedTopId!=null;
+
+        if(
+            hasSelectedSide&&
+            (
+                selectedSoloId!==solo.ball.id||
+                selectedPairLowerId!==pairLower.ball.id||
+                selectedTopId!==top.ball.id
+            )
+        ){
+            window.__sixBallLastUpProjectedPocketConflictIgnoredV2={
+                selectedSoloId,
+                projectedSoloId:solo.ball.id,
+                selectedPairLowerId,
+                projectedPairLowerId:pairLower.ball.id,
+                reason:"contact-side-is-authoritative",
+                at:Date.now()
+            };
+            return info;
+        }
 
         const corrected={
             ...info,
@@ -209,7 +250,9 @@
     };
 
     window.__sixBallUpProjectedPocketCaptureVersion=
-        "up-projected-pocket-capture-v1";
-    window.__sixBallUpPocketCaptureOverridesGeometricSide=true;
+        "up-projected-pocket-capture-v2";
+    window.__sixBallUpPocketCaptureOverridesGeometricSide=false;
+    window.__sixBallUpPocketCaptureNeverOverridesSelectedSide=true;
+    window.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent=true;
     window.__sixBallUpPocketCaptureNormalSupportsOnly=true;
 })();

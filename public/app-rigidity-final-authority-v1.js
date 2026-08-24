@@ -10,12 +10,14 @@
  *    temporarily reports one member as stopped.
  * 2. An explicit upward-convex 2+1 split is never rejoined: a split
  *    on the left keeps the pair on the right, and vice versa.
- * 3. A member with no proposal in the chosen physical event has
+ * 3. An active upward-convex split is legal only when the protrusion
+ *    contacts the middle 50% of the lower two-ball edge.
+ * 4. A member with no proposal in the chosen physical event has
  *    reached its position for that event and is detached before
  *    the other members move.
- * 4. A declared moving pair is always normalized to one two-ball
+ * 5. A declared moving pair is always normalized to one two-ball
  *    constraint; solo movers always have zero rigidity.
- * 5. If no coordinated plan exists, different independent
+ * 6. If no coordinated plan exists, different independent
  *    directions are released instead of leaving a frozen group.
  *
  * Garbage has its own zero-rigidity pipeline and is never changed
@@ -191,6 +193,77 @@
         return null;
     }
 
+    function selectedUpwardSplitSide(board,members,motions){
+        const layout=upwardTriangle(members);
+        if(!layout||typeof hexPhysUpConvexSeparator!=="function")return null;
+
+        let info=null;
+        try{info=hexPhysUpConvexSeparator(board,members,motions);}catch(_){info=null;}
+        if(!info?.top?.ball||!info?.pairLower?.ball||!info?.solo?.ball)return null;
+
+        /* Canonical UP-convex contact measures the protrusion across the
+           lower edge as hitFraction. Only its middle 50% (25%..75%) is a
+           legal active split. Outer-quarter contacts remain rigid slopes. */
+        const hitFraction=Number(info.hitFraction);
+        if(
+            !Number.isFinite(hitFraction)||
+            hitFraction<.25-1e-9||
+            hitFraction>.75+1e-9
+        )return null;
+
+        const topId=memberId(layout.top);
+        const leftId=memberId(layout.left);
+        const rightId=memberId(layout.right);
+        const infoTopId=memberId(info.top);
+        const pairLowerId=memberId(info.pairLower);
+        const soloId=memberId(info.solo);
+        if(infoTopId!==topId||pairLowerId===soloId)return null;
+
+        if(soloId===leftId&&pairLowerId===rightId){
+            return{
+                info,
+                splitSide:"left",
+                pairSide:"right",
+                pairIds:[topId,rightId],
+                pairLowerId:rightId,
+                soloId:leftId,
+                hitFraction
+            };
+        }
+        if(soloId===rightId&&pairLowerId===leftId){
+            return{
+                info,
+                splitSide:"right",
+                pairSide:"left",
+                pairIds:[topId,leftId],
+                pairLowerId:leftId,
+                soloId:rightId,
+                hitFraction
+            };
+        }
+        return null;
+    }
+
+    function requestedSplitPlan(board,members,selected,preview){
+        if(!selected||typeof hexPhysUpConvexSplitPlan!=="function")return null;
+        let plan=null;
+        try{
+            plan=hexPhysUpConvexSplitPlan(
+                board,
+                members,
+                selected.info,
+                preview
+            );
+        }catch(_){
+            plan=null;
+        }
+        if(!Array.isArray(plan))return null;
+        const classified=upwardOppositeSideSplit(plan,members);
+        return classified&&classified.soloId===selected.soloId
+            ?plan
+            :null;
+    }
+
     function normalizePlan(
         plan,
         members,
@@ -287,6 +360,11 @@
            it. A restored moving pair must never end with size=2 but group=0. */
         const authorityGroupId=groupIdFor(members,[]);
         const motions=independentMotions(board,members);
+        const selectedSideBefore=selectedUpwardSplitSide(
+            board,
+            members,
+            motions
+        );
         let basePlan=[];
         try{
             basePlan=basePlanGroup(board,members,preview)||[];
@@ -303,6 +381,9 @@
             baseMovesWholeGroup&&
             movingBase.every(step=>Number(step.groupSize)===members.length)&&
             sameVector(movingBase);
+        const selectedSide=
+            selectedSideBefore||
+            selectedUpwardSplitSide(board,members,motions);
 
         /* The selected coordinated event is authoritative. Independent probes
            inspect balls in isolation and therefore cannot invalidate a legal
@@ -329,6 +410,92 @@
            contact split. Geometry proves that the retained pair is opposite
            the lower ball where the upward triangle split. */
         const explicitUpSplit=upwardOppositeSideSplit(movingBase,members);
+
+        /* The separator's physical contact-side decision is the final answer
+           for WHICH lower ball becomes solo. If an older pocket/pair layer
+           returned the opposite 2+1 plan, rebuild it from the authoritative
+           separator instead of accepting or rejoining that wrong side. */
+        if(selectedSide){
+            if(explicitUpSplit?.soloId===selectedSide.soloId){
+                const normalized=normalizePlan(
+                    movingBase,
+                    members,
+                    preview,
+                    false,
+                    authorityGroupId
+                );
+                if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:"selected-upward-contact-side-preserved",
+                    ...selectedSide,
+                    info:undefined,
+                    at:Date.now()
+                };
+                return normalized;
+            }
+
+            const corrected=requestedSplitPlan(
+                board,
+                members,
+                selectedSide,
+                preview
+            );
+            if(corrected){
+                const normalized=normalizePlan(
+                    corrected,
+                    members,
+                    preview,
+                    false,
+                    authorityGroupId
+                );
+                if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:"opposite-upward-split-side-corrected",
+                    ...selectedSide,
+                    info:undefined,
+                    at:Date.now()
+                };
+                return normalized;
+            }
+
+            if(explicitUpSplit){
+                if(!preview){
+                    commitCohort(members,[],authorityGroupId);
+                    for(const member of members){
+                        member.ball.motionGroupOrientation="up";
+                    }
+                    window.__sixBallLastFinalRigidityCorrectionV1={
+                        reason:"wait-instead-of-opposite-upward-split",
+                        rejected:explicitUpSplit,
+                        required:selectedSide,
+                        at:Date.now()
+                    };
+                }
+                return[];
+            }
+        }
+
+        /* A moving solo plus a moving pair is an active physical split, not a
+           position-final release. Without a proven middle-50% contact it is
+           forbidden, regardless of what a generic pair or pocket layer
+           proposed. Pair-only plans remain legal because their omitted lower
+           member is position-final for the selected event. */
+        if(
+            explicitUpSplit&&
+            movingBase.some(step=>memberId(step)===explicitUpSplit.soloId)
+        ){
+            if(!preview){
+                commitCohort(members,[],authorityGroupId);
+                for(const member of members){
+                    member.ball.motionGroupOrientation="up";
+                }
+                window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:"reject-upward-split-outside-middle-fifty-percent",
+                    rejected:explicitUpSplit,
+                    at:Date.now()
+                };
+            }
+            return[];
+        }
+
         if(explicitUpSplit){
             const normalized=normalizePlan(
                 movingBase,
@@ -403,7 +570,11 @@
     window.__sixBallPositionFinalAlwaysReleasesRigidity=true;
     window.__sixBallSlopeTriangleAlwaysKeepsRigidity=true;
     window.__sixBallUpConvexSplitKeepsOppositePair=true;
+    window.__sixBallUpConvexSelectedSideCannotBeOverridden=true;
+    window.__sixBallUpConvexWrongSideWaitsInsteadOfSplitting=true;
+    window.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent=true;
+    window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v2";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v3";
 })();
