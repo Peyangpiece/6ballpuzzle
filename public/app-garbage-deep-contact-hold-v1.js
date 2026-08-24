@@ -1,11 +1,19 @@
 /* ============================================================
- * 6ball GARBAGE DEEP CONTACT RESCUE v2.2
+ * 6ball GARBAGE DEEP CONTACT RESCUE v2.3
  *
  * Last-resort GARBAGE-only contact projection for dense staggered landings.
  * Ordinary contact solving, monotonic protection and persistent path-time hold
  * run first. This layer activates only if a real overlap still survives.
  *
+ * v2.3 adds one final authoritative invariant: a live garbage ball may not walk
+ * horizontally away from the X corridor authored by its remaining fallPath.
+ * Earlier contact layers can make a small local correction, but repeating that
+ * correction every frame must not accumulate into a board-wide teleport.
+ *
  * Resolution order:
+ *  0. Clamp only runaway LIVE garbage X back into its remaining authored path
+ *     envelope (logical X + all remaining segment from/to X, with 1 lattice of
+ *     physical contact margin).
  *  1. If a live FOLLOW_SUPPORT segment overlaps a support explicitly named by
  *     that segment, keep the follower on the physically-above tangent side of
  *     that support. A completed/fixed support is never moved sideways to make
@@ -13,7 +21,8 @@
  *  2. Otherwise hold a visually-upper live incoming ball upward when contact
  *     blocks fall.
  *  3. Only if vertical contact cannot solve the pair, minimally separate live
- *     garbage horizontally inside the same physical-height corridor.
+ *     garbage horizontally inside the same physical-height corridor AND inside
+ *     the authored X envelope.
  *
  * Invariants:
  * - existing/frozen/completed bodies never move;
@@ -21,9 +30,11 @@
  * - vertical rescue only removes downward progress;
  * - horizontal rescue moves only live garbage and stays inside board bounds;
  * - local physical X order cannot be crossed through another nearby body;
+ * - no live garbage can accumulate horizontal correction beyond its authored
+ *   remaining path corridor;
  * - a trial commits only when every incoming contact is legal afterwards.
  * ============================================================ */
-(function installGarbageDeepContactRescueV22(){
+(function installGarbageDeepContactRescueV23(){
     if(typeof window==="undefined"||window.__sixBallGarbageDeepContactHoldV1)return;
     if(typeof resolveVisualContacts!=="function")return;
 
@@ -39,6 +50,7 @@
     const MAX_HORIZONTAL_PASSES=256;
     const MAX_TOTAL_HOLD_ROWS=2.25;
     const MAX_HORIZONTAL_SHIFT_PER_BALL=4.0;
+    const MAX_AUTHORED_X_MARGIN=1.0;
 
     function garbagePhase(g){
         return !!(g&&g.state==="RESOLVING"&&g.phase==="GARBAGE"&&Array.isArray(g.board)&&g.vis);
@@ -66,6 +78,38 @@
         return ids;
     }
     function liveEntries(all,liveIds){return all.filter(q=>liveIds.has(q.ball.id));}
+
+    function authoredXEnvelope(q){
+        let minX=Number(q?.x),maxX=Number(q?.x);
+        if(!Number.isFinite(minX)){minX=Number(q?.v?.x)||0;maxX=minX;}
+        for(const seg of q?.ball?.fallPath||[]){
+            const fx=Number(seg?.from?.[0]),tx=Number(seg?.to?.[0]);
+            if(Number.isFinite(fx)){minX=Math.min(minX,fx);maxX=Math.max(maxX,fx);}
+            if(Number.isFinite(tx)){minX=Math.min(minX,tx);maxX=Math.max(maxX,tx);}
+        }
+        return{
+            lo:Math.max(0,minX-MAX_AUTHORED_X_MARGIN),
+            hi:Math.min(W2-1,maxX+MAX_AUTHORED_X_MARGIN),
+            minX,maxX
+        };
+    }
+    function clampRunawayPathX(all,liveIds){
+        let changed=0,maxCorrection=0,totalCorrection=0;
+        const corrections=[];
+        for(const q of all){
+            if(!liveIds.has(q.ball.id)||!Number.isFinite(q.v.x))continue;
+            const env=authoredXEnvelope(q);
+            const before=q.v.x;
+            const after=Math.max(env.lo,Math.min(env.hi,before));
+            if(Math.abs(after-before)<=EPS)continue;
+            q.v.x=after;
+            const correction=Math.abs(after-before);
+            changed++;maxCorrection=Math.max(maxCorrection,correction);totalCorrection+=correction;
+            corrections.push({id:q.ball.id,before,after,logicalX:q.x,envelope:[env.lo,env.hi],authored:[env.minX,env.maxX]});
+        }
+        return{changed,maxCorrection,totalCorrection,corrections};
+    }
+
     function distance(a,b){return Math.hypot((a.v.x-b.v.x)*.5,(a.v.y-b.v.y)*H);}
     function worstIncoming(all,liveIds){
         let worst=null;
@@ -101,11 +145,6 @@
             const start=Number(seg.pileFlowStart),end=Number(seg.pileFlowEnd);
             if(Number.isFinite(start)&&Number.isFinite(end)&&clock+EPS>=start&&clock<=end+EPS)return seg;
         }
-        /*
-         * Deferred support segments may intentionally have no absolute time yet.
-         * If such a segment is at the head of the still-live path, it is the
-         * current blocked physical relation and must still be honoured.
-         */
         const head=path[0];
         return segmentNamesSupport(head,supportId)?head:null;
     }
@@ -137,13 +176,6 @@
         const {follower,support,seg}=rel;
         const req=requiredRowSeparation(follower,support);
         if(req<=EPS)return{ok:true,changed:false,id:follower.ball.id,reason:"explicit_support_tangent_already_horizontal"};
-
-        /*
-         * A FOLLOW_SUPPORT follower belongs on the physically-above tangent
-         * branch while downward gravity is blocked by that support. This remains
-         * true when numerical/contact correction has brought both centres to
-         * nearly the same visual height; generic chooseUpper() cannot infer this.
-         */
         const allowedMaxY=support.v.y-req;
         const need=follower.v.y-allowedMaxY;
         return applyUpwardHold(follower,need,heldRows,"explicit_support_vertical_hold",{
@@ -163,7 +195,6 @@
     function holdForPair(g,pair,liveIds,heldRows){
         const supportHold=holdExplicitSupport(g,pair,liveIds,heldRows);
         if(supportHold)return supportHold;
-
         const chosen=chooseUpper(pair,liveIds);
         if(!chosen)return{ok:false,reason:"horizontal_required"};
         const {upper,lower}=chosen,req=requiredRowSeparation(upper,lower);
@@ -180,8 +211,10 @@
     }
     function inBounds(x){return Number.isFinite(x)&&x>=-EPS&&x<=W2-1+EPS;}
     function shiftBudgetOk(q,snap,target){
-        const origin=snap.get(q.ball.id);
-        return Number.isFinite(origin)&&Math.abs(target-origin)<=MAX_HORIZONTAL_SHIFT_PER_BALL+EPS;
+        const origin=snap.get(q.ball.id),env=authoredXEnvelope(q);
+        return Number.isFinite(origin)&&
+            Math.abs(target-origin)<=MAX_HORIZONTAL_SHIFT_PER_BALL+EPS&&
+            target>=env.lo-EPS&&target<=env.hi+EPS;
     }
     function chooseSide(pair,dir,liveIds,ranks){
         const a=pair.a,b=pair.b;
@@ -216,7 +249,7 @@
             const current=q.v.x;
             if(dir>0&&target<=current+EPS)return{ok:true};
             if(dir<0&&target>=current-EPS)return{ok:true};
-            if(!inBounds(target)||!shiftBudgetOk(q,snap,target))return{ok:false,reason:"wall_or_budget_block"};
+            if(!inBounds(target)||!shiftBudgetOk(q,snap,target))return{ok:false,reason:"wall_or_authored_budget_block"};
             if(moving.has(q.ball.id))return{ok:false,reason:"local_order_cycle"};
             moving.add(q.ball.id);
 
@@ -268,11 +301,7 @@
     }
 
     function horizontalRescue(g,pair,liveIds){
-        /* Explicit support contacts are never solved by pushing the follower
-         * through its support chain. If the support-aware vertical hold ran out
-         * of budget, report that physical blockage instead. */
         if(explicitSupportFollower(g,pair,liveIds))return{ok:false,reason:"explicit_support_blocks_horizontal_rescue"};
-
         const trials=[];
         for(const dir of [-1,1]){const r=directionalHorizontalTrial(g,pair,liveIds,dir);if(r.ok)trials.push(r);}
         if(!trials.length)return{ok:false,reason:"no_horizontal_chain_solution"};
@@ -306,10 +335,18 @@
 
     resolveVisualContacts=function(g){
         const result=baseResolve(g);if(!garbagePhase(g))return result;
-        const all=entries(g),liveIds=liveSet(g,all),before=worstIncoming(all,liveIds);
-        if(!before){window.__sixBallLastGarbageDeepContactHoldV1={active:false,ok:true,at:Date.now()};return result;}
+        let all=entries(g),liveIds=liveSet(g,all);
+        const envelope=clampRunawayPathX(all,liveIds);
+        if(envelope.changed){all=entries(g);liveIds=liveSet(g,all);}
+        const before=worstIncoming(all,liveIds);
+        if(!before){
+            window.__sixBallLastGarbageDeepContactHoldV1={active:envelope.changed>0,ok:true,mode:envelope.changed?"authored_x_envelope":"clear",envelope,at:Date.now()};
+            if(envelope.changed)window.__sixBallGarbageAuthoredXCorrections=(window.__sixBallGarbageAuthoredXCorrections||0)+envelope.changed;
+            return result;
+        }
         const info=solve(g);
-        window.__sixBallLastGarbageDeepContactHoldV1={active:true,before:before.d,beforePair:[before.a.ball.id,before.b.ball.id],...info,at:Date.now()};
+        window.__sixBallLastGarbageDeepContactHoldV1={active:true,before:before.d,beforePair:[before.a.ball.id,before.b.ball.id],envelope,...info,at:Date.now()};
+        if(envelope.changed)window.__sixBallGarbageAuthoredXCorrections=(window.__sixBallGarbageAuthoredXCorrections||0)+envelope.changed;
         if(info.changed)window.__sixBallGarbageDeepContactCorrections=(window.__sixBallGarbageDeepContactCorrections||0)+info.changed;
         if(info.supportChanges)window.__sixBallGarbageExplicitSupportHolds=(window.__sixBallGarbageExplicitSupportHolds||0)+info.supportChanges;
         if(info.horizontalChanges)window.__sixBallGarbageEmergencyHorizontalCorrections=(window.__sixBallGarbageEmergencyHorizontalCorrections||0)+info.horizontalChanges;
@@ -317,5 +354,6 @@
     };
 
     window.__sixBallGarbageExplicitSupportHold=true;
-    window.__sixBallGarbageDeepContactHoldVersion="garbage-deep-contact-rescue-v2.2-support-aware";
+    window.__sixBallGarbageAuthoredXPathEnvelope=true;
+    window.__sixBallGarbageDeepContactHoldVersion="garbage-deep-contact-rescue-v2.3-authored-x-envelope";
 })();
