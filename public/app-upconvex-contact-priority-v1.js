@@ -1,5 +1,5 @@
 /* ============================================================
- * 6ball UP-CONVEX PRE-ARC SIDE LOCK v3.2
+ * 6ball UP-CONVEX PRE-ARC SIDE LOCK v3.3
  *
  * The split side is decided from the continuous UP-triplet
  * position BEFORE the first rigid arc around the protruding pile
@@ -14,7 +14,7 @@
 (function(){
     if(
         typeof window === "undefined" ||
-        window.__sixBallUpConvexPreArcSideLockV32
+        window.__sixBallUpConvexPreArcSideLockV33
     ){
         return;
     }
@@ -29,13 +29,16 @@
         return;
     }
 
+    window.__sixBallUpConvexPreArcSideLockV33 = true;
+    /* Compatibility markers for diagnostics written against v3.1/v3.2. */
     window.__sixBallUpConvexPreArcSideLockV32 = true;
-    /* Compatibility marker for diagnostics written against v3.1. */
     window.__sixBallUpConvexPreArcSideLockV31 = true;
 
     const basePlanGroup = hexPhysPlanGroup;
     const baseSeparator = hexPhysUpConvexSeparator;
     const STORE = "_upConvexPreArcSideLocksV31";
+    const PIECE_GEOMETRY_STORE =
+        "_upConvexFirstPieceGeometryV33";
     const APPROACH_STORE = "_upConvexRigidApproachDirectionV32";
 
     let activeLocks = null;
@@ -335,6 +338,59 @@
                 at: Date.now()
             };
         }
+
+        /*
+         * A triplet may complete a common slope step and meet a different
+         * support before the canonical split becomes legal.  Keep the first
+         * unambiguous CONTACT GEOMETRY for the whole piece as well as the
+         * support-id lock.  The common slope direction is only motion; it must
+         * never swap which coloured member is the solo ball.
+         */
+        const observed = [...locks.values()];
+        const directions = new Set(
+            observed
+                .map(lock => Math.sign(lock.pairDir))
+                .filter(Boolean)
+        );
+
+        if(directions.size === 1 && observed.length){
+            const geometry =
+                observed.find(lock =>
+                    lock.source ===
+                    "pre-arc-direct-centre"
+                ) || observed[0];
+
+            const record = {
+                ...geometry,
+                pieceKey: pieceKey(members),
+                geometrySource: geometry.source
+            };
+
+            for(const m of members){
+                if(!m.ball[PIECE_GEOMETRY_STORE])
+                    m.ball[PIECE_GEOMETRY_STORE] =
+                        {...record};
+            }
+
+            const firstRecord =
+                members[0]?.ball?.[
+                    PIECE_GEOMETRY_STORE
+                ] || record;
+
+            window.__sixBallLastUpConvexPieceGeometryV33 = {
+                ...firstRecord,
+                pairSide:
+                    firstRecord.pairDir > 0
+                        ? "right"
+                        : "left",
+                soloSide:
+                    firstRecord.pairDir > 0
+                        ? "left"
+                        : "right",
+                ids: members.map(m => m.ball.id),
+                at: Date.now()
+            };
+        }
     }
 
     /*
@@ -480,6 +536,50 @@
         )
             ? lock
             : null;
+    }
+
+    function firstPieceGeometryLockFor(members, supportId){
+        if(
+            supportId == null ||
+            !isUpTriplet(members)
+        ){
+            return null;
+        }
+
+        const pkey = pieceKey(members);
+        const records = members
+            .map(m =>
+                m?.ball?.[PIECE_GEOMETRY_STORE]
+            )
+            .filter(Boolean);
+
+        if(records.length !== 3)
+            return null;
+
+        const first = records[0];
+        const pairDir = Math.sign(
+            Number(first.pairDir)
+        );
+
+        if(
+            !pairDir ||
+            first.pieceKey !== pkey ||
+            !records.every(record =>
+                record.pieceKey === pkey &&
+                Math.sign(
+                    Number(record.pairDir)
+                ) === pairDir
+            )
+        ){
+            return null;
+        }
+
+        return {
+            ...first,
+            supportId,
+            source:
+                "first-pre-arc-piece-geometry"
+        };
     }
 
     function rigidApproachLockFor(
@@ -665,6 +765,10 @@
                 members,
                 supportId
             ) ||
+            firstPieceGeometryLockFor(
+                members,
+                supportId
+            ) ||
             rigidApproachLockFor(
                 members,
                 supportId,
@@ -811,13 +915,22 @@
     };
 
     window.__sixBallUpConvexContactPriorityVersion =
-        "upconvex-pre-arc-side-lock-v3.2";
+        "upconvex-pre-arc-side-lock-v3.3";
 
     window.__sixBallUpConvexPreArcObserverExposed = true;
 
     window.__sixBallUpConvexRigidApproachObserverExposed = true;
 
     window.__sixBallUpConvexCrossSupportSideLock = true;
+
+    window.__sixBallUpConvexCrossSupportUsesContactGeometry =
+        true;
+
+    window.__sixBallUpConvexCrossSupportUsesFirstContactGeometry =
+        true;
+
+    window.__sixBallUpConvexRigidApproachIsLastResort =
+        true;
 
     window.__sixBallUpConvexPreArcSideAuthoritative =
         true;

@@ -225,6 +225,67 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
   expect(pair.length===2&&pair.every(p=>[topRed.id,leftRed.id].includes(p.ball.id)&&p.tx-p.x===-1),"mirrored recording did not preserve RED+RED as the left rigid pair");
 }
 
+/*
+ * Right-contact recording (yellow top / yellow left / purple right): the
+ * triangle first meets the protrusion on its RIGHT, then completes one common
+ * RIGHT slope step.  That common motion must not reverse the already observed
+ * contact geometry: PURPLE releases right and YELLOW+YELLOW remain the left
+ * rigid pair.
+ */
+{
+  const b=board();
+  const common={isGarbage:false,motionGroupId:620,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,impactOffsetX:-.35,_smoothSlopeRigidV39:true};
+  const topYellow={...common,id:220,c:1,motionGroupRole:0};
+  const leftYellow={...common,id:221,c:1,motionGroupRole:1};
+  const purple={...common,id:222,c:3,motionGroupRole:2};
+  const members=[
+    {ball:topYellow,x:6,y:3,role:0,orientation:"up"},
+    {ball:leftYellow,x:5,y:4,role:1,orientation:"up"},
+    {ball:purple,x:7,y:4,role:2,orientation:"up"}
+  ];
+  for(const m of members)b[m.y][m.x]=m.ball;
+  const approachSupport={id:991,c:2,isGarbage:false};
+  const splitSupport={id:992,c:4,isGarbage:false};
+  b[5][6]=approachSupport;
+
+  let canContinue=true;
+  const ctx={console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,Error,TypeError,valid};
+  ctx.hexPhysClearGroupBall=clearGroup;
+  ctx.hexPhysEmpty=(bb,x,y,ignore)=>valid(x,y)&&(!bb[y][x]||(ignore&&ignore.has(bb[y][x].id)));
+  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"ROLL_RIGHT",pivot:[6,5],topPivot:null});
+  ctx.hexPhysRigidSlopePlan=(bb,mm)=>canContinue?mm.map(m=>({x:m.x,y:m.y,tx:m.x+1,ty:m.y+1,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",pivot:[6,5],topPivot:null,bundleId:620,groupSize:3})):null;
+  ctx.hexPhysUpConvexSeparator=(bb,mm,motions)=>({
+    support:canContinue?approachSupport:splitSupport,px:6,py:5,hitFraction:.5,dir:1,
+    top:mm[0],pairLower:mm[2],solo:mm[1],soloMotion:motions[1]
+  });
+  ctx.hexPhysPlanGroup=(bb,mm,preview=false)=>{
+    const motions=mm.map(m=>ctx.hexPhysIndependentMemberMotion(bb,mm,m));
+    const info=ctx.hexPhysUpConvexSeparator(bb,mm,motions);
+    const pair=[info.top,info.pairLower].map(m=>({x:m.x,y:m.y,tx:m.x+info.dir,ty:m.y+1,ball:m.ball,kind:"GROUP_SLOPE_TRANSLATE",bundleId:620,groupSize:2}));
+    const solo={...info.soloMotion,bundleId:0,groupSize:0};
+    if(!preview){
+      clearGroup(info.solo.ball);
+      for(const m of[info.top,info.pairLower]){m.ball.motionGroupId=620;m.ball.motionGroupSize=2;m.ball.rigid=true;}
+    }
+    return[...pair,solo];
+  };
+
+  install(ctx,sideSource,"app-upconvex-contact-priority-v1.js");
+  vm.runInContext(rigidSource,ctx,{filename:"app-upconvex-rigid-until-contact-v1.js"});
+
+  const first=ctx.hexPhysPlanGroup(b,members,false);
+  expect(first.length===3&&first.every(p=>p.groupSize===3&&p.tx-p.x===1),"right-contact recording triplet did not complete its common right slope step");
+
+  for(const m of members)m.ball.impactOffsetX=.35;
+  canContinue=false;
+  const split=ctx.hexPhysPlanGroup(b,members,false);
+  const solo=split.find(p=>p.groupSize===0);
+  const pair=split.filter(p=>p.groupSize===2);
+
+  expect(solo&&solo.ball.id===purple.id&&solo.tx-solo.x===1,"right-contact recording did not release PURPLE to the right");
+  expect(pair.length===2&&pair.every(p=>[topYellow.id,leftYellow.id].includes(p.ball.id)&&p.tx-p.x===-1),"right-contact recording did not preserve YELLOW+YELLOW as the left rigid pair");
+}
+
 /* Empty collision-safe space cannot invent rigidity. */
 {
   const {ctx,out}=rigidCase({realPivot:false,canonicalRigid:true});
@@ -363,7 +424,7 @@ function sideCase(offset){
 
 {
   const {ctx,info}=sideCase(-.4);
-  expect(ctx.__sixBallUpConvexContactPriorityVersion==="upconvex-pre-arc-side-lock-v3.2","pre-arc side lock wrapper did not install");
+  expect(ctx.__sixBallUpConvexContactPriorityVersion==="upconvex-pre-arc-side-lock-v3.3","pre-arc side lock wrapper did not install");
   expect(info&&info.preArcSideLocked===true&&info.pairSide==="left"&&info.soloSide==="right"&&info.dir===-1&&info.solo.x===7,"right-side protrusion did not produce LEFT pair + RIGHT solo from pre-arc position");
 }
 {
