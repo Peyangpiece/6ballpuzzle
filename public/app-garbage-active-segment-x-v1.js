@@ -1,23 +1,25 @@
 /* ============================================================
- * 6ball GARBAGE ACTIVE-SEGMENT X AUTHORITY v1.1
+ * 6ball GARBAGE ACTIVE-SEGMENT X AUTHORITY v1.2
  *
- * A live garbage ball may receive temporary horizontal contact corrections, but
- * those corrections must never replace the authored X of the segment the ball is
- * actually traversing.  Clamping only to [from.x,to.x] was insufficient: a ball
- * could be pushed to the opposite endpoint of a diagonal/arc segment and overlap
- * a neighbour even though the authored arc itself was collision-free.
+ * A live garbage ball may receive a SMALL horizontal contact correction, but
+ * that correction must never accumulate into a new trajectory.  v1.1 restored
+ * exact authored X after every contact pass; that was too strict and erased the
+ * ~0.006-lattice separation needed for a legitimate near-tangent contact.
  *
- * v1.1 therefore restores the X coordinate of the CURRENT authored trajectory,
- * both before and after the existing contact stack.  For vertical segments this
- * is exactly from.x.  For diagonal/arc segments the authoritative X is recovered
- * from pileFlowPositionAt at the path-time whose Y best matches the ball's current
- * visual Y.  Matching by Y makes this compatible with contact-time holds without
- * needing to rewrite or share their private delay state.
+ * v1.2 keeps a narrow local-contact tube around the authored trajectory.  X is
+ * restored only when it drifts farther than MAX_LOCAL_CONTACT_X from the current
+ * authored segment trajectory.  Thus tiny physical separation remains intact,
+ * while multi-cell runaway corrections (the real failure mode) are rejected.
+ *
+ * For vertical segments the authored X is exactly from.x.  For diagonal/arc
+ * segments it is recovered from pileFlowPositionAt at the path-time whose Y best
+ * matches the current visual Y.  Matching by Y stays compatible with contact-time
+ * holds without rewriting or sharing their private delay state.
  *
  * This layer never changes Y, logical cells, fallPath data, pivots/supports,
  * timing, the frozen pile, or ordinary-piece state.
  * ============================================================ */
-(function installGarbageActiveSegmentXAuthorityV11(){
+(function installGarbageActiveSegmentXAuthorityV12(){
     if(typeof window==="undefined"||window.__sixBallGarbageActiveSegmentXAuthorityV1)return;
     if(typeof resolveVisualContacts!=="function")return;
 
@@ -25,6 +27,7 @@
     const baseResolve=resolveVisualContacts;
     const EPS=1e-9;
     const Y_MATCH_PAD=.08;
+    const MAX_LOCAL_CONTACT_X=.125;
     const SAMPLE_COUNT=48;
     const REFINE_STEPS=24;
 
@@ -56,26 +59,17 @@
         }catch(_){return null;}
     }
 
-    /*
-     * Find the authored point on the head segment whose Y is closest to the
-     * current visual Y.  pileFlowPositionAt owns the actual arc/interpolation;
-     * this code only inverts it by Y.  A coarse scan followed by a local ternary
-     * refinement is intentionally used instead of assuming linear or monotonic X.
-     */
     function trajectoryXForVisualY(g,ball,v,seg,bounds){
         if(Math.abs(bounds.fx-bounds.tx)<=EPS)return bounds.fx;
 
         const start=Number(seg?.pileFlowStart),end=Number(seg?.pileFlowEnd);
         if(!(Number.isFinite(start)&&Number.isFinite(end)&&end>=start-EPS)){
-            // A deferred, not-yet-clocked segment is physically waiting at from.
             if(Number(v.y)<=bounds.fy+Y_MATCH_PAD)return bounds.fx;
             return Math.max(bounds.loX,Math.min(bounds.hiX,Number(v.x)));
         }
 
         const targetY=Number(v.y);
         if(!Number.isFinite(targetY))return null;
-        // If a contact hold has the ball slightly before/after the segment's
-        // lattice Y span, the physical endpoint is authoritative.
         if(targetY<=bounds.loY-Y_MATCH_PAD){
             return bounds.fy<=bounds.ty?bounds.fx:bounds.tx;
         }
@@ -83,12 +77,12 @@
             return bounds.fy>=bounds.ty?bounds.fx:bounds.tx;
         }
 
-        let bestT=start,bestP=pathPoint(g,ball,start),bestErr=Infinity,bestIndex=0;
+        let bestP=pathPoint(g,ball,start),bestErr=Infinity,bestIndex=0;
         for(let i=0;i<=SAMPLE_COUNT;i++){
             const t=start+(end-start)*(i/SAMPLE_COUNT);
             const p=pathPoint(g,ball,t);if(!p)continue;
             const err=Math.abs(p[1]-targetY);
-            if(err<bestErr){bestErr=err;bestT=t;bestP=p;bestIndex=i;}
+            if(err<bestErr){bestErr=err;bestP=p;bestIndex=i;}
         }
         if(!bestP)return Math.max(bounds.loX,Math.min(bounds.hiX,Number(v.x)));
 
@@ -101,17 +95,17 @@
             const e2=p2?Math.abs(p2[1]-targetY):Infinity;
             if(e1<=e2)hi=t2;else lo=t1;
         }
-        const t=(lo+hi)*.5,p=pathPoint(g,ball,t);
+        const p=pathPoint(g,ball,(lo+hi)*.5);
         if(p&&Math.abs(p[1]-targetY)<=bestErr+Y_MATCH_PAD)bestP=p;
 
         const x=Number(bestP[0]);
         return Number.isFinite(x)?Math.max(bounds.loX,Math.min(bounds.hiX,x)):null;
     }
 
-    function restoreActiveTrajectoryX(g,phase){
-        if(!garbagePhase(g))return{phase,changed:0,totalCorrection:0,maxCorrection:0,corrections:[]};
+    function restoreRunawayTrajectoryX(g,phase){
+        if(!garbagePhase(g))return{phase,changed:0,withinTube:0,totalCorrection:0,maxCorrection:0,corrections:[]};
         const frozen=frozenIds(g.board),seen=new Set(),corrections=[];
-        let changed=0,totalCorrection=0,maxCorrection=0;
+        let changed=0,withinTube=0,totalCorrection=0,maxCorrection=0;
 
         for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
             const ball=valid(x,y)?g.board[y][x]:null;
@@ -123,26 +117,25 @@
 
             const target=trajectoryXForVisualY(g,ball,v,seg,bounds);
             if(!Number.isFinite(target))continue;
-            const before=v.x;
-            if(Math.abs(target-before)<=EPS)continue;
+            const before=v.x,drift=Math.abs(before-target);
+            if(drift<=MAX_LOCAL_CONTACT_X+EPS){withinTube++;continue;}
+
             v.x=target;
-            const correction=Math.abs(target-before);
+            const correction=drift;
             changed++;totalCorrection+=correction;maxCorrection=Math.max(maxCorrection,correction);
             corrections.push({
-                id:ball.id,before,after:target,visualY:v.y,
+                id:ball.id,before,after:target,drift,visualY:v.y,
                 segment:[bounds.fx,bounds.fy,bounds.tx,bounds.ty],
                 kind:seg.kind||null
             });
         }
-        return{phase,changed,totalCorrection,maxCorrection,corrections};
+        return{phase,changed,withinTube,totalCorrection,maxCorrection,corrections};
     }
 
     resolveVisualContacts=function(g){
-        const pre=restoreActiveTrajectoryX(g,"pre");
+        const pre=restoreRunawayTrajectoryX(g,"pre");
         const result=baseResolve(g);
-        // This POST pass is the final authority.  Inner rescue layers are allowed
-        // to explore X, but cannot leave a live body off its authored trajectory.
-        const post=restoreActiveTrajectoryX(g,"post");
+        const post=restoreRunawayTrajectoryX(g,"post");
         const totalChanged=pre.changed+post.changed;
         if(totalChanged){
             window.__sixBallGarbageActiveSegmentXCorrections=
@@ -151,10 +144,11 @@
         window.__sixBallLastGarbageActiveSegmentXAuthorityV1={
             pre,post,changed:totalChanged,
             maxCorrection:Math.max(pre.maxCorrection,post.maxCorrection),
+            localTube:MAX_LOCAL_CONTACT_X,
             at:Date.now()
         };
         return result;
     };
 
-    window.__sixBallGarbageActiveSegmentXVersion="garbage-active-segment-x-v1.1";
+    window.__sixBallGarbageActiveSegmentXVersion="garbage-active-segment-x-v1.2";
 })();
