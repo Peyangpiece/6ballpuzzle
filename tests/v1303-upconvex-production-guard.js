@@ -66,6 +66,59 @@ function rigidCase({realPivot=true,canonicalRigid=true,deform=false}={}){
 }
 
 /*
+ * Recording regression (yellow top / purple left / yellow right): an external
+ * pile ball touches the OUTER-RIGHT side of the lower yellow ball.  Although
+ * the discrete cells also expose a central pocket candidate for PURPLE, the
+ * real outer-side pivot proves that all three can descend the LEFT slope as a
+ * rigid body.  It must not split at this contact.
+ */
+{
+  const b=board();
+  const common={isGarbage:false,motionGroupId:505,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,impactOffsetX:.35};
+  const topYellow={...common,id:130,c:1,motionGroupRole:0};
+  const purple={...common,id:131,c:3,motionGroupRole:1};
+  const lowerYellow={...common,id:132,c:1,motionGroupRole:2};
+  const members=[
+    {ball:topYellow,x:6,y:3,role:0,orientation:"up"},
+    {ball:purple,x:5,y:4,role:1,orientation:"up"},
+    {ball:lowerYellow,x:7,y:4,role:2,orientation:"up"}
+  ];
+  for(const m of members)b[m.y][m.x]=m.ball;
+
+  /* Central pocket candidate plus the authoritative outer-right support. */
+  b[6][5]={id:973,c:0,isGarbage:false};
+  b[6][7]={id:974,c:2,isGarbage:false};
+  b[5][8]={id:975,c:4,isGarbage:false};
+
+  const ctx={console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,Error,TypeError,valid};
+  ctx.hexPhysClearGroupBall=clearGroup;
+  ctx.hexPhysPlanGroup=(bb,mm)=>baseSplit(mm);
+  ctx.hexPhysIndependentMemberMotion=(bb,mm,m)=>({
+    x:m.x,y:m.y,tx:m.x-1,ty:m.y+1,ball:m.ball,
+    kind:"ROLL_LEFT",pivot:[8,5],topPivot:null
+  });
+  ctx.hexPhysRigidSlopePlan=(bb,mm)=>mm.map(m=>({
+    x:m.x,y:m.y,tx:m.x-1,ty:m.y+1,ball:m.ball,
+    kind:"GROUP_SLOPE_TRANSLATE",pivot:[8,5],topPivot:null,
+    bundleId:505,groupSize:3
+  }));
+  ctx.hexPhysGroupTranslationPlan=(bb,mm,dx,dy,kind)=>mm.map(m=>({
+    x:m.x,y:m.y,tx:m.x+dx,ty:m.y+dy,ball:m.ball,
+    kind,pivot:null,topPivot:null,bundleId:505,groupSize:mm.length
+  }));
+
+  install(ctx,rigidSource,"app-upconvex-rigid-until-contact-v1.js");
+  const out=ctx.hexPhysPlanGroup(b,members,false);
+
+  expect(
+    out.length===3&&out.every(p=>p.groupSize===3&&p.kind==="GROUP_SLOPE_TRANSLATE"&&p.tx-p.x===-1&&p.ty-p.y===1),
+    "outer-right lower-yellow contact split instead of preserving the three-ball LEFT rigid slope: "+JSON.stringify(out.map(p=>({id:p.ball.id,kind:p.kind,groupSize:p.groupSize,to:[p.tx,p.ty]})))
+  );
+  expect(ctx.__sixBallUpOuterLowerSideContactHasPriority===true,"outer lower side-contact priority was not installed");
+  expect(members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3),"outer-side contact lost three-ball rigidity metadata");
+}
+
+/*
  * A triplet already descending a slope must finish every still-legal common
  * slope step before an inward V-pocket is allowed to release one member.
  * The pocket candidate describes a possible later split, not the current

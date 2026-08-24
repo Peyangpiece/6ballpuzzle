@@ -1,10 +1,12 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.7
+ * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.8
  * ============================================================ */
 (function(){
-    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV27)return;
+    if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV28)return;
     if(typeof hexPhysPlanGroup!=="function")return;
 
+    window.__sixBallUpConvexRigidUntilImpossibleV28=true;
+    /* Compatibility marker for diagnostics written against v2.7. */
     window.__sixBallUpConvexRigidUntilImpossibleV27=true;
     /* Compatibility marker for diagnostics written against v2.6. */
     window.__sixBallUpConvexRigidUntilImpossibleV26=true;
@@ -189,8 +191,48 @@
         return plan;
     }
 
+    /*
+     * Detect the concrete side-contact shown in the recording:
+     *
+     *   LEFT descent  -> support is outside the RIGHT lower member
+     *   RIGHT descent -> support is outside the LEFT lower member
+     *
+     * A central V-pocket and an outer-side pivot can coexist in the discrete
+     * board.  The outer pivot proves that the present physical event is a
+     * common three-ball slope, while the pocket is only a possible later
+     * release.  Require the contacted lower member's own independent motion
+     * to name that exact external support so no synthetic rigid plan wins.
+     */
+    function hasOuterLowerSideContact(board,members,g,motions,plan){
+        if(
+            !g ||
+            !Array.isArray(motions) ||
+            !Array.isArray(plan) ||
+            plan.length!==3
+        )return false;
+
+        const dir=Math.sign(plan[0].tx-plan[0].x);
+        if(
+            !dir ||
+            !plan.every(p=>(p.tx-p.x)===dir&&(p.ty-p.y)===1)
+        )return false;
+
+        const contactedLower=dir<0?g.lower[1]:g.lower[0];
+        const pivotX=contactedLower.x-dir;
+        const pivotY=contactedLower.y+1;
+        const own=ownIds(members);
+        const support=externalBall(board,pivotX,pivotY,own);
+        if(!support)return false;
+
+        const motion=motions[members.indexOf(contactedLower)];
+        return["pivot","topPivot"].some(field=>{
+            const pv=motion?.[field];
+            return Array.isArray(pv)&&Number(pv[0])===pivotX&&Number(pv[1])===pivotY;
+        });
+    }
+
     function isContinuingRigidSlope(members){
-        return members.every(m=>m.ball.rigid&&Number(m.ball.motionGroupSize)===3)&&members.some(m=>m.ball._smoothSlopeRigidV39||m.ball._upConvexRigidUntilImpossibleV24||m.ball._upConvexRigidUntilImpossibleV25||m.ball._upConvexRigidUntilImpossibleV26||m.ball._upConvexRigidUntilImpossibleV27);
+        return members.every(m=>m.ball.rigid&&Number(m.ball.motionGroupSize)===3)&&members.some(m=>m.ball._smoothSlopeRigidV39||m.ball._upConvexRigidUntilImpossibleV24||m.ball._upConvexRigidUntilImpossibleV25||m.ball._upConvexRigidUntilImpossibleV26||m.ball._upConvexRigidUntilImpossibleV27||m.ball._upConvexRigidUntilImpossibleV28);
     }
 
     function keepRigidSlope(members,plan,preview,reason){
@@ -203,6 +245,7 @@
                 m.ball._upConvexRigidUntilImpossibleV25=true;
                 m.ball._upConvexRigidUntilImpossibleV26=true;
                 m.ball._upConvexRigidUntilImpossibleV27=true;
+                m.ball._upConvexRigidUntilImpossibleV28=true;
             }
             if(typeof window.__sixBallRememberUpConvexRigidApproachV32==="function"){
                 try{window.__sixBallRememberUpConvexRigidApproachV32(members,plan);}catch(_){}
@@ -252,6 +295,26 @@
             if(continuing)return keepRigidSlope(members,continuing,preview,"active-slope-common-step-before-pocket");
         }
 
+        if(!motions)motions=memberMotions(board,members);
+        const outerSideRigid=canonicalRigidSlope(board,members,motions);
+        if(
+            outerSideRigid&&
+            hasOuterLowerSideContact(
+                board,
+                members,
+                g,
+                motions,
+                outerSideRigid
+            )
+        ){
+            return keepRigidSlope(
+                members,
+                outerSideRigid,
+                preview,
+                "outer-lower-side-contact-before-pocket"
+            );
+        }
+
         const capture=inwardPocketCapture(board,members,g);
         if(capture){const partial=capturePlan(board,g,capture,preview);if(partial)return partial;}
 
@@ -270,7 +333,7 @@
     window.__sixBallUpConvexRigidUntilContactV1=true;
     window.__sixBallUpConvexRigidUntilContactVersion="upconvex-rigidity-partial-release-v2.3";
     window.__sixBallUpConvexRigidUntilImpossibleVersion="upconvex-rigidity-partial-release-v2.3";
-    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.7";
+    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.8";
     window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
     window.__sixBallUpConvexRequiresRealCurrentPivot=true;
     window.__sixBallUpRestAloneDoesNotChooseSolo=true;
@@ -279,6 +342,8 @@
     window.__sixBallUpActiveSlopeCommonStepHasPriority=true;
     window.__sixBallUpActiveSlopeRecordsPreArcSide=true;
     window.__sixBallUpActiveSlopeRecordsCrossSupportDirection=true;
+    window.__sixBallUpOuterLowerSideContactHasPriority=true;
+    window.__sixBallUpOuterSideContactPreventsPocketSplit=true;
     window.__sixBallUpInwardPocketChoosesSolo=true;
     window.__sixBallUpContinuousPocketDisambiguation=true;
     window.__sixBallUpRemainingTwoKeepRigidity=true;

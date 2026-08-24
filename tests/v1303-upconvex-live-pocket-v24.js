@@ -74,7 +74,7 @@ function install(ctx){
   const pair=out.filter(p=>p.groupSize===2);
   const solo=out.find(p=>p.ball.id===101);
 
-  expect(ctx.__sixBallUpConvexRigidImplementationVersion==="upconvex-rigidity-partial-release-v2.7","v2.7 implementation not installed");
+  expect(ctx.__sixBallUpConvexRigidImplementationVersion==="upconvex-rigidity-partial-release-v2.8","v2.8 implementation not installed");
   expect(ctx.__sixBallUpContinuousPocketDisambiguation===true,"continuous pocket disambiguation missing");
   expect(pair.length===2&&pair.every(p=>[100,102].includes(p.ball.id)),"wrong remaining pair; expected BLUE+YELLOW");
   expect(pair.every(p=>p.tx-p.x===-1&&p.ty-p.y===1),"BLUE+YELLOW did not move left together");
@@ -118,4 +118,4 @@ function install(ctx){
   expect(out.length===3&&out.every(p=>p.groupSize===3&&p.tx-p.x===1),"3-ball rigidity changed without an immediate V-pocket");
 }
 
-console.log("v1303 live red-pocket v2.7 PASS");
+console.log("v1303 live red-pocket v2.8 PASS");
