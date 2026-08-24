@@ -1,5 +1,5 @@
 /*
- * 6ball SUPER STRONG AUTHORITATIVE v2
+ * 6ball SUPERHUMAN AUTHORITATIVE v3
  *
  * Rules:
  *
@@ -11,13 +11,14 @@
  * 5. Maximum parallel projects = 3.
  * 6. Automatically concentrate to 2 when three-way construction
  *    would endanger completion.
- * 7. Planning is sliced to protect frame rate.
+ * 7. Search every legal current move and the three queued pieces.
+ * 8. Planning is sliced to protect frame rate.
  */
 (function(){
 
     if(
         typeof window==="undefined" ||
-        window.__sixBallSuperStrongAuthoritativeV2
+        window.__sixBallSuperStrongAuthoritativeV3
     ){
         return;
     }
@@ -32,6 +33,8 @@
         return;
     }
 
+    window.__sixBallSuperStrongAuthoritativeV3=true;
+    /* Compatibility marker for diagnostics written against v2. */
     window.__sixBallSuperStrongAuthoritativeV2=true;
 
 
@@ -43,26 +46,29 @@
         HEXAGON:3
     };
 
-    const CURRENT_MOVE_BEAM=36;
-    const NEXT_CURRENT_BEAM=6;
-    const NEXT_MOVE_BEAM=12;
+    const CURRENT_MOVE_BEAM=Number.MAX_SAFE_INTEGER;
+    const FUTURE_PARENT_BEAMS=[24,16,10];
+    const FUTURE_MOVE_BEAMS=[Number.MAX_SAFE_INTEGER,36,24];
+    const MAX_FUTURE_PIECES=3;
 
-    const SLICE_MS=.42;
-    const MAX_SIMULATIONS_PER_SLICE=2;
-    const MAX_PLANNER_FRAMES=42;
+    const SLICE_MS=1.8;
+    const BUSY_SLICE_MS=.48;
+    const MAX_SIMULATIONS_PER_SLICE=12;
+    const BUSY_SIMULATIONS_PER_SLICE=3;
+    const MAX_PLANNER_FRAMES=240;
 
 
     Object.assign(
         AI_PARAMS[5],
         {
-            think:.006,
-            act:.012,
+            think:0,
+            act:.004,
             random:0,
-            depth:2,
+            depth:4,
             name:"超強い",
             dropMode:"hard",
             exactTechnique:true,
-            strengthBasis:"focused-technique-authoritative-v2"
+            strengthBasis:"four-turn-superhuman-authoritative-v3"
         }
     );
 
@@ -1397,215 +1403,217 @@
     }
 
 
+    function normalizeFuturePieces(futurePieces){
+
+        if(!Array.isArray(futurePieces))
+            return[];
+
+        if(
+            futurePieces.length &&
+            futurePieces.every(Number.isInteger)
+        ){
+            return[[...futurePieces]];
+        }
+
+        return futurePieces
+            .filter(Array.isArray)
+            .slice(0,MAX_FUTURE_PIECES)
+            .map(colors=>[...colors]);
+    }
+
+
     function createPlanner(
         board,
         colors,
-        next
+        futurePieces=[]
     ){
 
-        const cb=
-            colorBoard(
-                board
-            );
-
-
-        const focus=
-            selectProjects(
-                cb,
-                colors,
-                next
-            );
-
-
-        const moveEntries=
-            prepareMoves(
-                board,
-                colors,
-                focus.projects,
-                CURRENT_MOVE_BEAM
-            );
-
+        const cb=colorBoard(board);
+        const future=normalizeFuturePieces(futurePieces);
+        const focus=selectProjects(
+            cb,
+            colors,
+            future[0]||null
+        );
+        const moveEntries=prepareMoves(
+            board,
+            colors,
+            focus.projects,
+            CURRENT_MOVE_BEAM
+        );
 
         return{
             cb,
-            colors:
-                [...colors],
-            next:
-                Array.isArray(next)
-                    ?[...next]
-                    :null,
+            colors:[...colors],
+            futurePieces:future,
+            noTechniqueTurn:future.length+2,
             focus,
-            moves:
-                moveEntries,
+            moves:moveEntries,
             currentIndex:0,
             candidates:[],
             stage:"CURRENT",
-            nextPool:null,
-            nextCurrentIndex:0,
-            activeNext:null,
+            futureDepth:0,
+            futurePool:[],
+            futurePoolIndex:0,
+            futureChildren:[],
+            activeFuture:null,
+            completedTurns:0,
             done:false,
             result:null,
             bestRank:null,
             simulations:0,
             slices:0,
-            frames:0
+            frames:0,
+            lastSliceSimulations:0,
+            maxSliceSimulations:0
         };
     }
 
 
-    function finishWithCandidate(
-        planner,
-        candidate,
-        rank
-    ){
-
-        planner.done=true;
-
-        planner.result=
-            candidate?.entry?.m
-            ||
-            planner.moves[0]?.m
-            ||
-            null;
-
-        planner.bestRank=
-            rank||
-            candidate?.rank||
-            null;
-
-        return planner.result;
-    }
-
-
-    function bestCurrentCandidate(
-        planner
-    ){
+    function bestNode(nodes){
 
         let best=null;
 
-
-        for(
-            const c
-            of planner.candidates
-        ){
+        for(const node of nodes||[]){
 
             if(
                 !best ||
                 compareRank(
-                    c.rank,
+                    node.rank,
                     best.rank
                 )<0
             ){
-
-                best=c;
+                best=node;
             }
         }
-
 
         return best;
     }
 
 
-    function finishAvailable(
-        planner
-    ){
+    function finishWithNode(planner,node){
 
-        let best=null;
-        let bestRank=null;
+        planner.done=true;
+        planner.result=
+            node?.rootEntry?.m
+            ||
+            node?.entry?.m
+            ||
+            planner.moves[0]?.m
+            ||
+            null;
+        planner.bestRank=node?.rank||null;
 
-
-        for(
-            const c
-            of planner.candidates
-        ){
-
-            const rank=
-                c.bestFuture?.rank
-                ||
-                c.rank;
+        return planner.result;
+    }
 
 
-            if(
-                !best ||
-                compareRank(
-                    rank,
-                    bestRank
-                )<0
-            ){
+    function finishAvailable(planner){
 
-                best=c;
-                bestRank=rank;
-            }
-        }
+        const available=
+            planner.futureChildren.length
+                ?planner.futureChildren
+                :planner.futurePool.length
+                    ?planner.futurePool
+                    :planner.candidates;
 
-
-        return finishWithCandidate(
+        return finishWithNode(
             planner,
-            best,
-            bestRank
+            bestNode(available)
         );
     }
 
 
-    function beginNextStage(
-        planner
-    ){
+    function techniqueAtTurn(nodes,turn){
 
-        const immediate=
-            planner.candidates
-            .filter(
-                c=>c.rank.turn===1
-            )
-            .sort(
-                (a,b)=>
-                    compareRank(
-                        a.rank,
-                        b.rank
-                    )
+        return(nodes||[])
+            .filter(node=>
+                node.rank.turn===turn &&
+                node.rank.techRank>0
             );
+    }
 
+
+    function beginFutureSearch(planner){
+
+        planner.completedTurns=1;
+
+        const immediate=techniqueAtTurn(
+            planner.candidates,
+            1
+        );
 
         if(immediate.length){
-
-            finishWithCandidate(
+            finishWithNode(
                 planner,
-                immediate[0],
-                immediate[0].rank
+                bestNode(immediate)
             );
-
             return;
         }
 
+        if(!planner.futurePieces.length){
+            finishAvailable(planner);
+            return;
+        }
 
-        planner.nextPool=
-            [...planner.candidates]
-            .sort(
-                (a,b)=>
-                    compareRank(
-                        a.rank,
-                        b.rank
-                    )
-            )
-            .slice(
-                0,
-                NEXT_CURRENT_BEAM
+        planner.futureDepth=0;
+        planner.futurePool=[...planner.candidates]
+            .sort((a,b)=>compareRank(a.rank,b.rank))
+            .slice(0,FUTURE_PARENT_BEAMS[0]);
+        planner.futurePoolIndex=0;
+        planner.futureChildren=[];
+        planner.activeFuture=null;
+        planner.stage="FUTURE";
+
+        if(!planner.futurePool.length)
+            finishAvailable(planner);
+    }
+
+
+    function completeFutureLayer(planner){
+
+        const turn=planner.futureDepth+2;
+        planner.completedTurns=turn;
+
+        const techniques=techniqueAtTurn(
+            planner.futureChildren,
+            turn
+        );
+
+        if(techniques.length){
+            finishWithNode(
+                planner,
+                bestNode(techniques)
             );
-
+            return;
+        }
 
         if(
-            !planner.next ||
-            !planner.nextPool.length
+            planner.futureDepth+1 >=
+            planner.futurePieces.length
         ){
-
-            finishAvailable(
-                planner
-            );
-
+            finishAvailable(planner);
             return;
         }
 
+        const nextDepth=planner.futureDepth+1;
+        const beam=
+            FUTURE_PARENT_BEAMS[nextDepth]
+            ||
+            FUTURE_PARENT_BEAMS[
+                FUTURE_PARENT_BEAMS.length-1
+            ];
 
-        planner.stage="NEXT";
+        planner.futureDepth=nextDepth;
+        planner.futurePool=[...planner.futureChildren]
+            .sort((a,b)=>compareRank(a.rank,b.rank))
+            .slice(0,beam);
+        planner.futurePoolIndex=0;
+        planner.futureChildren=[];
+        planner.activeFuture=null;
+
+        if(!planner.futurePool.length)
+            finishAvailable(planner);
     }
 
 
@@ -1615,22 +1623,12 @@
         maxSimulations=MAX_SIMULATIONS_PER_SLICE
     ){
 
-        if(
-            !planner ||
-            planner.done
-        ){
-
+        if(!planner||planner.done)
             return planner?.result||null;
-        }
 
-
-        const start=
-            nowMs();
-
+        const start=nowMs();
         let sims=0;
-
         planner.slices++;
-
 
         while(
             !planner.done &&
@@ -1643,198 +1641,160 @@
                     planner.currentIndex >=
                     planner.moves.length
                 ){
-
-                    beginNextStage(
-                        planner
-                    );
-
+                    beginFutureSearch(planner);
                     continue;
                 }
 
-
                 const entry=
-                    planner.moves[
-                        planner.currentIndex++
-                    ];
-
-
-                const sim=
-                    simulateSearch(
-                        planner.cb,
-                        entry.m
-                    );
-
+                    planner.moves[planner.currentIndex++];
+                const sim=simulateSearch(
+                    planner.cb,
+                    entry.m
+                );
 
                 sims++;
                 planner.simulations++;
 
-
                 if(!sim)
                     continue;
 
-
-                const metrics=
-                    portfolioMetrics(
-                        sim.b,
-                        planner.focus.projects,
-                        planner.next
-                    );
-
-
-                const technique=
-                    sim.bestTechnique;
-
-
-                const rank=
-                    makeRank(
-                        technique?1:3,
-                        technique,
-                        metrics,
-                        sim,
-                        entry.index
-                    );
-
+                const metrics=portfolioMetrics(
+                    sim.b,
+                    planner.focus.projects,
+                    planner.futurePieces[0]||null
+                );
+                const technique=sim.bestTechnique;
+                const rank=makeRank(
+                    technique
+                        ?1
+                        :planner.noTechniqueTurn,
+                    technique,
+                    metrics,
+                    sim,
+                    entry.index
+                );
 
                 planner.candidates.push({
                     entry,
+                    rootEntry:entry,
                     sim,
                     rank,
-                    bestFuture:null
+                    depth:0
                 });
             }
 
-
-            else if(planner.stage==="NEXT"){
+            else if(planner.stage==="FUTURE"){
 
                 if(
-                    planner.nextCurrentIndex >=
-                    planner.nextPool.length
+                    planner.futurePoolIndex >=
+                    planner.futurePool.length
                 ){
-
-                    finishAvailable(
-                        planner
-                    );
-
+                    completeFutureLayer(planner);
                     continue;
                 }
 
+                if(!planner.activeFuture){
 
-                if(!planner.activeNext){
-
-                    const current=
-                        planner.nextPool[
-                            planner.nextCurrentIndex
+                    const parent=
+                        planner.futurePool[
+                            planner.futurePoolIndex
                         ];
+                    const beam=
+                        FUTURE_MOVE_BEAMS[
+                            planner.futureDepth
+                        ]
+                        ||
+                        FUTURE_MOVE_BEAMS[
+                            FUTURE_MOVE_BEAMS.length-1
+                        ];
+                    const moves=prepareMoves(
+                        parent.sim.b,
+                        planner.futurePieces[
+                            planner.futureDepth
+                        ],
+                        planner.focus.projects,
+                        beam
+                    );
 
-
-                    const moves=
-                        prepareMoves(
-                            current.sim.b,
-                            planner.next,
-                            planner.focus.projects,
-                            NEXT_MOVE_BEAM
-                        );
-
-
-                    planner.activeNext={
-                        current,
+                    planner.activeFuture={
+                        parent,
                         moves,
                         index:0
                     };
                 }
 
-
-                const active=
-                    planner.activeNext;
-
+                const active=planner.activeFuture;
 
                 if(
                     active.index >=
                     active.moves.length
                 ){
-
-                    planner.activeNext=null;
-                    planner.nextCurrentIndex++;
-
+                    planner.activeFuture=null;
+                    planner.futurePoolIndex++;
                     continue;
                 }
 
-
-                const nextEntry=
-                    active.moves[
-                        active.index++
-                    ];
-
-
-                const sim=
-                    simulateSearch(
-                        active.current.sim.b,
-                        nextEntry.m
-                    );
-
+                const futureEntry=
+                    active.moves[active.index++];
+                const sim=simulateSearch(
+                    active.parent.sim.b,
+                    futureEntry.m
+                );
 
                 sims++;
                 planner.simulations++;
 
-
                 if(!sim)
                     continue;
 
+                const nextKnown=
+                    planner.futurePieces[
+                        planner.futureDepth+1
+                    ]||null;
+                const metrics=portfolioMetrics(
+                    sim.b,
+                    planner.focus.projects,
+                    nextKnown
+                );
+                const technique=sim.bestTechnique;
+                const rank=makeRank(
+                    technique
+                        ?planner.futureDepth+2
+                        :planner.noTechniqueTurn,
+                    technique,
+                    metrics,
+                    sim,
+                    active.parent.rootEntry.index
+                );
 
-                const metrics=
-                    portfolioMetrics(
-                        sim.b,
-                        planner.focus.projects,
-                        null
-                    );
-
-
-                const technique=
-                    sim.bestTechnique;
-
-
-                const rank=
-                    makeRank(
-                        technique?2:3,
-                        technique,
-                        metrics,
-                        sim,
-                        active.current.entry.index
-                    );
-
-
-                if(
-                    !active.current.bestFuture ||
-                    compareRank(
-                        rank,
-                        active.current.bestFuture.rank
-                    )<0
-                ){
-
-                    active.current.bestFuture={
-                        rank,
-                        sim,
-                        move:nextEntry.m
-                    };
-                }
+                planner.futureChildren.push({
+                    entry:active.parent.entry,
+                    rootEntry:active.parent.rootEntry,
+                    futureMove:futureEntry.m,
+                    sim,
+                    rank,
+                    parent:active.parent,
+                    depth:planner.futureDepth+1
+                });
             }
-
 
             if(
                 sims>0 &&
                 nowMs()-start>=budgetMs
             ){
-
                 break;
             }
         }
 
-
-        return(
-            planner.done
-                ?planner.result
-                :null
+        planner.lastSliceSimulations=sims;
+        planner.maxSliceSimulations=Math.max(
+            planner.maxSliceSimulations,
+            sims
         );
+
+        return planner.done
+            ?planner.result
+            :null;
     }
 
 
@@ -1995,7 +1955,10 @@
                             createPlanner(
                                 g.board,
                                 g.piece.colors,
-                                g.queue[0]
+                                g.queue.slice(
+                                    0,
+                                    MAX_FUTURE_PIECES
+                                )
                             );
 
 
@@ -2038,16 +2001,17 @@
                     planner.frames++;
 
 
-                    if(
-                        !sceneBusy(g)
-                    ){
+                    const busy=sceneBusy(g);
 
-                        advancePlanner(
-                            planner,
-                            SLICE_MS,
-                            MAX_SIMULATIONS_PER_SLICE
-                        );
-                    }
+                    advancePlanner(
+                        planner,
+                        busy
+                            ?BUSY_SLICE_MS
+                            :SLICE_MS,
+                        busy
+                            ?BUSY_SIMULATIONS_PER_SLICE
+                            :MAX_SIMULATIONS_PER_SLICE
+                    );
 
 
                     if(
@@ -2070,6 +2034,13 @@
                             planner.simulations,
                         stage:
                             planner.stage,
+                        completedTurns:
+                            planner.completedTurns,
+                        lookaheadPieces:
+                            1+
+                            planner.futurePieces.length,
+                        maxSliceSimulations:
+                            planner.maxSliceSimulations,
                         done:
                             planner.done,
                         focusLimit:
@@ -2225,7 +2196,22 @@
 
 
     window.__sixBallSuperStrongVersion=
-        "superstrong-authoritative-v2-focused-projects";
+        "superhuman-authoritative-v3-four-turn-search";
+
+    window.__sixBallSuperStrongSearchDepth=
+        4;
+
+    window.__sixBallSuperStrongUsesAllQueuedPieces=
+        true;
+
+    window.__sixBallSuperStrongCurrentSearchExhaustive=
+        true;
+
+    window.__sixBallSuperStrongFutureParentBeams=
+        [...FUTURE_PARENT_BEAMS];
+
+    window.__sixBallSuperStrongFutureMoveBeams=
+        [...FUTURE_MOVE_BEAMS];
 
     window.__sixBallSuperStrongMaximumParallelTechniques=
         3;
@@ -2245,6 +2231,12 @@
 
     window.__sixBallSuperStrongFrameSimulationLimit=
         MAX_SIMULATIONS_PER_SLICE;
+
+    window.__sixBallSuperStrongBusyFrameSimulationLimit=
+        BUSY_SIMULATIONS_PER_SLICE;
+
+    window.__sixBallSuperStrongPlannerFrameLimit=
+        MAX_PLANNER_FRAMES;
 
     window.__sixBallSuperStrongFocusSelector=
         selectProjects;
