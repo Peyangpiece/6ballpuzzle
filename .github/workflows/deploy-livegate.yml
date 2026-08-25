@@ -1,0 +1,80 @@
+name: Deploy Live Gate Standalone
+
+on:
+  push:
+    branches: [livegate-standalone]
+    paths:
+      - "livegate-prod/**"
+      - ".github/workflows/deploy-livegate.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: livegate-standalone-production
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: livegate-standalone
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate Live Gate production bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s livegate-prod/public/index.html
+          test -s livegate-prod/public/firebase-config.js
+          test -s livegate-prod/public/firebase-bridge.js
+          test -s livegate-prod/public/app-1.js
+          test -s livegate-prod/public/app-2.js
+          test -s livegate-prod/public/app-3.js
+          test -s livegate-prod/public/app-4.js
+          test -s livegate-prod/public/styles-0.css
+          test -s livegate-prod/public/styles-1.css
+          test -s livegate-prod/public/styles-2.css
+          cat livegate-prod/public/app-1.js livegate-prod/public/app-2.js livegate-prod/public/app-3.js livegate-prod/public/app-4.js > /tmp/livegate-app.js
+          node --check /tmp/livegate-app.js
+          node --check livegate-prod/public/firebase-bridge.js
+          grep -q "Live Gate" livegate-prod/public/index.html
+          grep -q "ballpuzzle-8cc87" livegate-prod/public/firebase-config.js
+          grep -q "livegate-next/users" livegate-prod/public/firebase-bridge.js
+
+      - name: Deploy standalone Live Gate Worker
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.123.0"
+          workingDirectory: "livegate-prod"
+          command: deploy
+
+      - name: Verify standalone deployment
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          set -euo pipefail
+          echo "Live Gate URL: ${DEPLOYMENT_URL}"
+          test -n "${DEPLOYMENT_URL}"
+          for attempt in $(seq 1 20); do
+            if curl -fsSL "${DEPLOYMENT_URL%/}/" | grep -q "Live Gate" \
+              && curl -fsSL "${DEPLOYMENT_URL%/}/firebase-config.js" | grep -q "ballpuzzle-8cc87" \
+              && curl -fsSL "${DEPLOYMENT_URL%/}/app-4.js" | grep -q "adminCheckin"; then
+              echo "Live Gate deployment verified."
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Live Gate deployment verification failed."
+          exit 1
