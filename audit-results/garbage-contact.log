@@ -1,159 +1,787 @@
 garbage ordinary-physics + frozen existing pile PASS {"doneFrame":406,"spawned":12,"minDistance":0.9999999990070921}
 garbage spawn effect + 0.600 s PYRAMID cadence PASS {"starts":[{"seq":0,"t":0.008333333333333333,"ids":[1,2,3,4,5,6]},{"seq":1,"t":0.6083333333333336,"ids":[7,8,9,10,11,12]}],"delta":0.6000000000000003}
 accumulated pile gravity/no-horizontal motion PASS
-node:fs:440
-    return binding.readFileUtf8(path, stringToFlags(options.flag));
-                   ^
-
-Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
-    at Object.readFileSync (node:fs:440:20)
-    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-technique-levels.js:6:16
-    at Array.map (<anonymous>)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-technique-levels.js:6:3)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
-}
-
-Node.js v22.23.2
 garbage post-split rigidity zero PASS {"plan":[{"id":2,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":3,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":4,"kind":"ROLL_RIGHT","bundle":0,"size":0}],"support":1}
 garbage lower-diagonal before final settle PASS {"from":[2,1],"to":[1,2],"frozen":[8,1],"kind":"ROLL_LEFT","pivot":[3,2],"topPivot":null}
-terrain2 completion diagnostic {"done":298,"clock":2.4916666666666605,"pileClock":2.4916666666666605,"nextAt":1.8083333333333313,"plans":[{"seq":0,"type":"PYRAMID","started":true,"landed":true,"start":0.008333333333333333,"ids":[16,17,18,19,20,21]},{"seq":1,"type":"HEXAGON","started":true,"landed":true,"start":0.6083333333333336,"ids":[22,23,24,25,26,27]},{"seq":2,"type":"PYRAMID","started":true,"landed":true,"start":1.2083333333333315,"ids":[28,29,30,31,32,33]}],"garbLeft":0,"pending":0,"nearly":true,"legal":false,"nextReady":[],"rawSafe":[],"active":[]}
 garbage chain-free dense settle PASS [{"type":1,"done":411,"spawned":18,"maxGlobalStall":2,"minDistance":0.999996095262861},{"type":2,"done":298,"spawned":18,"maxGlobalStall":0,"minDistance":0.999999998784755},{"type":3,"done":326,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999986719219},{"type":4,"done":314,"spawned":18,"maxGlobalStall":1,"minDistance":0.9998569508717506}]
 post-garbage internal + secondary-clear collapse PASS
-node:fs:440
-    return binding.readFileUtf8(path, stringToFlags(options.flag));
-                   ^
-
-Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
-    at Object.readFileSync (node:fs:440:20)
-    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/wall-gap-regression.js:5:17
-    at Array.map (<anonymous>)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/wall-gap-regression.js:5:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
-}
-
-Node.js v22.23.2
 game-over former-garbage fade PASS
 garbage render overlap guard PASS
-node:fs:440
-    return binding.readFileUtf8(path, stringToFlags(options.flag));
-                   ^
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
 
-Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
-    at Object.readFileSync (node:fs:440:20)
-    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/up-convex-split-side.js:8:16
-    at Array.map (<anonymous>)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/up-convex-split-side.js:8:3)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-wall-gap-invariant.js'
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
 }
 
-Node.js v22.23.2
-evalmachine.<anonymous>:3285
-function expect(v,m){if(!v)throw new Error(m);}
-                           ^
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+resolver planner definitions: 4
+captured planners: 5
 
-Error: cached rigid shadow placement changed pixel geometry
-    at expect (evalmachine.<anonymous>:3285:34)
-    at evalmachine.<anonymous>:3543:1
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/runtime-performance-guards.js:146:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
+===== REPLAY 10000 RANDOM CASES =====
+replayed 1000 / 10000
+replayed 2000 / 10000
+replayed 3000 / 10000
+replayed 4000 / 10000
+replayed 5000 / 10000
+replayed 6000 / 10000
+replayed 7000 / 10000
+replayed 8000 / 10000
+replayed 9000 / 10000
+replayed 10000 / 10000
 
-Node.js v22.23.2
-node:fs:440
-    return binding.readFileUtf8(path, stringToFlags(options.flag));
-                   ^
+===== LAYER ACTIVATION =====
+Layer 1 changed: 3007
+Layer 2 changed: 509
+Layer 3 changed: 2966
+Layer 4 changed: 3096
+Layer 5 changed: 0
 
-Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
-    at Object.readFileSync (node:fs:440:20)
-    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-fastest-technique.js:6:16
-    at Array.map (<anonymous>)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-fastest-technique.js:6:3)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
+===== FINAL GOLDEN CHECK =====
+FINAL MATCH: 10000 / 10000
+FINAL MISMATCH: 0
+
+===== FIRST ACTIVATION PER LAYER =====
+
+--- Layer 1 ---
+{
+  "index": 3,
+  "before": [],
+  "after": [
+    {
+      "id": 1000032,
+      "x": 1,
+      "y": 4,
+      "tx": 2,
+      "ty": 5,
+      "dx": 1,
+      "dy": 1,
+      "kind": "ROLL_RIGHT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
 }
 
-Node.js v22.23.2
-node:fs:440
-    return binding.readFileUtf8(path, stringToFlags(options.flag));
-                   ^
-
-Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
-    at Object.readFileSync (node:fs:440:20)
-    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-superstrong-speed-priority.js:6:16
-    at Array.map (<anonymous>)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-superstrong-speed-priority.js:6:3)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
+--- Layer 2 ---
+{
+  "index": 60,
+  "before": [
+    {
+      "id": 1000600,
+      "x": 10,
+      "y": 9,
+      "tx": 9,
+      "ty": 10,
+      "dx": -1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500060,
+      "groupSize": 2
+    },
+    {
+      "id": 1000601,
+      "x": 11,
+      "y": 10,
+      "tx": 10,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "FLOOR_GRAVITY_DROP",
+      "bundleId": 0,
+      "groupSize": 0
+    },
+    {
+      "id": 1000602,
+      "x": 9,
+      "y": 10,
+      "tx": 8,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500060,
+      "groupSize": 2
+    }
+  ],
+  "after": [
+    {
+      "id": 1000600,
+      "x": 10,
+      "y": 9,
+      "tx": 9,
+      "ty": 10,
+      "dx": -1,
+      "dy": 1,
+      "kind": "UP_FLOOR_RIGID_LAND",
+      "bundleId": 500060,
+      "groupSize": 3
+    },
+    {
+      "id": 1000601,
+      "x": 11,
+      "y": 10,
+      "tx": 10,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "UP_FLOOR_RIGID_LAND",
+      "bundleId": 500060,
+      "groupSize": 3
+    },
+    {
+      "id": 1000602,
+      "x": 9,
+      "y": 10,
+      "tx": 8,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "UP_FLOOR_RIGID_LAND",
+      "bundleId": 500060,
+      "groupSize": 3
+    }
+  ]
 }
 
-Node.js v22.23.2
-node:fs:440
-    return binding.readFileUtf8(path, stringToFlags(options.flag));
-                   ^
-
-Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
-    at Object.readFileSync (node:fs:440:20)
-    at /home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-grandmaster.js:5:13
-    at Array.map (<anonymous>)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/ai-grandmaster.js:5:3)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'open',
-  path: '/home/runner/work/6ballpuzzle/6ballpuzzle/tests/../public/app-ai-technique.js'
+--- Layer 3 ---
+{
+  "index": 2,
+  "before": [
+    {
+      "id": 1000020,
+      "x": 11,
+      "y": 8,
+      "tx": 12,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000021,
+      "x": 13,
+      "y": 8,
+      "tx": 14,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000022,
+      "x": 12,
+      "y": 9,
+      "tx": 13,
+      "ty": 10,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500002,
+      "groupSize": 3
+    }
+  ],
+  "after": [
+    {
+      "id": 1000020,
+      "x": 11,
+      "y": 8,
+      "tx": 12,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000021,
+      "x": 13,
+      "y": 8,
+      "tx": 14,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000022,
+      "x": 12,
+      "y": 9,
+      "tx": 13,
+      "ty": 10,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    }
+  ]
 }
 
-Node.js v22.23.2
+--- Layer 4 ---
+{
+  "index": 0,
+  "before": [
+    {
+      "id": 1000000,
+      "x": 5,
+      "y": 4,
+      "tx": 5,
+      "ty": 6,
+      "dx": 0,
+      "dy": 2,
+      "kind": "RIGID_COMMON_FREE_FALL",
+      "bundleId": 500000,
+      "groupSize": 3
+    },
+    {
+      "id": 1000001,
+      "x": 7,
+      "y": 4,
+      "tx": 7,
+      "ty": 6,
+      "dx": 0,
+      "dy": 2,
+      "kind": "RIGID_COMMON_FREE_FALL",
+      "bundleId": 500000,
+      "groupSize": 3
+    },
+    {
+      "id": 1000002,
+      "x": 6,
+      "y": 5,
+      "tx": 6,
+      "ty": 7,
+      "dx": 0,
+      "dy": 2,
+      "kind": "RIGID_COMMON_FREE_FALL",
+      "bundleId": 500000,
+      "groupSize": 3
+    }
+  ],
+  "after": [
+    {
+      "id": 1000000,
+      "x": 5,
+      "y": 4,
+      "tx": 5,
+      "ty": 6,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500000,
+      "groupSize": 3
+    },
+    {
+      "id": 1000001,
+      "x": 7,
+      "y": 4,
+      "tx": 7,
+      "ty": 6,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500000,
+      "groupSize": 3
+    },
+    {
+      "id": 1000002,
+      "x": 6,
+      "y": 5,
+      "tx": 6,
+      "ty": 7,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500000,
+      "groupSize": 3
+    }
+  ]
+}
+
+--- Layer 5 ---
+NO OUTPUT CHANGE IN RANDOM ORACLE
+
+============================================
+ SHADOW AUDIT PASS: FINAL = GOLDEN 10000/10000 
+============================================
+
+===== DIRECTED SHADOW RESULT =====
+Layer 1 changed: 751
+Layer 2 changed: 250
+Layer 3 changed: 500
+Layer 4 changed: 375
+Layer 5 changed: 0
+
+DIRECTED FINAL MATCH: 2000 / 2000
+DIRECTED FINAL MISMATCH: 0
+
+===== DIRECTED BY TYPE =====
+blocked { total: 250, finalMismatch: 0 }
+floor { total: 250, finalMismatch: 0 }
+leftWall { total: 250, finalMismatch: 0 }
+rightWall { total: 250, finalMismatch: 0 }
+valley { total: 250, finalMismatch: 0 }
+leftSupport { total: 250, finalMismatch: 0 }
+rightSupport { total: 250, finalMismatch: 0 }
+separator { total: 250, finalMismatch: 0 }
+
+==============================================
+ DIRECTED SHADOW PASS: FINAL = GOLDEN 2000/2000 
+==============================================
+
+===== COMMIT AUDIT RANDOM 10000 =====
+random 1000 / 10000
+random 2000 / 10000
+random 3000 / 10000
+random 4000 / 10000
+random 5000 / 10000
+random 6000 / 10000
+random 7000 / 10000
+random 8000 / 10000
+random 9000 / 10000
+random 10000 / 10000
+
+===== COMMIT AUDIT DIRECTED 2000 =====
+directed 250 / 2000
+directed 500 / 2000
+directed 750 / 2000
+directed 1000 / 2000
+directed 1250 / 2000
+directed 1500 / 2000
+directed 1750 / 2000
+directed 2000 / 2000
+
+===== COMMIT LAYER DELTAS =====
+Layer 1: output changed=3758, state changed=3585
+Layer 2: output changed=759, state changed=759
+Layer 3: output changed=3466, state changed=3466
+Layer 4: output changed=3471, state changed=3466
+Layer 5: output changed=0, state changed=0
+
+===== COMMIT GOLDEN RESULT =====
+RANDOM COMMIT MATCH: 10000 / 10000
+RANDOM COMMIT MISMATCH: 0
+DIRECTED COMMIT MATCH: 2000 / 2000
+DIRECTED COMMIT MISMATCH: 0
+
+===== FIRST STATE CHANGE PER LAYER =====
+
+--- Layer 1 ---
+{
+  "dataset": "random",
+  "id": 3,
+  "beforeStateSha256": "4e3b71ad894020b1e5fa18900f950edba34c41ff949ed3e1d4dc4df7a8e2abbf",
+  "afterStateSha256": "ea529c55e781bc14e629e07ec8343872d0331c91885902750a31f70e190ede54",
+  "beforePlan": [],
+  "afterPlan": [
+    {
+      "id": 1000032,
+      "x": 1,
+      "y": 4,
+      "tx": 2,
+      "ty": 5,
+      "dx": 1,
+      "dy": 1,
+      "kind": "ROLL_RIGHT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+--- Layer 2 ---
+{
+  "dataset": "random",
+  "id": 60,
+  "beforeStateSha256": "9562eb70334498854dc2923d7a1faf0959ac571e9a3acd4e44474c7ee0b17580",
+  "afterStateSha256": "aa77cfd75edb26736209c9d336d954397ef425a3c84a3e20a457608ecf3d2dae",
+  "beforePlan": [
+    {
+      "id": 1000600,
+      "x": 10,
+      "y": 9,
+      "tx": 9,
+      "ty": 10,
+      "dx": -1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500060,
+      "groupSize": 2
+    },
+    {
+      "id": 1000601,
+      "x": 11,
+      "y": 10,
+      "tx": 10,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "FLOOR_GRAVITY_DROP",
+      "bundleId": 0,
+      "groupSize": 0
+    },
+    {
+      "id": 1000602,
+      "x": 9,
+      "y": 10,
+      "tx": 8,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500060,
+      "groupSize": 2
+    }
+  ],
+  "afterPlan": [
+    {
+      "id": 1000600,
+      "x": 10,
+      "y": 9,
+      "tx": 9,
+      "ty": 10,
+      "dx": -1,
+      "dy": 1,
+      "kind": "UP_FLOOR_RIGID_LAND",
+      "bundleId": 500060,
+      "groupSize": 3
+    },
+    {
+      "id": 1000601,
+      "x": 11,
+      "y": 10,
+      "tx": 10,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "UP_FLOOR_RIGID_LAND",
+      "bundleId": 500060,
+      "groupSize": 3
+    },
+    {
+      "id": 1000602,
+      "x": 9,
+      "y": 10,
+      "tx": 8,
+      "ty": 11,
+      "dx": -1,
+      "dy": 1,
+      "kind": "UP_FLOOR_RIGID_LAND",
+      "bundleId": 500060,
+      "groupSize": 3
+    }
+  ]
+}
+
+--- Layer 3 ---
+{
+  "dataset": "random",
+  "id": 2,
+  "beforeStateSha256": "a63688b7f68c9eb06f2f40e9234047f7cee85d55fa8c9505800cf07115b3c7af",
+  "afterStateSha256": "c0a6ff32db1b02842eda0aa4e101973dc4b29cae47b8edeeb11704442a2f5493",
+  "beforePlan": [
+    {
+      "id": 1000020,
+      "x": 11,
+      "y": 8,
+      "tx": 12,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000021,
+      "x": 13,
+      "y": 8,
+      "tx": 14,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000022,
+      "x": 12,
+      "y": 9,
+      "tx": 13,
+      "ty": 10,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500002,
+      "groupSize": 3
+    }
+  ],
+  "afterPlan": [
+    {
+      "id": 1000020,
+      "x": 11,
+      "y": 8,
+      "tx": 12,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000021,
+      "x": 13,
+      "y": 8,
+      "tx": 14,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000022,
+      "x": 12,
+      "y": 9,
+      "tx": 13,
+      "ty": 10,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    }
+  ]
+}
+
+--- Layer 4 ---
+{
+  "dataset": "random",
+  "id": 2,
+  "beforeStateSha256": "c0a6ff32db1b02842eda0aa4e101973dc4b29cae47b8edeeb11704442a2f5493",
+  "afterStateSha256": "a63688b7f68c9eb06f2f40e9234047f7cee85d55fa8c9505800cf07115b3c7af",
+  "beforePlan": [
+    {
+      "id": 1000020,
+      "x": 11,
+      "y": 8,
+      "tx": 12,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000021,
+      "x": 13,
+      "y": 8,
+      "tx": 14,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000022,
+      "x": 12,
+      "y": 9,
+      "tx": 13,
+      "ty": 10,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    }
+  ],
+  "afterPlan": [
+    {
+      "id": 1000020,
+      "x": 11,
+      "y": 8,
+      "tx": 12,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000021,
+      "x": 13,
+      "y": 8,
+      "tx": 14,
+      "ty": 9,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    },
+    {
+      "id": 1000022,
+      "x": 12,
+      "y": 9,
+      "tx": 13,
+      "ty": 10,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500002,
+      "groupSize": 3
+    }
+  ]
+}
+
+--- Layer 5 ---
+NO STATE CHANGE IN 12000 CASES
+
+==============================================
+ COMMIT AUDIT PASS: GOLDEN 12000 / 12000 
+==============================================
+v1303 CURRENT 4-LAYER ORACLE SUITE PASS: 12000 PREVIEW + COMMIT CASES
