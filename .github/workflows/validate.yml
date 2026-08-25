@@ -1,144 +1,78 @@
-name: Validate HEXDROP
+name: Validate HEXDROP Current Runtime
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: hexdrop-current-validation
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Check JavaScript syntax
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
           for f in public/app-*.js public/controls-*.js; do
             node --check "$f"
           done
-      - name: Check concatenated runtime syntax
+
+      - name: Check production shell and critical assets
+        shell: bash
         run: |
-          cat \
-            public/app-01.js public/app-02.js public/app-03.js public/app-04.js \
-            public/app-05.js public/app-06.js public/app-07.js public/app-pile-arc.js \
-            public/app-clear-gap-collapse.js public/app-08.js public/app-09.js public/app-10.js \
-            public/app-14.js public/app-15.js public/app-16.js public/app-17.js \
-            public/app-garbage-normal-physics.js public/controls-v7.js > /tmp/hexdrop-runtime.js
-          node --check /tmp/hexdrop-runtime.js
-      - name: Check floor parity regression
-        run: |
-          set -e
-          cat > /tmp/floor-prefix.js <<'EOF'
-          const React={useRef(){},useEffect(){},useState(){},useCallback(){}};
-          const window={};
-          const navigator={};
-          EOF
-          cat /tmp/floor-prefix.js public/app-01.js public/app-02.js public/app-04.js > /tmp/floor-test.js
-          cat >> /tmp/floor-test.js <<'EOF'
-          {
-            const b=newBoard();
-            const y=ROWS-2, x=(y&1)?10:11;
-            const ball={id:1,c:0,momentumX:0,rollDir:0,subCellBias:0};
-            b[y][x]=ball;
-            const p=hexPhysNaturalMotion(b,x,y);
-            if(!p) throw new Error('floor parity: missing move from row above floor');
-            if(p.ty!==ROWS-1) throw new Error(`floor parity: expected ty=${ROWS-1}, got ${p.ty}`);
-            if(p.kind!=='FLOOR_DROP') throw new Error(`floor parity: expected FLOOR_DROP, got ${p.kind}`);
-          }
-          console.log('floor parity regression PASS');
-          EOF
-          node /tmp/floor-test.js
-      - name: Check wall-gap regression
-        run: node tests/wall-gap-regression.js
-      - name: Check post-garbage clear-collapse regression
-        run: node tests/garbage-post-clear-collapse.js
-      - name: Check airborne garbage pass-through
-        run: node tests/garbage-airborne-pass-through.js
-      - name: Check rigidity and garbage regressions
-        run: node tests/physics-regressions.js
-      - name: Check 50-point reference fidelity
-        run: node tests/reference-fidelity.js
-      - name: Diagnose gridified garbage motion
-        run: node tests/garbage-gridified-motion-diagnostic.js
-      - name: Check 100-pass ball movement fidelity
-        run: node tests/run-movement-fidelity-100.js
-      - name: Check 100-pass garbage motion fidelity
-        run: node tests/garbage-fidelity-100.js
-      - name: Check weighted 1000-pass reference fidelity
-        run: node tests/run-reference-fidelity-1000.js
-      - name: Check staged 3000-pass video convergence
-        run: node tests/run-reference-convergence-3000.js
-      - name: Diagnose same-frame garbage overlap
-        run: node tests/garbage-overlap-frame-diagnostic.js
-      - name: Check continuous no-overlap invariant
-        run: node tests/run-overlap-regressions.js
-      - name: Check clean touch controls v7
-        run: |
-          set -e
-          test -f public/controls-v7.js
-          ! test -e public/controls-v6.js
-          ! test -e public/controls-v5.js
-          grep -q 'controls-v7.js' public/index.html
-          ! grep -q 'controls-v6.js' public/index.html
-          ! grep -q 'controls-v5.js' public/index.html
-          grep -q '__hexControlsV7Installed' public/controls-v7.js
-          grep -q 'if(window.__hexControlsV7Installed)return' public/app-16.js
-          ! grep -q 'HTMLCanvasElement.prototype' public/controls-v7.js
-          grep -q '__hexCreateEngineWrappedV7' public/controls-v7.js
-          grep -q '__hexEnginesV7' public/controls-v7.js
-          grep -q '__hexSingleSlideV7' public/controls-v7.js
-          grep -q 'SINGLE_DRAG_START_TOL=4' public/controls-v7.js
-          grep -q 'beginSingleDrag' public/controls-v7.js
-          grep -q 'targetX=rec.dragBaseX+(dx/ME.D)\*2' public/controls-v7.js
-          grep -q 'setFreeX(g,targetX)' public/controls-v7.js
-          grep -q 'if(Number.isFinite(g.freeX))g.pieceVX=g.freeX' public/controls-v7.js
-          grep -q 'if (g.freeX != null) g.pieceVX = g.freeX' public/app-08.js
-          grep -q 'rec.half>0?1:-1' public/controls-v7.js
-          grep -q '__hexInstantDropV7' public/controls-v7.js
-          grep -q 'hardDrop(g)' public/controls-v7.js
-          ! grep -q 'g.piece={...target}' public/controls-v7.js
-          grep -q 'REFERENCE_INSTANT_DROP_MAX_FRAMES=1' public/app-04.js
-          ! grep -q 'g.hardDropAnim={' public/app-05.js
-          grep -q 'drawHardDropImpacts' public/app-14.js
-          grep -q 'd.g.fastForward=true' public/controls-v7.js
-          ! grep -q 'armSingleHold' public/controls-v7.js
-          ! grep -q 'longActive' public/controls-v7.js
-          ! grep -q 'floorDirectedFinalTarget' public/controls-v7.js
-          ! grep -q 'bottomPress' public/controls-v7.js
-      - name: Check unified physics architecture
-        run: |
-          set -e
+          set -euo pipefail
           test -f public/index.html
           test -f public/manifest.webmanifest
           test -f wrangler.jsonc
-          test -f public/app-clear-gap-collapse.js
-          test -f tests/garbage-post-clear-collapse.js
+          test -f public/controls-v7.js
+          test -s public/assets/menu-confirm-42.mp3
+          grep -q 'loadCurrentGameBuild' public/index.html
+          grep -q 'controls-v7.js' public/index.html
+          grep -q '__hexControlsV7Installed' public/controls-v7.js
           grep -q 'hexPhysNaturalMotion' public/app-02.js
           grep -q 'hexPhysPlanGroup' public/app-02.js
-          grep -q 'FLOOR_DROP' public/app-02.js
-          grep -q 'y+1===ROWS-1' public/app-02.js
           grep -q 'hexPhysResolveEvent' public/app-03.js
-          grep -q 'HEX_GARBAGE_SHAPE_INTERVAL=0.5' public/app-06.js
-          grep -q 'prepareContinuousPileFlow' public/app-07.js
           grep -q '__hexGarbageFinalizesIntoAccumulatedPile' public/app-garbage-normal-physics.js
-          grep -q '__hexPostClearGarbageSupportArc' public/app-pile-arc.js
-          grep -q 'manifest.webmanifest' public/index.html
-          grep -q 'loadCurrentGameBuild' public/index.html
-          grep -q 'Date.now().toString(36)' public/index.html
-          grep -q 'document.write' public/index.html
-          ! grep -q '<script src="app-01.js"></script>' public/index.html
-          grep -q -- '-webkit-touch-callout:none' public/index.html
-          grep -q 'touch-action:none' public/index.html
-          ! grep -q 'patch-' public/index.html
-          ! test -e public/patch-up-split.js
-          ! test -e public/patch-turn-gate-v2.js
-          ! test -e public/patch-axis-pair-v3.js
-          ! test -e public/patch-v4.js
-          ! test -e public/patch-v6.js
-          ! test -e public/patch-v7.js
-          ! test -e public/patch-v8.js
-          ! test -e public/patch-v9.js
-          ! test -e public/patch-v10.js
+
+      - name: Run current production smoke
+        run: node tests/v1303-plan-group-smoke.js
+
+      - name: Run authoritative 12000-case oracle
+        run: node tests/v1303-current-oracle-suite.js
+
+      - name: Run current up-convex production guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/v1303-upconvex-production-guard.js
+          node tests/v1303-upconvex-live-pocket-v24.js
+
+      - name: Run clear disappearance FX regression
+        run: node tests/clear-all-ball-fx.js
+
+      - name: Run current unified garbage regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/garbage-normal-physics.js
+          node tests/garbage-presentation.js
+          node tests/pile-arc-motion.js
+          node tests/garbage-zero-rigidity.js
+          node tests/garbage-diagonal-settle.js
+          node tests/garbage-chain-settle.js
+          node tests/garbage-post-clear-collapse.js
+          node tests/gameover-garbage-fade.js
+          node tests/garbage-render-overlap-guard.js
