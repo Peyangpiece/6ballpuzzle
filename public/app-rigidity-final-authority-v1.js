@@ -202,13 +202,14 @@
         if(!info?.top?.ball||!info?.pairLower?.ball||!info?.solo?.ball)return null;
 
         /* Canonical UP-convex contact measures the protrusion across the
-           lower edge as hitFraction. Only its middle 50% (25%..75%) is a
-           legal active split. Outer-quarter contacts remain rigid slopes. */
+           lower edge as hitFraction. Only its strict middle 50% (25%..75%)
+           is a legal active split. Exact 25% and 75% boundaries belong to
+           the outer quarters and remain rigid slopes. */
         const hitFraction=Number(info.hitFraction);
         if(
             !Number.isFinite(hitFraction)||
-            hitFraction<.25-1e-9||
-            hitFraction>.75+1e-9
+            hitFraction<=.25+1e-9||
+            hitFraction>=.75-1e-9
         )return null;
 
         const topId=memberId(layout.top);

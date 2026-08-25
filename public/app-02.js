@@ -224,7 +224,9 @@ function hexPhysUpConvexSeparator(b,members,motions){
  // actual base segment; contacts in either outer quarter remain rigid slopes.
  const offset=Math.max(-1,Math.min(1,Number.isFinite(top.ball?.impactOffsetX)?top.ball.impactOffsetX:0));
  const baseLeft=lower[0].x+offset,baseRight=lower[1].x+offset,hitFraction=(px-baseLeft)/(baseRight-baseLeft);
- if(hitFraction<.25-1e-9||hitFraction>.75+1e-9)return null;
+ // Exact quarter boundaries belong to the rigid outer quarters. Only a
+ // strictly interior middle-half contact may split the upward triangle.
+ if(hitFraction<=.25+1e-9||hitFraction>=.75-1e-9)return null;
  const actualCenter=(baseLeft+baseRight)/2,relative=px-actualCenter,topIndex=members.indexOf(top),topMove=motions[topIndex];
  const bias=relative>1e-9?-1:relative<-1e-9?1:(Math.sign(topMove?.tx-top.x)||hexPhysBias(top.ball)||Math.sign(members.reduce((n,m)=>n+hexPhysBias(m.ball),0))||-1);
  const pairLower=bias<0?lower[0]:lower[1],solo=bias<0?lower[1]:lower[0],soloMotion=motions[members.indexOf(solo)];

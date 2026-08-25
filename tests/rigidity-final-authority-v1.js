@@ -159,23 +159,26 @@ function install({base,independent,natural,groupPlan,separator,splitPlan}){
 /* An active pair+solo proposal outside the lower edge's middle 50% is not a
    legal convex split. Keep the triplet together and wait. */
 {
-  const members=makeUpMembers(817);
-  const [top,left,right]=members;
-  const ctx=install({
-    independent:(board,group,member)=>motion(member,member===left?-1:1,1),
-    separator:()=>({
-      hitFraction:.1,top,pairLower:right,solo:left,
-      soloMotion:motion(left,-1,1),dir:1
-    }),
-    base:()=>[
-      {...motion(top,1,1),bundleId:817,groupSize:2},
-      {...motion(right,1,1),bundleId:817,groupSize:2},
-      {...motion(left,-1,1),bundleId:0,groupSize:0}
-    ]
-  });
-  const out=ctx.hexPhysPlanGroup([],members,false);
-  expect(out.length===0,"outer-quarter contact was allowed to split the triplet");
-  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"rejected outer-quarter split did not restore triplet rigidity");
+  for(const [index,hitFraction] of [.1,.25,.75,.9].entries()){
+    const gid=817+index;
+    const members=makeUpMembers(gid);
+    const [top,left,right]=members;
+    const ctx=install({
+      independent:(board,group,member)=>motion(member,member===left?-1:1,1),
+      separator:()=>({
+        hitFraction,top,pairLower:right,solo:left,
+        soloMotion:motion(left,-1,1),dir:1
+      }),
+      base:()=>[
+        {...motion(top,1,1),bundleId:gid,groupSize:2},
+        {...motion(right,1,1),bundleId:gid,groupSize:2},
+        {...motion(left,-1,1),bundleId:0,groupSize:0}
+      ]
+    });
+    const out=ctx.hexPhysPlanGroup([],members,false);
+    expect(out.length===0,`outer-quarter contact ${hitFraction} was allowed to split the triplet`);
+    expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),`rejected outer-quarter ${hitFraction} did not restore triplet rigidity`);
+  }
 }
 
 /* Upward-convex RIGHT split: a pair-only selected event keeps top+LEFT, while

@@ -183,8 +183,8 @@ for(const input of cases){
         `case ${input.index}: active split lacks central-contact authority`
       );
       expect(
-        finalCorrection.hitFraction>=.25-1e-9&&
-        finalCorrection.hitFraction<=.75+1e-9,
+        finalCorrection.hitFraction>.25+1e-9&&
+        finalCorrection.hitFraction<.75-1e-9,
         `case ${input.index}: active split escaped middle 50%`
       );
     }else{

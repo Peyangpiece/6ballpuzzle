@@ -94,15 +94,15 @@ for(let rot=0;rot<6;rot++){
  for(const m of members)b[m.y][m.x]=m.ball;b[5][6]={id:229,c:4,motionGroupId:0,rigid:false};
  const plan=hexPhysPlanGroup(b,members,false);
  expect(plan.length===3,"convex split: upward triangle received no split motion");
- expect(balls[0].motionGroupId===122&&balls[2].motionGroupId===122&&balls[0].motionGroupSize===2&&balls[2].rigid,"convex split: opposite two-ball side lost its rigidity");
- expect(balls[1].motionGroupId===0&&!balls[1].rigid,"convex split: separated ball stayed constrained");
- const solo=plan.find(p=>p.ball.id===221);
- expect(plan.filter(p=>p.bundleId===122).every(p=>p.tx-p.x===-1)&&solo&&solo.tx-solo.x===1,"convex split: left/right separation was not produced");
+ const pair=plan.filter(p=>p.groupSize===2),solo=plan.find(p=>p.groupSize===0);
+ expect(pair.length===2&&pair.some(p=>p.ball.id===220)&&pair.every(p=>p.ball.rigid&&p.ball.motionGroupSize===2),"convex split: opposite two-ball side lost its rigidity");
+ expect(solo&&[221,222].includes(solo.ball.id)&&solo.ball.motionGroupId===0&&!solo.ball.rigid,"convex split: separated lower ball stayed constrained");
+ expect(pair.every(p=>Math.sign(p.tx-p.x)===-Math.sign(solo.tx-solo.x)),"convex split: pair and solo did not separate in opposite directions");
 }
 
-// The upward-triangle split window is exactly the center 2/4 of its continuous
-// base. Boundary contacts split; either outer quarter remains a rigid slope.
-for(const [offset,expected,dir] of [[-.51,false,0],[-.5,true,-1],[-.4,true,-1],[0,true,-1],[.4,true,1],[.5,true,1],[.51,false,0]]){
+// The upward-triangle split window is the strict center 2/4 of its continuous
+// base. Exact quarter boundaries belong to the outer rigid-slope quarters.
+for(const [offset,expected,dir] of [[-.51,false,0],[-.5,false,0],[-.499,true,-1],[-.4,true,-1],[0,true,-1],[.4,true,1],[.499,true,1],[.5,false,0],[.51,false,0]]){
  const b=newBoard(),balls=[0,1,2].map(i=>({id:240+i,c:i,motionGroupId:124,motionGroupRole:i,motionGroupOrientation:"up",motionGroupSize:3,rigid:true,momentumX:Math.sign(offset),impactOffsetX:offset}));
  const members=[{ball:balls[0],x:6,y:3,role:0,orientation:"up"},{ball:balls[1],x:7,y:4,role:1,orientation:"up"},{ball:balls[2],x:5,y:4,role:2,orientation:"up"}];
  for(const m of members)b[m.y][m.x]=m.ball;b[5][6]={id:249,c:4,motionGroupId:0,rigid:false};

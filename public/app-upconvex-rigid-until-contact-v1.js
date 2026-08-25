@@ -177,8 +177,8 @@
         const hitFraction=Number(info.hitFraction);
         if(
             !Number.isFinite(hitFraction)||
-            hitFraction<.25-1e-9||
-            hitFraction>.75+1e-9
+            hitFraction<=.25+1e-9||
+            hitFraction>=.75-1e-9
         )return null;
 
         const g=layout(members);

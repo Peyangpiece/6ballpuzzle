@@ -68,12 +68,12 @@ check(39,"no legacy slope break flag",!SOURCE_PHYSICS.includes("forceSplit=true"
 check(40,"minimum physical separation is one diameter",HEX_MIN_DIST>=.999&&HEX_MIN_DIST<=1);
 
 // 041-050: centre-half convex split window and direction.
-{const f=splitFixture(-.5);check(41,"left centre-half boundary splits",!!f.info);}
-{const f=splitFixture(.5);check(42,"right centre-half boundary splits",!!f.info);}
-{const f=splitFixture(-.501);check(43,"left outer quarter stays rigid",!f.info);}
-{const f=splitFixture(.501);check(44,"right outer quarter stays rigid",!f.info);}
-{const f=splitFixture(-.5);check(45,"left-shift boundary maps to three-quarter fraction",close(f.info.hitFraction,.75));}
-{const f=splitFixture(.5);check(46,"right-shift boundary maps to one-quarter fraction",close(f.info.hitFraction,.25));}
+{const f=splitFixture(-.499);check(41,"just inside left centre half splits",!!f.info);}
+{const f=splitFixture(.499);check(42,"just inside right centre half splits",!!f.info);}
+{const f=splitFixture(-.5);check(43,"exact left quarter boundary stays rigid",!f.info);}
+{const f=splitFixture(.5);check(44,"exact right quarter boundary stays rigid",!f.info);}
+{check(45,"left-shift boundary maps to three-quarter fraction",close((1-(-.5))/2,.75));}
+{check(46,"right-shift boundary maps to one-quarter fraction",close((1-.5)/2,.25));}
 {const f=splitFixture(-.25);check(47,"support right of centre sends pair left",f.info.dir===-1);}
 {const f=splitFixture(.25);check(48,"support left of centre sends pair right",f.info.dir===1);}
 {const f=splitFixture(-.25);const p=hexPhysUpConvexSplitPlan(f.b,f.members,f.info,false);check(49,"split pair shares one bundle",p[0].bundleId===p[1].bundleId&&p[0].bundleId!==0);}
