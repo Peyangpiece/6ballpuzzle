@@ -19,7 +19,7 @@ function asGarbage(ball,type="PYRAMID"){
 function phys(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
 
 expect(window.__hexGarbageFinalizesIntoAccumulatedPile===true,"garbage finalizer marker missing");
-expect(window.__hexPostClearGarbageSupportArc===true,"post-clear garbage support arc adapter missing");
+expect(window.__hexAccumulatedPileUsesGravity===true,"accumulated-pile gravity adapter missing");
 expect(window.__hexPostClearDynamicVacancyClosure===true,"secondary-vacancy collapse closure missing");
 
 // Two-stage support-loss chain near the floor:
@@ -75,10 +75,9 @@ expect(window.__hexPostClearDynamicVacancyClosure===true,"secondary-vacancy coll
   expect(upperSeg,"collapse path did not include the original cleared vacancy");
   expect(topSeg,"secondary collapse path did not fill the vacated support cell");
   expect(upperSeg.pileFlow===true&&topSeg.pileFlow===true,"multi-stage collapse was not converted to continuous pile flow");
-  expect(Array.isArray(upperSeg.pivot)&&upperSeg.pivot[0]===9&&upperSeg.pivot[1]===10,"upper collapse lost the real garbage pivot");
-  expect((upperSeg.followSupportIds||[]).includes(right.id),"settled garbage support was not bound to the first collapse arc");
-  expect(Array.isArray(topSeg.pivot)&&topSeg.pivot[0]===10&&topSeg.pivot[1]===9,"secondary collapse lost the shoulder pivot");
-  expect((topSeg.followSupportIds||[]).includes(shoulder.id),"secondary collapse was not bound to its real support");
+  expect(upperSeg.pileGravityFall===true&&topSeg.pileGravityFall===true,"pile collapse did not use gravity motion");
+  expect(!upperSeg.pivot&&!upperSeg.topPivot&&!(upperSeg.followSupportIds||[]).length,"upper collapse retained circular/support binding");
+  expect(!topSeg.pivot&&!topSeg.topPivot&&!(topSeg.followSupportIds||[]).length,"secondary collapse retained circular/support binding");
 
   let upperMoved=false,topMoved=false;
   for(let frame=0;frame<360&&((upper.fallPath?.length||0)||(top.fallPath?.length||0));frame++){

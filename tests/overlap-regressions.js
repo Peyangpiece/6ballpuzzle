@@ -88,18 +88,16 @@ function makeVacatedSupportFixture(){
 }
 {
  const {g,support,upper}=makeVacatedSupportFixture(),sa=support.fallPath[0],sb=upper.fallPath[0];
- expect(sb.pileFlowInferredSupport===true,"post-clear follower did not infer its moving support");
- expect((sb.followSupportIds||[]).includes(support.id),"post-clear follower lost support id");
- expect(sb.pileFlowStart<=sa.pileFlowStart+1e-9,"post-clear follower still waited for a lattice wave");
+ expect(sa.pileGravityFall===true&&sb.pileGravityFall===true,"post-clear collapse did not use gravity paths");
+ expect(!(sb.followSupportIds||[]).length&&!sb.movingSupportId,"post-clear follower retained circular support binding");
  const mid=sa.pileFlowStart+Math.min(sa.pileFlowDuration,sb.pileFlowDuration)*0.5;
  const pa=pileFlowPositionAt(g,support,mid),pb=pileFlowPositionAt(g,upper,mid);
  expect(pileFlowPhysicalDist(pa,[10,5])>1e-3,"support did not move during collapse probe");
  expect(pileFlowPhysicalDist(pb,[9,4])>1e-3,"upper ball remained staged while support moved");
- let tangentMin=Infinity,tangentMax=0;
+ let tangentMin=Infinity;
  const start=Math.max(sa.pileFlowStart,sb.pileFlowStart),end=Math.min(sa.pileFlowEnd,sb.pileFlowEnd);
- for(let t=start;t<=end+1e-10;t+=1/480){const d=pileFlowPhysicalDist(pileFlowPositionAt(g,support,t),pileFlowPositionAt(g,upper,t));tangentMin=Math.min(tangentMin,d);tangentMax=Math.max(tangentMax,d);}
- expect(tangentMin>=PILE_FLOW_MIN_DIST-1e-7,"support-following overlapped: "+tangentMin);
- expect(tangentMax<=1.00001,"support-following opened a visible gap: "+tangentMax);
+ for(let t=start;t<=end+1e-10;t+=1/480){const d=pileFlowPhysicalDist(pileFlowPositionAt(g,support,t),pileFlowPositionAt(g,upper,t));tangentMin=Math.min(tangentMin,d);}
+ expect(tangentMin>=PILE_FLOW_MIN_DIST-1e-7,"independent gravity paths overlapped: "+tangentMin);
 }
 let globalMin=Infinity,worst=null,samples=0;
 for(const seed of ${JSON.stringify(seeds)}){

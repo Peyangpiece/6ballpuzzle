@@ -1,22 +1,17 @@
-/* Accumulated-pile contact arc binding.
+/* Accumulated-pile gravity binding (legacy filename).
  *
- * A diagonal lattice transition is physically a roll around a supporting ball,
- * not a straight chord through that ball. The core solver already records a
- * pivot for ordinary ROLL_LEFT/ROLL_RIGHT events, but after a clear the logical
- * board may contain the support at its FINAL cell while the moving ball's path
- * still refers to the support's ORIGINAL cell. In that case app-07 could not
- * bind the segment to the moving support and rendering could fall back to a
- * straight diagonal interpolation.
+ * This file used to reconstruct circular support rails for every diagonal pile
+ * transition. That made a gravity fall begin with a visibly horizontal swing.
  *
- * Resolve the support by its current logical cell, visual centre, or any queued
- * fallPath endpoint. Once found, bind the moving pile ball to that support so
- * pileFlowPointForBall composes the support's own motion with a unit-radius arc.
- * Free-fall / floor-only motion is intentionally untouched: an arc is required
- * only when there is a real ball acting as the rolling support.
+ * Incoming garbage can still use its real contact arc before it becomes part
+ * of the pile.  Once a path is compiled as accumulated-pile motion, app-07's
+ * gravity rule removes the pivot/support binding: vertical progress accelerates
+ * under gravity and lateral progress can never become a same-height slide.
  */
-(function installAccumulatedPileArcBinding(){
-    if(typeof window==="undefined"||window.__hexAccumulatedPileArcBinding)return;
-    window.__hexAccumulatedPileArcBinding=true;
+(function installAccumulatedPileGravityBinding(){
+    if(typeof window==="undefined"||window.__hexAccumulatedPileGravityBinding)return;
+    window.__hexAccumulatedPileGravityBinding=true;
+    window.__hexAccumulatedPileArcBinding=false;
 
     const baseRepairPileFlowSegmentGeometry=repairPileFlowSegmentGeometry;
     const ARC_EPS=2e-5;
@@ -89,6 +84,10 @@
     }
 
     repairPileFlowSegmentGeometry=function(g,ball,seg,reason="pile_flow"){
+        if(reason!=="garbage_unit_timeline"){
+            if(typeof enforcePileGravitySegment==="function")enforcePileGravitySegment(seg,reason);
+            return;
+        }
         baseRepairPileFlowSegmentGeometry(g,ball,seg,reason);
         if(!seg||!ball||!seg.from||!seg.to||seg.topPivot)return;
 
@@ -123,6 +122,10 @@
     };
 
     // Diagnostics used by the regression suite.
-    window.__hexBindPileArcSegment=(g,ball,seg)=>repairPileFlowSegmentGeometry(g,ball,seg,"clear_support_loss");
-    window.__hexPostClearGarbageSupportArc=true;
+    // Incoming, not-yet-settled garbage still needs real contact geometry.
+    window.__hexBindPileArcSegment=(g,ball,seg)=>repairPileFlowSegmentGeometry(g,ball,seg,"garbage_unit_timeline");
+    window.__hexBindPileGravitySegment=(g,ball,seg)=>enforcePileGravitySegment(seg,"accumulated_pile");
+    window.__hexPostClearGarbageSupportArc=false;
+    window.__hexAccumulatedPileUsesGravity=true;
+    window.__hexAccumulatedPileRejectsCircularMotion=true;
 })();

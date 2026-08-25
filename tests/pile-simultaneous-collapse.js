@@ -62,13 +62,27 @@ clearBoardEquilibriumLocks(g.board);
 const flow=prepareContinuousPileFlow(g,"clear_support_loss");
 expect(flow.moved,"fixture produced no pile collapse");
 expect((upper.fallPath?.length||0)>0&&(top.fallPath?.length||0)>0,"fixture did not create simultaneous paths");
+for(const ball of [upper,top])for(const seg of ball.fallPath||[]){
+  expect(seg.pileGravityFall===true,"production pile segment lost gravity marker: "+JSON.stringify(seg));
+  expect(!seg.pivot&&!seg.topPivot&&!(seg.followSupportIds||[]).length&&!seg.movingSupportId,"production pile segment retained circular support binding: "+JSON.stringify(seg));
+}
 const firstStart=Math.min(upper.fallPath[0].pileFlowStart,top.fallPath[0].pileFlowStart);
 expect(Number.isFinite(firstStart),"pile collapse was not scheduled");
 
 let movingFrame=-1;
+const previousVisual=new Map([upper,top].map(b=>{const v=g.vis.get(b.id);return[b.id,[v.x,v.y]];}));
 for(let frame=0;frame<600&&pendingFallPathCount(g)>0;frame++){
   updateVisuals(g,PHYSICS_FRAME);
   resolveVisualContacts(g);
+  for(const ball of [upper,top]){
+    const v=g.vis.get(ball.id),before=previousVisual.get(ball.id);
+    if(v&&before){
+      const dx=Math.abs(v.x-before[0]),dy=v.y-before[1];
+      expect(dy>=-1e-8,"pile moved upward during gravity collapse: "+JSON.stringify({id:ball.id,before,after:[v.x,v.y]}));
+      if(dx>1e-8)expect(dy>1e-8,"pile moved horizontally without falling: "+JSON.stringify({id:ball.id,before,after:[v.x,v.y]}));
+      previousVisual.set(ball.id,[v.x,v.y]);
+    }
+  }
   if(frame===10)movingFrame=pendingFallPathCount(g);
 }
 

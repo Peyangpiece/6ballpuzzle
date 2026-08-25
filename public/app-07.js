@@ -32,8 +32,55 @@ ballInBalancedHexagonRing=function(b,x,y){
 };
 boardHasIntentionalHexagonHole=function(b){for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isBalancedHexagonCenterHole(b,x,y))return true;return false;};
 
+// A settled pile member is not a bead constrained to an invisible circular
+// rail.  Once support is lost its vertical component is ordinary gravity.  A
+// diagonal lattice destination may still require a small lateral component,
+// but that component must happen together with the fall (never as a flat
+// sideways slide).  The early/late variants keep the path outside the real
+// support that produced the original roll proposal without retaining a pivot.
+function pileGravityLateralProgress(seg,q){
+    if(seg.pileGravityLateralMode==="late")return q*q*q*q;
+    if(seg.pileGravityLateralMode==="early")return 1-Math.pow(1-q,4);
+    return q;
+}
+function pileGravityProgress(seg,t){
+    const dy=Math.max(1e-9,seg.to[1]-seg.from[1]);
+    if(Number.isFinite(seg.pileGravityV0)){
+        const v0=Math.max(0,seg.pileGravityV0);
+        // Recompute from the current endpoints because the late collapse layer
+        // may merge adjacent vertical cells into one uninterrupted fall.
+        const duration=(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*dy)))/GRAV;
+        const elapsed=t*Math.max(0,duration);
+        return Math.max(0,Math.min(1,((v0*elapsed)+.5*GRAV*elapsed*elapsed)/dy));
+    }
+    return t*t;
+}
+function pileGravityPoint(seg,t){
+    const q=pileGravityProgress(seg,t),qx=pileGravityLateralProgress(seg,q);
+    return[seg.from[0]+(seg.to[0]-seg.from[0])*qx,seg.from[1]+(seg.to[1]-seg.from[1])*q];
+}
+function enforcePileGravitySegment(seg,reason="pile_flow"){
+    if(!seg?.from||!seg?.to||seg.to[1]<=seg.from[1])return false;
+    if(!seg.pileGravityFall){
+        const originalPivot=Array.isArray(seg.pivot)?seg.pivot:null;
+        if(originalPivot){
+            // A same-row support is avoided by falling first; a lower support
+            // is avoided by separating laterally early. Neither is a circle.
+            seg.pileGravityLateralMode=originalPivot[1]===seg.from[1]?"late":"early";
+        }else seg.pileGravityLateralMode="linear";
+    }
+    seg.pileGravityFall=true;
+    seg.pileGravityReason=reason;
+    seg.pivot=null;seg.topPivot=null;seg.followSupportIds=[];seg.movingSupportId=0;
+    delete seg.pileFlowGridArc;delete seg.pileFlowArcSupportId;
+    delete seg.pileFlowRepairedPivot;delete seg.pileFlowStaticContact;
+    delete seg.pileFlowInferredSupport;
+    return true;
+}
+
 function pileFlowPoint(seg,t){
     t=Math.max(0,Math.min(1,t));
+    if(seg.pileGravityFall)return pileGravityPoint(seg,t);
     const H=HEX_ROW_H;
     const qStraight=seg.pileFlowEntry?t*t*(2-t):t;
     if(seg.topPivot)return liveSegPoint(seg,t);
@@ -51,6 +98,12 @@ function pileFlowPoint(seg,t){
 
 function pileFlowNominalDuration(seg,state){
     const H=HEX_ROW_H,dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];
+    if(seg.pileGravityFall&&dy>0){
+        const v0=Math.max(0,state.vy||RELEASE_INITIAL_VY),duration=(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*dy)))/GRAV;
+        seg.pileGravityV0=v0;seg.pileGravityDuration=Math.max(1/120,duration);
+        state.vy=v0+GRAV*duration;state.speed=Math.max(state.speed||0,state.vy*H);
+        return seg.pileGravityDuration;
+    }
     if(seg.topPivot){
         const [px,py]=seg.topPivot,contactRow=(cellCenterYNorm(py)-1-BOARD_TOP_CENTER_N)/H,fallRows=Math.max(0,contactRow-seg.from[1]),v0=Math.max(0,state.vy||RELEASE_INITIAL_VY);
         const fallT=fallRows>1e-9?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallRows)))/GRAV:0;
@@ -72,6 +125,7 @@ function pileFlowCircleIntersections(a,b){const H=HEX_ROW_H,ax=a[0]*0.5,ay=a[1]*
 
 function pileFlowPointForBall(g,ball,seg,q,t,depth=0,seen=null){
     q=Math.max(0,Math.min(1,q));if(!seg||!ball||depth>10)return pileFlowPoint(seg,q);
+    if(seg.pileGravityFall)return pileFlowPoint(seg,q);
     const supportIds=pileFlowSupportIds(seg);if(!supportIds.length)return pileFlowPoint(seg,q);if(!seen)seen=new Set();if(seen.has(ball.id))return pileFlowPoint(seg,q);
     const nextSeen=new Set(seen);nextSeen.add(ball.id);
     const supports=supportIds.map(id=>pileFlowBallById(g,id)).filter(Boolean).filter(b=>!nextSeen.has(b.id));if(!supports.length)return pileFlowPoint(seg,q);
@@ -128,7 +182,7 @@ function pileFlowPriorEnds(g,excludeSeg){const out=[];for(let y=0;y<ROWS;y++)for
 // balls so upper pile members can start in the same collapse interval instead
 // of waiting for the lower ball to finish a whole logical cell transition.
 function pileFlowInferMovingSupportIds(g,ball,seg,start,duration){
-    if(!seg?.from||!seg?.to||pileFlowSupportIds(seg).length)return[];
+    if(!seg?.from||!seg?.to||seg.pileGravityFall||pileFlowSupportIds(seg).length)return[];
     const out=[],from=seg.from,to=seg.to,H=HEX_ROW_H,end=start+duration;
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const other=valid(x,y)?g.board[y][x]:null;if(!other||other===ball)continue;
@@ -144,6 +198,7 @@ function pileFlowInferMovingSupportIds(g,ball,seg,start,duration){
     return out.slice(0,2).map(q=>q.id);
 }
 function pileFlowAttachCausalSupports(g,ball,seg,start,duration){
+    if(seg?.pileGravityFall)return false;
     if(pileFlowSupportIds(seg).length)return false;
     const ids=pileFlowInferMovingSupportIds(g,ball,seg,start,duration);if(!ids.length)return false;
     seg.followSupportIds=ids;seg.movingSupportId=ids[0];seg.pileFlowInferredSupport=true;return true;
@@ -206,7 +261,7 @@ function markPileFlowPaths(g,reason="pile_flow"){
         const ball=valid(x,y)?g.board[y][x]:null;if(!ball||!Array.isArray(ball.fallPath)||!ball.fallPath.length)continue;if(ball.slopeRigidGroupId)continue;
         normalizePileBallPhysics(ball);if(ball.isGarbage)ball.isGarbage=true;
         const already=ball.fallPath.some(seg=>seg?.pileFlow);let isFirst=!already;
-        for(const seg of ball.fallPath){if(!seg||!seg.to||seg.pileFlow)continue;repairPileFlowSegmentGeometry(g,ball,seg,reason);const seq=Number(seg.motionSeq)||0;seg.pileFlowOriginalSeq=seq;seg.motionSeq=0;seg.pileFlow=true;seg.pileFlowEntry=isFirst;seg.pileFlowReason=reason;seg._pileFlowBall=ball;fresh.push({ball,seg,seq});isFirst=false;}
+        for(const seg of ball.fallPath){if(!seg||!seg.to||seg.pileFlow)continue;repairPileFlowSegmentGeometry(g,ball,seg,reason);enforcePileGravitySegment(seg,reason);const seq=Number(seg.motionSeq)||0;seg.pileFlowOriginalSeq=seq;seg.motionSeq=0;seg.pileFlow=true;seg.pileFlowEntry=isFirst;seg.pileFlowReason=reason;seg._pileFlowBall=ball;fresh.push({ball,seg,seq});isFirst=false;}
     }
     if(!fresh.length)return{balls:0,segments:0};
     g._pileFlowBallById=new Map();for(let yy=0;yy<ROWS;yy++)for(let xx=0;xx<W2;xx++){const bb=valid(xx,yy)?g.board[yy][xx]:null;if(bb)g._pileFlowBallById.set(bb.id,bb);}
