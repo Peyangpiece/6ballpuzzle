@@ -20,13 +20,13 @@ Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6b
 }
 
 Node.js v22.23.2
-evalmachine.<anonymous>:3282
+evalmachine.<anonymous>:3285
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: cached rigid shadow placement changed pixel geometry
-    at expect (evalmachine.<anonymous>:3282:34)
-    at evalmachine.<anonymous>:3540:1
+    at expect (evalmachine.<anonymous>:3285:34)
+    at evalmachine.<anonymous>:3543:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
