@@ -157,14 +157,14 @@ for(const center of[4,6,8,10,12,14]){
   }
 }
 
-function angularSweep(step){
-  const [px,py]=step.pivot;
-  const start=Math.atan2((step.y-py)*Math.sqrt(3)/2,(step.x-px)*.5);
-  const end=Math.atan2((step.ty-py)*Math.sqrt(3)/2,(step.tx-px)*.5);
-  let delta=end-start;
-  while(delta>Math.PI)delta-=Math.PI*2;
-  while(delta<-Math.PI)delta+=Math.PI*2;
-  return delta;
+function sameRelativePose(points,reference,epsilon=1e-9){
+  for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++){
+    if(
+      Math.abs((points[i][0]-points[j][0])-(reference[i][0]-reference[j][0]))>epsilon||
+      Math.abs((points[i][1]-points[j][1])-(reference[i][1]-reference[j][1]))>epsilon
+    )return false;
+  }
+  return true;
 }
 
 for(const offset of[-.75,.75]){
@@ -172,47 +172,42 @@ for(const offset of[-.75,.75]){
   const resolved=ctx.hexPhysResolveEvent(live.board,false)||[];
   const ids=new Set(live.members.map(member=>member.ball.id));
   const group=resolved.filter(step=>ids.has(step.ball.id));
-  expect(group.length===3&&group.every(step=>step.groupSize===3&&step.kind==="GROUP_RIGID_ROLL"),
-    `resolver did not accept complete rigid roll ${JSON.stringify({offset,resolved:resolved.map(step=>({id:step.ball.id,x:step.x,y:step.y,tx:step.tx,ty:step.ty,kind:step.kind,groupSize:step.groupSize,bundleId:step.bundleId,pivot:step.pivot}))})}`);
-  const sweeps=group.map(angularSweep);
-  expect(sweeps.every(value=>Math.abs(value-sweeps[0])<1e-9),
-    `rigid-roll members used different angular sweeps offset=${offset}`);
-  expect(Math.abs(Math.abs(sweeps[0])-Math.PI/3)<1e-9,
-    `rigid roll was not sixty degrees offset=${offset}`);
+  expect(group.length===3&&group.every(step=>
+    step.groupSize===3&&
+    step.kind==="GROUP_RIGID_SLIDE"&&
+    step.rigidNoRotation===true&&
+    step.tx-step.x===Math.sign(offset)*2&&
+    step.ty-step.y===0
+  ),`resolver did not accept complete no-rotation rigid slide ${JSON.stringify({offset,resolved:resolved.map(step=>({id:step.ball.id,x:step.x,y:step.y,tx:step.tx,ty:step.ty,kind:step.kind,groupSize:step.groupSize,bundleId:step.bundleId,pivot:step.pivot}))})}`);
   expect(ctx.hexPhysApplyEvent(live.board,resolved),
     `resolver event did not apply offset=${offset}`);
-  expect(live.members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3&&member.ball.motionGroupOrientation==="down"),
-    `applied rigid roll lost triplet metadata offset=${offset}`);
+  expect(live.members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3&&member.ball.motionGroupOrientation==="up"),
+    `applied rigid slide rotated or lost the UP triplet offset=${offset}`);
 
   const atomic=fixture({center:8,topY:3,offset,momentum:Math.sign(offset),preview:true,dense:true});
   expect(ctx.settlePass(atomic.board,false),
-    `atomic settle did not apply rigid roll offset=${offset}`);
+    `atomic settle did not apply rigid slide offset=${offset}`);
   expect(atomic.members.every(member=>
     member.ball.rigid&&
     member.ball.motionGroupSize===3&&
-    member.ball.motionGroupOrientation==="down"&&
+    member.ball.motionGroupOrientation==="up"&&
     Array.isArray(member.ball.fallPath)&&
     member.ball.fallPath.length===1&&
-    member.ball.fallPath[0].rigidPivotRoll===true&&
+    member.ball.fallPath[0].rigidNoRotation===true&&
     Array.isArray(member.ball.fallPath[0].pivot)
   ),`atomic settle split or omitted a member offset=${offset}`);
   const segments=atomic.members.map(member=>member.ball.fallPath[0]);
   const durations=segments.map(segment=>ctx.hexMotionDuration(segment,{vy:0,speed:0}));
   expect(durations.every(value=>Math.abs(value-durations[0])<1e-9),
-    `rigid-roll members received different visual durations offset=${offset}`);
+    `rigid-slide members received different visual durations offset=${offset}`);
+  const initialPoints=segments.map(segment=>[...segment.from]);
   for(let frame=0;frame<=120;frame++){
     const t=frame/120;
     const points=segments.map((segment,index)=>
       ctx.liveSegPoint(segment,t,{vy:0,speed:0},durations[index])
     );
-    for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++){
-      const distance=Math.hypot(
-        (points[i][0]-points[j][0])*.5,
-        (points[i][1]-points[j][1])*Math.sqrt(3)/2
-      );
-      expect(Math.abs(distance-1)<1e-9,
-        `visual rigid-roll distance changed ${JSON.stringify({offset,frame,i,j,distance,points})}`);
-    }
+    expect(sameRelativePose(points,initialPoints),
+      `visual rigid slide rotated or deformed ${JSON.stringify({offset,frame,points,initialPoints})}`);
   }
 
   const engine=ctx.createEngine(990000+(offset>0?1:0));
@@ -230,6 +225,10 @@ for(const offset of[-.75,.75]){
   engine.state="RESOLVING";
   engine.phase="SETTLE";
   const originalSeq=segments[0].motionSeq;
+  const renderedInitial=atomic.members.map(member=>{
+    const visual=engine.vis.get(member.ball.id);
+    return[visual.x,visual.y];
+  });
   let renderedFrames=0;
   for(;renderedFrames<360;renderedFrames++){
     ctx.updateVisuals(engine,1/120);
@@ -240,18 +239,12 @@ for(const offset of[-.75,.75]){
       const visual=engine.vis.get(member.ball.id);
       return[visual.x,visual.y];
     });
-    for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++){
-      const distance=Math.hypot(
-        (points[i][0]-points[j][0])*.5,
-        (points[i][1]-points[j][1])*Math.sqrt(3)/2
-      );
-      expect(Math.abs(distance-1)<1e-6,
-        `rendered rigid-roll shape changed ${JSON.stringify({offset,renderedFrames,i,j,distance,points})}`);
-    }
+    expect(sameRelativePose(points,renderedInitial,1e-6),
+      `rendered rigid slide rotated or deformed ${JSON.stringify({offset,renderedFrames,points,renderedInitial})}`);
     if(!stillOriginal)break;
   }
   expect(renderedFrames<360,
-    `rigid-roll visual batch did not finish offset=${offset}`);
+    `rigid-slide visual batch did not finish offset=${offset}`);
 }
 
 for(const center of[4,6,8,10,12,14]){
@@ -313,21 +306,21 @@ for(const center of[4,6,8,10,12,14]){
 expect(active>0,"sweep never exercised an active middle-50% split");
 expect(outerRigid>0&&exactBoundaries>0,"sweep missed outer quarters or exact boundaries");
 expect(outerMoving===outerRigid&&outerWaiting===0,
-  `outer-quarter rigid roll stalled moving=${outerMoving} waiting=${outerWaiting}`);
-expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidRoll===true,
-  "outer-quarter rigid-roll invariant marker missing");
-expect(ctx.__sixBallOuterQuarterRigidRollBypassesPerMemberDownFilter===true,
-  "rigid-roll atomic-settle invariant marker missing");
+  `outer-quarter rigid slide stalled moving=${outerMoving} waiting=${outerWaiting}`);
+expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,
+  "falling no-rotation invariant marker missing");
+expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,
+  "outer-quarter rigid-slide invariant marker missing");
+expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===true,
+  "rigid-slide atomic-settle invariant marker missing");
 expect(ctx.__sixBallPivotArcPreservesLogicalRadius===true,
   "variable-radius pivot rendering marker missing");
-expect(ctx.__sixBallRigidPivotRollUsesSharedArc===true,
-  "rigid-roll shared visual arc marker missing");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v4",
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v5",
   "final rigidity authority version mismatch");
 console.log(
   `up-convex production contact sweep PASS ${cases}/${cases} `+
   `active=${active} outerRigid=${outerRigid} outerMoving=${outerMoving} `+
   `outerWaiting=${outerWaiting} exactBoundaries=${exactBoundaries} pairOnly=${pairOnly} `+
-  `dense=${denseCases} resolverApplied=2 atomicSettles=2 renderedArcs=2 `+
+  `dense=${denseCases} resolverApplied=2 atomicSettles=2 renderedSlides=2 `+
   `outerReasons=${JSON.stringify(Object.fromEntries(outerReasons))}`
 );

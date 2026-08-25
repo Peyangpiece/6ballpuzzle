@@ -43,7 +43,7 @@ function motion(member,dx=1,dy=1){
     followSupportIds:[]
   };
 }
-function install({base,independent,natural,groupPlan,separator,splitPlan}){
+function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSlope,valid}){
   const ctx={
     console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,
     Error,TypeError,
@@ -57,6 +57,8 @@ function install({base,independent,natural,groupPlan,separator,splitPlan}){
     ),
     hexPhysClearGroupBall:clear
   };
+  if(rigidSlope)ctx.hexPhysRigidSlopePlan=rigidSlope;
+  if(valid)ctx.valid=valid;
   if(separator)ctx.hexPhysUpConvexSeparator=separator;
   if(splitPlan)ctx.hexPhysUpConvexSplitPlan=splitPlan;
   ctx.window=ctx;ctx.globalThis=ctx;
@@ -80,11 +82,50 @@ function install({base,independent,natural,groupPlan,separator,splitPlan}){
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v4","v4 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v5","v5 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
-  expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidRoll===true,"outer-quarter rigid-roll invariant marker missing");
+  expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
+  expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
+}
+
+/* Even if an older wrapper proposes a 2+1 split, a canonical current external
+   slope contact proves that the complete triangle can keep moving left. The
+   final authority must preserve all three members and the UP orientation. */
+{
+  const members=makeUpMembers(805);
+  const [top,left,right]=members;
+  const board=Array.from({length:10},()=>Array(12).fill(null));
+  board[5][8]={id:999,c:4,isGarbage:false};
+  const leftMotion=member=>({...motion(member,-1,1),pivot:[8,5]});
+  const ctx=install({
+    valid:(x,y)=>x>=0&&x<12&&y>=0&&y<10,
+    independent:(bb,group,member)=>leftMotion(member),
+    rigidSlope:(bb,group)=>group.map(member=>({
+      ...leftMotion(member),kind:"GROUP_SLOPE_TRANSLATE",
+      bundleId:805,groupSize:3
+    })),
+    base:()=>[
+      {...motion(top,1,1),bundleId:805,groupSize:2},
+      {...motion(right,1,1),bundleId:805,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup(board,members,false);
+  expect(out.length===3&&out.every(step=>
+    step.groupSize===3&&
+    step.bundleId===805&&
+    step.tx-step.x===-1&&
+    step.ty-step.y===1
+  ),"current common LEFT slope lost to an older split proposal");
+  expect(members.every(member=>
+    member.ball.rigid&&
+    member.ball.motionGroupSize===3&&
+    member.ball.motionGroupOrientation==="up"
+  ),"current common LEFT slope rotated or lost triplet metadata");
+  expect(ctx.__sixBallCurrentCommonSlopeBeatsProspectiveSplit===true,
+    "current-slope priority marker missing");
 }
 
 /* A lower-level independent probe can report one member as stopped while the
@@ -245,4 +286,4 @@ function install({base,independent,natural,groupPlan,separator,splitPlan}){
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v4 PASS");
+console.log("final rigidity authority v5 PASS");

@@ -254,12 +254,14 @@
     }
 
     /* At an outer-quarter hit the logical lattice still shows the protrusion
-       directly below the UP triangle, so a plain translation would move one
-       lower member into that occupied cell. The physical body instead rolls
-       sixty degrees around the protrusion. All three members share the same
-       pivot and angular displacement, preserving every pairwise distance
-       while changing the lattice orientation from UP to DOWN. */
-    function outerQuarterRigidRoll(board,members){
+       directly below the UP triangle, so a one-cell diagonal translation
+       would move one lower member into that occupied cell. Move the complete
+       triangle one lattice column around the protrusion instead. Every member
+       receives the same (+/-2,0) displacement and a correspondingly translated
+       pivot, so the body follows the contact arc without rotating or changing
+       its UP orientation. The following resolver step can then descend the
+       newly exposed slope with the usual (+/-1,+1) rigid translation. */
+    function outerQuarterRigidSlide(board,members){
         const layout=upwardTriangle(members);
         if(!layout)return null;
 
@@ -290,36 +292,34 @@
         const dir=Math.sign(((baseLeft+baseRight)/2)-px);
         if(!dir)return null;
 
-        const pivotLower=dir>0?layout.left:layout.right;
-        const farLower=dir>0?layout.right:layout.left;
-        const destinations=new Map([
-            [memberId(layout.top),[layout.top.x+3*dir,layout.top.y+1]],
-            [memberId(pivotLower),[pivotLower.x+2*dir,pivotLower.y]],
-            [memberId(farLower),[farLower.x+dir,farLower.y+1]]
-        ]);
+        const contactedLower=dir>0?layout.left:layout.right;
         const targets=new Set();
         const bundle=groupIdFor(members,[]);
         const plan=[];
 
         for(const member of members){
-            const target=destinations.get(memberId(member));
-            if(!target)return null;
-            const [tx,ty]=target;
+            const tx=member.x+2*dir;
+            const ty=member.y;
             if(typeof valid==="function"&&!valid(tx,ty))return null;
             const key=tx+","+ty;
             if(targets.has(key))return null;
             targets.add(key);
             const occupied=board?.[ty]?.[tx]||null;
             if(occupied&&!own.has(occupied.id))return null;
+            const isContact=memberId(member)===memberId(contactedLower);
+            const memberPivot=[
+                px+(member.x-contactedLower.x),
+                py+(member.y-contactedLower.y)
+            ];
             plan.push({
                 x:member.x,y:member.y,tx,ty,
                 ball:member.ball,
-                kind:"GROUP_RIGID_ROLL",
-                rigidPivotRoll:true,
+                kind:"GROUP_RIGID_SLIDE",
+                rigidNoRotation:true,
                 contactPush:true,
-                pivot:[px,py],
+                pivot:memberPivot,
                 topPivot:null,
-                virtualPivot:false,
+                virtualPivot:!isContact,
                 followSupportIds:[],
                 bundleId:bundle,
                 groupSize:3
@@ -335,6 +335,46 @@
         }
 
         return{plan,dir,hitFraction,supportId:support.id,pivot:[px,py]};
+    }
+
+    /* Ask the canonical contact solver before any older split wrapper mutates
+       the group. A complete current slope plan is direct physical proof that
+       all three balls can continue together. It therefore has priority over
+       a simultaneous prospective split or an isolated per-ball probe. */
+    function currentWholeRigidSlope(board,members,motions){
+        if(
+            members.length!==3||
+            typeof hexPhysRigidSlopePlan!=="function"||
+            !Array.isArray(motions)
+        )return null;
+
+        const own=new Set(members.map(memberId));
+        let hasRealPivot=false;
+        for(const motion of motions){
+            for(const field of["pivot","topPivot"]){
+                const pivot=motion?.[field];
+                if(!Array.isArray(pivot)||pivot.length<2)continue;
+                const x=Number(pivot[0]),y=Number(pivot[1]);
+                if(!Number.isFinite(x)||!Number.isFinite(y))continue;
+                const support=board?.[y]?.[x]||null;
+                if(support&&!own.has(support.id))hasRealPivot=true;
+            }
+        }
+        if(!hasRealPivot)return null;
+
+        let plan=null;
+        try{plan=hexPhysRigidSlopePlan(board,members,motions);}catch(_){plan=null;}
+        if(!Array.isArray(plan)||plan.length!==members.length)return null;
+        const ids=new Set(plan.map(memberId));
+        const vector=sameVector(plan);
+        if(
+            ids.size!==members.length||
+            !members.every(member=>ids.has(memberId(member)))||
+            !vector||
+            Math.abs(vector.dx)!==1||
+            vector.dy!==1
+        )return null;
+        return plan;
     }
 
     function requestedSplitPlan(board,members,selected,preview){
@@ -458,7 +498,12 @@
             members,
             motions
         );
-        const outerRollBefore=outerQuarterRigidRoll(board,members);
+        const currentSlopeBefore=currentWholeRigidSlope(
+            board,
+            members,
+            motions
+        );
+        const outerSlideBefore=outerQuarterRigidSlide(board,members);
         let basePlan=[];
         try{
             basePlan=basePlanGroup(board,members,preview)||[];
@@ -478,6 +523,35 @@
         const selectedSide=
             selectedSideBefore||
             selectedUpwardSplitSide(board,members,motions);
+
+        if(currentSlopeBefore){
+            const normalized=normalizePlan(
+                currentSlopeBefore,
+                members,
+                preview,
+                true,
+                authorityGroupId
+            );
+            if(!preview){
+                const vector=vectorOf(normalized[0]);
+                for(const member of members){
+                    member.ball.momentumX=vector?.dx||0;
+                    member.ball.rollDir=vector?.dx||0;
+                    member.ball.subCellBias=vector?.dx||0;
+                    member.ball._finalRigidSlopeContinuationV5=true;
+                }
+                if(typeof window.__sixBallRememberUpConvexRigidApproachV32==="function"){
+                    try{window.__sixBallRememberUpConvexRigidApproachV32(members,normalized);}catch(_){}
+                }
+                window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:"current-common-rigid-slope-before-split",
+                    ids:members.map(memberId),
+                    vector:[vector?.dx||0,vector?.dy||0],
+                    at:Date.now()
+                };
+            }
+            return normalized;
+        }
 
         /* The selected coordinated event is authoritative. Independent probes
            inspect balls in isolation and therefore cannot invalidate a legal
@@ -500,28 +574,28 @@
         }
 
         /* The strict outer quarters are not split contacts. Resolve their
-           otherwise-blocked discrete state as one rigid sixty-degree roll so
-           the triangle cannot wait forever at the protrusion. */
-        if(outerRollBefore){
+           otherwise-blocked discrete state as one orientation-preserving
+           rigid slide so the triangle cannot wait forever at the protrusion. */
+        if(outerSlideBefore){
             if(!preview){
-                commitCohort(members,outerRollBefore.plan,authorityGroupId);
+                commitCohort(members,outerSlideBefore.plan,authorityGroupId);
                 for(const member of members){
-                    member.ball.motionGroupOrientation="down";
-                    member.ball.momentumX=outerRollBefore.dir;
-                    member.ball.rollDir=outerRollBefore.dir;
-                    member.ball.subCellBias=outerRollBefore.dir;
+                    member.ball.motionGroupOrientation="up";
+                    member.ball.momentumX=outerSlideBefore.dir;
+                    member.ball.rollDir=outerSlideBefore.dir;
+                    member.ball.subCellBias=outerSlideBefore.dir;
                 }
                 window.__sixBallLastFinalRigidityCorrectionV1={
-                    reason:"outer-quarter-rigid-roll",
-                    dir:outerRollBefore.dir,
-                    hitFraction:outerRollBefore.hitFraction,
-                    supportId:outerRollBefore.supportId,
-                    pivot:outerRollBefore.pivot,
+                    reason:"outer-quarter-rigid-no-rotation-slide",
+                    dir:outerSlideBefore.dir,
+                    hitFraction:outerSlideBefore.hitFraction,
+                    supportId:outerSlideBefore.supportId,
+                    pivot:outerSlideBefore.pivot,
                     ids:members.map(memberId),
                     at:Date.now()
                 };
             }
-            return outerRollBefore.plan;
+            return outerSlideBefore.plan;
         }
 
         /* This must run before same-direction recovery. Otherwise identical
@@ -685,7 +759,7 @@
         return released;
     };
 
-    function stableOuterRollCandidate(board){
+    function stableOuterSlideCandidate(board){
         if(typeof hexPhysGroups!=="function")return null;
         let groups=null;
         try{groups=hexPhysGroups(board);}catch(_){groups=null;}
@@ -693,8 +767,8 @@
 
         for(const members of groups.values()){
             if(!ordinaryGroup(members)||members.length!==3)continue;
-            const roll=outerQuarterRigidRoll(board,members);
-            if(!roll)continue;
+            const slide=outerQuarterRigidSlide(board,members);
+            if(!slide)continue;
 
             /* A moving protrusion must resolve its own gravity first. Only an
                accumulated, position-final pile ball can serve as the rigid
@@ -704,8 +778,8 @@
                 try{
                     supportMotion=hexPhysNaturalMotion(
                         board,
-                        roll.pivot[0],
-                        roll.pivot[1],
+                        slide.pivot[0],
+                        slide.pivot[1],
                         null
                     );
                 }catch(_){supportMotion={};}
@@ -715,25 +789,25 @@
             try{
                 if(
                     typeof hexPhysBundleTargetsFree==="function"&&
-                    !hexPhysBundleTargetsFree(roll.plan,board,[])
+                    !hexPhysBundleTargetsFree(slide.plan,board,[])
                 )continue;
                 if(
                     typeof hexPhysBundleSafe==="function"&&
-                    !hexPhysBundleSafe(roll.plan,board,[])
+                    !hexPhysBundleSafe(slide.plan,board,[])
                 )continue;
             }catch(_){continue;}
 
-            return{members,...roll};
+            return{members,...slide};
         }
         return null;
     }
 
-    function commitOuterRoll(candidate,reason){
+    function commitOuterSlide(candidate,reason){
         if(!candidate)return;
         const gid=groupIdFor(candidate.members,candidate.plan);
         commitCohort(candidate.members,candidate.plan,gid);
         for(const member of candidate.members){
-            member.ball.motionGroupOrientation="down";
+            member.ball.motionGroupOrientation="up";
             member.ball.momentumX=candidate.dir;
             member.ball.rollDir=candidate.dir;
             member.ball.subCellBias=candidate.dir;
@@ -750,19 +824,19 @@
     }
 
     /* Legacy gravity filters correctly reject independent sideways moves, but
-       they used the same per-member `ty > y` rule for rigid bundles. A sixty-
-       degree roll has one member ending on the same logical row even though
-       all three rotate downward together. Restore only this fully validated
-       three-member pivot bundle after the ordinary resolver finds no event. */
+       they used the same per-member `ty > y` rule for rigid bundles. The
+       outer-quarter contact slide ends on the same logical row before its
+       following diagonal fall. Restore only this fully validated three-member
+       no-rotation bundle after the ordinary resolver finds no event. */
     if(baseResolveEvent){
         hexPhysResolveEvent=function(board,preview=false){
-            const candidate=stableOuterRollCandidate(board);
+            const candidate=stableOuterSlideCandidate(board);
             let normal=[];
             try{normal=baseResolveEvent(board,preview)||[];}catch(_){normal=[];}
             if(normal.length||!candidate)return normal;
-            if(!preview)commitOuterRoll(
+            if(!preview)commitOuterSlide(
                 candidate,
-                "outer-quarter-rigid-roll-resolver"
+                "outer-quarter-rigid-slide-resolver"
             );
             return preview?candidate.plan.slice(0,1):candidate.plan;
         };
@@ -770,15 +844,15 @@
 
     /* The final live settle layer also contained a second per-member downward
        filter and could apply only two members of an otherwise valid bundle.
-       Apply the complete pivot event atomically before that filter runs. */
+       Apply the complete no-rotation event atomically before that filter runs. */
     if(baseSettlePass&&typeof hexPhysApplyEvent==="function"){
         settlePass=function(board,preview=false){
-            const candidate=stableOuterRollCandidate(board);
+            const candidate=stableOuterSlideCandidate(board);
             if(candidate){
                 if(preview)return true;
-                commitOuterRoll(
+                commitOuterSlide(
                     candidate,
-                    "outer-quarter-rigid-roll-atomic-settle"
+                    "outer-quarter-rigid-slide-atomic-settle"
                 );
                 try{return !!hexPhysApplyEvent(board,candidate.plan);}catch(_){return false;}
             }
@@ -794,9 +868,11 @@
     window.__sixBallUpConvexWrongSideWaitsInsteadOfSplitting=true;
     window.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent=true;
     window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=true;
-    window.__sixBallUpConvexOuterQuarterUsesRigidRoll=true;
-    window.__sixBallOuterQuarterRigidRollBypassesPerMemberDownFilter=true;
+    window.__sixBallCurrentCommonSlopeBeatsProspectiveSplit=true;
+    window.__sixBallFallingRigidTriangleNeverRotates=true;
+    window.__sixBallUpConvexOuterQuarterUsesRigidSlide=true;
+    window.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v4";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v5";
 })();
