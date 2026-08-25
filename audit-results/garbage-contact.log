@@ -1,6 +1,6 @@
 garbage ordinary-physics + frozen existing pile PASS {"doneFrame":406,"spawned":12,"minDistance":0.9999999990070921}
 garbage spawn effect + 0.600 s PYRAMID cadence PASS {"starts":[{"seq":0,"t":0.008333333333333333,"ids":[1,2,3,4,5,6]},{"seq":1,"t":0.6083333333333336,"ids":[7,8,9,10,11,12]}],"delta":0.6000000000000003}
-accumulated pile support-arc motion PASS
+accumulated pile gravity/no-horizontal motion PASS
 node:fs:440
     return binding.readFileUtf8(path, stringToFlags(options.flag));
                    ^
@@ -74,13 +74,13 @@ Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6b
 }
 
 Node.js v22.23.2
-evalmachine.<anonymous>:3220
+evalmachine.<anonymous>:3282
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: cached rigid shadow placement changed pixel geometry
-    at expect (evalmachine.<anonymous>:3220:34)
-    at evalmachine.<anonymous>:3478:1
+    at expect (evalmachine.<anonymous>:3282:34)
+    at evalmachine.<anonymous>:3540:1
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
