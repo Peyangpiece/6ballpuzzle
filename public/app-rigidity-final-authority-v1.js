@@ -150,6 +150,72 @@
         return gid;
     }
 
+    const legacyMutationFields=[
+        "motionGroupId",
+        "motionGroupRole",
+        "motionGroupOrientation",
+        "motionGroupSize",
+        "rigid",
+        "momentumX",
+        "rollDir",
+        "subCellBias"
+    ];
+
+    /* A legacy splitter is allowed to propose contact arcs, never to decide
+       the surviving constraint. Some historical implementations ignored their
+       preview argument and wrote a two-ball group while building the proposal.
+       Preserve and restore every field they can touch so validation is truly
+       earlier than rigidity assignment. */
+    function snapshotLegacyMutationState(members){
+        return members.map(member=>{
+            const ball=member?.ball||{};
+            const fields={};
+            for(const key of legacyMutationFields){
+                fields[key]={
+                    present:Object.prototype.hasOwnProperty.call(ball,key),
+                    value:ball[key]
+                };
+            }
+            return{ball,fields};
+        });
+    }
+
+    function restoreLegacyMutationState(snapshot){
+        for(const entry of snapshot||[]){
+            for(const[key,state]of Object.entries(entry.fields||{})){
+                if(state.present)entry.ball[key]=state.value;
+                else delete entry.ball[key];
+            }
+        }
+    }
+
+    /* Apply the already-selected invariant in one order only: first detach the
+       contact-side lower ball, then create the top + opposite-lower pair. This
+       makes a right contact incapable of retaining top + right rigidity even
+       if an earlier proposal named that obsolete pair. */
+    function commitSelectedSplitRigidity(members,selected,plan,fallbackGroupId){
+        const byId=new Map(members.map(member=>[memberId(member),member]));
+        const solo=byId.get(selected?.soloId);
+        const pair=(selected?.pairIds||[]).map(id=>byId.get(id)).filter(Boolean);
+        if(!solo||pair.length!==2)return false;
+
+        clearMember(solo);
+        const pairIds=new Set(pair.map(memberId));
+        const pairSteps=(plan||[]).filter(step=>pairIds.has(memberId(step)));
+        commitCohort(pair,pairSteps,fallbackGroupId);
+
+        const pairDirection=Math.sign(Number(selected.splitDirection)||0);
+        for(const member of pair){
+            member.ball.momentumX=pairDirection;
+            member.ball.rollDir=pairDirection;
+            member.ball.subCellBias=pairDirection;
+        }
+        solo.ball.momentumX=-pairDirection;
+        solo.ball.rollDir=-pairDirection;
+        solo.ball.subCellBias=-pairDirection;
+        return true;
+    }
+
     function declaredCohorts(plan,members){
         const ids=new Set(members.map(memberId));
         const buckets=new Map();
@@ -401,7 +467,7 @@
 
         return{
             ok:true,
-            source:"live-current-grid-contact-v20",
+            source:"live-current-grid-contact-v21",
             usesLiveGeometry:true,
             hitFraction:visualHitFraction,
             distances,
@@ -853,18 +919,24 @@
         return plan;
     }
 
-    function requestedSplitPlan(board,members,selected,preview){
+    function requestedSplitPlan(board,members,selected){
         if(!selected||typeof hexPhysUpConvexSplitPlan!=="function")return null;
         let plan=null;
+        const mutationSnapshot=snapshotLegacyMutationState(members);
         try{
+            /* Always request geometry in preview mode. The final authority is
+               the sole writer even on a real resolver pass. */
             plan=hexPhysUpConvexSplitPlan(
                 board,
                 members,
                 selected.info,
-                preview
+                true
             );
         }catch(_){
             plan=null;
+        }finally{
+            /* Defend against obsolete wrappers that ignored preview=true. */
+            restoreLegacyMutationState(mutationSnapshot);
         }
         if(!Array.isArray(plan))return null;
         const classified=upwardOppositeSideSplit(plan,members);
@@ -1239,8 +1311,7 @@
             const corrected=requestedSplitPlan(
                 board,
                 members,
-                selectedSide,
-                preview
+                selectedSide
             );
             if(corrected){
                 const normalized=normalizePlan(
@@ -1250,13 +1321,21 @@
                     false,
                     authorityGroupId
                 );
-                if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                    reason:"split-direction-confirmed-before-pair-rigidity",
-                    ...selectedSide,
-                    info:undefined,
-                    replacedPair:explicitUpSplit||null,
-                    at:Date.now()
-                };
+                if(!preview){
+                    commitSelectedSplitRigidity(
+                        members,
+                        selectedSide,
+                        normalized,
+                        authorityGroupId
+                    );
+                    window.__sixBallLastFinalRigidityCorrectionV1={
+                        reason:"split-direction-confirmed-before-pair-rigidity",
+                        ...selectedSide,
+                        info:undefined,
+                        replacedPair:explicitUpSplit||null,
+                        at:Date.now()
+                    };
+                }
                 return normalized;
             }
 
@@ -1408,9 +1487,11 @@
     window.__sixBallLiveVisualContactRequiredBeforeSplit=true;
     window.__sixBallLogicalPivotCannotSplitWhileVisualAirborne=true;
     window.__sixBallFinalUpConvexIsSoleMutationAuthority=true;
+    window.__sixBallLegacySplitPlannerIsPreviewOnly=true;
+    window.__sixBallContactSoloClearsBeforePairCommit=true;
     window.__sixBallLegacyPreArcSideLockLoaded=false;
     window.__sixBallLegacyProjectedPocketSplitLoaded=false;
     window.__sixBallLegacyRigidUntilPocketSplitLoaded=false;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v20";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v21";
 })();

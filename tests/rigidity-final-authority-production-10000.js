@@ -250,7 +250,7 @@ expect(ctx.__sixBallFinalUpConvexIsSoleMutationAuthority===true,"obsolete split 
 expect(ctx.__sixBallLegacyPreArcSideLockLoaded===false,"legacy pre-arc side lock remains active");
 expect(ctx.__sixBallLegacyProjectedPocketSplitLoaded===false,"legacy projected-pocket split remains active");
 expect(ctx.__sixBallLegacyRigidUntilPocketSplitLoaded===false,"legacy pocket-release planner remains active");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v20","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v21","final authority version mismatch");
 expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
 expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
 expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");

@@ -90,7 +90,7 @@ expect(result.airborneCount===0,"recording 23:57:46 split while visually airborn
 expect(result.rigidInAir,"recording 23:57:46 lost three-ball rigidity in air");
 expect(JSON.stringify(result.pair)===JSON.stringify(result.expectedPair),"recording 23:57:46 kept the reversed pair");
 expect(result.soloId===result.expectedSoloId,"recording 23:57:46 did not make the contacted green-left ball solo");
-expect(result.version==="final-rigidity-authority-v20","v20 final authority is not active");
+expect(result.version==="final-rigidity-authority-v21","v21 final authority is not active");
 expect(result.soleAuthority===true,"obsolete UP-convex layer can still mutate the pair");
 
 const gridResult=vm.runInContext(`
@@ -132,6 +132,12 @@ const gridResult=vm.runInContext(`
       rigid:members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),
       pair,soloId:solo?.ball?.id??null,
       topId:members[0].ball.id,leftId:members[1].ball.id,rightId:members[2].ball.id,
+      state:members.map(member=>({
+        id:member.ball.id,
+        rigid:!!member.ball.rigid,
+        groupId:Number(member.ball.motionGroupId)||0,
+        groupSize:Number(member.ball.motionGroupSize)||0
+      })),
       correction:{...(window.__sixBallLastFinalRigidityCorrectionV1||{})}
     };
   }
@@ -149,6 +155,13 @@ expect(gridResult.reversedLogicalSide.soloId===gridResult.reversedLogicalSide.ri
 expect(JSON.stringify(gridResult.reversedLogicalSide.pair)===JSON.stringify([
   gridResult.reversedLogicalSide.topId,gridResult.reversedLogicalSide.leftId
 ].sort((a,b)=>a-b)),"live right contact kept the reversed production pair");
+const rightState=gridResult.reversedLogicalSide.state.find(state=>state.id===gridResult.reversedLogicalSide.rightId);
+const leftPairState=gridResult.reversedLogicalSide.state.filter(state=>
+  state.id===gridResult.reversedLogicalSide.topId||state.id===gridResult.reversedLogicalSide.leftId
+);
+expect(rightState&&!rightState.rigid&&rightState.groupId===0&&rightState.groupSize===0,"live right-contact lower ball retained right-side rigidity");
+expect(leftPairState.length===2&&leftPairState.every(state=>state.rigid&&state.groupSize===2),"live right contact did not commit top + left rigidity");
+expect(leftPairState[0].groupId!==0&&leftPairState[0].groupId===leftPairState[1].groupId,"live top + left pair does not share one nonzero group");
 expect(gridResult.reversedLogicalSide.correction.contactSideSource==="live-visual-right-hit-fraction","production side was not derived from live visuals");
 
 console.log("recording 23:57:46 live/grid/opposite-pair regression PASS",JSON.stringify({result,gridResult}));

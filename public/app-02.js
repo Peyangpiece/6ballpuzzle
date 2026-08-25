@@ -246,7 +246,10 @@ function hexPhysUpConvexSplitPlan(b,members,info,preview=false){
  const pairPlan=hexPhysRigidSlidePlanFromContact(b,pair,{member:info.pairLower,px:info.px,py:info.py,dir:info.dir,top:false},gid);
  if(!pairPlan)return null;
  const soloPlan={...info.soloMotion,bundleId:0,groupSize:0};
- if(!preview){
+ /* Once the final UP-convex authority is loaded this legacy routine is a
+    trajectory proposer only. Pair rigidity is committed after the current
+    contact side has been validated by the final authority. */
+ if(!preview&&!(typeof window!=="undefined"&&window.__sixBallFinalRigidityAuthorityV1)){
   hexPhysClearGroupBall(info.solo.ball);
   for(const m of pair){m.ball.motionGroupId=gid;m.ball.motionGroupSize=2;m.ball.rigid=true;m.ball.momentumX=info.dir;m.ball.rollDir=info.dir;m.ball.subCellBias=info.dir;}
   info.solo.ball.momentumX=-info.dir;info.solo.ball.rollDir=-info.dir;info.solo.ball.subCellBias=-info.dir;

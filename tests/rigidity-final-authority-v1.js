@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v20","v20 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v21","v21 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -155,6 +155,8 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallLiveVisualContactRequiredBeforeSplit===true,"live visual contact marker missing");
   expect(ctx.__sixBallLogicalPivotCannotSplitWhileVisualAirborne===true,"logical/visual timing marker missing");
   expect(ctx.__sixBallFinalUpConvexIsSoleMutationAuthority===true,"sole mutation authority marker missing");
+  expect(ctx.__sixBallLegacySplitPlannerIsPreviewOnly===true,"legacy split planner can still commit rigidity");
+  expect(ctx.__sixBallContactSoloClearsBeforePairCommit===true,"contact-side solo clear ordering marker missing");
   expect(ctx.__sixBallLegacyPreArcSideLockLoaded===false,"legacy pre-arc side lock remains active");
   expect(ctx.__sixBallLegacyProjectedPocketSplitLoaded===false,"legacy projected-pocket split remains active");
   expect(ctx.__sixBallLegacyRigidUntilPocketSplitLoaded===false,"legacy pocket-release planner remains active");
@@ -419,6 +421,55 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(!left.ball.rigid&&right.ball.rigid,"corrected left split metadata is wrong");
   expect(right.ball.motionGroupRole===right.role,"correct right-pair role was not restored after stale solo metadata");
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="split-direction-confirmed-before-pair-rigidity","pair was not committed after direction confirmation");
+}
+
+/* Regression: an obsolete splitter ignored preview=true and immediately made
+   TOP + RIGHT rigid while proposing the geometrically correct TOP + LEFT
+   trajectory for a current RIGHT contact. Proposal-time writes must be rolled
+   back, RIGHT must be detached first, and only TOP + LEFT may become size 2. */
+{
+  const members=makeUpMembers(817);
+  const [top,left,right]=members;
+  const previewArgs=[];
+  const ctx=install({
+    independent:(board,group,member)=>member===top
+      ?motion(member,-1,1)
+      :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.6,top,pairLower:right,solo:left,
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      px:6,py:5,dir:1
+    }),
+    splitPlan:(board,group,info,preview)=>{
+      previewArgs.push(preview);
+      clear(left.ball);
+      for(const member of[top,right]){
+        member.ball.motionGroupId=9817;
+        member.ball.motionGroupSize=2;
+        member.ball.rigid=true;
+        member.ball.momentumX=1;
+      }
+      return[
+        {...motion(info.top,info.dir,1),bundleId:817,groupSize:2},
+        {...motion(info.pairLower,info.dir,1),bundleId:817,groupSize:2},
+        {...info.soloMotion,bundleId:0,groupSize:0}
+      ];
+    },
+    base:()=>[
+      {...motion(top,1,1),bundleId:817,groupSize:2},
+      {...motion(right,1,1),bundleId:817,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,left.ball.id].sort()),"right contact did not produce the opposite-side left pair");
+  expect(previewArgs.length===1&&previewArgs[0]===true,"legacy splitter was called with mutation permission");
+  expect(top.ball.rigid&&left.ball.rigid,"top + left pair rigidity was not committed");
+  expect(top.ball.motionGroupSize===2&&left.ball.motionGroupSize===2,"top + left pair size is not exactly two");
+  expect(!right.ball.rigid&&right.ball.motionGroupId===0&&right.ball.motionGroupSize===0,"right-contact lower ball retained stale right-pair rigidity");
+  expect(top.ball.motionGroupId!==9817&&left.ball.motionGroupId!==9817,"proposal-time legacy group survived final commit");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.soloId===right.ball.id,"right contact was not recorded as the solo member");
 }
 
 /* Recording 17:08:01: the BLUE lower-left side is the current contact side.
@@ -1039,4 +1090,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v20 PASS");
+console.log("final rigidity authority v21 PASS");
