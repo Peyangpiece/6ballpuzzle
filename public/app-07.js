@@ -43,7 +43,8 @@ function pileFlowPoint(seg,t){
         const a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*0.5);
         let da=a1-a0;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
         const a=a0+da*t;
-        return[px+Math.cos(a)/0.5,py+Math.sin(a)/H];
+        const radius=Math.hypot((seg.from[0]-px)*0.5,(seg.from[1]-py)*H);
+        return[px+Math.cos(a)*radius/0.5,py+Math.sin(a)*radius/H];
     }
     return[seg.from[0]+(seg.to[0]-seg.from[0])*qStraight,seg.from[1]+(seg.to[1]-seg.from[1])*qStraight];
 }
@@ -263,7 +264,7 @@ function liveSegDuration(seg){return hexMotionDuration(seg,{vy:0,speed:0});}
 function liveSegPoint(seg,t,startState=null,duration=null){
     t=Math.max(0,Math.min(1,t));if(!seg?.from||!seg?.to)return[0,0];const H=HEX_ROW_H;
     if(seg.topPivot){const [px,py]=seg.topPivot,sx=latticeRealX(seg.from[0]),sy=cellCenterYNorm(seg.from[1]),cx=latticeRealX(px),cy=cellCenterYNorm(py),contactY=cy-1,fallDist=Math.max(0,contactY-sy),v0=Math.max(0,startState?.vy||0),fallT=fallDist>1e-9?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallDist)))/Math.max(.0001,GRAV):0,tx=latticeRealX(seg.to[0]),ty=cellCenterYNorm(seg.to[1]);let da=Math.atan2(ty-cy,tx-cx)+Math.PI/2;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const arcT=Math.abs(da)/Math.max(.0001,SLIDE_SPEED),naturalTotal=Math.max(1e-9,fallT+arcT),total=Number.isFinite(duration)?Math.max(1e-9,duration):naturalTotal,elapsed=t*total;if(elapsed<=fallT&&fallT>1e-9){const q=Math.max(0,Math.min(1,(v0*elapsed+.5*GRAV*elapsed*elapsed)/Math.max(1e-9,fallDist)));return[(sx+(cx-sx)*q)/.5,(sy+(contactY-sy)*q-BOARD_TOP_CENTER_N)/H];}const q=arcT<=1e-9?1:Math.max(0,Math.min(1,(elapsed-fallT)/arcT)),a=-Math.PI/2+da*q;return[(cx+Math.cos(a))/.5,(cy+Math.sin(a)-BOARD_TOP_CENTER_N)/H];}
-    if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const a=a0+da*t;return[px+Math.cos(a)/.5,py+Math.sin(a)/H];}
+    if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5),radius=Math.hypot((seg.from[0]-px)*.5,(seg.from[1]-py)*H);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const a=a0+da*t;return[px+Math.cos(a)*radius/.5,py+Math.sin(a)*radius/H];}
     const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];let q=t;if(Math.abs(dx)<1e-9&&dy>0){if(startState&&Number.isFinite(duration)){const dist=Math.max(1e-9,dy*H),elapsed=t*Math.max(0,duration);q=Math.max(0,Math.min(1,((Math.max(0,startState.vy||0)*elapsed)+.5*GRAV*elapsed*elapsed)/dist));}else q=t*t;}return[seg.from[0]+dx*q,seg.from[1]+dy*q];
 }
 
@@ -273,6 +274,8 @@ function collectLiveMotionBatch(g){
 function liveBatchPointAt(batch,member,t,states,memo=new Map(),stack=new Set()){
     if(!member)return[0,0];const id=member.cell.id;if(memo.has(id))return memo.get(id);if(member.seg.kind==="FOLLOW_SUPPORT"&&!stack.has(id)){const sid=member.seg.followSupportIds?.[0],support=batch.byId?.get(sid);if(support){stack.add(id);const sp=liveBatchPointAt(batch,support,t,states,memo,stack);stack.delete(id);const out=[member.seg.from[0]+sp[0]-support.seg.from[0],member.seg.from[1]+sp[1]-support.seg.from[1]];memo.set(id,out);return out;}}const st=states?.get(id),out=liveSegPoint(member.seg,t,st?.startState,st?.naturalDuration);memo.set(id,out);return out;
 }
+
+window.__sixBallPivotArcPreservesLogicalRadius=true;
 
 // Rotation legality must use the physical height at which the 0.10 s visual
 // rotation will actually be shown. The original check sampled only the logical

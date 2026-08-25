@@ -125,7 +125,7 @@ const member=liveBatch.byId?.get(cell.id);
 const [nx,ny]=liveBatchPointAt(liveBatch,member,t,g._liveBatchClock.states,liveMemo);
 
 v.x=nx;
-v.y=Math.max(visualOldY,ny);
+v.y=seg.rigidPivotRoll?ny:Math.max(visualOldY,ny);
 
 if(seg.pivot)g._visualArcPivotById.set(cell.id,seg.pivot);
 else if(seg.topPivot)g._visualArcPivotById.set(cell.id,seg.topPivot);
@@ -189,6 +189,7 @@ while(logicalDa<-Math.PI)logicalDa+=Math.PI*2;
 
 const dir=Math.sign(logicalDa||1);
 const arcTotal=Math.abs(logicalDa);
+const arcRadius=Math.hypot(srX,srY);
 const arcStateValid=
 v._segKey===key &&
 Number.isFinite(v._segProgress) &&
@@ -214,10 +215,10 @@ const remain=Math.max(0,v._segArcTotal-v._segProgress);
 const stepA=Math.min(remain,SLIDE_SPEED*dt);
 v._segProgress+=stepA;
 const a=v._segStartAngle+v._segDir*v._segProgress;
-const nextX=px+Math.cos(a)/0.5;
-const nextY=py+Math.sin(a)/H;
+const nextX=px+Math.cos(a)*arcRadius/0.5;
+const nextY=py+Math.sin(a)*arcRadius/H;
 v.x=nextX;
-v.y=Math.max(visualOldY,nextY);
+v.y=seg.rigidPivotRoll?nextY:Math.max(visualOldY,nextY);
 const tangentDown=Math.max(0,v._segDir*SLIDE_SPEED*Math.cos(a)/H);
 v.vy=Math.max(v.vy||0,tangentDown);
 v.motionSpeed=SLIDE_SPEED;
@@ -327,7 +328,7 @@ delete v._segDir;
 delete v._pendingPathComplete;
 }
 
-if(v.y < visualOldY - 1e-9){
+if(v.y < visualOldY - 1e-9 && !seg?.rigidPivotRoll){
 v.y=visualOldY;
 v.vy=Math.max(0,v.vy||0);
 }
@@ -401,6 +402,8 @@ else g.pieceVX += Math.sign(pdx) * PIECE_SNAP_SPEED * dt;
 g.pieceVY += (g.piece.y - g.pieceVY) * Math.min(1, 18 * dt);
 }
 }
+
+window.__sixBallRigidPivotRollUsesSharedArc=true;
 
 function legacyPreventVisualOverlap(g) {
     const items=[];

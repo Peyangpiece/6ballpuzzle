@@ -80,10 +80,11 @@ function install({base,independent,natural,groupPlan,separator,splitPlan}){
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v3","v3 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v4","v4 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
+  expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidRoll===true,"outer-quarter rigid-roll invariant marker missing");
 }
 
 /* A lower-level independent probe can report one member as stopped while the
@@ -244,4 +245,4 @@ function install({base,independent,natural,groupPlan,separator,splitPlan}){
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v3 PASS");
+console.log("final rigidity authority v4 PASS");

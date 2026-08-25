@@ -122,6 +122,7 @@ function hexPhysAppendSegment(ball,p,eventSeq){
         followSupportIds:[...(p.followSupportIds||[])],
         kind:p.kind||"",motionSeq:eventSeq,
         continuousChain:true,
+        rigidPivotRoll:!!p.rigidPivotRoll,
         groupSize:p.groupSize||0,
         bundleId:p.bundleId||0
     };

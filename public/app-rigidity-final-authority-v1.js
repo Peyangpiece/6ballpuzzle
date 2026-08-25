@@ -34,6 +34,14 @@
     window.__sixBallFinalRigidityAuthorityV1=true;
 
     const basePlanGroup=hexPhysPlanGroup;
+    const baseResolveEvent=
+        typeof hexPhysResolveEvent==="function"
+            ?hexPhysResolveEvent
+            :null;
+    const baseSettlePass=
+        typeof settlePass==="function"
+            ?settlePass
+            :null;
 
     function ordinaryGroup(members){
         return !!(
@@ -245,6 +253,90 @@
         return null;
     }
 
+    /* At an outer-quarter hit the logical lattice still shows the protrusion
+       directly below the UP triangle, so a plain translation would move one
+       lower member into that occupied cell. The physical body instead rolls
+       sixty degrees around the protrusion. All three members share the same
+       pivot and angular displacement, preserving every pairwise distance
+       while changing the lattice orientation from UP to DOWN. */
+    function outerQuarterRigidRoll(board,members){
+        const layout=upwardTriangle(members);
+        if(!layout)return null;
+
+        const offset=Number(layout.top?.ball?.impactOffsetX);
+        if(!Number.isFinite(offset))return null;
+
+        const px=(layout.left.x+layout.right.x)/2;
+        const py=layout.left.y+1;
+        if(
+            !Number.isFinite(px)||
+            !Number.isFinite(py)||
+            (typeof valid==="function"&&!valid(px,py))
+        )return null;
+
+        const support=board?.[py]?.[px]||null;
+        const own=new Set(members.map(memberId));
+        if(!support||own.has(support.id))return null;
+
+        const clamped=Math.max(-1,Math.min(1,offset));
+        const baseLeft=layout.left.x+clamped;
+        const baseRight=layout.right.x+clamped;
+        const hitFraction=(px-baseLeft)/(baseRight-baseLeft);
+        if(
+            hitFraction>.25+1e-9&&
+            hitFraction<.75-1e-9
+        )return null;
+
+        const dir=Math.sign(((baseLeft+baseRight)/2)-px);
+        if(!dir)return null;
+
+        const pivotLower=dir>0?layout.left:layout.right;
+        const farLower=dir>0?layout.right:layout.left;
+        const destinations=new Map([
+            [memberId(layout.top),[layout.top.x+3*dir,layout.top.y+1]],
+            [memberId(pivotLower),[pivotLower.x+2*dir,pivotLower.y]],
+            [memberId(farLower),[farLower.x+dir,farLower.y+1]]
+        ]);
+        const targets=new Set();
+        const bundle=groupIdFor(members,[]);
+        const plan=[];
+
+        for(const member of members){
+            const target=destinations.get(memberId(member));
+            if(!target)return null;
+            const [tx,ty]=target;
+            if(typeof valid==="function"&&!valid(tx,ty))return null;
+            const key=tx+","+ty;
+            if(targets.has(key))return null;
+            targets.add(key);
+            const occupied=board?.[ty]?.[tx]||null;
+            if(occupied&&!own.has(occupied.id))return null;
+            plan.push({
+                x:member.x,y:member.y,tx,ty,
+                ball:member.ball,
+                kind:"GROUP_RIGID_ROLL",
+                rigidPivotRoll:true,
+                contactPush:true,
+                pivot:[px,py],
+                topPivot:null,
+                virtualPivot:false,
+                followSupportIds:[],
+                bundleId:bundle,
+                groupSize:3
+            });
+        }
+
+        if(typeof hexPhysPathHitsStationary==="function"){
+            for(const step of plan){
+                try{
+                    if(hexPhysPathHitsStationary(step,board,own))return null;
+                }catch(_){return null;}
+            }
+        }
+
+        return{plan,dir,hitFraction,supportId:support.id,pivot:[px,py]};
+    }
+
     function requestedSplitPlan(board,members,selected,preview){
         if(!selected||typeof hexPhysUpConvexSplitPlan!=="function")return null;
         let plan=null;
@@ -366,6 +458,7 @@
             members,
             motions
         );
+        const outerRollBefore=outerQuarterRigidRoll(board,members);
         let basePlan=[];
         try{
             basePlan=basePlanGroup(board,members,preview)||[];
@@ -404,6 +497,31 @@
                 at:Date.now()
             };
             return normalized;
+        }
+
+        /* The strict outer quarters are not split contacts. Resolve their
+           otherwise-blocked discrete state as one rigid sixty-degree roll so
+           the triangle cannot wait forever at the protrusion. */
+        if(outerRollBefore){
+            if(!preview){
+                commitCohort(members,outerRollBefore.plan,authorityGroupId);
+                for(const member of members){
+                    member.ball.motionGroupOrientation="down";
+                    member.ball.momentumX=outerRollBefore.dir;
+                    member.ball.rollDir=outerRollBefore.dir;
+                    member.ball.subCellBias=outerRollBefore.dir;
+                }
+                window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:"outer-quarter-rigid-roll",
+                    dir:outerRollBefore.dir,
+                    hitFraction:outerRollBefore.hitFraction,
+                    supportId:outerRollBefore.supportId,
+                    pivot:outerRollBefore.pivot,
+                    ids:members.map(memberId),
+                    at:Date.now()
+                };
+            }
+            return outerRollBefore.plan;
         }
 
         /* This must run before same-direction recovery. Otherwise identical
@@ -567,6 +685,107 @@
         return released;
     };
 
+    function stableOuterRollCandidate(board){
+        if(typeof hexPhysGroups!=="function")return null;
+        let groups=null;
+        try{groups=hexPhysGroups(board);}catch(_){groups=null;}
+        if(!groups||typeof groups.values!=="function")return null;
+
+        for(const members of groups.values()){
+            if(!ordinaryGroup(members)||members.length!==3)continue;
+            const roll=outerQuarterRigidRoll(board,members);
+            if(!roll)continue;
+
+            /* A moving protrusion must resolve its own gravity first. Only an
+               accumulated, position-final pile ball can serve as the rigid
+               rotation pivot for this contact event. */
+            if(typeof hexPhysNaturalMotion==="function"){
+                let supportMotion=null;
+                try{
+                    supportMotion=hexPhysNaturalMotion(
+                        board,
+                        roll.pivot[0],
+                        roll.pivot[1],
+                        null
+                    );
+                }catch(_){supportMotion={};}
+                if(supportMotion)continue;
+            }
+
+            try{
+                if(
+                    typeof hexPhysBundleTargetsFree==="function"&&
+                    !hexPhysBundleTargetsFree(roll.plan,board,[])
+                )continue;
+                if(
+                    typeof hexPhysBundleSafe==="function"&&
+                    !hexPhysBundleSafe(roll.plan,board,[])
+                )continue;
+            }catch(_){continue;}
+
+            return{members,...roll};
+        }
+        return null;
+    }
+
+    function commitOuterRoll(candidate,reason){
+        if(!candidate)return;
+        const gid=groupIdFor(candidate.members,candidate.plan);
+        commitCohort(candidate.members,candidate.plan,gid);
+        for(const member of candidate.members){
+            member.ball.motionGroupOrientation="down";
+            member.ball.momentumX=candidate.dir;
+            member.ball.rollDir=candidate.dir;
+            member.ball.subCellBias=candidate.dir;
+        }
+        window.__sixBallLastFinalRigidityCorrectionV1={
+            reason,
+            dir:candidate.dir,
+            hitFraction:candidate.hitFraction,
+            supportId:candidate.supportId,
+            pivot:candidate.pivot,
+            ids:candidate.members.map(memberId),
+            at:Date.now()
+        };
+    }
+
+    /* Legacy gravity filters correctly reject independent sideways moves, but
+       they used the same per-member `ty > y` rule for rigid bundles. A sixty-
+       degree roll has one member ending on the same logical row even though
+       all three rotate downward together. Restore only this fully validated
+       three-member pivot bundle after the ordinary resolver finds no event. */
+    if(baseResolveEvent){
+        hexPhysResolveEvent=function(board,preview=false){
+            const candidate=stableOuterRollCandidate(board);
+            let normal=[];
+            try{normal=baseResolveEvent(board,preview)||[];}catch(_){normal=[];}
+            if(normal.length||!candidate)return normal;
+            if(!preview)commitOuterRoll(
+                candidate,
+                "outer-quarter-rigid-roll-resolver"
+            );
+            return preview?candidate.plan.slice(0,1):candidate.plan;
+        };
+    }
+
+    /* The final live settle layer also contained a second per-member downward
+       filter and could apply only two members of an otherwise valid bundle.
+       Apply the complete pivot event atomically before that filter runs. */
+    if(baseSettlePass&&typeof hexPhysApplyEvent==="function"){
+        settlePass=function(board,preview=false){
+            const candidate=stableOuterRollCandidate(board);
+            if(candidate){
+                if(preview)return true;
+                commitOuterRoll(
+                    candidate,
+                    "outer-quarter-rigid-roll-atomic-settle"
+                );
+                try{return !!hexPhysApplyEvent(board,candidate.plan);}catch(_){return false;}
+            }
+            return baseSettlePass(board,preview);
+        };
+    }
+
     window.__sixBallSameDirectionAlwaysKeepsRigidity=true;
     window.__sixBallPositionFinalAlwaysReleasesRigidity=true;
     window.__sixBallSlopeTriangleAlwaysKeepsRigidity=true;
@@ -575,7 +794,9 @@
     window.__sixBallUpConvexWrongSideWaitsInsteadOfSplitting=true;
     window.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent=true;
     window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=true;
+    window.__sixBallUpConvexOuterQuarterUsesRigidRoll=true;
+    window.__sixBallOuterQuarterRigidRollBypassesPerMemberDownFilter=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v3";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v4";
 })();

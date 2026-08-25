@@ -64,8 +64,8 @@ for(let i=0;i<220;i++)pass("rigidity",i,()=>{
   const b=newBoard(),base=5+2*(i%3),bs=[0,1,2].map(r=>groupBall(group*10+r,group,r)),m=[{ball:bs[0],x:base,y:2,role:0,orientation:"down"},{ball:bs[1],x:base+2,y:2,role:1,orientation:"down"},{ball:bs[2],x:base+1,y:3,role:2,orientation:"down"}];m.forEach(v=>b[v.y][v.x]=v.ball);b[4][base+2]=ball(group*10+9,4);const plan=hexPhysPlanGroup(b,m,false);
   expect(plan.length===3&&plan.every(v=>v.kind==="GROUP_SLOPE_TRANSLATE"&&v.tx-v.x===-1&&v.ty-v.y===1)&&bs.every(v=>v.rigid),"rigidity "+i+": slope changed the triplet shape");
  }else if(mode===2){
-  const offsets=[-.51,-.5,-.4,0,.4,.5,.51],offset=offsets[i%offsets.length],b=newBoard(),bs=[0,1,2].map(r=>({...groupBall(group*10+r,group,r,"up"),impactOffsetX:offset,momentumX:Math.sign(offset)})),m=[{ball:bs[0],x:6,y:3,role:0,orientation:"up"},{ball:bs[1],x:7,y:4,role:1,orientation:"up"},{ball:bs[2],x:5,y:4,role:2,orientation:"up"}];m.forEach(v=>b[v.y][v.x]=v.ball);b[5][6]=ball(group*10+9,4);const motions=m.map(v=>hexPhysIndependentMemberMotion(b,m,v)),info=hexPhysUpConvexSeparator(b,m,motions),expected=Math.abs(offset)<=.5;
-  expect(!!info===expected,"rigidity "+i+": centre-half split window changed");
+  const offsets=[-.51,-.5,-.4,0,.4,.5,.51],offset=offsets[i%offsets.length],b=newBoard(),bs=[0,1,2].map(r=>({...groupBall(group*10+r,group,r,"up"),impactOffsetX:offset,momentumX:Math.sign(offset)})),m=[{ball:bs[0],x:6,y:3,role:0,orientation:"up"},{ball:bs[1],x:7,y:4,role:1,orientation:"up"},{ball:bs[2],x:5,y:4,role:2,orientation:"up"}];m.forEach(v=>b[v.y][v.x]=v.ball);b[5][6]=ball(group*10+9,4);const motions=m.map(v=>hexPhysIndependentMemberMotion(b,m,v)),info=hexPhysUpConvexSeparator(b,m,motions),expected=Math.abs(offset)<.5;
+  expect(!!info===expected,"rigidity "+i+": strict centre-half split window changed");
   if(info&&offset)expect(info.dir===Math.sign(offset),"rigidity "+i+": convex split direction reversed");
  }else{
   const g=createEngine(group),y=ROWS-1,b=groupBall(group*10,group,0);g.board[y][0]=b;normalizeAllNonActivePileBalls(g);expect(!b.rigid&&b.motionGroupId===0,"rigidity "+i+": accumulated ball retained rigidity");
