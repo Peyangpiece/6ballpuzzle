@@ -1,5 +1,5 @@
-# Final audit for the unified ordinary-ball garbage runtime.
-name: Diagnose Garbage Contact
+# Current audit for the unified ordinary-ball garbage runtime.
+name: Diagnose Current Garbage Physics
 
 on:
   push:
@@ -16,12 +16,14 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run unified garbage and core physics audits
+
+      - name: Run current unified garbage audits
         shell: bash
         run: |
           set +e
@@ -34,42 +36,29 @@ jobs:
           B=$?
           node tests/pile-arc-motion.js >> audit-results/garbage-contact.log 2>&1
           C=$?
-          node tests/ai-technique-levels.js >> audit-results/garbage-contact.log 2>&1
-          D=$?
           node tests/garbage-zero-rigidity.js >> audit-results/garbage-contact.log 2>&1
-          E=$?
+          D=$?
           node tests/garbage-diagonal-settle.js >> audit-results/garbage-contact.log 2>&1
-          F=$?
-          node tests/garbage-chain-terrain2-diagnostic-v2.js >> audit-results/garbage-contact.log 2>&1
+          E=$?
           node tests/garbage-chain-settle.js >> audit-results/garbage-contact.log 2>&1
-          G=$?
+          F=$?
           node tests/garbage-post-clear-collapse.js >> audit-results/garbage-contact.log 2>&1
-          H=$?
-          node tests/wall-gap-regression.js >> audit-results/garbage-contact.log 2>&1
-          I=$?
+          G=$?
           node tests/gameover-garbage-fade.js >> audit-results/garbage-contact.log 2>&1
-          J=$?
+          H=$?
           node tests/garbage-render-overlap-guard.js >> audit-results/garbage-contact.log 2>&1
-          K=$?
-          node tests/up-convex-split-side.js >> audit-results/garbage-contact.log 2>&1
-          L=$?
-          node tests/runtime-performance-guards.js >> audit-results/garbage-contact.log 2>&1
-          M=$?
-          node tests/ai-fastest-technique.js >> audit-results/garbage-contact.log 2>&1
-          N=$?
-          node tests/ai-superstrong-speed-priority.js >> audit-results/garbage-contact.log 2>&1
-          O=$?
-          node tests/ai-grandmaster.js >> audit-results/garbage-contact.log 2>&1
-          P=$?
+          I=$?
+          node tests/v1303-current-oracle-suite.js >> audit-results/garbage-contact.log 2>&1
+          J=$?
 
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ] && [ "$K" -eq 0 ] && [ "$L" -eq 0 ] && [ "$M" -eq 0 ] && [ "$N" -eq 0 ] && [ "$O" -eq 0 ] && [ "$P" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"aiTechnique":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"wallGapRegression":%s,"gameoverGarbageFade":%s,"garbageRenderOverlap":%s,"upConvexSplitSide":%s,"runtimePerformance":%s,"aiFastestTechnique":%s,"aiSuperStrongSpeedPriority":%s,"aiGrandmaster":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" "$K" "$L" "$M" "$N" "$O" "$P" > audit-results/garbage-contact.json
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ] && [ "$I" -eq 0 ] && [ "$J" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","garbageNormalPhysics":%s,"garbagePresentation":%s,"pileArc":%s,"garbageZeroRigidity":%s,"garbageDiagonalSettle":%s,"garbageChainSettle":%s,"garbagePostClearCollapse":%s,"gameoverGarbageFade":%s,"garbageRenderOverlap":%s,"oracle12k":%s}\n' \
+            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" "$I" "$J" > audit-results/garbage-contact.json
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add audit-results/garbage-contact.log audit-results/garbage-contact.json
-          git commit -m 'Record unified garbage audit [skip ci]' || true
+          git commit -m 'Record current garbage audit [skip ci]' || true
           git pull --rebase origin main
           git push origin HEAD:main
 
