@@ -26,6 +26,9 @@
  * 6. For an upward-convex triplet, different independent directions,
  *    isolated collisions, and lower-layer pair metadata can never authorize
  *    a split by themselves.
+ * 7. At every authorized contact split, the lower ball on the current contact
+ *    side is the solo member. The top ball is rigid only with the opposite
+ *    lower ball; a stale approach direction may never reverse those roles.
  *
  * Garbage has its own zero-rigidity pipeline and is never changed
  * here. Preview calls are strictly read-only.
@@ -42,6 +45,7 @@
 
     const basePlanGroup=hexPhysPlanGroup;
     const liveEngineByBoard=new WeakMap();
+    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV16";
 
     /* Group planning normally receives only the board, while physical stop
        proof also needs the live visual/batch state. Register every engine at
@@ -374,6 +378,198 @@
         return{info,hitFraction};
     }
 
+    function validOutwardSoloMotion(motion,solo,direction){
+        const vector=vectorOf(motion);
+        return !!(
+            vector&&
+            memberId(motion)===memberId(solo)&&
+            Math.sign(vector.dx)===direction&&
+            vector.dy>0
+        );
+    }
+
+    function outwardSoloMotion(board,members,motions,solo,direction,info){
+        const index=members.indexOf(solo);
+        const candidates=[
+            index>=0?motions?.[index]:null,
+            memberId(info?.solo)===memberId(solo)?info?.soloMotion:null
+        ];
+
+        if(typeof hexPhysNaturalMotion==="function"){
+            const ignore=new Set(
+                members
+                    .filter(member=>memberId(member)!==memberId(solo))
+                    .map(memberId)
+            );
+            try{
+                candidates.push(hexPhysNaturalMotion(
+                    board,
+                    solo.x,
+                    solo.y,
+                    ignore
+                ));
+            }catch(_){}
+        }
+
+        return candidates.find(candidate=>
+            validOutwardSoloMotion(candidate,solo,direction)
+        )||null;
+    }
+
+    /* Determine WHICH lower ball is touching now without trusting any pair
+       assignment or approach-time direction from an older wrapper. The live
+       rendered positions are the strongest signal because the discrete grid
+       can round a visibly one-sided collision to hitFraction=0.5. */
+    function currentContactSide(
+        board,
+        members,
+        layout,
+        info,
+        motions,
+        hitFraction
+    ){
+        const px=Number(info?.px);
+        const py=Number(info?.py);
+        const game=liveEngineByBoard.get(board);
+        const support=
+            Number.isFinite(px)&&Number.isFinite(py)
+                ?board?.[py]?.[px]||null
+                :null;
+        const supportId=support?.id??info?.support?.id;
+        const pieceKey=members.map(member=>String(memberId(member))).sort().join(":");
+        const locks=members
+            .map(member=>member.ball?.[CONTACT_SIDE_STORE])
+            .filter(lock=>
+                lock&&
+                lock.pieceKey===pieceKey&&
+                lock.supportId===supportId
+            );
+        if(
+            locks.length===members.length&&
+            locks.every(lock=>
+                lock.soloId===locks[0].soloId&&
+                lock.pairDir===locks[0].pairDir
+            )
+        ){
+            const solo=members.find(member=>memberId(member)===locks[0].soloId);
+            if(solo){
+                return{
+                    pairDir:locks[0].pairDir,
+                    solo,
+                    source:"locked-first-current-contact"
+                };
+            }
+        }
+        const visualFor=ball=>game?.vis?.get?.(ball?.id)||null;
+        const leftVisual=visualFor(layout.left.ball);
+        const rightVisual=visualFor(layout.right.ball);
+        const supportVisual=visualFor(support);
+        const leftX=Number(leftVisual?.x);
+        const rightX=Number(rightVisual?.x);
+        const supportX=Number.isFinite(Number(supportVisual?.x))
+            ?Number(supportVisual.x)
+            :px;
+
+        if(
+            Number.isFinite(leftX)&&
+            Number.isFinite(rightX)&&
+            Number.isFinite(supportX)
+        ){
+            const leftDistance=Math.abs(leftX-supportX);
+            const rightDistance=Math.abs(rightX-supportX);
+            if(Math.abs(leftDistance-rightDistance)>1e-5){
+                return leftDistance<rightDistance
+                    ?{pairDir:1,solo:layout.left,source:"live-left-contact"}
+                    :{pairDir:-1,solo:layout.right,source:"live-right-contact"};
+            }
+        }
+
+        const topOffset=Number(layout.top.ball?.impactOffsetX);
+        if(Number.isFinite(topOffset)&&Math.abs(topOffset)>1e-5){
+            return topOffset>0
+                ?{pairDir:1,solo:layout.left,source:"current-positive-release-offset"}
+                :{pairDir:-1,solo:layout.right,source:"current-negative-release-offset"};
+        }
+
+        const offsets=members
+            .map(member=>Number(member.ball?.impactOffsetX))
+            .filter(Number.isFinite)
+            .sort((a,b)=>a-b);
+        const medianOffset=offsets.length
+            ?offsets[Math.floor(offsets.length/2)]
+            :0;
+        if(Math.abs(medianOffset)>1e-5){
+            return medianOffset>0
+                ?{pairDir:1,solo:layout.left,source:"current-median-release-offset"}
+                :{pairDir:-1,solo:layout.right,source:"current-median-release-offset"};
+        }
+
+        const contactDelta=hitFraction-.5;
+        if(Math.abs(contactDelta)>1e-9){
+            return contactDelta<0
+                ?{pairDir:1,solo:layout.left,source:"current-left-hit-fraction"}
+                :{pairDir:-1,solo:layout.right,source:"current-right-hit-fraction"};
+        }
+
+        const topMotion=motions?.[members.indexOf(layout.top)]||null;
+        const topDirection=Math.sign(vectorOf(topMotion)?.dx||0);
+        if(topDirection){
+            return topDirection>0
+                ?{pairDir:1,solo:layout.left,source:"current-top-motion-right"}
+                :{pairDir:-1,solo:layout.right,source:"current-top-motion-left"};
+        }
+
+        const declaredSoloId=memberId(info?.solo);
+        if(declaredSoloId===memberId(layout.left)){
+            return{pairDir:1,solo:layout.left,source:"canonical-left-solo-tie"};
+        }
+        if(declaredSoloId===memberId(layout.right)){
+            return{pairDir:-1,solo:layout.right,source:"canonical-right-solo-tie"};
+        }
+
+        return null;
+    }
+
+    function rememberCurrentContactSide(members,selected){
+        const source=String(selected?.contactSideSource||"");
+        if(
+            !selected?.info||
+            !selected?.soloId||
+            !selected?.splitDirection||
+            !(
+                source.startsWith("live-")||
+                source.startsWith("current-positive-")||
+                source.startsWith("current-negative-")||
+                source.startsWith("current-median-")||
+                source.startsWith("current-left-")||
+                source.startsWith("current-right-")
+            )
+        )return;
+
+        const supportId=
+            selected.info?.support?.id??
+            null;
+        if(supportId==null)return;
+        const record={
+            pieceKey:members.map(member=>String(memberId(member))).sort().join(":"),
+            supportId,
+            soloId:selected.soloId,
+            pairDir:selected.splitDirection,
+            source,
+            at:Date.now()
+        };
+        for(const member of members){
+            const old=member.ball?.[CONTACT_SIDE_STORE];
+            if(
+                !old||
+                old.pieceKey!==record.pieceKey||
+                old.supportId!==record.supportId
+            ){
+                member.ball[CONTACT_SIDE_STORE]={...record};
+            }
+        }
+    }
+
     function selectedUpwardSplitSide(board,members,motions){
         const layout=upwardTriangle(members);
         if(!layout||typeof hexPhysUpConvexSeparator!=="function")return null;
@@ -399,35 +595,41 @@
         if(memberId(info.top)!==topId)return null;
 
         /* The CURRENT contact side is the authority; pair metadata and an
-           approach-time `dir` are only consequences. Older wrappers can keep
-           the direction of the preceding rigid slope after the protrusion has
-           actually hit the other half of the lower edge. Derive a fresh pair
-           direction from hitFraction: LEFT contact keeps top+RIGHT, while
-           RIGHT contact keeps top+LEFT. Only an exact centre contact has no
-           side information and may retain the canonical tie-break direction. */
-        const contactDelta=hitFraction-.5;
-        const pairDir=
-            contactDelta< -1e-9
-                ?1
-                :contactDelta>1e-9
-                    ?-1
-                    :Math.sign(Number(info.dir)||0);
-        if(!pairDir)return null;
+           approach-time `dir` are never allowed to choose the opposite solo. */
+        const contact=currentContactSide(
+            board,
+            members,
+            layout,
+            info,
+            motions,
+            hitFraction
+        );
+        const pairDir=contact?.pairDir||0;
+        if(!pairDir||!contact?.solo)return null;
         const pairLower=pairDir>0?layout.right:layout.left;
-        const solo=pairDir>0?layout.left:layout.right;
-        const pairMotion=motions?.[members.indexOf(pairLower)]||null;
-        const soloMotion=motions?.[members.indexOf(solo)]||null;
-        if(
-            Math.sign(Number(pairMotion?.tx)-Number(pairMotion?.x))!==pairDir||
-            Math.sign(Number(soloMotion?.tx)-Number(soloMotion?.x))!==-pairDir
-        )return null;
+        const solo=contact.solo;
+        const soloMotion=outwardSoloMotion(
+            board,
+            members,
+            motions,
+            solo,
+            -pairDir,
+            info
+        );
+        /* If the correct contact-side solo cannot move safely, wait rigid.
+           Never fall back to the physically opposite 2+1 arrangement. */
+        if(!soloMotion)return null;
         const correctedInfo={
             ...info,
             dir:pairDir,
             top:layout.top,
             pairLower,
             solo,
-            soloMotion
+            soloMotion,
+            pairSide:pairDir>0?"right":"left",
+            soloSide:pairDir>0?"left":"right",
+            splitSide:pairDir>0?"left":"right",
+            currentContactSideSource:contact.source
         };
 
         /* Merely finding a pile ball below the lower edge is predictive
@@ -448,7 +650,8 @@
             pairIds:[topId,pairLowerId],
             pairLowerId,
             soloId,
-            hitFraction
+            hitFraction,
+            contactSideSource:contact.source
         };
     }
 
@@ -712,6 +915,9 @@
         const selectedSide=
             selectedSideBefore||
             selectedUpwardSplitSide(board,members,motions);
+        if(!preview&&selectedSide){
+            rememberCurrentContactSide(members,selectedSide);
+        }
         const authoredBaseVector=
             baseMovesWholeGroup?sameVector(movingBase):null;
 
@@ -1032,11 +1238,14 @@
     window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=true;
     window.__sixBallLegalPairSlopeBeatsEverySplitOrRelease=true;
     window.__sixBallCurrentContactFractionDefinesSplitSide=true;
+    window.__sixBallCurrentContactBallAlwaysBecomesSolo=true;
+    window.__sixBallWrongContactPairWaitsInsteadOfReversing=true;
+    window.__sixBallFirstCurrentContactSidePersistsUntilSplit=true;
     window.__sixBallCurrentCentralSplitBeatsHorizontalSnap=true;
     window.__sixBallOrdinarySplitOnlyCentralOrPositionFinal=false;
     window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=true;
     window.__sixBallInverseTriangleUsesLegacySplitRules=true;
     window.__sixBallDivergentMotionAloneCannotSplit=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v15";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v16";
 })();

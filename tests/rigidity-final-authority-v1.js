@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v15","v15 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v16","v16 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -138,6 +138,9 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallPairOnlyReleaseRequiresPositionFinalSupport===true,"pair-only support proof marker missing");
   expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
   expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
+  expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");
+  expect(ctx.__sixBallWrongContactPairWaitsInsteadOfReversing===true,"wrong contact-pair wait invariant missing");
+  expect(ctx.__sixBallFirstCurrentContactSidePersistsUntilSplit===true,"first contact-side persistence invariant missing");
   expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
   expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
   expect(ctx.__sixBallUpConvexSplitOnlyCentralOrPositionFinal===true,"up-convex two-trigger split whitelist marker missing");
@@ -265,7 +268,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.groupSize===3&&step.bundleId===810),"prospective 2+1 split beat a same-direction triplet");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction prospective-contact triplet lost rigidity");
-  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="same-direction-whole-group","same-direction correction was not recorded");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="same-direction-before-prospective-two-plus-one","same-direction correction was not recorded");
   expect(ctx.__sixBallSameDirectionBeatsProspectiveTwoPlusOne===true,"same-direction 2+1 priority marker missing");
 }
 
@@ -360,6 +363,145 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const solo=out.find(step=>step.ball.id===blue.ball.id);
   expect(solo?.groupSize===0&&solo.tx-solo.x===-1,"blue contact ball did not split left as the solo");
   expect(!blue.ball.rigid&&purple.ball.rigid&&red.ball.rigid,"blue-side contact committed the wrong rigidity pair");
+}
+
+/* The live recording can be visibly left-sided while the discrete collision
+   rounds to exact centre and every stored direction still points the other
+   way. The closer rendered lower ball is the actual contact ball and must be
+   the solo. Verify both mirrored sides so no colour/order shortcut can pass. */
+{
+  for(const side of ["left","right"]){
+    const gid=side==="left"?824:825;
+    const members=makeUpMembers(gid);
+    const [top,left,right]=members;
+    const support={id:9900+gid,c:4,isGarbage:false};
+    const pairDir=side==="left"?1:-1;
+    const staleDir=-pairDir;
+    const contactSolo=side==="left"?left:right;
+    const oppositeLower=side==="left"?right:left;
+    const ctx=install({
+      createEngine:()=>({
+        board:Array.from({length:10},()=>Array(12).fill(null)),
+        vis:new Map(),_visualMovingIds:new Set(),
+        _liveBatchClock:{elapsed:0,duration:0,states:new Map()}
+      }),
+      independent:(board,group,member)=>member===top
+        ?motion(member,pairDir,1)
+        :{...motion(member,member===contactSolo?-pairDir:pairDir,1),pivot:[6,5]},
+      separator:()=>({
+        hitFraction:.5,top,
+        pairLower:contactSolo,solo:oppositeLower,
+        soloMotion:{...motion(oppositeLower,-staleDir,1),pivot:[6,5]},
+        support,px:6,py:5,dir:staleDir
+      }),
+      splitPlan:(board,group,info)=>[
+        {...motion(info.top,info.dir,1),bundleId:gid,groupSize:2},
+        {...motion(info.pairLower,info.dir,1),bundleId:gid,groupSize:2},
+        {...info.soloMotion,bundleId:0,groupSize:0}
+      ],
+      base:()=>[
+        {...motion(top,staleDir,1),bundleId:gid,groupSize:2},
+        {...motion(contactSolo,staleDir,1),bundleId:gid,groupSize:2},
+        {...motion(oppositeLower,-staleDir,1),bundleId:0,groupSize:0}
+      ]
+    });
+    const game=ctx.createEngine();
+    for(const member of members)game.board[member.y][member.x]=member.ball;
+    game.board[5][6]=support;
+    const offset=side==="left"?.35:-.35;
+    game.vis.set(top.ball.id,{x:top.x+offset,y:top.y,vy:0,motionSpeed:0});
+    game.vis.set(left.ball.id,{x:left.x+offset,y:left.y,vy:0,motionSpeed:0});
+    game.vis.set(right.ball.id,{x:right.x+offset,y:right.y,vy:0,motionSpeed:0});
+    game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
+    const out=ctx.hexPhysPlanGroup(game.board,members,false);
+    const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+    expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,oppositeLower.ball.id].sort()),`${side} live contact did not keep the opposite pair`);
+    const solo=out.find(step=>step.ball.id===contactSolo.ball.id);
+    expect(solo?.groupSize===0&&Math.sign(solo.tx-solo.x)===-pairDir,`${side} live contact ball was not the outward solo`);
+    expect(!contactSolo.ball.rigid&&oppositeLower.ball.rigid,`${side} live contact committed reversed rigidity`);
+  }
+}
+
+/* If an older resolver offers only the reversed pair and the true contact-side
+   solo has no safe outward path, keep all three rigid and wait. Never accept
+   the opposite 2+1 plan merely because it is the only proposal available. */
+{
+  const members=makeUpMembers(826);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>member===top
+      ?motion(member,-1,1)
+      :{...motion(member,member===left?1:-1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.4,top,pairLower:left,solo:right,
+      soloMotion:{...motion(right,1,1),pivot:[6,5]},
+      px:6,py:5,dir:-1
+    }),
+    natural:()=>null,
+    base:()=>[
+      {...motion(top,-1,1),bundleId:826,groupSize:2},
+      {...motion(left,-1,1),bundleId:826,groupSize:2},
+      {...motion(right,1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===0,"reversed split was accepted when the true contact-side solo was blocked");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"blocked correct split did not wait as a rigid triplet");
+}
+
+/* A legal rigid slope can postpone a contact split by one event. Preserve the
+   first live contact ball even if the rendered centres cross the support before
+   the next planner pass; the later split must not reverse colours. */
+{
+  const members=makeUpMembers(827);
+  const [top,left,right]=members;
+  const support={id:9927,c:4,isGarbage:false};
+  let phase=0;
+  const ctx=install({
+    createEngine:()=>({
+      board:Array.from({length:10},()=>Array(12).fill(null)),
+      vis:new Map(),_visualMovingIds:new Set(),
+      _liveBatchClock:{elapsed:0,duration:0,states:new Map()}
+    }),
+    independent:(board,group,member)=>phase===0
+      ?{...motion(member,1,1),pivot:member===top?null:[6,5]}
+      :member===top
+        ?motion(member,1,1)
+        :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.5,top,
+      pairLower:phase===0?right:left,
+      solo:phase===0?left:right,
+      soloMotion:{...motion(phase===0?left:right,phase===0?-1:1,1),pivot:[6,5]},
+      support,px:6,py:5,dir:phase===0?1:-1
+    }),
+    splitPlan:(board,group,info)=>[
+      {...motion(info.top,info.dir,1),bundleId:827,groupSize:2},
+      {...motion(info.pairLower,info.dir,1),bundleId:827,groupSize:2},
+      {...info.soloMotion,bundleId:0,groupSize:0}
+    ],
+    base:(board,group)=>phase===0
+      ?group.map(member=>({...motion(member,1,1),bundleId:827,groupSize:3}))
+      :[
+          {...motion(top,-1,1),bundleId:827,groupSize:2},
+          {...motion(left,-1,1),bundleId:827,groupSize:2},
+          {...motion(right,1,1),bundleId:0,groupSize:0}
+        ]
+  });
+  const game=ctx.createEngine();
+  for(const member of members)game.board[member.y][member.x]=member.ball;
+  game.board[5][6]=support;
+  for(const member of members)game.vis.set(member.ball.id,{x:member.x+.35,y:member.y,vy:0,motionSpeed:0});
+  game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
+  const approach=ctx.hexPhysPlanGroup(game.board,members,false);
+  expect(approach.length===3&&approach.every(step=>step.groupSize===3),"first contact did not preserve the legal rigid slope");
+
+  phase=1;
+  for(const member of members)game.vis.get(member.ball.id).x=member.x-.35;
+  const split=ctx.hexPhysPlanGroup(game.board,members,false);
+  const pair=split.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,right.ball.id].sort()),"post-contact crossing reversed the remembered blue-side split");
+  expect(!left.ball.rigid&&right.ball.rigid,"post-contact crossing reversed the remembered rigidity pair");
 }
 
 /* At a current middle-50% contact, a whole-triplet horizontal correction from
@@ -624,4 +766,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v15 PASS");
+console.log("final rigidity authority v16 PASS");
