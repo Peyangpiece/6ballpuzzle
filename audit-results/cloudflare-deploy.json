@@ -1,1 +1,1 @@
-{"sha":"971711bb34ebf5f1d6932f108ea3fa536d43464d","status":"pass","deployOutcome":"success","productionUrl":"https://6ballpuzzle.hrk-6888.workers.dev","observedSha":"971711bb34ebf5f1d6932f108ea3fa536d43464d"}
+{"sha":"ffe9d8f0f4f124558f1426fdbee0d3bc7b5de79c","status":"fail","deployOutcome":"skipped","productionUrl":"https://6ballpuzzle.hrk-6888.workers.dev","observedSha":""}
