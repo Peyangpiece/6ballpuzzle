@@ -16,8 +16,10 @@
  *    pair rebuilt and given two-ball rigidity.
  * 3. An active upward-convex split is legal only when the protrusion
  *    contacts the middle 50% of the lower two-ball edge and BOTH lower
- *    balls currently name that same protrusion as their contact pivot.
- *    A future/top pivot is an airborne approach and cannot split.
+ *    balls currently name that same protrusion as their contact pivot. In a
+ *    live game the displayed lower balls must also have reached the displayed
+ *    support after their current motion batch. A future/logical pivot is an
+ *    airborne approach and cannot split.
  * 4. An omitted member is detached only after the board proves that
  *    it is position-final on the floor or on two real lower supports.
  *    A temporarily missing isolated probe on a slope is not settlement.
@@ -45,7 +47,7 @@
 
     const basePlanGroup=hexPhysPlanGroup;
     const liveEngineByBoard=new WeakMap();
-    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV16";
+    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV17";
 
     /* Group planning normally receives only the board, while physical stop
        proof also needs the live visual/batch state. Register every engine at
@@ -241,6 +243,92 @@
         return currentPivotIs(info.pairLower)&&currentPivotIs(info.solo);
     }
 
+    /* Logical resolution can advance the board to the next contact cell while
+       updateVisuals() is still drawing the preceding fall segment. In that
+       interval both independent probes already name the future protrusion as
+       their pivot, although the displayed triangle is several rows above it.
+       Never start a split from that future state: the two displayed lower
+       balls must have physically reached the displayed, stationary support.
+
+       The strict render check intentionally exists only for live engines.
+       Headless planner/audit boards have no visual clock and keep using the
+       bilateral-pivot proof above. */
+    function liveVisualCentralContact(board,members,info){
+        const game=liveEngineByBoard.get(board);
+        if(!game)return{ok:true,source:"headless-bilateral-pivot"};
+
+        const px=Number(info?.px);
+        const py=Number(info?.py);
+        if(!Number.isFinite(px)||!Number.isFinite(py)){
+            return{ok:false,reason:"missing-current-support-cell"};
+        }
+        const support=board?.[py]?.[px]||info?.support||null;
+        if(!support?.id){
+            return{ok:false,reason:"missing-current-support-ball"};
+        }
+
+        const activeIds=game._visualMovingIds;
+        const clock=game._liveBatchClock;
+        const clockActive=ball=>!!(
+            clock?.states instanceof Map&&
+            clock.states.has(ball.id)&&
+            Number(clock.elapsed)<Number(clock.duration)-1e-9
+        );
+        const stillInFlight=ball=>!!(
+            (Array.isArray(ball?.fallPath)&&ball.fallPath.length)||
+            (activeIds instanceof Set&&activeIds.has(ball?.id))||
+            clockActive(ball)
+        );
+        if(members.some(member=>stillInFlight(member?.ball))){
+            return{ok:false,reason:"triplet-visual-motion-incomplete"};
+        }
+        if(stillInFlight(support)){
+            return{ok:false,reason:"support-visual-motion-incomplete"};
+        }
+
+        const layout=upwardTriangle(members);
+        const lower=[layout?.left,layout?.right];
+        const supportVisual=game.vis?.get?.(support.id);
+        const lowerVisuals=lower.map(member=>game.vis?.get?.(member?.ball?.id));
+        if(!supportVisual||lowerVisuals.some(visual=>!visual)){
+            return{ok:false,reason:"missing-live-contact-visual"};
+        }
+        const invalidVisual=visual=>!!(
+            !Number.isFinite(Number(visual?.x))||
+            !Number.isFinite(Number(visual?.y))||
+            visual?.pileFlow||
+            visual?.justReleased||
+            visual?._pendingPathComplete
+        );
+        if(invalidVisual(supportVisual)||lowerVisuals.some(invalidVisual)){
+            return{ok:false,reason:"live-contact-visual-not-final"};
+        }
+
+        /* Doubled-X hex coordinates use half-width X and sqrt(3)/2 row
+           height. Across the strict middle 50% of the lower edge, each lower
+           centre is 0.90..1.15 ball diameters from the protrusion. The small
+           margin absorbs sub-frame collision interpolation, but is far below
+           the multi-row gap visible in the reported recording. */
+        const rowHeight=
+            typeof HEX_ROW_H==="number"&&Number.isFinite(HEX_ROW_H)
+                ?HEX_ROW_H
+                :Math.sqrt(3)/2;
+        const distanceToSupport=visual=>Math.hypot(
+            (Number(visual.x)-Number(supportVisual.x))*.5,
+            (Number(visual.y)-Number(supportVisual.y))*rowHeight
+        );
+        const distances=lowerVisuals.map(distanceToSupport);
+        if(distances.some(distance=>distance<.82||distance>1.18)){
+            return{
+                ok:false,
+                reason:"displayed-triplet-has-not-reached-support",
+                distances
+            };
+        }
+
+        return{ok:true,source:"live-bilateral-tangent-contact",distances};
+    }
+
     function memberIsPhysicallyStopped(board,member){
         const ball=member?.ball;
         if(!ball)return false;
@@ -372,10 +460,20 @@
             !info?.solo?.ball||
             !Number.isFinite(hitFraction)||
             hitFraction<=.25+1e-9||
-            hitFraction>=.75-1e-9||
-            currentBilateralCentralContact(info,members,motions)
+            hitFraction>=.75-1e-9
         )return null;
-        return{info,hitFraction};
+        const bilateral=currentBilateralCentralContact(info,members,motions);
+        if(!bilateral)return{info,hitFraction,reason:"future-pivot-only"};
+        const liveContact=liveVisualCentralContact(board,members,info);
+        return liveContact.ok
+            ?null
+            :{
+                info,
+                hitFraction,
+                reason:liveContact.reason,
+                liveDistances:liveContact.distances||null,
+                logicalPivotOnly:true
+            };
     }
 
     function validOutwardSoloMotion(motion,solo,direction){
@@ -639,6 +737,8 @@
            protrusion NOW. `topPivot` deliberately does not qualify: it encodes
            a free-fall approach whose contact occurs later in the segment. */
         if(!currentBilateralCentralContact(correctedInfo,members,motions))return null;
+        const liveContact=liveVisualCentralContact(board,members,correctedInfo);
+        if(!liveContact.ok)return null;
 
         const pairLowerId=memberId(pairLower);
         const soloId=memberId(solo);
@@ -651,7 +751,9 @@
             pairLowerId,
             soloId,
             hitFraction,
-            contactSideSource:contact.source
+            contactSideSource:contact.source,
+            liveContactSource:liveContact.source,
+            liveContactDistances:liveContact.distances||null
         };
     }
 
@@ -1138,6 +1240,8 @@
                         :"reject-upward-split-outside-middle-fifty-percent",
                     rejected:explicitUpSplit,
                     airborneCandidate:!!airborneSplitBefore,
+                    airborneReason:airborneSplitBefore?.reason||null,
+                    liveDistances:airborneSplitBefore?.liveDistances||null,
                     at:Date.now()
                 };
             }
@@ -1246,6 +1350,8 @@
     window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=true;
     window.__sixBallInverseTriangleUsesLegacySplitRules=true;
     window.__sixBallDivergentMotionAloneCannotSplit=true;
+    window.__sixBallLiveVisualContactRequiredBeforeSplit=true;
+    window.__sixBallLogicalPivotCannotSplitWhileVisualAirborne=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v16";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v17";
 })();

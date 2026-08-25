@@ -253,7 +253,7 @@ expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geomet
 expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
 expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
 expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v16","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v17","final authority version mismatch");
 expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
 expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
 expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");

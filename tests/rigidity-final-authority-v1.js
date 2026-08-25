@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v16","v16 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v17","v17 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -147,6 +147,8 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallInverseTriangleUsesLegacySplitRules===true,"inverse-triangle legacy marker missing");
   expect(ctx.__sixBallPositionFinalRequiresPhysicalStop===true,"position-final physical-stop marker missing");
   expect(ctx.__sixBallDivergentMotionAloneCannotSplit===true,"divergent-motion split rejection marker missing");
+  expect(ctx.__sixBallLiveVisualContactRequiredBeforeSplit===true,"live visual contact marker missing");
+  expect(ctx.__sixBallLogicalPivotCannotSplitWhileVisualAirborne===true,"logical/visual timing marker missing");
 }
 
 /* Without a central split contact, an older same-row group correction is
@@ -294,6 +296,73 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(out.length===0,"airborne 2+1 candidate was allowed to move as a split");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"rejected airborne split did not restore triplet rigidity");
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-airborne-upward-two-plus-one","airborne split rejection was not recorded");
+}
+
+/* Recording 23:26:48: the logical board and both lower pivot probes have
+   already advanced to the central support, while the displayed rigid triplet
+   is still several rows above it. That logical/render time gap must wait as
+   one rigid body. Only a later pass where the live lower balls are physically
+   tangent to the support may begin the same 2+1 split. */
+{
+  const members=makeUpMembers(828);
+  const [top,left,right]=members;
+  const support={id:9928,c:4,isGarbage:false};
+  const ctx=install({
+    createEngine:()=>({
+      board:Array.from({length:10},()=>Array(12).fill(null)),
+      vis:new Map(),_visualMovingIds:new Set(),
+      _liveBatchClock:{elapsed:0,duration:1,states:new Map()}
+    }),
+    independent:(board,group,member)=>member===top
+      ?motion(member,1,1)
+      :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.4,top,pairLower:right,solo:left,
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      support,px:6,py:5,dir:1
+    }),
+    splitPlan:(board,group,info)=>[
+      {...motion(info.top,info.dir,1),bundleId:828,groupSize:2},
+      {...motion(info.pairLower,info.dir,1),bundleId:828,groupSize:2},
+      {...info.soloMotion,bundleId:0,groupSize:0}
+    ],
+    base:()=>[
+      {...motion(top,1,1),bundleId:828,groupSize:2},
+      {...motion(right,1,1),bundleId:828,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const game=ctx.createEngine();
+  for(const member of members){
+    game.board[member.y][member.x]=member.ball;
+    game.vis.set(member.ball.id,{
+      x:member.x,y:member.y-3,vy:2,motionSpeed:2
+    });
+    game._visualMovingIds.add(member.ball.id);
+    game._liveBatchClock.states.set(member.ball.id,{});
+  }
+  game.board[5][6]=support;
+  game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
+
+  const airborne=ctx.hexPhysPlanGroup(game.board,members,false);
+  expect(airborne.length===0,"logical pivot split while the displayed triplet was airborne");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"airborne visual wait broke triplet rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-airborne-upward-two-plus-one","logical/render time gap was not diagnosed as airborne");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.airborneReason==="triplet-visual-motion-incomplete","live motion clock was not recorded as the airborne cause");
+
+  game._visualMovingIds.clear();
+  game._liveBatchClock.elapsed=1;
+  for(const member of members){
+    const visual=game.vis.get(member.ball.id);
+    visual.x=member.x;
+    visual.y=member.y;
+    visual.vy=0;
+    visual.motionSpeed=0;
+  }
+  const contact=ctx.hexPhysPlanGroup(game.board,members,false);
+  const pair=contact.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,right.ball.id].sort()),"physical contact did not enable the correct opposite-side pair");
+  expect(!left.ball.rigid&&right.ball.rigid,"physical contact committed the wrong rigidity pair");
 }
 
 /* Direction +1 is finalized before pair metadata. Even if both the separator
@@ -766,4 +835,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v16 PASS");
+console.log("final rigidity authority v17 PASS");
