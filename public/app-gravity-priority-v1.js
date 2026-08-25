@@ -214,6 +214,78 @@
     }
 
 
+    function targetRealSupportCount(
+        b,
+        x,
+        y,
+        ignore
+    ){
+
+        if(!valid(x,y))return -999;
+        if(touchesFloorRow(y))return 2;
+
+        const s=hexPhysSupportInfo(
+            b,
+            x,
+            y,
+            ignore
+        );
+
+        return Number.isFinite(s.realCount)
+            ?Number(s.realCount)
+            :Number(s.count)||0;
+    }
+
+
+    const MAX_ORDINARY_HORIZONTAL_GRID=1;
+
+
+    function independentOrdinaryBall(ball){
+        return !!(
+            ball&&
+            !ball.isGarbage&&
+            !(Number(ball.motionGroupId)||0)
+        );
+    }
+
+
+    function continuousHorizontalDistance(
+        ball,
+        x,
+        tx
+    ){
+
+        const offset=
+            Math.max(
+                -1,
+                Math.min(
+                    1,
+                    Number(ball?.impactOffsetX)||0
+                )
+            );
+
+        return Math.abs(
+            tx-(x+offset)
+        );
+    }
+
+
+    function horizontalTargetAllowed(
+        ball,
+        x,
+        tx
+    ){
+
+        if(!independentOrdinaryBall(ball))return true;
+
+        return continuousHorizontalDistance(
+            ball,
+            x,
+            tx
+        )<=MAX_ORDINARY_HORIZONTAL_GRID+1e-9;
+    }
+
+
     function preferredGravityDir(
         b,
         x,
@@ -221,21 +293,6 @@
         ball,
         ignore
     ){
-
-        /*
-         * Existing physical momentum wins first.
-         */
-        const bias=
-            Math.sign(
-                ball?.momentumX ||
-                ball?.rollDir ||
-                ball?.subCellBias ||
-                0
-            );
-
-        if(bias)
-            return bias;
-
 
         const ls=
             targetSupportScore(
@@ -252,6 +309,114 @@
                 y+1,
                 ignore
             );
+
+        const leftStableCount=
+            targetRealSupportCount(
+                b,
+                x-1,
+                y+1,
+                ignore
+            );
+
+        const rightStableCount=
+            targetRealSupportCount(
+                b,
+                x+1,
+                y+1,
+                ignore
+            );
+
+        const leftAllowed=
+            horizontalTargetAllowed(
+                ball,
+                x,
+                x-1
+            );
+
+        const rightAllowed=
+            horizontalTargetAllowed(
+                ball,
+                x,
+                x+1
+            );
+
+
+        /*
+         * A normal ball first chooses a genuinely stable destination:
+         * floor or a V-pocket with two real lower supports. Candidate
+         * positions farther than half a ball horizontally from the current
+         * continuous centre are not reachable in this event. If both sides
+         * are stable, the physically nearest target wins.
+         */
+        const stable=[];
+
+        if(
+            independentOrdinaryBall(ball)&&
+            leftStableCount>=2&&
+            leftAllowed
+        ){
+            stable.push({
+                dir:-1,
+                distance:
+                    continuousHorizontalDistance(
+                        ball,
+                        x,
+                        x-1
+                    )
+            });
+        }
+
+        if(
+            independentOrdinaryBall(ball)&&
+            rightStableCount>=2&&
+            rightAllowed
+        ){
+            stable.push({
+                dir:1,
+                distance:
+                    continuousHorizontalDistance(
+                        ball,
+                        x,
+                        x+1
+                    )
+            });
+        }
+
+        stable.sort(
+            (a,b)=>a.distance-b.distance
+        );
+
+        if(
+            stable.length===1||
+            (
+                stable.length>1&&
+                stable[1].distance-
+                    stable[0].distance>1e-9
+            )
+        ){
+            return stable[0].dir;
+        }
+
+
+        /*
+         * Existing physical momentum breaks only a remaining tie.
+         */
+        const bias=
+            Math.sign(
+                ball?.momentumX ||
+                ball?.rollDir ||
+                ball?.subCellBias ||
+                0
+            );
+
+        if(
+            bias&&
+            (bias<0?leftAllowed:rightAllowed)
+        )return bias;
+
+
+        if(leftAllowed!==rightAllowed)
+            return leftAllowed?-1:1;
 
 
         /*
@@ -373,11 +538,27 @@
             );
 
 
-        const le=
+        const leftEmpty=
             lv&&!lb;
 
-        const re=
+        const rightEmpty=
             rv&&!rb;
+
+        const le=
+            leftEmpty&&
+            horizontalTargetAllowed(
+                ball,
+                x,
+                x-1
+            );
+
+        const re=
+            rightEmpty&&
+            horizontalTargetAllowed(
+                ball,
+                x,
+                x+1
+            );
 
         const de=
             dv&&!db;
@@ -388,8 +569,8 @@
          * pure gravity straight down.
          */
         if(
-            le &&
-            re &&
+            leftEmpty &&
+            rightEmpty &&
             de
         ){
             return{
@@ -563,8 +744,8 @@
          * Pick only one destination deterministically.
          */
         if(
-            le &&
-            re &&
+            leftEmpty &&
+            rightEmpty &&
             db
         ){
 
@@ -587,6 +768,11 @@
                     tx,
                     y+1,
                     ignore
+                )&&
+                horizontalTargetAllowed(
+                    ball,
+                    x,
+                    tx
                 )
             ){
                 return{
@@ -624,6 +810,11 @@
                     alt,
                     y+1,
                     ignore
+                )&&
+                horizontalTargetAllowed(
+                    ball,
+                    x,
+                    alt
                 )
             ){
                 return{
@@ -659,8 +850,8 @@
          * destination is still gravity.
          */
         if(
-            le &&
-            re &&
+            leftEmpty &&
+            rightEmpty &&
             !dv
         ){
 
@@ -680,6 +871,11 @@
                     x+dir,
                     y+1,
                     ignore
+                )&&
+                horizontalTargetAllowed(
+                    ball,
+                    x,
+                    x+dir
                 )
             ){
                 return{
@@ -707,6 +903,11 @@
                     x-dir,
                     y+1,
                     ignore
+                )&&
+                horizontalTargetAllowed(
+                    ball,
+                    x,
+                    x-dir
                 )
             ){
                 return{
@@ -3981,6 +4182,9 @@
 
     window.__sixBallGravityPriorityVersion=
         "gravity-priority-v6-ai-fastpath";
+
+    window.__sixBallOrdinaryGravityChoosesNearestStablePocket=true;
+    window.__sixBallOrdinaryGravityHorizontalLimitBallDiameters=.5;
 
     window.__sixBallAiUsesLiveRigidPhysics=
         false;

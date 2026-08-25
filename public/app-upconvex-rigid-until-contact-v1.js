@@ -1,5 +1,5 @@
 /* ============================================================
- * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v2.9
+ * 6ball UP-CONVEX RIGIDITY / PARTIAL RELEASE v3.0
  * ============================================================ */
 (function(){
     if(typeof window==="undefined"||window.__sixBallUpConvexRigidUntilImpossibleV28)return;
@@ -28,6 +28,7 @@
     }
 
     const ownIds=members=>new Set(members.map(m=>m.ball.id));
+    const MAX_POCKET_HORIZONTAL_GRID=1; // doubled-x grid: one ball diameter = 2
 
     function externalBall(board,x,y,own){
         if(typeof valid==="function"&&!valid(x,y))return null;
@@ -71,18 +72,33 @@
     }
 
     function inwardPocketCapture(board,members,g){
+        const offset=continuousOffset(members,g);
         const found=[];
         for(const solo of g.lower){
             const inward=Math.sign(g.top.x-solo.x);
             if(!inward)continue;
             const tx=solo.x+inward,ty=solo.y+1,pocket=pocketAt(board,tx,ty,members);
-            if(pocket)found.push({solo,tx,ty,inward,pocket,source:"immediate-lower-inward-v-pocket"});
+            if(!pocket)continue;
+
+            /* Horizontal capture is intentionally local. Positions use a
+               doubled-x lattice, so one grid unit is exactly half a ball.
+               Rank from the current continuous X, not the snapped cell, and
+               never pull a normal ball toward a farther pocket. */
+            const continuousX=solo.x+offset;
+            const distanceToPocket=Math.abs(continuousX-tx);
+            if(distanceToPocket>MAX_POCKET_HORIZONTAL_GRID+1e-9)continue;
+            found.push({
+                solo,tx,ty,inward,pocket,
+                continuousX,
+                distanceToPocket,
+                releaseOffsetX:offset,
+                source:"immediate-lower-inward-v-pocket"
+            });
         }
         if(found.length===0)return null;
         if(found.length===1)return found[0];
 
-        const offset=continuousOffset(members,g);
-        const ranked=found.map(c=>({...c,continuousX:c.solo.x+offset,distanceToPocket:Math.abs((c.solo.x+offset)-c.tx),releaseOffsetX:offset})).sort((a,b)=>a.distanceToPocket-b.distanceToPocket);
+        const ranked=[...found].sort((a,b)=>a.distanceToPocket-b.distanceToPocket);
 
         if(ranked.length>=2&&ranked[1].distanceToPocket-ranked[0].distanceToPocket>1e-6){
             return{...ranked[0],source:"continuous-pre-split-nearest-v-pocket"};
@@ -375,7 +391,7 @@
     window.__sixBallUpConvexRigidUntilContactV1=true;
     window.__sixBallUpConvexRigidUntilContactVersion="upconvex-rigidity-partial-release-v2.3";
     window.__sixBallUpConvexRigidUntilImpossibleVersion="upconvex-rigidity-partial-release-v2.3";
-    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v2.9";
+    window.__sixBallUpConvexRigidImplementationVersion="upconvex-rigidity-partial-release-v3.0";
     window.__sixBallUpConvexNoSyntheticRigidTranslation=true;
     window.__sixBallUpConvexRequiresRealCurrentPivot=true;
     window.__sixBallUpRestAloneDoesNotChooseSolo=true;
@@ -391,5 +407,7 @@
     window.__sixBallUpContactSideOverridesPocketChoice=true;
     window.__sixBallUpPocketCaptureRequiresCentralSeparator=true;
     window.__sixBallUpContinuousPocketDisambiguation=true;
+    window.__sixBallUpPocketChoosesNearestWithinHalfBall=true;
+    window.__sixBallOrdinaryPocketHorizontalLimitBallDiameters=.5;
     window.__sixBallUpRemainingTwoKeepRigidity=true;
 })();

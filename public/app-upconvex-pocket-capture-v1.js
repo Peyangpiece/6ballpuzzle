@@ -29,6 +29,7 @@
     window.__sixBallUpProjectedPocketCaptureV1 = true;
 
     const baseSeparator = hexPhysUpConvexSeparator;
+    const MAX_POCKET_HORIZONTAL_GRID = 1;
 
     function layout(members){
         if(
@@ -103,11 +104,18 @@
 
             const tx=Number(motion.tx);
             const ty=Number(motion.ty);
+            const offset=Math.max(
+                -1,
+                Math.min(1,Number(solo.ball?.impactOffsetX)||0)
+            );
+            const continuousX=solo.x+offset;
+            const distanceToPocket=Math.abs(tx-continuousX);
 
             if(
                 !Number.isFinite(tx) ||
                 !Number.isFinite(ty) ||
-                ty <= solo.y
+                ty <= solo.y ||
+                distanceToPocket>MAX_POCKET_HORIZONTAL_GRID+1e-9
             ){
                 continue;
             }
@@ -134,13 +142,21 @@
                 leftSupport,
                 rightSupport,
                 tx,
-                ty
+                ty,
+                continuousX,
+                distanceToPocket
             });
         }
 
-        return found.length === 1
-            ? {...found[0],layout:g}
-            : null;
+        if(!found.length)return null;
+        const ranked=[...found].sort(
+            (a,b)=>a.distanceToPocket-b.distanceToPocket
+        );
+        if(
+            ranked.length>1&&
+            Math.abs(ranked[1].distanceToPocket-ranked[0].distanceToPocket)<=1e-9
+        )return null;
+        return{...ranked[0],layout:g};
     }
 
     hexPhysUpConvexSeparator=function(
@@ -231,6 +247,7 @@
                 capture.leftSupport.id,
                 capture.rightSupport.id
             ],
+            projectedPocketHorizontalDistance:capture.distanceToPocket,
             preArcSideLocked:false,
             pairSide:pairDir<0?"left":"right",
             soloSide:pairDir<0?"right":"left",
@@ -250,9 +267,10 @@
     };
 
     window.__sixBallUpProjectedPocketCaptureVersion=
-        "up-projected-pocket-capture-v2";
+        "up-projected-pocket-capture-v3";
     window.__sixBallUpPocketCaptureOverridesGeometricSide=false;
     window.__sixBallUpPocketCaptureNeverOverridesSelectedSide=true;
     window.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent=true;
     window.__sixBallUpPocketCaptureNormalSupportsOnly=true;
+    window.__sixBallUpProjectedPocketChoosesNearestWithinHalfBall=true;
 })();

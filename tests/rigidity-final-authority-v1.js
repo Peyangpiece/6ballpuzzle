@@ -44,7 +44,7 @@ function motion(member,dx=1,dy=1){
     followSupportIds:[]
   };
 }
-function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSlope,valid}){
+function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,separator,splitPlan,rigidSlope,valid}){
   const ctx={
     console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,
     Error,TypeError,
@@ -58,6 +58,8 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
     ),
     hexPhysClearGroupBall:clear
   };
+  if(supportInfo)ctx.hexPhysSupportInfo=supportInfo;
+  if(touchesFloor)ctx.touchesFloorRow=touchesFloor;
   if(rigidSlope)ctx.hexPhysRigidSlopePlan=rigidSlope;
   if(valid)ctx.valid=valid;
   if(separator)ctx.hexPhysUpConvexSeparator=separator;
@@ -110,7 +112,7 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v8","v8 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v11","v11 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -119,6 +121,10 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(ctx.__sixBallSplitDirectionPrecedesPairRigidity===true,"direction-before-pair marker missing");
   expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
   expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
+  expect(ctx.__sixBallPairOnlyReleaseRequiresPositionFinalSupport===true,"pair-only support proof marker missing");
+  expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
+  expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===true,"two-trigger split whitelist marker missing");
+  expect(ctx.__sixBallDivergentMotionAloneCannotSplit===true,"divergent-motion split rejection marker missing");
 }
 
 /* Even if an older wrapper proposes a 2+1 split, a canonical current external
@@ -262,6 +268,37 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="split-direction-confirmed-before-pair-rigidity","pair was not committed after direction confirmation");
 }
 
+/* At a current middle-50% contact, a whole-triplet horizontal correction from
+   an older layer is farther than the already available split. Split in place;
+   do not slide the three balls sideways first. */
+{
+  const members=makeUpMembers(814);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>member===top
+      ?motion(member,1,1)
+      :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.5,top,pairLower:right,solo:left,
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      px:6,py:5,dir:1
+    }),
+    splitPlan:()=>[
+      {...motion(top,1,1),bundleId:814,groupSize:2},
+      {...motion(right,1,1),bundleId:814,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ],
+    base:()=>members.map(member=>({
+      ...motion(member,2,0),kind:"GROUP_HORIZONTAL_SNAP",
+      bundleId:814,groupSize:3
+    }))
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===3&&out.every(step=>step.ty-step.y===1),"horizontal correction ran before the nearer current split");
+  expect(out.filter(step=>step.groupSize===2).every(step=>[top.ball.id,right.ball.id].includes(step.ball.id)),"nearer split kept the wrong rigid pair");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="split-direction-confirmed-before-pair-rigidity","nearer current split was not committed directly");
+}
+
 /* Mirrored direction -1 must independently derive top+LEFT as the pair and
    release RIGHT solo, regardless of stale right-pair metadata. */
 {
@@ -319,13 +356,14 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   }
 }
 
-/* Upward-convex RIGHT split: a pair-only selected event keeps top+LEFT, while
-   the omitted right ball is position-final and releases immediately. */
+/* Upward-convex RIGHT split: once the omitted right ball is locked into a
+   two-support V-pocket, release it and keep top+LEFT as the rigid pair. */
 {
   const members=makeUpMembers(820);
   const [top,left,right]=members;
   const ctx=install({
     independent:(board,group,member)=>member===right?null:motion(member,-1,1),
+    supportInfo:()=>({floor:false,count:2,realCount:2}),
     base:()=>[
       {...motion(top,-1,1),bundleId:820,groupSize:2},
       {...motion(left,-1,1),bundleId:820,groupSize:2}
@@ -336,6 +374,47 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,left.ball.id].sort()),"right split did not keep the pair on the left");
   expect(!right.ball.rigid&&right.ball.motionGroupId===0,"omitted right split ball retained rigidity");
   expect(top.ball.rigid&&left.ball.rigid,"left-side pair lost rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="position-final-member-released-after-support-proof","position-final split lacked support proof");
+}
+
+/* A slope collision can make the isolated lower probe return null for one
+   resolver pass. With only one lower support it is not position-final; rebuild
+   the authored downhill vector as one rigid three-ball translation. */
+{
+  const members=makeUpMembers(821);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>member===right?null:motion(member,-1,1),
+    supportInfo:()=>({floor:false,count:1,realCount:1}),
+    base:()=>[
+      {...motion(top,-1,1),bundleId:821,groupSize:2},
+      {...motion(left,-1,1),bundleId:821,groupSize:2}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===3&&out.every(step=>step.groupSize===3&&step.tx-step.x===-1&&step.ty-step.y===1),"temporary slope stop was not restored as one triplet");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"restored slope triplet lost rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="restore-pair-only-slope-as-rigid-triplet","slope pair-only recovery was not recorded");
+}
+
+/* If the complete translation is physically blocked too, wait with all three
+   members rigid. A single contact is still not permission to split. */
+{
+  const members=makeUpMembers(822);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>member===right?null:motion(member,-1,1),
+    supportInfo:()=>({floor:false,count:1,realCount:1}),
+    groupPlan:()=>null,
+    base:()=>[
+      {...motion(top,-1,1),bundleId:822,groupSize:2},
+      {...motion(left,-1,1),bundleId:822,groupSize:2}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===0,"unsupported pair-only slope collision was allowed to split");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"rejected pair-only slope collision did not keep the triplet");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-pair-only-slope-contact-not-position-final","unsupported pair-only rejection was not recorded");
 }
 
 /* If the selected event omits one member, omission itself finalizes that
@@ -343,7 +422,10 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
 {
   const members=makeMembers(720);
   const ctx=install({
-    independent:(board,group,member)=>motion(member,member.ball.id===100?0:1,member.ball.id===100?2:1),
+    independent:(board,group,member)=>member.ball.id===100
+      ?null
+      :motion(member,1,1),
+    supportInfo:()=>({floor:false,count:2,realCount:2}),
     base:(board,group)=>group.slice(1).map(member=>({
       ...motion(member,1,1),bundleId:720,groupSize:2
     }))
@@ -353,10 +435,32 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(!members[0].ball.rigid&&members[0].ball.motionGroupId===0,"omitted fixed member retained rigidity");
 }
 
+/* Different moving directions are not a third split trigger. Without current
+   central contact or an omitted position-final member, keep the full body. */
+{
+  const members=makeMembers(725);
+  const ctx=install({
+    independent:(board,group,member)=>motion(member,member.ball.id===100?-1:1,1),
+    base:(board,group)=>group.map((member,index)=>({
+      ...motion(member,index===0?-1:1,1),
+      bundleId:index<2?725:0,
+      groupSize:index<2?2:0
+    }))
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===0,"divergent motion created an unauthorized third split path");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"unauthorized divergent split did not restore the full body");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-ordinary-split-without-central-contact-or-position-final","unauthorized split rejection was not recorded");
+}
+
 /* A terminal group releases immediately when logical positions are final. */
 {
   const members=makeMembers(730);
-  const ctx=install({independent:()=>null,base:()=>[]});
+  const ctx=install({
+    independent:()=>null,
+    supportInfo:()=>({floor:true,count:2,realCount:2}),
+    base:()=>[]
+  });
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===0,"settled group invented motion");
   expect(members.every(member=>!member.ball.rigid&&member.ball.motionGroupId===0),"settled group retained rigidity");
@@ -366,7 +470,11 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
 {
   const members=makeMembers(740);
   const before=JSON.stringify(members.map(member=>member.ball));
-  const ctx=install({independent:()=>null,base:()=>[]});
+  const ctx=install({
+    independent:()=>null,
+    supportInfo:()=>({floor:true,count:2,realCount:2}),
+    base:()=>[]
+  });
   ctx.hexPhysPlanGroup([],members,true);
   expect(JSON.stringify(members.map(member=>member.ball))===before,"preview mutated rigidity metadata");
 }
@@ -382,4 +490,4 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v8 PASS");
+console.log("final rigidity authority v11 PASS");
