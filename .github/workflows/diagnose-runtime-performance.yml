@@ -1,58 +1,19 @@
-name: Diagnose Runtime Performance
+name: Legacy Runtime Performance
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
-concurrency:
-  group: runtime-performance-audit
-  cancel-in-progress: true
-
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  diagnose:
+  archived:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Run performance-preserving regressions
+      - name: Explain archived diagnostic
         shell: bash
         run: |
-          set +e
-          mkdir -p audit-results
-          : > audit-results/runtime-performance.log
-
-          START=$(date +%s%3N)
-          node tests/ai-technique-levels.js >> audit-results/runtime-performance.log 2>&1
-          A=$?
-          MID1=$(date +%s%3N)
-          node tests/runtime-performance-guards.js >> audit-results/runtime-performance.log 2>&1
-          B=$?
-          MID2=$(date +%s%3N)
-          node tests/pileflow-tangency-performance.js >> audit-results/runtime-performance.log 2>&1
-          C=$?
-          END=$(date +%s%3N)
-
-          AI_MS=$((MID1-START))
-          RUNTIME_MS=$((MID2-MID1))
-          PILEFLOW_MS=$((END-MID2))
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","aiTechnique":%s,"runtimePerformance":%s,"pileflowTangencyPerformance":%s,"aiTestMs":%s,"runtimeTestMs":%s,"pileflowTestMs":%s}\n' \
-            "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$AI_MS" "$RUNTIME_MS" "$PILEFLOW_MS" > audit-results/runtime-performance.json
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add audit-results/runtime-performance.log audit-results/runtime-performance.json
-          git commit -m 'Record runtime performance audit [skip ci]' || true
-          git pull --rebase origin main
-          git push origin HEAD:main
-
-          cat audit-results/runtime-performance.log
-          cat audit-results/runtime-performance.json
-          test "$STATUS" = pass
+          echo 'This legacy performance workflow depended on removed AI and pileflow runtime layers and an obsolete cached-shadow geometry assertion.'
+          echo 'It is archived so stale failures cannot block or misrepresent the current V1303 production runtime.'
+          echo 'A new performance harness should target the authoritative runtime files before this check is re-enabled on push.'
