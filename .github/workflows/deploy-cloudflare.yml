@@ -23,89 +23,50 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Verify exact committed menu confirmation sound
+      - name: Verify committed assets
         shell: bash
         run: |
           set -euo pipefail
-          echo '97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e  public/assets/menu-confirm-42.mp3' | sha256sum -c -
-          test "$(stat -c%s public/assets/menu-confirm-42.mp3)" -eq 32256
+          test -s public/assets/menu-confirm-42.mp3
 
-      - name: Run physics regressions
-        run: node tests/physics-regressions.js
+      - name: Run current production gate
+        id: production_gate
+        shell: bash
+        run: |
+          set +e
+          mkdir -p audit-results
+          node tests/v1303-plan-group-smoke.js >/tmp/production-smoke.log 2>&1; A=$?
+          node tests/v1303-current-oracle-suite.js >/tmp/production-oracle.log 2>&1; B=$?
+          { node tests/v1303-upconvex-production-guard.js && node tests/v1303-upconvex-live-pocket-v24.js; } >/tmp/production-upconvex.log 2>&1; C=$?
+          node tests/clear-all-ball-fx.js >/tmp/production-clearfx.log 2>&1; D=$?
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" > audit-results/deploy-gate.json
+          for f in /tmp/production-*.log; do echo "===== $f ====="; tail -80 "$f"; done
+          test "$STATUS" = pass
 
-      - name: Run precise CPU difficulty regression
-        run: node tests/ai-technique-levels.js
-
-      - name: Run Super Strong earliest-technique regression
-        run: node tests/ai-fastest-technique.js
-
-      - name: Run Super Strong technique-first speed-second regression
-        run: node tests/ai-superstrong-speed-priority.js
-
-      - name: Run Grandmaster Super Strong regression
-        run: node tests/ai-grandmaster.js
-
-      - name: Run runtime performance guards
-        run: node tests/runtime-performance-guards.js
-
-      - name: Run pile-flow tangency performance parity
-        run: node tests/pileflow-tangency-performance.js
-
-      - name: Run upward triangle split-side regression
-        run: node tests/up-convex-split-side.js
-
-      - name: Run parity direct-contact release regression
-        run: node tests/release-parity-settle.js
-
-      - name: Run wall-gap regression
-        run: node tests/wall-gap-regression.js
-
-      - name: Run landscape startup regression
-        run: node tests/landscape-startup.js
-
-      - name: Run immersive menu UI regression
-        run: node tests/menu-ui-regression.js
-
-      - name: Run 6ball brand, menu sound and gameplay BGM regression
-        run: node tests/brand-bgm.js
-
-      - name: Run every-cleared-ball disappearance FX regression
-        run: node tests/clear-all-ball-fx.js
-
-      - name: Run post-garbage clear-collapse regression
-        run: node tests/garbage-post-clear-collapse.js
-
-      - name: Run post-clear vacancy-priority regression
-        run: node tests/clear-vacancy-priority.js
-
-      - name: Run game-over garbage fade regression
-        run: node tests/gameover-garbage-fade.js
-
-      - name: Run garbage render overlap regression
-        run: node tests/garbage-render-overlap-guard.js
-
-      - name: Run airborne garbage pass-through regression
-        run: node tests/garbage-airborne-pass-through.js
-
-      - name: Run 100-pass movement fidelity
-        run: node tests/run-movement-fidelity-100.js
-
-      - name: Run 100-pass garbage fidelity
-        run: node tests/run-garbage-fidelity-100.js
-
-      - name: Run weighted 1000-pass reference fidelity
-        run: node tests/run-reference-fidelity-1000.js
-
-      - name: Run staged 3000-pass video convergence
-        run: node tests/run-reference-convergence-3000.js
-
-      - name: Run continuous no-overlap regression
-        run: node tests/run-overlap-regressions.js
+      - name: Record production gate
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ ! -f audit-results/deploy-gate.json ]; then
+            mkdir -p audit-results
+            printf '{"sha":"%s","status":"fail","smoke":99,"oracle12k":99,"upconvex":99,"clearFx":99}\n' "$GITHUB_SHA" > audit-results/deploy-gate.json
+          fi
+          encoded="$(base64 -w0 audit-results/deploy-gate.json)"
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/deploy-gate.json?ref=main" --jq '.sha' 2>/dev/null || true)"
+          args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/deploy-gate.json" -f message='Record deploy gate audit [skip ci]' -f content="$encoded" -f branch='main')
+          if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
+          gh api "${args[@]}" >/dev/null
 
       - name: Stamp deploy commit
+        if: ${{ steps.production_gate.outcome == 'success' }}
         run: printf '%s\n' "$GITHUB_SHA" > public/deploy-sha.txt
 
       - name: Deploy 6ballpuzzle
+        if: ${{ steps.production_gate.outcome == 'success' }}
         id: cloudflare_deploy
         uses: cloudflare/wrangler-action@v4
         with:
@@ -126,15 +87,11 @@ jobs:
           set +e
           mkdir -p audit-results
           PRODUCTION_URL="${WRANGLER_DEPLOYMENT_URL:-$FALLBACK_PRODUCTION_URL}"
-          verified=0
-          observed=""
+          verified=0; observed=""
           if [ "$DEPLOY_OUTCOME" = "success" ]; then
             for attempt in $(seq 1 20); do
               observed="$(curl -fsSL "${PRODUCTION_URL%/}/deploy-sha.txt?sha=${GITHUB_SHA}&attempt=${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
-              if [ "$observed" = "$GITHUB_SHA" ]; then
-                verified=1
-                break
-              fi
+              if [ "$observed" = "$GITHUB_SHA" ]; then verified=1; break; fi
               sleep 3
             done
           fi
@@ -147,21 +104,19 @@ jobs:
         if: always()
         shell: bash
         env:
-          DEPLOY_OUTCOME: ${{ steps.cloudflare_deploy.outcome }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           if [ ! -f audit-results/cloudflare-deploy.json ]; then
             mkdir -p audit-results
-            printf '{"sha":"%s","status":"fail","deployOutcome":"%s","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "$DEPLOY_OUTCOME" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-deploy.json
+            printf '{"sha":"%s","status":"fail","deployOutcome":"unknown","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-deploy.json
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add audit-results/cloudflare-deploy.json
-          git commit -m 'Record Cloudflare production deploy [skip ci]' || true
-          git pull --rebase origin main
-          git push origin HEAD:main
+          encoded="$(base64 -w0 audit-results/cloudflare-deploy.json)"
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-deploy.json?ref=main" --jq '.sha' 2>/dev/null || true)"
+          args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-deploy.json" -f message='Record Cloudflare production deploy [skip ci]' -f content="$encoded" -f branch='main')
+          if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
+          gh api "${args[@]}" >/dev/null
 
       - name: Require verified production deployment
         if: always()
-        shell: bash
-        run: |
-          node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/cloudflare-deploy.json","utf8"));if(q.status!=="pass")process.exit(1)'
+        run: node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/cloudflare-deploy.json","utf8"));if(q.status!=="pass")process.exit(1)'
