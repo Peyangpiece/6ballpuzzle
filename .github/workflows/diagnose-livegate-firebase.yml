@@ -1,0 +1,44 @@
+name: Diagnose Live Gate Firebase Credentials
+
+on:
+  push:
+    branches: [livegate-standalone]
+    paths:
+      - ".github/workflows/diagnose-livegate-firebase.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Firebase management credentials
+        shell: bash
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_SERVICE_ACCOUNT_BALLPUZZLE_8CC87: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BALLPUZZLE_8CC87 }}
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}
+        run: |
+          set -euo pipefail
+          found=0
+          for name in FIREBASE_TOKEN FIREBASE_SERVICE_ACCOUNT FIREBASE_SERVICE_ACCOUNT_BALLPUZZLE_8CC87 GOOGLE_CREDENTIALS GCP_SA_KEY GOOGLE_APPLICATION_CREDENTIALS_JSON; do
+            if [ -n "${!name:-}" ]; then
+              echo "${name}: present"
+              found=1
+            else
+              echo "${name}: missing"
+            fi
+          done
+          if [ "$found" -eq 1 ]; then
+            echo "FIREBASE_MANAGEMENT_CREDENTIALS=present" >> "$GITHUB_ENV"
+          else
+            echo "FIREBASE_MANAGEMENT_CREDENTIALS=missing" >> "$GITHUB_ENV"
+          fi
+
+      - name: Summary
+        run: echo "Firebase management credentials are ${FIREBASE_MANAGEMENT_CREDENTIALS}."
