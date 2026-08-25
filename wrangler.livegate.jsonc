@@ -1,0 +1,13 @@
+{
+  "name": "live-gate-standalone",
+  "main": "./src/livegate-worker.js",
+  "compatibility_date": "2026-08-26",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./livegate-preview",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "none",
+    "not_found_handling": "single-page-application"
+  }
+}
