@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v12","v12 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v13","v13 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -132,7 +132,9 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,"airborne 2+1 guard marker missing");
   expect(ctx.__sixBallSplitDirectionPrecedesPairRigidity===true,"direction-before-pair marker missing");
   expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
-  expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
+  expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===false,"outer-quarter horizontal slide remains enabled");
+  expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===false,"horizontal-slide gravity bypass remains enabled");
+  expect(ctx.__sixBallPureHorizontalGroupMotionForbidden===true,"pure-horizontal group guard missing");
   expect(ctx.__sixBallPairOnlyReleaseRequiresPositionFinalSupport===true,"pair-only support proof marker missing");
   expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
   expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
@@ -140,6 +142,23 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallInverseTriangleUsesLegacySplitRules===true,"inverse-triangle legacy marker missing");
   expect(ctx.__sixBallPositionFinalRequiresPhysicalStop===true,"position-final physical-stop marker missing");
   expect(ctx.__sixBallDivergentMotionAloneCannotSplit===true,"divergent-motion split rejection marker missing");
+}
+
+/* Without a central split contact, an older same-row group correction is
+   discarded completely. The triplet waits rigid instead of moving sideways. */
+{
+  const members=makeUpMembers(703);
+  const ctx=install({
+    independent:()=>null,
+    base:()=>members.map(member=>({
+      ...motion(member,2,0),kind:"GROUP_HORIZONTAL_SNAP",
+      bundleId:703,groupSize:3
+    }))
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===0,"pure-horizontal triplet proposal was accepted");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"horizontal rejection broke triplet rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-pure-horizontal-group-motion","horizontal rejection was not recorded");
 }
 
 /* The two-trigger whitelist is intentionally NOT an inverse-triangle rule.
@@ -564,4 +583,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v12 PASS");
+console.log("final rigidity authority v13 PASS");

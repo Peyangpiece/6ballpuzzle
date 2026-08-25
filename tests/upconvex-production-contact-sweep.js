@@ -145,11 +145,15 @@ for(const center of[4,6,8,10,12,14]){
         if(outer){
           expect(!preview.separator&&!activeSplit(preview),
             `dense outer-quarter contact split ${JSON.stringify({input,plan:preview.plan})}`);
+          expect(preview.plan.every(step=>step.dy>0),
+            `dense outer-quarter contact moved horizontally ${JSON.stringify({input,plan:preview.plan})}`);
           expect(
-            preview.plan.length===3&&
-            preview.plan.every(step=>step.groupSize===3)&&
-            preservesRigidShape(preview.plan),
-            `dense outer-quarter contact stalled or deformed ${JSON.stringify({input,plan:preview.plan})}`
+            preview.plan.length===0||(
+              preview.plan.length===3&&
+              preview.plan.every(step=>step.groupSize===3)&&
+              preservesRigidShape(preview.plan)
+            ),
+            `dense outer-quarter contact partially moved or deformed ${JSON.stringify({input,plan:preview.plan})}`
           );
         }
       }
@@ -157,94 +161,24 @@ for(const center of[4,6,8,10,12,14]){
   }
 }
 
-function sameRelativePose(points,reference,epsilon=1e-9){
-  for(let i=0;i<points.length;i++)for(let j=i+1;j<points.length;j++){
-    if(
-      Math.abs((points[i][0]-points[j][0])-(reference[i][0]-reference[j][0]))>epsilon||
-      Math.abs((points[i][1]-points[j][1])-(reference[i][1]-reference[j][1]))>epsilon
-    )return false;
-  }
-  return true;
-}
-
+/* The former outer-quarter exception bypassed gravity with a (+/-2,0)
+   same-row slide. Neither the resolver nor settlePass may recreate it. */
 for(const offset of[-.75,.75]){
   const live=fixture({center:8,topY:3,offset,momentum:Math.sign(offset),preview:true,dense:true});
   const resolved=ctx.hexPhysResolveEvent(live.board,false)||[];
   const ids=new Set(live.members.map(member=>member.ball.id));
   const group=resolved.filter(step=>ids.has(step.ball.id));
-  expect(group.length===3&&group.every(step=>
-    step.groupSize===3&&
-    step.kind==="GROUP_RIGID_SLIDE"&&
-    step.rigidNoRotation===true&&
-    step.tx-step.x===Math.sign(offset)*2&&
-    step.ty-step.y===0
-  ),`resolver did not accept complete no-rotation rigid slide ${JSON.stringify({offset,resolved:resolved.map(step=>({id:step.ball.id,x:step.x,y:step.y,tx:step.tx,ty:step.ty,kind:step.kind,groupSize:step.groupSize,bundleId:step.bundleId,pivot:step.pivot}))})}`);
-  expect(ctx.hexPhysApplyEvent(live.board,resolved),
-    `resolver event did not apply offset=${offset}`);
-  expect(live.members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3&&member.ball.motionGroupOrientation==="up"),
-    `applied rigid slide rotated or lost the UP triplet offset=${offset}`);
+  expect(group.every(step=>step.ty>step.y),
+    `resolver accepted same-row movement ${JSON.stringify({offset,group})}`);
 
   const atomic=fixture({center:8,topY:3,offset,momentum:Math.sign(offset),preview:true,dense:true});
-  expect(ctx.settlePass(atomic.board,false),
-    `atomic settle did not apply rigid slide offset=${offset}`);
-  expect(atomic.members.every(member=>
-    member.ball.rigid&&
-    member.ball.motionGroupSize===3&&
-    member.ball.motionGroupOrientation==="up"&&
-    Array.isArray(member.ball.fallPath)&&
-    member.ball.fallPath.length===1&&
-    member.ball.fallPath[0].rigidNoRotation===true&&
-    Array.isArray(member.ball.fallPath[0].pivot)
-  ),`atomic settle split or omitted a member offset=${offset}`);
-  const segments=atomic.members.map(member=>member.ball.fallPath[0]);
-  const durations=segments.map(segment=>ctx.hexMotionDuration(segment,{vy:0,speed:0}));
-  expect(durations.every(value=>Math.abs(value-durations[0])<1e-9),
-    `rigid-slide members received different visual durations offset=${offset}`);
-  const initialPoints=segments.map(segment=>[...segment.from]);
-  for(let frame=0;frame<=120;frame++){
-    const t=frame/120;
-    const points=segments.map((segment,index)=>
-      ctx.liveSegPoint(segment,t,{vy:0,speed:0},durations[index])
-    );
-    expect(sameRelativePose(points,initialPoints),
-      `visual rigid slide rotated or deformed ${JSON.stringify({offset,frame,points,initialPoints})}`);
+  ctx.settlePass(atomic.board,false);
+  for(const member of atomic.members){
+    for(const segment of member.ball.fallPath||[]){
+      expect(segment.to[1]>segment.from[1],
+        `settlePass authored same-row movement ${JSON.stringify({offset,segment})}`);
+    }
   }
-
-  const engine=ctx.createEngine(990000+(offset>0?1:0));
-  engine.board=atomic.board;
-  engine.vis=new Map();
-  const memberIds=new Set(atomic.members.map(member=>member.ball.id));
-  for(let y=-16;y<12;y++)for(let x=0;x<19;x++){
-    if(!ctx.__v1303OracleValid(x,y))continue;
-    const boardBall=engine.board[y]?.[x];
-    if(!boardBall)continue;
-    const segment=memberIds.has(boardBall.id)?boardBall.fallPath?.[0]:null;
-    const [vx,vy]=segment?.from||[x,y];
-    engine.vis.set(boardBall.id,{x:vx,y:vy,vy:0,motionSpeed:0,sq:0});
-  }
-  engine.state="RESOLVING";
-  engine.phase="SETTLE";
-  const originalSeq=segments[0].motionSeq;
-  const renderedInitial=atomic.members.map(member=>{
-    const visual=engine.vis.get(member.ball.id);
-    return[visual.x,visual.y];
-  });
-  let renderedFrames=0;
-  for(;renderedFrames<360;renderedFrames++){
-    ctx.updateVisuals(engine,1/120);
-    const stillOriginal=atomic.members.some(member=>
-      member.ball.fallPath?.[0]?.motionSeq===originalSeq
-    );
-    const points=atomic.members.map(member=>{
-      const visual=engine.vis.get(member.ball.id);
-      return[visual.x,visual.y];
-    });
-    expect(sameRelativePose(points,renderedInitial,1e-6),
-      `rendered rigid slide rotated or deformed ${JSON.stringify({offset,renderedFrames,points,renderedInitial})}`);
-    if(!stillOriginal)break;
-  }
-  expect(renderedFrames<360,
-    `rigid-slide visual batch did not finish offset=${offset}`);
 }
 
 for(const center of[4,6,8,10,12,14]){
@@ -305,26 +239,28 @@ for(const center of[4,6,8,10,12,14]){
 
 expect(active>0,"sweep never exercised an active middle-50% split");
 expect(outerRigid>0&&exactBoundaries>0,"sweep missed outer quarters or exact boundaries");
-expect(outerMoving===outerRigid&&outerWaiting===0,
-  `outer-quarter rigid slide stalled moving=${outerMoving} waiting=${outerWaiting}`);
+expect(outerMoving+outerWaiting===outerRigid,
+  `outer-quarter accounting mismatch moving=${outerMoving} waiting=${outerWaiting}`);
 expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,
   "falling no-rotation invariant marker missing");
-expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,
-  "outer-quarter rigid-slide invariant marker missing");
-expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===true,
-  "rigid-slide atomic-settle invariant marker missing");
+expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===false,
+  "outer-quarter horizontal slide remains enabled");
+expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===false,
+  "horizontal-slide gravity bypass remains enabled");
+expect(ctx.__sixBallPureHorizontalGroupMotionForbidden===true,
+  "pure-horizontal group guard missing");
 expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,
   "airborne 2+1 invariant marker missing");
 expect(ctx.__sixBallSplitDirectionPrecedesPairRigidity===true,
   "direction-before-pair invariant marker missing");
 expect(ctx.__sixBallPivotArcPreservesLogicalRadius===true,
   "variable-radius pivot rendering marker missing");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v12",
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v13",
   "final rigidity authority version mismatch");
 console.log(
   `up-convex production contact sweep PASS ${cases}/${cases} `+
   `active=${active} outerRigid=${outerRigid} outerMoving=${outerMoving} `+
   `outerWaiting=${outerWaiting} exactBoundaries=${exactBoundaries} pairOnly=${pairOnly} `+
-  `dense=${denseCases} resolverApplied=2 atomicSettles=2 renderedSlides=2 `+
+  `dense=${denseCases} resolverNoHorizontal=2 settleNoHorizontal=2 `+
   `outerReasons=${JSON.stringify(Object.fromEntries(outerReasons))}`
 );

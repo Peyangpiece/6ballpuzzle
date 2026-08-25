@@ -41,14 +41,6 @@
     window.__sixBallFinalRigidityAuthorityV1=true;
 
     const basePlanGroup=hexPhysPlanGroup;
-    const baseResolveEvent=
-        typeof hexPhysResolveEvent==="function"
-            ?hexPhysResolveEvent
-            :null;
-    const baseSettlePass=
-        typeof settlePass==="function"
-            ?settlePass
-            :null;
     const liveEngineByBoard=new WeakMap();
 
     /* Group planning normally receives only the board, while physical stop
@@ -450,90 +442,6 @@
         };
     }
 
-    /* At an outer-quarter hit the logical lattice still shows the protrusion
-       directly below the UP triangle, so a one-cell diagonal translation
-       would move one lower member into that occupied cell. Move the complete
-       triangle one lattice column around the protrusion instead. Every member
-       receives the same (+/-2,0) displacement and a correspondingly translated
-       pivot, so the body follows the contact arc without rotating or changing
-       its UP orientation. The following resolver step can then descend the
-       newly exposed slope with the usual (+/-1,+1) rigid translation. */
-    function outerQuarterRigidSlide(board,members){
-        const layout=upwardTriangle(members);
-        if(!layout)return null;
-
-        const offset=Number(layout.top?.ball?.impactOffsetX);
-        if(!Number.isFinite(offset))return null;
-
-        const px=(layout.left.x+layout.right.x)/2;
-        const py=layout.left.y+1;
-        if(
-            !Number.isFinite(px)||
-            !Number.isFinite(py)||
-            (typeof valid==="function"&&!valid(px,py))
-        )return null;
-
-        const support=board?.[py]?.[px]||null;
-        const own=new Set(members.map(memberId));
-        if(!support||own.has(support.id))return null;
-
-        const clamped=Math.max(-1,Math.min(1,offset));
-        const baseLeft=layout.left.x+clamped;
-        const baseRight=layout.right.x+clamped;
-        const hitFraction=(px-baseLeft)/(baseRight-baseLeft);
-        if(
-            hitFraction>.25+1e-9&&
-            hitFraction<.75-1e-9
-        )return null;
-
-        const dir=Math.sign(((baseLeft+baseRight)/2)-px);
-        if(!dir)return null;
-
-        const contactedLower=dir>0?layout.left:layout.right;
-        const targets=new Set();
-        const bundle=groupIdFor(members,[]);
-        const plan=[];
-
-        for(const member of members){
-            const tx=member.x+2*dir;
-            const ty=member.y;
-            if(typeof valid==="function"&&!valid(tx,ty))return null;
-            const key=tx+","+ty;
-            if(targets.has(key))return null;
-            targets.add(key);
-            const occupied=board?.[ty]?.[tx]||null;
-            if(occupied&&!own.has(occupied.id))return null;
-            const isContact=memberId(member)===memberId(contactedLower);
-            const memberPivot=[
-                px+(member.x-contactedLower.x),
-                py+(member.y-contactedLower.y)
-            ];
-            plan.push({
-                x:member.x,y:member.y,tx,ty,
-                ball:member.ball,
-                kind:"GROUP_RIGID_SLIDE",
-                rigidNoRotation:true,
-                contactPush:true,
-                pivot:memberPivot,
-                topPivot:null,
-                virtualPivot:!isContact,
-                followSupportIds:[],
-                bundleId:bundle,
-                groupSize:3
-            });
-        }
-
-        if(typeof hexPhysPathHitsStationary==="function"){
-            for(const step of plan){
-                try{
-                    if(hexPhysPathHitsStationary(step,board,own))return null;
-                }catch(_){return null;}
-            }
-        }
-
-        return{plan,dir,hitFraction,supportId:support.id,pivot:[px,py]};
-    }
-
     /* Ask the canonical contact solver before any older split wrapper mutates
        the group. A complete current slope plan is direct physical proof that
        all three balls can continue together. It therefore has priority over
@@ -767,7 +675,6 @@
             members,
             motions
         );
-        const outerSlideBefore=outerQuarterRigidSlide(board,members);
         let basePlan=[];
         try{
             basePlan=basePlanGroup(board,members,preview)||[];
@@ -776,7 +683,15 @@
         }
 
         const knownIds=new Set(members.map(memberId));
-        const movingBase=basePlan.filter(step=>knownIds.has(memberId(step))&&vectorOf(step));
+        const proposedBase=basePlan.filter(step=>knownIds.has(memberId(step))&&vectorOf(step));
+        const baseHasPureHorizontal=proposedBase.some(step=>
+            Number(step.ty)===Number(step.y)&&
+            Number(step.tx)!==Number(step.x)
+        );
+        /* Pure sideways proposals are not physical gravity. Remove them before
+           any whole-group, pair or position-final classification. A diagonal
+           slope remains legal because its target is strictly lower. */
+        const movingBase=proposedBase.filter(step=>Number(step.ty)>Number(step.y));
         const baseMovesWholeGroup=
             movingBase.length===members.length&&
             new Set(movingBase.map(memberId)).size===members.length;
@@ -789,12 +704,6 @@
             selectedUpwardSplitSide(board,members,motions);
         const authoredBaseVector=
             baseMovesWholeGroup?sameVector(movingBase):null;
-        const selectedSplitBeatsHorizontalPlan=!!(
-            selectedSide&&
-            authoredBaseVector&&
-            authoredBaseVector.dx&&
-            authoredBaseVector.dy===0
-        );
 
         if(currentSlopeBefore){
             const normalized=normalizePlan(
@@ -828,7 +737,7 @@
         /* The selected coordinated event is authoritative. Independent probes
            inspect balls in isolation and therefore cannot invalidate a legal
            three-ball slope translation that already contains every member. */
-        if(baseDeclaresWholeRigid&&!selectedSplitBeatsHorizontalPlan){
+        if(baseDeclaresWholeRigid){
             const normalized=normalizePlan(
                 movingBase,
                 members,
@@ -845,38 +754,13 @@
             return normalized;
         }
 
-        /* The strict outer quarters are not split contacts. Resolve their
-           otherwise-blocked discrete state as one orientation-preserving
-           rigid slide so the triangle cannot wait forever at the protrusion. */
-        if(outerSlideBefore){
-            if(!preview){
-                commitCohort(members,outerSlideBefore.plan,authorityGroupId);
-                for(const member of members){
-                    member.ball.motionGroupOrientation="up";
-                    member.ball.momentumX=outerSlideBefore.dir;
-                    member.ball.rollDir=outerSlideBefore.dir;
-                    member.ball.subCellBias=outerSlideBefore.dir;
-                }
-                window.__sixBallLastFinalRigidityCorrectionV1={
-                    reason:"outer-quarter-rigid-no-rotation-slide",
-                    dir:outerSlideBefore.dir,
-                    hitFraction:outerSlideBefore.hitFraction,
-                    supportId:outerSlideBefore.supportId,
-                    pivot:outerSlideBefore.pivot,
-                    ids:members.map(memberId),
-                    at:Date.now()
-                };
-            }
-            return outerSlideBefore.plan;
-        }
-
         /* A separator can see the protruding pile ball one logical step before
            the falling visual reaches it. Older priority treated that future
            middle-50% candidate as an immediate 2+1 split, even when all three
            authored steps already had one identical downhill vector. Group-size
            metadata alone cannot turn that common motion into a split. */
         const authoredVector=authoredBaseVector;
-        if(authoredVector&&!selectedSplitBeatsHorizontalPlan){
+        if(authoredVector){
             const normalized=normalizePlan(
                 movingBase,
                 members,
@@ -1088,7 +972,9 @@
         if(!preview){
             commitCohort(members,[],authorityGroupId);
             window.__sixBallLastFinalRigidityCorrectionV1={
-                reason:"reject-ordinary-split-without-central-contact-or-position-final",
+                reason:baseHasPureHorizontal
+                    ?"reject-pure-horizontal-group-motion"
+                    :"reject-ordinary-split-without-central-contact-or-position-final",
                 ids:members.map(memberId),
                 proposedIds:movingBase.map(memberId),
                 at:Date.now()
@@ -1096,107 +982,6 @@
         }
         return[];
     };
-
-    function stableOuterSlideCandidate(board){
-        if(typeof hexPhysGroups!=="function")return null;
-        let groups=null;
-        try{groups=hexPhysGroups(board);}catch(_){groups=null;}
-        if(!groups||typeof groups.values!=="function")return null;
-
-        for(const members of groups.values()){
-            if(!ordinaryGroup(members)||members.length!==3)continue;
-            const slide=outerQuarterRigidSlide(board,members);
-            if(!slide)continue;
-
-            /* A moving protrusion must resolve its own gravity first. Only an
-               accumulated, position-final pile ball can serve as the rigid
-               rotation pivot for this contact event. */
-            if(typeof hexPhysNaturalMotion==="function"){
-                let supportMotion=null;
-                try{
-                    supportMotion=hexPhysNaturalMotion(
-                        board,
-                        slide.pivot[0],
-                        slide.pivot[1],
-                        null
-                    );
-                }catch(_){supportMotion={};}
-                if(supportMotion)continue;
-            }
-
-            try{
-                if(
-                    typeof hexPhysBundleTargetsFree==="function"&&
-                    !hexPhysBundleTargetsFree(slide.plan,board,[])
-                )continue;
-                if(
-                    typeof hexPhysBundleSafe==="function"&&
-                    !hexPhysBundleSafe(slide.plan,board,[])
-                )continue;
-            }catch(_){continue;}
-
-            return{members,...slide};
-        }
-        return null;
-    }
-
-    function commitOuterSlide(candidate,reason){
-        if(!candidate)return;
-        const gid=groupIdFor(candidate.members,candidate.plan);
-        commitCohort(candidate.members,candidate.plan,gid);
-        for(const member of candidate.members){
-            member.ball.motionGroupOrientation="up";
-            member.ball.momentumX=candidate.dir;
-            member.ball.rollDir=candidate.dir;
-            member.ball.subCellBias=candidate.dir;
-        }
-        window.__sixBallLastFinalRigidityCorrectionV1={
-            reason,
-            dir:candidate.dir,
-            hitFraction:candidate.hitFraction,
-            supportId:candidate.supportId,
-            pivot:candidate.pivot,
-            ids:candidate.members.map(memberId),
-            at:Date.now()
-        };
-    }
-
-    /* Legacy gravity filters correctly reject independent sideways moves, but
-       they used the same per-member `ty > y` rule for rigid bundles. The
-       outer-quarter contact slide ends on the same logical row before its
-       following diagonal fall. Restore only this fully validated three-member
-       no-rotation bundle after the ordinary resolver finds no event. */
-    if(baseResolveEvent){
-        hexPhysResolveEvent=function(board,preview=false){
-            const candidate=stableOuterSlideCandidate(board);
-            let normal=[];
-            try{normal=baseResolveEvent(board,preview)||[];}catch(_){normal=[];}
-            if(normal.length||!candidate)return normal;
-            if(!preview)commitOuterSlide(
-                candidate,
-                "outer-quarter-rigid-slide-resolver"
-            );
-            return preview?candidate.plan.slice(0,1):candidate.plan;
-        };
-    }
-
-    /* The final live settle layer also contained a second per-member downward
-       filter and could apply only two members of an otherwise valid bundle.
-       Apply the complete no-rotation event atomically before that filter runs. */
-    if(baseSettlePass&&typeof hexPhysApplyEvent==="function"){
-        settlePass=function(board,preview=false){
-            const candidate=stableOuterSlideCandidate(board);
-            if(candidate){
-                if(preview)return true;
-                commitOuterSlide(
-                    candidate,
-                    "outer-quarter-rigid-slide-atomic-settle"
-                );
-                try{return !!hexPhysApplyEvent(board,candidate.plan);}catch(_){return false;}
-            }
-            return baseSettlePass(board,preview);
-        };
-    }
 
     window.__sixBallSameDirectionAlwaysKeepsRigidity=true;
     window.__sixBallSameDirectionBeatsProspectiveTwoPlusOne=true;
@@ -1213,8 +998,9 @@
     window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=true;
     window.__sixBallCurrentCommonSlopeBeatsProspectiveSplit=true;
     window.__sixBallFallingRigidTriangleNeverRotates=true;
-    window.__sixBallUpConvexOuterQuarterUsesRigidSlide=true;
-    window.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter=true;
+    window.__sixBallUpConvexOuterQuarterUsesRigidSlide=false;
+    window.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter=false;
+    window.__sixBallPureHorizontalGroupMotionForbidden=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=false;
     window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=true;
     window.__sixBallCurrentCentralSplitBeatsHorizontalSnap=true;
@@ -1223,5 +1009,5 @@
     window.__sixBallInverseTriangleUsesLegacySplitRules=true;
     window.__sixBallDivergentMotionAloneCannotSplit=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v12";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v13";
 })();

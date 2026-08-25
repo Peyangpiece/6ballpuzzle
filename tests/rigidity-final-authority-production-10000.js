@@ -246,12 +246,13 @@ expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,"airborne 2+1 i
 expect(ctx.__sixBallSplitDirectionPrecedesPairRigidity===true,"direction-before-pair invariant marker missing");
 expect(ctx.__sixBallUpConvexPositionFinalReleaseExemptsContactBand===true,"position-final band exemption marker missing");
 expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
-expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
-expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===true,"rigid-slide atomic-settle marker missing");
+expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===false,"outer-quarter horizontal slide remains enabled");
+expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===false,"horizontal-slide gravity bypass remains enabled");
+expect(ctx.__sixBallPureHorizontalGroupMotionForbidden===true,"pure-horizontal group guard missing");
 expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geometric override remains enabled");
 expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
 expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
 expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v12","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v13","final authority version mismatch");
 expect(inverseLegacyDelegations>0,"production audit contained no inverse-triangle legacy delegation cases");
 console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} inverseLegacy=${inverseLegacyDelegations} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);
