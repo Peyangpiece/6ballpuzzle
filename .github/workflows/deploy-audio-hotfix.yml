@@ -109,6 +109,11 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if node -e 'const fs=require("fs");const q=JSON.parse(fs.readFileSync("audit-results/cloudflare-audio-hotfix.json","utf8"));if(q.status!=="pass")process.exit(1)' 2>/dev/null; then
+            git add public/assets/menu-confirm-42.mp3
+          else
+            git restore -- public/assets/menu-confirm-42.mp3 2>/dev/null || true
+          fi
           git add audit-results/cloudflare-audio-hotfix.json
           git commit -m 'Record Cloudflare audio hotfix deploy [skip ci]' || true
           git pull --rebase origin main
