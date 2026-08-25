@@ -1,0 +1,7 @@
+/* Transfer URL flow v3: keep transfer visually equal to other ticket actions */
+.tr-transfer-callout{display:none!important}
+.tr-transfer-primary{background:#fff!important;color:var(--ink)!important;border:1px solid var(--line)!important;box-shadow:none!important}
+.tr-url-box{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin:18px 0}
+.tr-url-box input{height:48px;border:1px solid var(--line);border-radius:13px;background:#f8f9fb;padding:0 13px;min-width:0;color:#444857}
+.tr-claim-card{max-width:620px;margin:40px auto}
+@media(max-width:640px){.tr-url-box{grid-template-columns:1fr}.tr-url-box .btn{width:100%}.tr-claim-card{margin:0 auto}}
