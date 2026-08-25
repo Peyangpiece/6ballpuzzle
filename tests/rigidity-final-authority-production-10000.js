@@ -207,6 +207,7 @@ for(const input of cases){
 
 expect(ctx.__sixBallFinalRigidityAuthorityV1===true,"final authority marker missing");
 expect(ctx.__sixBallSameDirectionAlwaysKeepsRigidity===true,"same-direction invariant marker missing");
+expect(ctx.__sixBallSameDirectionBeatsProspectiveTwoPlusOne===true,"same-direction prospective 2+1 guard missing");
 expect(ctx.__sixBallPositionFinalAlwaysReleasesRigidity===true,"position-final invariant marker missing");
 expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope triangle invariant marker missing");
 expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex side invariant marker missing");
@@ -220,5 +221,5 @@ expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geomet
 expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
 expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
 expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v5","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v6","final authority version mismatch");
 console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);

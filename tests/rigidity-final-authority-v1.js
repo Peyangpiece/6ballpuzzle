@@ -15,6 +15,7 @@ function clear(ball){
   ball.motionGroupSize=0;
   ball.rigid=false;
 }
+
 function makeMembers(gid=700){
   return[0,1,2].map(i=>({
     ball:{
@@ -67,6 +68,30 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   return ctx;
 }
 
+/* The selected event itself can be mislabeled as a 2+1 split even though pair
+   and solo all descend by the same slope vector. Group-size metadata alone
+   must not split an otherwise identical three-ball motion. */
+{
+  const members=makeUpMembers(812);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>motion(member,member===left?-1:1,1),
+    separator:()=>({
+      hitFraction:.5,top,pairLower:right,solo:left,
+      soloMotion:motion(left,-1,1),dir:1
+    }),
+    base:()=>[
+      {...motion(top,1,1),bundleId:812,groupSize:2},
+      {...motion(right,1,1),bundleId:812,groupSize:2},
+      {...motion(left,1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===3&&out.every(step=>step.groupSize===3&&step.bundleId===812&&step.tx-step.x===1&&step.ty-step.y===1),"same-vector authored 2+1 plan was not restored to one triplet");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-vector authored 2+1 plan lost rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="authored-same-direction-before-prospective-two-plus-one","authored same-direction correction was not recorded");
+}
+
 /* An earlier layer split metadata even though every independent member proves
    the same vector. The final authority must restore one three-ball cohort. */
 {
@@ -82,7 +107,7 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v5","v5 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v6","v6 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -146,8 +171,8 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"selected slope triangle lost rigidity");
 }
 
-/* Upward-convex LEFT split: even if all independent probes point in the same
-   direction, the top+RIGHT pair must remain a pair and the left ball releases. */
+/* A middle-50% protrusion is only a prospective split while all three current
+   probes still prove the same downhill vector. Keep the complete triplet. */
 {
   const members=makeUpMembers(810);
   const [top,left,right]=members;
@@ -164,10 +189,10 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
     ]
   });
   const out=ctx.hexPhysPlanGroup([],members,false);
-  const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
-  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,right.ball.id].sort()),"left split did not keep the pair on the right");
-  expect(!left.ball.rigid&&left.ball.motionGroupId===0,"left split solo retained rigidity");
-  expect(top.ball.rigid&&right.ball.rigid,"right-side pair lost rigidity");
+  expect(out.length===3&&out.every(step=>step.groupSize===3&&step.bundleId===810),"prospective 2+1 split beat a same-direction triplet");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction prospective-contact triplet lost rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="same-direction-before-prospective-two-plus-one","prospective split correction was not recorded");
+  expect(ctx.__sixBallSameDirectionBeatsProspectiveTwoPlusOne===true,"same-direction 2+1 priority marker missing");
 }
 
 /* A legacy layer proposes the opposite side. A proven LEFT contact in the
@@ -229,7 +254,7 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const members=makeUpMembers(820);
   const [top,left,right]=members;
   const ctx=install({
-    independent:(board,group,member)=>motion(member,-1,1),
+    independent:(board,group,member)=>member===right?null:motion(member,-1,1),
     base:()=>[
       {...motion(top,-1,1),bundleId:820,groupSize:2},
       {...motion(left,-1,1),bundleId:820,groupSize:2}
@@ -286,4 +311,4 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v5 PASS");
+console.log("final rigidity authority v6 PASS");

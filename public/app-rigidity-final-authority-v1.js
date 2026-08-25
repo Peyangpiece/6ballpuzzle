@@ -8,8 +8,9 @@
  * 1. A selected three-ball rigid slope event always keeps the
  *    complete triangle, even when a lower-level independent probe
  *    temporarily reports one member as stopped.
- * 2. An explicit upward-convex 2+1 split is never rejoined: a split
- *    on the left keeps the pair on the right, and vice versa.
+ * 2. A prospective upward-convex 2+1 split never overrides a legal
+ *    same-direction three-ball descent. Once common motion differs,
+ *    a real split on the left keeps the pair on the right, and vice versa.
  * 3. An active upward-convex split is legal only when the protrusion
  *    contacts the middle 50% of the lower two-ball edge.
  * 4. A member with no proposal in the chosen physical event has
@@ -598,10 +599,65 @@
             return outerSlideBefore.plan;
         }
 
-        /* This must run before same-direction recovery. Otherwise identical
-           independent vectors can accidentally rejoin an intentional 2+1
-           contact split. Geometry proves that the retained pair is opposite
-           the lower ball where the upward triangle split. */
+        /* A separator can see the protruding pile ball one logical step before
+           the falling visual reaches it. Older priority treated that future
+           middle-50% candidate as an immediate 2+1 split, even when all three
+           authored steps already had one identical downhill vector. Group-size
+           metadata alone cannot turn that common motion into a split. */
+        const authoredVector=baseMovesWholeGroup?sameVector(movingBase):null;
+        if(authoredVector){
+            const normalized=normalizePlan(
+                movingBase,
+                members,
+                preview,
+                true,
+                authorityGroupId
+            );
+            if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
+                reason:selectedSide
+                    ?"authored-same-direction-before-prospective-two-plus-one"
+                    :"authored-same-direction-whole-group",
+                ids:members.map(memberId),
+                vector:[authoredVector.dx,authoredVector.dy],
+                prospectiveSplit:!!selectedSide,
+                at:Date.now()
+            };
+            return normalized;
+        }
+
+        /* An older split wrapper can also author divergent pair/solo steps even
+           though all three independent current probes prove one safe downhill
+           translation. Resolve that common translation before considering the
+           future separator. A real split is considered only once current
+           physical directions actually differ. */
+        const independentVector=motions.every(Boolean)?sameVector(motions):null;
+        if(independentVector){
+            const plan=commonIndependentPlan(board,members,motions);
+            if(plan){
+                const normalized=normalizePlan(
+                    plan,
+                    members,
+                    preview,
+                    true,
+                    authorityGroupId
+                );
+                if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:selectedSide
+                        ?"same-direction-before-prospective-two-plus-one"
+                        :"same-direction-whole-group",
+                    ids:members.map(memberId),
+                    vector:[independentVector.dx,independentVector.dy],
+                    prospectiveSplit:!!selectedSide,
+                    at:Date.now()
+                };
+                return normalized;
+            }
+        }
+
+        /* Same-direction recovery has already failed. Do not manufacture a
+           rigid path through a real contact when the shared translation is
+           unsafe. Geometry now proves which opposite-side pair survives once
+           current directions differ. */
         const explicitUpSplit=upwardOppositeSideSplit(movingBase,members);
 
         /* The separator's physical contact-side decision is the final answer
@@ -703,34 +759,6 @@
                 at:Date.now()
             };
             return normalized;
-        }
-
-        /* All members independently prove the same legal vector. This is the
-           fallback for plans that did not already select a full rigid slope or
-           an intentional upward-convex split. Preserve richer authored pivots
-           when the base plan already moves every member by that same vector. */
-        const independentVector=motions.every(Boolean)?sameVector(motions):null;
-        if(independentVector){
-            const baseVector=baseMovesWholeGroup?sameVector(movingBase):null;
-            const plan=baseVector?.key===independentVector.key
-                ?movingBase
-                :commonIndependentPlan(board,members,motions);
-            if(plan){
-                const normalized=normalizePlan(
-                    plan,
-                    members,
-                    preview,
-                    true,
-                    authorityGroupId
-                );
-                if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                    reason:"same-direction-whole-group",
-                    ids:members.map(memberId),
-                    vector:[independentVector.dx,independentVector.dy],
-                    at:Date.now()
-                };
-                return normalized;
-            }
         }
 
         if(movingBase.length){
@@ -861,6 +889,7 @@
     }
 
     window.__sixBallSameDirectionAlwaysKeepsRigidity=true;
+    window.__sixBallSameDirectionBeatsProspectiveTwoPlusOne=true;
     window.__sixBallPositionFinalAlwaysReleasesRigidity=true;
     window.__sixBallSlopeTriangleAlwaysKeepsRigidity=true;
     window.__sixBallUpConvexSplitKeepsOppositePair=true;
@@ -874,5 +903,5 @@
     window.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v5";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v6";
 })();
