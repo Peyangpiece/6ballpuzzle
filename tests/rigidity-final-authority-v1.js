@@ -37,6 +37,17 @@ function makeUpMembers(gid=800){
     ...position,role:i,orientation:"up"
   }));
 }
+function makeDownMembers(gid=900){
+  const positions=[{x:5,y:3},{x:7,y:3},{x:6,y:4}];
+  return positions.map((position,i)=>({
+    ball:{
+      id:300+i,c:i,isGarbage:false,
+      motionGroupId:gid,motionGroupRole:i,
+      motionGroupOrientation:"down",motionGroupSize:3,rigid:true
+    },
+    ...position,role:i,orientation:"down"
+  }));
+}
 function motion(member,dx=1,dy=1){
   return{
     x:member.x,y:member.y,tx:member.x+dx,ty:member.y+dy,
@@ -44,7 +55,7 @@ function motion(member,dx=1,dy=1){
     followSupportIds:[]
   };
 }
-function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,separator,splitPlan,rigidSlope,valid}){
+function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,separator,splitPlan,rigidSlope,valid,createEngine}){
   const ctx={
     console,Math,Date,Map,Set,Array,Object,Number,String,Boolean,JSON,
     Error,TypeError,
@@ -58,6 +69,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
     ),
     hexPhysClearGroupBall:clear
   };
+  if(createEngine)ctx.createEngine=createEngine;
   if(supportInfo)ctx.hexPhysSupportInfo=supportInfo;
   if(touchesFloor)ctx.touchesFloorRow=touchesFloor;
   if(rigidSlope)ctx.hexPhysRigidSlopePlan=rigidSlope;
@@ -100,7 +112,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
 /* An earlier layer split metadata even though every independent member proves
    the same vector. The final authority must restore one three-ball cohort. */
 {
-  const members=makeMembers();
+  const members=makeUpMembers(700);
   const ctx=install({
     independent:(board,group,member)=>motion(member,1,1),
     base:(board,group)=>group.map((member,i)=>({
@@ -112,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v11","v11 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v12","v12 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -123,8 +135,34 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
   expect(ctx.__sixBallPairOnlyReleaseRequiresPositionFinalSupport===true,"pair-only support proof marker missing");
   expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
-  expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===true,"two-trigger split whitelist marker missing");
+  expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
+  expect(ctx.__sixBallUpConvexSplitOnlyCentralOrPositionFinal===true,"up-convex two-trigger split whitelist marker missing");
+  expect(ctx.__sixBallInverseTriangleUsesLegacySplitRules===true,"inverse-triangle legacy marker missing");
+  expect(ctx.__sixBallPositionFinalRequiresPhysicalStop===true,"position-final physical-stop marker missing");
   expect(ctx.__sixBallDivergentMotionAloneCannotSplit===true,"divergent-motion split rejection marker missing");
+}
+
+/* The two-trigger whitelist is intentionally NOT an inverse-triangle rule.
+   Preserve the exact pair+solo plan selected by the pre-authority planner,
+   including its legacy rigidity metadata and split direction. */
+{
+  const members=makeDownMembers(901);
+  const [left,right,bottom]=members;
+  let independentCalls=0;
+  const legacyPlan=[
+    {...motion(left,-1,1),bundleId:901,groupSize:2},
+    {...motion(bottom,-1,1),bundleId:901,groupSize:2},
+    {...motion(right,1,1),bundleId:0,groupSize:0}
+  ];
+  const ctx=install({
+    independent:()=>{independentCalls++;return null;},
+    base:()=>legacyPlan
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out===legacyPlan,"inverse triangle did not return the legacy plan unchanged");
+  expect(independentCalls===0,"up-convex authority probed an inverse triangle");
+  expect(out[0].groupSize===2&&out[2].groupSize===0,"inverse triangle legacy split metadata was rewritten");
+  expect(!ctx.__sixBallLastFinalRigidityCorrectionV1,"inverse triangle received an up-convex correction");
 }
 
 /* Even if an older wrapper proposes a 2+1 split, a canonical current external
@@ -169,7 +207,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
    selected slope event legally moves the whole triangle. The selected event
    wins and all three balls remain rigid. */
 {
-  const members=makeMembers(710);
+  const members=makeUpMembers(710);
   const ctx=install({
     independent:(board,group,member)=>member.ball.id===100&&group.length===3
       ?null
@@ -417,30 +455,66 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-pair-only-slope-contact-not-position-final","unsupported pair-only rejection was not recorded");
 }
 
-/* If the selected event omits one member, omission itself finalizes that
-   member's position for the event. It must not keep stale group metadata. */
+/* If the selected event omits one physically stopped, two-support member,
+   release it without leaving stale group metadata. */
 {
-  const members=makeMembers(720);
+  const members=makeUpMembers(720);
+  const fixed=members[1];
   const ctx=install({
-    independent:(board,group,member)=>member.ball.id===100
+    independent:(board,group,member)=>member===fixed
       ?null
       :motion(member,1,1),
     supportInfo:()=>({floor:false,count:2,realCount:2}),
-    base:(board,group)=>group.slice(1).map(member=>({
+    base:(board,group)=>group.filter(member=>member!==fixed).map(member=>({
       ...motion(member,1,1),bundleId:720,groupSize:2
     }))
   });
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===2&&out.every(step=>step.groupSize===2),"declared pair was not preserved");
-  expect(!members[0].ball.rigid&&members[0].ball.motionGroupId===0,"omitted fixed member retained rigidity");
+  expect(!fixed.ball.rigid&&fixed.ball.motionGroupId===0,"omitted fixed member retained rigidity");
+}
+
+/* Logical support is insufficient while the live ball still has physical
+   velocity. Release the fixed member only after its visual position, active
+   batch and speed all report a complete stop. */
+{
+  const members=makeUpMembers(724);
+  const fixed=members[1];
+  const ctx=install({
+    createEngine:()=>({
+      board:Array.from({length:10},()=>Array(12).fill(null)),
+      vis:new Map(),_visualMovingIds:new Set(),
+      _liveBatchClock:{elapsed:0,duration:0,states:new Map()}
+    }),
+    independent:(board,group,member)=>member===fixed?null:motion(member,1,1),
+    supportInfo:()=>({floor:false,count:2,realCount:2}),
+    base:(board,group)=>group.filter(member=>member!==fixed).map(member=>({
+      ...motion(member,1,1),bundleId:724,groupSize:2
+    }))
+  });
+  const game=ctx.createEngine();
+  for(const member of members){
+    game.board[member.y][member.x]=member.ball;
+    game.vis.set(member.ball.id,{x:member.x,y:member.y,vy:0,motionSpeed:0});
+  }
+  game.vis.get(fixed.ball.id).vy=.25;
+  const movingOut=ctx.hexPhysPlanGroup(game.board,members,false);
+  expect(movingOut.length===3,"supported but physically moving member was released");
+  expect(fixed.ball.rigid&&fixed.ball.motionGroupSize===3,"moving member lost triplet rigidity");
+
+  game.vis.get(fixed.ball.id).vy=0;
+  const stoppedOut=ctx.hexPhysPlanGroup(game.board,members,false);
+  expect(stoppedOut.length===2,"physically stopped supported member was not released");
+  expect(!fixed.ball.rigid&&fixed.ball.motionGroupId===0,"physically stopped member retained rigidity");
 }
 
 /* Different moving directions are not a third split trigger. Without current
    central contact or an omitted position-final member, keep the full body. */
 {
-  const members=makeMembers(725);
+  const members=makeUpMembers(725);
+  const divergent=members[0];
   const ctx=install({
-    independent:(board,group,member)=>motion(member,member.ball.id===100?-1:1,1),
+    independent:(board,group,member)=>motion(member,member===divergent?-1:1,1),
     base:(board,group)=>group.map((member,index)=>({
       ...motion(member,index===0?-1:1,1),
       bundleId:index<2?725:0,
@@ -455,7 +529,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
 
 /* A terminal group releases immediately when logical positions are final. */
 {
-  const members=makeMembers(730);
+  const members=makeUpMembers(730);
   const ctx=install({
     independent:()=>null,
     supportInfo:()=>({floor:true,count:2,realCount:2}),
@@ -468,7 +542,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
 
 /* Preview must report the correction without mutating canonical metadata. */
 {
-  const members=makeMembers(740);
+  const members=makeUpMembers(740);
   const before=JSON.stringify(members.map(member=>member.ball));
   const ctx=install({
     independent:()=>null,
@@ -490,4 +564,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v11 PASS");
+console.log("final rigidity authority v12 PASS");

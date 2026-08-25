@@ -1,9 +1,11 @@
 /* ============================================================
- * 6ball FINAL RIGIDITY AUTHORITY v1
+ * 6ball FINAL RIGIDITY AUTHORITY v1 (UP-CONVEX SCOPE)
  *
  * This is the last ordinary-ball group planner in the runtime.
- * Earlier layers may choose the physical split side or path, but
- * they may not violate these final invariants:
+ * Earlier layers may choose the physical split side or path, but an
+ * upward-convex ordinary triplet may not violate these final invariants.
+ * Downward/inverse triangles and already-separated two-ball groups delegate
+ * unchanged to the legacy planner, preserving their former split rules:
  *
  * 1. A selected three-ball rigid slope event always keeps the
  *    complete triangle, even when a lower-level independent probe
@@ -21,8 +23,9 @@
  *    A temporarily missing isolated probe on a slope is not settlement.
  * 5. A declared moving pair is always normalized to one two-ball
  *    constraint; solo movers always have zero rigidity.
- * 6. Different independent directions, isolated collisions, and
- *    lower-layer pair metadata can never authorize a split by themselves.
+ * 6. For an upward-convex triplet, different independent directions,
+ *    isolated collisions, and lower-layer pair metadata can never authorize
+ *    a split by themselves.
  *
  * Garbage has its own zero-rigidity pipeline and is never changed
  * here. Preview calls are strictly read-only.
@@ -46,6 +49,21 @@
         typeof settlePass==="function"
             ?settlePass
             :null;
+    const liveEngineByBoard=new WeakMap();
+
+    /* Group planning normally receives only the board, while physical stop
+       proof also needs the live visual/batch state. Register every engine at
+       creation without putting a circular owner reference on the board. */
+    if(typeof createEngine==="function"){
+        const baseCreateEngine=createEngine;
+        createEngine=function(...args){
+            const game=baseCreateEngine(...args);
+            if(game?.board&&typeof game.board==="object"){
+                liveEngineByBoard.set(game.board,game);
+            }
+            return game;
+        };
+    }
 
     function ordinaryGroup(members){
         return !!(
@@ -227,17 +245,58 @@
         return currentPivotIs(info.pairLower)&&currentPivotIs(info.solo);
     }
 
+    function memberIsPhysicallyStopped(board,member){
+        const ball=member?.ball;
+        if(!ball)return false;
+        if(Array.isArray(ball.fallPath)&&ball.fallPath.length)return false;
+
+        const game=liveEngineByBoard.get(board);
+        if(!game){
+            /* Headless planner/audit boards have no render clock. In that
+               environment an empty physical path is the strongest available
+               stop proof; live games always take the stricter branch below. */
+            return true;
+        }
+
+        if(
+            game._visualMovingIds instanceof Set&&
+            game._visualMovingIds.has(ball.id)
+        )return false;
+
+        const clock=game._liveBatchClock;
+        if(
+            clock?.states instanceof Map&&
+            clock.states.has(ball.id)&&
+            Number(clock.elapsed)<Number(clock.duration)-1e-9
+        )return false;
+
+        const visual=game.vis?.get?.(ball.id);
+        if(!visual)return false;
+        if(
+            Math.abs(Number(visual.x)-Number(member.x))>1e-6||
+            Math.abs(Number(visual.y)-Number(member.y))>1e-6||
+            Math.abs(Number(visual.vy)||0)>1e-5||
+            Math.abs(Number(visual.motionSpeed)||0)>1e-5||
+            visual.pileFlow||
+            visual.justReleased||
+            visual._pendingPathComplete
+        )return false;
+
+        return true;
+    }
+
     /* A lower member disappearing from an earlier layer's plan is not proof
        that it has settled. Isolated probes can temporarily return null at a
        slope collision even though the complete triangle can still descend.
        Only the floor or two real lower supports establish a position-final
-       ball. Ignore the other members so the old triplet cannot prove its own
-       settlement, and reject any member whose visual fall is still live. */
+       ball, and even that support proof is accepted only after its physical
+       motion has completely stopped. Ignore the other members so the old
+       triplet cannot prove its own settlement. */
     function positionFinalSupportProven(board,members,motions,id){
         const index=members.findIndex(member=>memberId(member)===id);
         const member=index>=0?members[index]:null;
         if(!member?.ball||motions?.[index])return false;
-        if(Array.isArray(member.ball.fallPath)&&member.ball.fallPath.length)return false;
+        if(!memberIsPhysicallyStopped(board,member))return false;
 
         try{
             if(
@@ -678,6 +737,16 @@
 
     hexPhysPlanGroup=function(board,members,preview=false){
         if(!ordinaryGroup(members))return basePlanGroup(board,members,preview)||[];
+
+        /* The middle-50% / position-final whitelist belongs exclusively to
+           the upward-convex triangle. A downward (inverse) triangle must use
+           the planner that existed before this final authority was installed;
+           the same is true once a legacy split has produced a two-ball group.
+           Delegate before independent probes or metadata normalization so
+           this layer cannot alter either the returned plan or its rigidity. */
+        if(!upwardTriangle(members)){
+            return basePlanGroup(board,members,preview)||[];
+        }
 
         /* Capture this before any earlier commit layer gets a chance to clear
            it. A restored moving pair must never end with size=2 but group=0. */
@@ -1132,6 +1201,7 @@
     window.__sixBallSameDirectionAlwaysKeepsRigidity=true;
     window.__sixBallSameDirectionBeatsProspectiveTwoPlusOne=true;
     window.__sixBallPositionFinalAlwaysReleasesRigidity=true;
+    window.__sixBallPositionFinalRequiresPhysicalStop=true;
     window.__sixBallSlopeTriangleAlwaysKeepsRigidity=true;
     window.__sixBallUpConvexSplitKeepsOppositePair=true;
     window.__sixBallUpConvexSelectedSideCannotBeOverridden=true;
@@ -1148,8 +1218,10 @@
     window.__sixBallPositionFinalMeansMissingSelectedProposal=false;
     window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=true;
     window.__sixBallCurrentCentralSplitBeatsHorizontalSnap=true;
-    window.__sixBallOrdinarySplitOnlyCentralOrPositionFinal=true;
+    window.__sixBallOrdinarySplitOnlyCentralOrPositionFinal=false;
+    window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=true;
+    window.__sixBallInverseTriangleUsesLegacySplitRules=true;
     window.__sixBallDivergentMotionAloneCannotSplit=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v11";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v12";
 })();

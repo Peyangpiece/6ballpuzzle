@@ -86,6 +86,18 @@ function upwardLayout(members){
   )return null;
   return{top,left:lower[0],right:lower[1]};
 }
+function downwardLayout(members){
+  if(!Array.isArray(members)||members.length!==3)return null;
+  const ordered=[...members].sort((a,b)=>a.y-b.y||a.x-b.x);
+  const upper=ordered.slice(0,2).sort((a,b)=>a.x-b.x);
+  const bottom=ordered[2];
+  if(
+    upper.length!==2||upper[0].y!==upper[1].y||
+    !(bottom.y>upper[0].y)||
+    !(upper[0].x<bottom.x&&bottom.x<upper[1].x)
+  )return null;
+  return{left:upper[0],right:upper[1],bottom};
+}
 function upwardOppositeSplit(plan,members){
   const layout=upwardLayout(members);
   if(!layout)return null;
@@ -107,6 +119,7 @@ let oppositeSplits=0;
 let rejectedOutsideBand=0;
 let activeCentralSplits=0;
 let positionFinalSplits=0;
+let inverseLegacyDelegations=0;
 
 for(const input of cases){
   const previewFixture=build(input);
@@ -125,6 +138,13 @@ for(const input of cases){
     commitFixture.board,commitFixture.members,false
   ));
   const finalCorrection=ctx.__sixBallLastFinalRigidityCorrectionV1;
+  if(downwardLayout(input.members)){
+    inverseLegacyDelegations++;
+    expect(
+      finalCorrection===null,
+      `case ${input.index}: inverse triangle received an up-convex final-authority correction`
+    );
+  }
   const waitingRigid=
     commit.length===0&&
     [
@@ -210,12 +230,15 @@ expect(ctx.__sixBallFinalRigidityAuthorityV1===true,"final authority marker miss
 expect(ctx.__sixBallSameDirectionAlwaysKeepsRigidity===true,"same-direction invariant marker missing");
 expect(ctx.__sixBallSameDirectionBeatsProspectiveTwoPlusOne===true,"same-direction prospective 2+1 guard missing");
 expect(ctx.__sixBallPositionFinalAlwaysReleasesRigidity===true,"position-final invariant marker missing");
+expect(ctx.__sixBallPositionFinalRequiresPhysicalStop===true,"position-final physical-stop marker missing");
 expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope triangle invariant marker missing");
 expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex side invariant marker missing");
 expect(ctx.__sixBallPositionFinalMeansMissingSelectedProposal===false,"missing proposal still means position-final");
 expect(ctx.__sixBallPairOnlyReleaseRequiresPositionFinalSupport===true,"pair-only support proof marker missing");
 expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
-expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===true,"two-trigger split whitelist marker missing");
+expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
+expect(ctx.__sixBallUpConvexSplitOnlyCentralOrPositionFinal===true,"up-convex two-trigger split whitelist marker missing");
+expect(ctx.__sixBallInverseTriangleUsesLegacySplitRules===true,"inverse-triangle legacy marker missing");
 expect(ctx.__sixBallDivergentMotionAloneCannotSplit===true,"divergent-motion split rejection marker missing");
 expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
 expect(ctx.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact===true,"current bilateral contact invariant marker missing");
@@ -229,5 +252,6 @@ expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geomet
 expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
 expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
 expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v11","final authority version mismatch");
-console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v12","final authority version mismatch");
+expect(inverseLegacyDelegations>0,"production audit contained no inverse-triangle legacy delegation cases");
+console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} inverseLegacy=${inverseLegacyDelegations} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);
