@@ -343,11 +343,13 @@
             plan=null;
         }
         const ids=new Set((plan||[]).map(memberId));
+        const restoredVector=sameVector(plan||[]);
         return Array.isArray(plan)&&
             plan.length===members.length&&
             ids.size===members.length&&
             members.every(member=>ids.has(memberId(member)))&&
-            !!sameVector(plan)
+            restoredVector?.dx===vector.dx&&
+            restoredVector?.dy===vector.dy
                 ?plan
                 :null;
     }
@@ -754,6 +756,46 @@
             return normalized;
         }
 
+        /* A pair-only downhill proposal is not yet a position-final release.
+           First ask whether that exact slope vector can translate the complete
+           triangle without hitting the board. If it can, the third ball is
+           still physically movable through the rigid constraint: no separator
+           or isolated two-support result may split the body first. */
+        const restoredPairSlope=restoreTripletFromPairSlope(
+            board,
+            members,
+            movingBase
+        );
+        if(restoredPairSlope){
+            const normalized=normalizePlan(
+                restoredPairSlope,
+                members,
+                preview,
+                true,
+                authorityGroupId
+            );
+            if(!preview){
+                const vector=vectorOf(normalized[0]);
+                for(const member of members){
+                    member.ball.momentumX=vector?.dx||0;
+                    member.ball.rollDir=vector?.dx||0;
+                    member.ball.subCellBias=vector?.dx||0;
+                    member.ball._finalRigidSlopeContinuationV5=true;
+                }
+                if(typeof window.__sixBallRememberUpConvexRigidApproachV32==="function"){
+                    try{window.__sixBallRememberUpConvexRigidApproachV32(members,normalized);}catch(_){}
+                }
+                window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:"legal-pair-slope-before-split-or-position-final",
+                    ids:members.map(memberId),
+                    vector:[vector?.dx||0,vector?.dy||0],
+                    prospectiveSplit:!!selectedSide,
+                    at:Date.now()
+                };
+            }
+            return normalized;
+        }
+
         /* A separator can see the protruding pile ball one logical step before
            the falling visual reaches it. Older priority treated that future
            middle-50% candidate as an immediate 2+1 split, even when all three
@@ -896,29 +938,6 @@
                 explicitUpSplit.soloId
             );
             if(!positionFinal){
-                const restored=restoreTripletFromPairSlope(
-                    board,
-                    members,
-                    movingBase
-                );
-                if(restored){
-                    const normalized=normalizePlan(
-                        restored,
-                        members,
-                        preview,
-                        true,
-                        authorityGroupId
-                    );
-                    if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                        reason:"restore-pair-only-slope-as-rigid-triplet",
-                        rejected:explicitUpSplit,
-                        ids:members.map(memberId),
-                        vector:[vectorOf(normalized[0])?.dx||0,vectorOf(normalized[0])?.dy||0],
-                        at:Date.now()
-                    };
-                    return normalized;
-                }
-
                 if(!preview){
                     commitCohort(members,[],authorityGroupId);
                     for(const member of members){
@@ -1003,11 +1022,12 @@
     window.__sixBallPureHorizontalGroupMotionForbidden=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=false;
     window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=true;
+    window.__sixBallLegalPairSlopeBeatsEverySplitOrRelease=true;
     window.__sixBallCurrentCentralSplitBeatsHorizontalSnap=true;
     window.__sixBallOrdinarySplitOnlyCentralOrPositionFinal=false;
     window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=true;
     window.__sixBallInverseTriangleUsesLegacySplitRules=true;
     window.__sixBallDivergentMotionAloneCannotSplit=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v13";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v14";
 })();

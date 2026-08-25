@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v13","v13 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v14","v14 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -136,6 +136,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===false,"horizontal-slide gravity bypass remains enabled");
   expect(ctx.__sixBallPureHorizontalGroupMotionForbidden===true,"pure-horizontal group guard missing");
   expect(ctx.__sixBallPairOnlyReleaseRequiresPositionFinalSupport===true,"pair-only support proof marker missing");
+  expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
   expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
   expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
   expect(ctx.__sixBallUpConvexSplitOnlyCentralOrPositionFinal===true,"up-convex two-trigger split whitelist marker missing");
@@ -414,13 +415,15 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
 }
 
 /* Upward-convex RIGHT split: once the omitted right ball is locked into a
-   two-support V-pocket, release it and keep top+LEFT as the rigid pair. */
+   two-support V-pocket and the whole-triplet slope is blocked, release it and
+   keep top+LEFT as the rigid pair. */
 {
   const members=makeUpMembers(820);
   const [top,left,right]=members;
   const ctx=install({
     independent:(board,group,member)=>member===right?null:motion(member,-1,1),
     supportInfo:()=>({floor:false,count:2,realCount:2}),
+    groupPlan:()=>null,
     base:()=>[
       {...motion(top,-1,1),bundleId:820,groupSize:2},
       {...motion(left,-1,1),bundleId:820,groupSize:2}
@@ -434,15 +437,15 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="position-final-member-released-after-support-proof","position-final split lacked support proof");
 }
 
-/* A slope collision can make the isolated lower probe return null for one
-   resolver pass. With only one lower support it is not position-final; rebuild
-   the authored downhill vector as one rigid three-ball translation. */
+/* A slope collision can make the isolated lower probe look position-final for
+   one resolver pass. The exact pair vector is nevertheless safe for the whole
+   triplet, so rebuild it before either support release or split selection. */
 {
   const members=makeUpMembers(821);
   const [top,left,right]=members;
   const ctx=install({
     independent:(board,group,member)=>member===right?null:motion(member,-1,1),
-    supportInfo:()=>({floor:false,count:1,realCount:1}),
+    supportInfo:()=>({floor:false,count:2,realCount:2}),
     base:()=>[
       {...motion(top,-1,1),bundleId:821,groupSize:2},
       {...motion(left,-1,1),bundleId:821,groupSize:2}
@@ -451,7 +454,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.groupSize===3&&step.tx-step.x===-1&&step.ty-step.y===1),"temporary slope stop was not restored as one triplet");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"restored slope triplet lost rigidity");
-  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="restore-pair-only-slope-as-rigid-triplet","slope pair-only recovery was not recorded");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="legal-pair-slope-before-split-or-position-final","slope pair-only priority was not recorded");
 }
 
 /* If the complete translation is physically blocked too, wait with all three
@@ -484,6 +487,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
       ?null
       :motion(member,1,1),
     supportInfo:()=>({floor:false,count:2,realCount:2}),
+    groupPlan:()=>null,
     base:(board,group)=>group.filter(member=>member!==fixed).map(member=>({
       ...motion(member,1,1),bundleId:720,groupSize:2
     }))
@@ -507,6 +511,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
     }),
     independent:(board,group,member)=>member===fixed?null:motion(member,1,1),
     supportInfo:()=>({floor:false,count:2,realCount:2}),
+    groupPlan:()=>null,
     base:(board,group)=>group.filter(member=>member!==fixed).map(member=>({
       ...motion(member,1,1),bundleId:724,groupSize:2
     }))
@@ -518,7 +523,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   }
   game.vis.get(fixed.ball.id).vy=.25;
   const movingOut=ctx.hexPhysPlanGroup(game.board,members,false);
-  expect(movingOut.length===3,"supported but physically moving member was released");
+  expect(movingOut.length===0,"blocked, physically moving triplet should wait rigid");
   expect(fixed.ball.rigid&&fixed.ball.motionGroupSize===3,"moving member lost triplet rigidity");
 
   game.vis.get(fixed.ball.id).vy=0;
@@ -583,4 +588,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v13 PASS");
+console.log("final rigidity authority v14 PASS");
