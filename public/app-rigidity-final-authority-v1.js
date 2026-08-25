@@ -31,6 +31,9 @@
  * 7. At every authorized contact split, the lower ball on the current contact
  *    side is the solo member. The top ball is rigid only with the opposite
  *    lower ball; a stale approach direction may never reverse those roles.
+ *    A contact strictly inside the right half of the central band always makes
+ *    the right lower ball solo; the mirrored left half always makes the left
+ *    lower ball solo. Stored/tie evidence is consulted only at exact centre.
  *
  * Garbage has its own zero-rigidity pipeline and is never changed
  * here. Preview calls are strictly read-only.
@@ -47,7 +50,7 @@
 
     const basePlanGroup=hexPhysPlanGroup;
     const liveEngineByBoard=new WeakMap();
-    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV18";
+    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV19";
 
     /* Group planning normally receives only the board, while physical stop
        proof also needs the live visual/batch state. Register every engine at
@@ -526,6 +529,19 @@
         motions,
         hitFraction
     ){
+        /* A non-centred CURRENT collision is conclusive. In particular,
+           0.5 < hitFraction < 0.75 is the central-right half and therefore
+           must release the RIGHT lower ball as solo. Do this before reading
+           a stored first-contact lock, render-offset approximation, momentum,
+           or stale separator metadata; those are tie-breakers only when the
+           current collision itself is exactly centred. */
+        const contactDelta=hitFraction-.5;
+        if(Math.abs(contactDelta)>1e-9){
+            return contactDelta<0
+                ?{pairDir:1,solo:layout.left,source:"current-left-hit-fraction"}
+                :{pairDir:-1,solo:layout.right,source:"current-right-hit-fraction"};
+        }
+
         const px=Number(info?.px);
         const py=Number(info?.py);
         const game=liveEngineByBoard.get(board);
@@ -600,13 +616,6 @@
             return medianOffset>0
                 ?{pairDir:1,solo:layout.left,source:"current-median-release-offset"}
                 :{pairDir:-1,solo:layout.right,source:"current-median-release-offset"};
-        }
-
-        const contactDelta=hitFraction-.5;
-        if(Math.abs(contactDelta)>1e-9){
-            return contactDelta<0
-                ?{pairDir:1,solo:layout.left,source:"current-left-hit-fraction"}
-                :{pairDir:-1,solo:layout.right,source:"current-right-hit-fraction"};
         }
 
         const topMotion=motions?.[members.indexOf(layout.top)]||null;
@@ -1339,6 +1348,7 @@
     window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=true;
     window.__sixBallLegalPairSlopeBeatsEverySplitOrRelease=true;
     window.__sixBallCurrentContactFractionDefinesSplitSide=true;
+    window.__sixBallExplicitCurrentContactHalfOverridesStoredSide=true;
     window.__sixBallCurrentContactBallAlwaysBecomesSolo=true;
     window.__sixBallWrongContactPairWaitsInsteadOfReversing=true;
     window.__sixBallFirstCurrentContactSidePersistsUntilSplit=true;
@@ -1354,5 +1364,5 @@
     window.__sixBallLegacyProjectedPocketSplitLoaded=false;
     window.__sixBallLegacyRigidUntilPocketSplitLoaded=false;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v18";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v19";
 })();

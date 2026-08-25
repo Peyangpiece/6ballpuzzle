@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v18","v18 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v19","v19 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -141,6 +141,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");
   expect(ctx.__sixBallWrongContactPairWaitsInsteadOfReversing===true,"wrong contact-pair wait invariant missing");
   expect(ctx.__sixBallFirstCurrentContactSidePersistsUntilSplit===true,"first contact-side persistence invariant missing");
+  expect(ctx.__sixBallExplicitCurrentContactHalfOverridesStoredSide===true,"explicit current contact-half authority missing");
   expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
   expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
   expect(ctx.__sixBallUpConvexSplitOnlyCentralOrPositionFinal===true,"up-convex two-trigger split whitelist marker missing");
@@ -653,6 +654,70 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(left.ball.motionGroupRole===left.role,"correct left-pair role was not restored after stale solo metadata");
 }
 
+/* Every point strictly inside the central-right half (50%..75%) makes the
+   RIGHT lower ball solo. This current collision evidence must beat a stale
+   LEFT-side lock, a left-contact visual offset, reversed separator fields,
+   and a reversed base pair. */
+{
+  for(const [index,hitFraction] of [.50000001,.51,.625,.74999999].entries()){
+    const gid=840+index;
+    const members=makeUpMembers(gid);
+    const [top,left,right]=members;
+    const support={id:9840+index,c:4,isGarbage:false};
+    const pieceKey=members.map(member=>String(member.ball.id)).sort().join(":");
+    for(const member of members){
+      member.ball.impactOffsetX=.35;
+      member.ball._finalCurrentContactSoloV19={
+        pieceKey,supportId:support.id,
+        soloId:left.ball.id,pairDir:1,source:"stale-left-lock"
+      };
+    }
+    const ctx=install({
+      independent:(board,group,member)=>member===right
+        ?{...motion(member,1,1),pivot:[6,5]}
+        :member===left
+          ?{...motion(member,-1,1),pivot:[6,5]}
+          :motion(member,-1,1),
+      separator:()=>({
+        hitFraction,top,
+        pairLower:right,solo:left,
+        soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+        support,px:6,py:5,dir:1
+      }),
+      splitPlan:(board,group,info)=>[
+        {...motion(info.top,info.dir,1),bundleId:gid,groupSize:2},
+        {...motion(info.pairLower,info.dir,1),bundleId:gid,groupSize:2},
+        {...info.soloMotion,bundleId:0,groupSize:0}
+      ],
+      base:()=>[
+        {...motion(top,1,1),bundleId:gid,groupSize:2},
+        {...motion(right,1,1),bundleId:gid,groupSize:2},
+        {...motion(left,-1,1),bundleId:0,groupSize:0}
+      ]
+    });
+    const out=ctx.hexPhysPlanGroup([],members,false);
+    const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+    const solo=out.find(step=>step.groupSize===0);
+    expect(
+      JSON.stringify(pair)===JSON.stringify([top.ball.id,left.ball.id].sort()),
+      `central-right ${hitFraction} kept the wrong pair`
+    );
+    expect(
+      solo?.ball.id===right.ball.id&&solo.tx-solo.x===1,
+      `central-right ${hitFraction} did not make RIGHT solo`
+    );
+    expect(
+      !right.ball.rigid&&top.ball.rigid&&left.ball.rigid,
+      `central-right ${hitFraction} committed reversed rigidity`
+    );
+    expect(
+      ctx.__sixBallLastFinalRigidityCorrectionV1?.contactSideSource===
+        "current-right-hit-fraction",
+      `central-right ${hitFraction} was overridden by stale contact evidence`
+    );
+  }
+}
+
 /* An active pair+solo proposal outside the lower edge's middle 50% is not a
    legal convex split. Keep the triplet together and wait. */
 {
@@ -852,4 +917,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v18 PASS");
+console.log("final rigidity authority v19 PASS");

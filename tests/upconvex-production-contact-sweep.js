@@ -113,6 +113,8 @@ let outerRigid=0;
 let outerMoving=0;
 let outerWaiting=0;
 let pairOnly=0;
+let leftSoloSplits=0;
+let rightSoloSplits=0;
 let exactBoundaries=0;
 const outerReasons=new Map();
 let denseCases=0;
@@ -222,9 +224,11 @@ for(const center of[4,6,8,10,12,14]){
           if(offset>1e-9){
             expect(pairIds.has(881002)&&solo?.id===881003,
               `left split did not keep right pair ${JSON.stringify({input,plan:preview.plan})}`);
+            leftSoloSplits++;
           }else if(offset<-1e-9){
             expect(pairIds.has(881003)&&solo?.id===881002,
-              `right split did not keep left pair ${JSON.stringify({input,plan:preview.plan})}`);
+              `central-right contact did not make the right ball solo ${JSON.stringify({input,plan:preview.plan})}`);
+            rightSoloSplits++;
           }
         }
 
@@ -235,6 +239,8 @@ for(const center of[4,6,8,10,12,14]){
 }
 
 expect(active>0,"sweep never exercised an active middle-50% split");
+expect(leftSoloSplits>0&&rightSoloSplits>0,
+  `sweep missed a contact half left=${leftSoloSplits} right=${rightSoloSplits}`);
 expect(outerRigid>0&&exactBoundaries>0,"sweep missed outer quarters or exact boundaries");
 expect(outerMoving+outerWaiting===outerRigid,
   `outer-quarter accounting mismatch moving=${outerMoving} waiting=${outerWaiting}`);
@@ -252,12 +258,13 @@ expect(ctx.__sixBallSplitDirectionPrecedesPairRigidity===true,
   "direction-before-pair invariant marker missing");
 expect(ctx.__sixBallPivotArcPreservesLogicalRadius===true,
   "variable-radius pivot rendering marker missing");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v18",
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v19",
   "final rigidity authority version mismatch");
 console.log(
   `up-convex production contact sweep PASS ${cases}/${cases} `+
   `active=${active} outerRigid=${outerRigid} outerMoving=${outerMoving} `+
   `outerWaiting=${outerWaiting} exactBoundaries=${exactBoundaries} pairOnly=${pairOnly} `+
+  `leftSolo=${leftSoloSplits} rightSolo=${rightSoloSplits} `+
   `dense=${denseCases} resolverNoHorizontal=2 settleNoHorizontal=2 `+
   `outerReasons=${JSON.stringify(Object.fromEntries(outerReasons))}`
 );

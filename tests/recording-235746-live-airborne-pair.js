@@ -90,7 +90,7 @@ expect(result.airborneCount===0,"recording 23:57:46 split while visually airborn
 expect(result.rigidInAir,"recording 23:57:46 lost three-ball rigidity in air");
 expect(JSON.stringify(result.pair)===JSON.stringify(result.expectedPair),"recording 23:57:46 kept the reversed pair");
 expect(result.soloId===result.expectedSoloId,"recording 23:57:46 did not make the contacted green-left ball solo");
-expect(result.version==="final-rigidity-authority-v18","v18 final authority is not active");
+expect(result.version==="final-rigidity-authority-v19","v19 final authority is not active");
 expect(result.soleAuthority===true,"obsolete UP-convex layer can still mutate the pair");
 
 console.log("recording 23:57:46 live airborne/opposite-pair regression PASS",JSON.stringify(result));
