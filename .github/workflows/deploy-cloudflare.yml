@@ -3,6 +3,16 @@ name: Deploy Cloudflare Worker
 on:
   push:
     branches: [main]
+    paths:
+      - "public/**"
+      - "wrangler.jsonc"
+      - "tests/v1303-plan-group-smoke.js"
+      - "tests/v1303-current-oracle-suite.js"
+      - "tests/v1303-upconvex-production-guard.js"
+      - "tests/v1303-upconvex-live-pocket-v24.js"
+      - "tests/clear-all-ball-fx.js"
+      - "tests/oracles/**"
+      - ".github/workflows/deploy-cloudflare.yml"
   workflow_dispatch:
 
 concurrency:
