@@ -1,74 +1,61 @@
-/* Live Gate refinement pass 1 — visual system, hierarchy, accessibility */
+/* Live Gate refinement pass 2 — visual system + discovery/detail UX */
 :root{
-  --bg:#f6f7fb;
-  --surface:#ffffff;
-  --ink:#151827;
-  --muted:#707789;
-  --line:#e5e8f0;
-  --pink:#ff3b6b;
-  --purple:#8138f5;
-  --navy:#101827;
-  --green:#159b63;
-  --shadow:0 16px 42px rgba(20,25,45,.085);
-  --soft-shadow:0 8px 24px rgba(20,25,45,.055);
+  --bg:#f6f7fb;--surface:#fff;--ink:#151827;--muted:#707789;--line:#e5e8f0;
+  --pink:#ff3b6b;--purple:#8138f5;--navy:#101827;--green:#159b63;
+  --shadow:0 16px 42px rgba(20,25,45,.085);--soft-shadow:0 8px 24px rgba(20,25,45,.055);
   --grad:linear-gradient(135deg,#ff3b6b 0%,#e8319a 52%,#8138f5 100%);
 }
-body{
-  -webkit-font-smoothing:antialiased;
-  text-rendering:optimizeLegibility;
-  letter-spacing:-.006em;
-}
+body{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;letter-spacing:-.006em}
 button,a,input,select,textarea{transition:border-color .18s ease,box-shadow .18s ease,background .18s ease,color .18s ease,transform .18s ease,opacity .18s ease}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
-  outline:3px solid rgba(129,56,245,.28);
-  outline-offset:3px;
-}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid rgba(129,56,245,.28);outline-offset:3px}
 .btn{min-height:48px;border-radius:13px;padding:0 20px;font-weight:800;letter-spacing:-.01em}
-.btn:hover{transform:translateY(-1px)}
-.btn:active{transform:translateY(0) scale(.985)}
+.btn:hover{transform:translateY(-1px)}.btn:active{transform:translateY(0) scale(.985)}
 .btn-primary{box-shadow:0 10px 24px rgba(232,49,154,.20)}
 .btn-soft:hover,.icon-btn:hover,.filter:hover,.table-actions:hover{border-color:#cfd4e1;background:#fafbfe}
-.icon-btn{border-radius:13px}
-.panel,.event-card,.admin-card,.kpi,.my-ticket{box-shadow:var(--soft-shadow)}
-.panel{border-radius:20px;border-color:#e8eaf1}
-.chip,.status{letter-spacing:0;font-weight:800}
-.section-sub,.mini,.meta{line-height:1.65}
-.user-header{height:68px;border-color:rgba(225,228,237,.92);box-shadow:0 1px 0 rgba(255,255,255,.65)}
-.logo{letter-spacing:-.045em}
-.mark{box-shadow:0 7px 18px rgba(232,49,154,.22)}
-.user-main{padding-top:30px}
-.hero{box-shadow:0 20px 48px rgba(22,17,42,.16)}
+.icon-btn{border-radius:13px}.panel,.event-card,.admin-card,.kpi,.my-ticket{box-shadow:var(--soft-shadow)}
+.panel{border-radius:20px;border-color:#e8eaf1}.chip,.status{letter-spacing:0;font-weight:800}
+.section-sub,.mini,.meta{line-height:1.65}.user-header{height:68px;border-color:rgba(225,228,237,.92);box-shadow:0 1px 0 rgba(255,255,255,.65)}
+.logo{letter-spacing:-.045em}.mark{box-shadow:0 7px 18px rgba(232,49,154,.22)}
+.user-main{padding-top:30px}.hero{box-shadow:0 20px 48px rgba(22,17,42,.16)}
 .event-card{border-color:#e7e9f0;box-shadow:0 9px 28px rgba(20,25,45,.065)}
 .event-card:hover{transform:translateY(-5px);box-shadow:0 18px 42px rgba(20,25,45,.12)}
-.event-title{color:#171a27}
-.tag{background:#f3f4f8;color:#555b6d}
+.event-title{color:#171a27}.tag{background:#f3f4f8;color:#555b6d}
 .search-input,.searchbox,.selectbox,.field input,.field select,.field textarea{box-shadow:0 1px 2px rgba(20,25,45,.02)}
 .search-input:focus,.searchbox:focus,.selectbox:focus{border-color:#9d7bf7;box-shadow:0 0 0 4px rgba(129,56,245,.10);outline:none}
-.detail-card,.ticket-option,.organizer-box{border-color:#e5e8f0}
-.ticket-option{cursor:pointer}
-.ticket-option:hover{border-color:#cdd2df;background:#fdfdff}
-.ticket-option.selected{border-color:#ff6c91;box-shadow:0 0 0 3px rgba(255,59,107,.09)}
+.detail-card,.ticket-option,.organizer-box{border-color:#e5e8f0}.ticket-option{cursor:pointer}
+.ticket-option:hover{border-color:#cdd2df;background:#fdfdff}.ticket-option.selected{border-color:#ff6c91;box-shadow:0 0 0 3px rgba(255,59,107,.09)}
 .sticky-purchase{box-shadow:0 14px 38px rgba(20,25,45,.15)}
-.admin-shell{background:#f5f7fb}
-.admin-side{background:#101827}
-.admin-link{color:#c2c7d4;min-height:44px}
-.admin-link.active,.admin-link:hover{background:#222c3f}
-.admin-top{border-color:#e4e7ee}
-.admin-card,.kpi{border-color:#e5e8ef}
-.kpi{box-shadow:0 8px 26px rgba(20,25,45,.055)}
-.kpi strong{font-variant-numeric:tabular-nums}
-.table tbody tr:hover{background:#fafbfe}
-.table td,.table th{padding-top:13px;padding-bottom:13px}
-.progress{height:7px}
-.scanner{box-shadow:0 16px 36px rgba(7,9,18,.18)}
+.admin-shell{background:#f5f7fb}.admin-side{background:#101827}.admin-link{color:#c2c7d4;min-height:44px}
+.admin-link.active,.admin-link:hover{background:#222c3f}.admin-top{border-color:#e4e7ee}.admin-card,.kpi{border-color:#e5e8ef}
+.kpi{box-shadow:0 8px 26px rgba(20,25,45,.055)}.kpi strong{font-variant-numeric:tabular-nums}
+.table tbody tr:hover{background:#fafbfe}.table td,.table th{padding-top:13px;padding-bottom:13px}.progress{height:7px}.scanner{box-shadow:0 16px 36px rgba(7,9,18,.18)}
+
+/* pass 2: home — faster discovery */
+.hero{min-height:330px;border-radius:26px;background:radial-gradient(circle at 76% 16%,rgba(147,65,255,.72),transparent 24%),radial-gradient(circle at 28% 8%,rgba(255,76,133,.76),transparent 22%),linear-gradient(142deg,#0c1025 0%,#26133f 52%,#461947 100%)}
+.hero-content{padding:40px 42px;max-width:720px}.hero h1{font-size:clamp(38px,5vw,60px);margin-bottom:12px}.hero p{max-width:600px}
+.section-head{margin-bottom:14px}.toolbar-search{align-items:center}.search-input{height:52px;padding:0 17px;border-radius:15px;font-size:14px}
+.filters{gap:7px}.filter{min-height:40px;padding:9px 15px;border-color:#e2e5ed;background:#fff}.filter.active{box-shadow:0 5px 14px rgba(16,24,39,.12)}
+.event-grid{gap:20px}.event-card{border-radius:19px}.event-art{height:180px}.event-body{padding:17px 18px 18px}
+.event-title{font-size:18px}.meta{margin:4px 0}.lineup-mini{margin-top:9px}.price-row{margin-top:14px;padding-top:13px}
+.small-link{color:#40475a}.event-card .wish{backdrop-filter:blur(8px)}
+
+/* pass 2: event detail — decision data above the fold */
+.event-detail{max-width:920px}.detail-hero{height:320px;border-radius:24px;box-shadow:0 18px 44px rgba(19,16,39,.16)}
+.detail-card{margin-top:-46px;border-radius:22px;padding:26px}.detail-card h1{font-size:32px;margin-top:2px}
+.detail-meta{gap:10px;margin:18px 0}.info-tile{background:#f7f8fb;border:1px solid #eceef4;padding:13px 14px}
+.action-row{margin-top:14px}.action-row .btn{min-height:44px;padding:0 15px}
+.performer-grid{gap:9px}.performer-card{min-width:210px;background:#fcfcfe}.performer-card.active{background:#fff8fb}
+.organizer-box{background:#f8f9fc}.ticket-list{gap:10px}.ticket-option{padding:16px 17px;border-radius:15px;background:#fff}
+.sticky-purchase{max-width:800px;padding:11px 12px;border-radius:17px}.sticky-purchase .sum b{font-size:16px}
+
 @media(max-width:640px){
-  .user-main{padding:18px 16px 58px}
-  .panel{border-radius:18px}
-  .btn{min-height:50px}
-  .bottom-nav{height:76px}
-  .bottom-link{font-size:11px;min-height:56px}
-  .toast{bottom:92px}
+  .user-main{padding:16px 15px 58px}.panel{border-radius:18px}.btn{min-height:50px}.bottom-nav{height:76px}.bottom-link{font-size:11px;min-height:56px}.toast{bottom:92px}
+  .hero{min-height:290px;border-radius:20px;align-items:stretch}.hero-content{padding:26px 22px;display:flex;flex-direction:column;justify-content:center}.hero h1{font-size:36px;line-height:1.08;margin:7px 0 11px}.hero p{font-size:14px;line-height:1.65;margin-bottom:20px}.hero-cta .btn{min-height:46px}
+  .section{margin-top:30px}.section-head{margin-bottom:12px}.section h2{font-size:22px}.toolbar-search{gap:10px}.search-input{height:50px}.filters{flex-wrap:nowrap;margin-right:-15px;padding-right:15px}
+  .event-grid{gap:14px}.event-card{border-radius:18px}.event-art{height:156px}.event-body{padding:15px 16px 16px}.event-title{font-size:17px}.price{font-size:17px}
+  .detail-hero{height:205px;border-radius:18px}.detail-card{margin-top:-28px;padding:19px;border-radius:19px}.detail-card h1{font-size:25px}.detail-meta{grid-template-columns:1fr;gap:7px;margin:15px 0}.info-tile{padding:11px 12px}
+  .action-row{flex-wrap:nowrap;overflow-x:auto;margin-right:-19px;padding-right:19px;padding-bottom:4px}.action-row .btn{white-space:nowrap;min-height:42px}
+  .performer-grid{display:grid;grid-template-columns:1fr}.performer-card{min-width:0;width:100%}.ticket-option{padding:15px}
+  .sticky-purchase{bottom:84px;gap:9px}.sticky-purchase .sum{padding-left:2px}.sticky-purchase .sum b{font-size:14px;line-height:1.4}.sticky-purchase>div:last-child{width:100%}.sticky-purchase>div:last-child .btn{flex:1}
 }
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
-}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
