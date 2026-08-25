@@ -1,2 +1,2 @@
-trigger=2026-08-22T14:55:00+09:00
-reason=deploy v2.4 continuous pocket disambiguation after production-guard compatibility restoration
+trigger=2026-08-26T08:18:00+09:00
+reason=deploy latest main after final rigidity authority v21 and verify Cloudflare production parity
