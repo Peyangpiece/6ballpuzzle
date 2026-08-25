@@ -313,9 +313,11 @@ expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,
   "outer-quarter rigid-slide invariant marker missing");
 expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===true,
   "rigid-slide atomic-settle invariant marker missing");
+expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,
+  "airborne 2+1 invariant marker missing");
 expect(ctx.__sixBallPivotArcPreservesLogicalRadius===true,
   "variable-radius pivot rendering marker missing");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v6",
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v7",
   "final rigidity authority version mismatch");
 console.log(
   `up-convex production contact sweep PASS ${cases}/${cases} `+

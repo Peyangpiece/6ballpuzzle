@@ -42,6 +42,29 @@ for(const [offset,shouldSplit] of [
     expect(!result.separator&&!result.activeSplit,"outer-quarter contact "+offset+" split the triangle");
   }
 }
+
+/* The same middle-half geometry is only a future contact when both lower
+   motions carry topPivot/free-fall data instead of a current pivot. */
+{
+  const b=newBoard();
+  const balls=[0,1,2].map(i=>({
+    id:9100+i,c:i,motionGroupId:910,motionGroupRole:i,
+    motionGroupOrientation:"up",motionGroupSize:3,rigid:true,
+    impactOffsetX:0,momentumX:0
+  }));
+  const members=[
+    {ball:balls[0],x:6,y:3,role:0,orientation:"up"},
+    {ball:balls[1],x:7,y:4,role:1,orientation:"up"},
+    {ball:balls[2],x:5,y:4,role:2,orientation:"up"}
+  ];
+  for(const member of members)b[member.y][member.x]=member.ball;
+  b[5][6]={id:9199,c:4,motionGroupId:0,rigid:false};
+  const motions=members.map(member=>{
+    const p=hexPhysIndependentMemberMotion(b,members,member);
+    return p?{...p,pivot:null,topPivot:[6,5]}:p;
+  });
+  expect(!hexPhysUpConvexSeparator(b,members,motions),"airborne topPivot approach created a 2+1 separator");
+}
 `;
 
 vm.runInNewContext(runtime+assertions,{

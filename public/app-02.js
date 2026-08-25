@@ -231,6 +231,13 @@ function hexPhysUpConvexSeparator(b,members,motions){
  const bias=relative>1e-9?-1:relative<-1e-9?1:(Math.sign(topMove?.tx-top.x)||hexPhysBias(top.ball)||Math.sign(members.reduce((n,m)=>n+hexPhysBias(m.ball),0))||-1);
  const pairLower=bias<0?lower[0]:lower[1],solo=bias<0?lower[1]:lower[0],soloMotion=motions[members.indexOf(solo)];
  if(!soloMotion||Math.sign(soloMotion.tx-solo.x)!==-bias)return null;
+ // A pile ball merely present below the edge is a future geometric candidate,
+ // not a collision. Both lower members must name this exact protrusion as
+ // their CURRENT pivot. `topPivot` represents an airborne free-fall approach
+ // and is intentionally excluded, so no 2+1 metadata can be created in air.
+ const currentPivotAtProtrusion=motion=>Array.isArray(motion?.pivot)&&Number(motion.pivot[0])===px&&Number(motion.pivot[1])===py;
+ const pairMotion=motions[members.indexOf(pairLower)];
+ if(!currentPivotAtProtrusion(pairMotion)||!currentPivotAtProtrusion(soloMotion))return null;
  return{dir:bias,top,pairLower,solo,soloMotion,support,px,py,hitFraction};
 }
 function hexPhysUpConvexSplitPlan(b,members,info,preview=false){

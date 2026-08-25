@@ -12,7 +12,9 @@
  *    same-direction three-ball descent. Once common motion differs,
  *    a real split on the left keeps the pair on the right, and vice versa.
  * 3. An active upward-convex split is legal only when the protrusion
- *    contacts the middle 50% of the lower two-ball edge.
+ *    contacts the middle 50% of the lower two-ball edge and BOTH lower
+ *    balls currently name that same protrusion as their contact pivot.
+ *    A future/top pivot is an airborne approach and cannot split.
  * 4. A member with no proposal in the chosen physical event has
  *    reached its position for that event and is detached before
  *    the other members move.
@@ -202,6 +204,42 @@
         return null;
     }
 
+    function currentBilateralCentralContact(info,members,motions){
+        const px=Number(info?.px);
+        const py=Number(info?.py);
+        if(!Number.isFinite(px)||!Number.isFinite(py))return false;
+        const currentPivotIs=(member)=>{
+            const index=members.indexOf(member);
+            const pivot=index>=0?motions?.[index]?.pivot:null;
+            return !!(
+                Array.isArray(pivot)&&
+                Number(pivot[0])===px&&
+                Number(pivot[1])===py
+            );
+        };
+        return currentPivotIs(info.pairLower)&&currentPivotIs(info.solo);
+    }
+
+    function airborneUpwardSplitCandidate(board,members,motions){
+        if(
+            !upwardTriangle(members)||
+            typeof hexPhysUpConvexSeparator!=="function"
+        )return null;
+        let info=null;
+        try{info=hexPhysUpConvexSeparator(board,members,motions);}catch(_){info=null;}
+        const hitFraction=Number(info?.hitFraction);
+        if(
+            !info?.top?.ball||
+            !info?.pairLower?.ball||
+            !info?.solo?.ball||
+            !Number.isFinite(hitFraction)||
+            hitFraction<=.25+1e-9||
+            hitFraction>=.75-1e-9||
+            currentBilateralCentralContact(info,members,motions)
+        )return null;
+        return{info,hitFraction};
+    }
+
     function selectedUpwardSplitSide(board,members,motions){
         const layout=upwardTriangle(members);
         if(!layout||typeof hexPhysUpConvexSeparator!=="function")return null;
@@ -228,6 +266,14 @@
         const pairLowerId=memberId(info.pairLower);
         const soloId=memberId(info.solo);
         if(infoTopId!==topId||pairLowerId===soloId)return null;
+
+        /* Merely finding a pile ball below the lower edge is predictive
+           geometry, not physical contact. The old separator could therefore
+           commit a pair+solo event while the triangle was still airborne.
+           A real split requires both lower balls to be tangent to this exact
+           protrusion NOW. `topPivot` deliberately does not qualify: it encodes
+           a free-fall approach whose contact occurs later in the segment. */
+        if(!currentBilateralCentralContact(info,members,motions))return null;
 
         if(soloId===leftId&&pairLowerId===rightId){
             return{
@@ -499,6 +545,11 @@
             members,
             motions
         );
+        const airborneSplitBefore=airborneUpwardSplitCandidate(
+            board,
+            members,
+            motions
+        );
         const currentSlopeBefore=currentWholeRigidSlope(
             board,
             members,
@@ -737,8 +788,11 @@
                     member.ball.motionGroupOrientation="up";
                 }
                 window.__sixBallLastFinalRigidityCorrectionV1={
-                    reason:"reject-upward-split-outside-middle-fifty-percent",
+                    reason:airborneSplitBefore
+                        ?"reject-airborne-upward-two-plus-one"
+                        :"reject-upward-split-outside-middle-fifty-percent",
                     rejected:explicitUpSplit,
+                    airborneCandidate:!!airborneSplitBefore,
                     at:Date.now()
                 };
             }
@@ -896,6 +950,8 @@
     window.__sixBallUpConvexSelectedSideCannotBeOverridden=true;
     window.__sixBallUpConvexWrongSideWaitsInsteadOfSplitting=true;
     window.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent=true;
+    window.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact=true;
+    window.__sixBallAirborneUpConvexTwoPlusOneIsForbidden=true;
     window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=true;
     window.__sixBallCurrentCommonSlopeBeatsProspectiveSplit=true;
     window.__sixBallFallingRigidTriangleNeverRotates=true;
@@ -903,5 +959,5 @@
     window.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v6";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v7";
 })();

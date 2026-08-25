@@ -75,10 +75,13 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const members=makeUpMembers(812);
   const [top,left,right]=members;
   const ctx=install({
-    independent:(board,group,member)=>motion(member,member===left?-1:1,1),
+    independent:(board,group,member)=>member===top
+      ?motion(member,1,1)
+      :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
       hitFraction:.5,top,pairLower:right,solo:left,
-      soloMotion:motion(left,-1,1),dir:1
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      px:6,py:5,dir:1
     }),
     base:()=>[
       {...motion(top,1,1),bundleId:812,groupSize:2},
@@ -107,10 +110,12 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v6","v6 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v7","v7 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
+  expect(ctx.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact===true,"current bilateral contact marker missing");
+  expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,"airborne 2+1 guard marker missing");
   expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
   expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
 }
@@ -177,10 +182,13 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const members=makeUpMembers(810);
   const [top,left,right]=members;
   const ctx=install({
-    independent:(board,group,member)=>motion(member,1,1),
+    independent:(board,group,member)=>member===top
+      ?motion(member,1,1)
+      :{...motion(member,1,1),pivot:[6,5]},
     separator:()=>({
       hitFraction:.5,top,pairLower:right,solo:left,
-      soloMotion:motion(left,-1,1),dir:1
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      px:6,py:5,dir:1
     }),
     base:()=>[
       {...motion(top,1,1),bundleId:810,groupSize:2},
@@ -195,16 +203,43 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(ctx.__sixBallSameDirectionBeatsProspectiveTwoPlusOne===true,"same-direction 2+1 priority marker missing");
 }
 
+/* A middle-50% support that is only visible to the logical look-ahead is not
+   yet a collision. Without current pivots from BOTH lower balls, even a fully
+   authored moving 2+1 event must be rejected and the triplet restored. */
+{
+  const members=makeUpMembers(813);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>motion(member,member===left?-1:1,1),
+    separator:()=>({
+      hitFraction:.5,top,pairLower:right,solo:left,
+      soloMotion:motion(left,-1,1),px:6,py:5,dir:1
+    }),
+    base:()=>[
+      {...motion(top,1,1),bundleId:813,groupSize:2},
+      {...motion(right,1,1),bundleId:813,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===0,"airborne 2+1 candidate was allowed to move as a split");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"rejected airborne split did not restore triplet rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-airborne-upward-two-plus-one","airborne split rejection was not recorded");
+}
+
 /* A legacy layer proposes the opposite side. A proven LEFT contact in the
    middle 50% must rebuild it as top+RIGHT pair and LEFT solo. */
 {
   const members=makeUpMembers(815);
   const [top,left,right]=members;
   const ctx=install({
-    independent:(board,group,member)=>motion(member,member===left?-1:1,1),
+    independent:(board,group,member)=>member===top
+      ?motion(member,1,1)
+      :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
       hitFraction:.5,top,pairLower:right,solo:left,
-      soloMotion:motion(left,-1,1),dir:1
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      px:6,py:5,dir:1
     }),
     splitPlan:()=>[
       {...motion(top,1,1),bundleId:815,groupSize:2},
@@ -311,4 +346,4 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v6 PASS");
+console.log("final rigidity authority v7 PASS");

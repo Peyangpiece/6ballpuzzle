@@ -213,6 +213,8 @@ expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope triangle inva
 expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex side invariant marker missing");
 expect(ctx.__sixBallPositionFinalMeansMissingSelectedProposal===true,"selected-event finalization marker missing");
 expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
+expect(ctx.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact===true,"current bilateral contact invariant marker missing");
+expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,"airborne 2+1 invariant marker missing");
 expect(ctx.__sixBallUpConvexPositionFinalReleaseExemptsContactBand===true,"position-final band exemption marker missing");
 expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
 expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
@@ -221,5 +223,5 @@ expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geomet
 expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
 expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
 expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v6","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v7","final authority version mismatch");
 console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);
