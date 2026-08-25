@@ -60,8 +60,8 @@ jobs:
             -H 'Content-Type: application/json' \
             --data '{"returnSecureToken":true}')"
           ID_TOKEN="$(printf '%s' "$AUTH_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);if(!j.idToken)process.exit(2);process.stdout.write(j.idToken)})')"
-          UID="$(printf '%s' "$AUTH_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);if(!j.localId)process.exit(2);process.stdout.write(j.localId)})')"
-          TEST_URL="${FIREBASE_DB_URL}/livegate-next/deploy-check/${UID}.json?auth=${ID_TOKEN}"
+          FIREBASE_UID="$(printf '%s' "$AUTH_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);if(!j.localId)process.exit(2);process.stdout.write(j.localId)})')"
+          TEST_URL="${FIREBASE_DB_URL}/livegate-next/deploy-check/${FIREBASE_UID}.json?auth=${ID_TOKEN}"
           curl -fsS -X PUT "$TEST_URL" -H 'Content-Type: application/json' --data '{"ok":true,"source":"github-actions"}' > /tmp/firebase-write.json
           curl -fsS "$TEST_URL" | grep -q '"ok":true'
           curl -fsS -X DELETE "$TEST_URL" > /dev/null
