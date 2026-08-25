@@ -1,0 +1,42 @@
+name: Diagnose Menu Audio Chunks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/diagnose-menu-audio-chunks.yml'
+      - 'public/assets/menu-confirm-42.b64.00'
+      - 'public/assets/menu-confirm-42.b64.01'
+      - 'public/assets/menu-confirm-42.b64.02'
+      - 'public/assets/menu-confirm-42.b64.tail'
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect normalized chunks
+        shell: bash
+        run: |
+          set -euo pipefail
+          for part in 00 01 02 tail; do
+            tr -d '\r\n\t ' < "public/assets/menu-confirm-42.b64.${part}" > "/tmp/${part}.b64"
+            printf '%s normalized_bytes=' "$part"
+            wc -c < "/tmp/${part}.b64"
+            printf '%s first5376_sha256=' "$part"
+            head -c 5376 "/tmp/${part}.b64" | sha256sum
+          done
+          echo 'expected 00=7bf8f710968c56f4506e9a5c10c1c3272043e6d82b8d24ec847b8a551721fd69'
+          echo 'expected 01=39ef4e0ebce8597df9271ad4384ef9b1442bca158bc54ffa30d36eab5ffee8dd'
+          echo 'expected 02=008e1691ab6fd586963d0fcdb805f9adc5ab7d74509da779900f686a2c77027d'
+          echo 'expected tail=6adf12f312c80f3d7105436dec0e522f8039194e39379423866c26a9a06da686'
+          {
+            cat /tmp/00.b64
+            cat /tmp/01.b64
+            head -c 5376 /tmp/02.b64
+            for _ in 1 2 3 4 5; do head -c 5376 /tmp/tail.b64; done
+          } | base64 --decode > /tmp/menu-confirm-42.mp3
+          printf 'rebuilt_bytes='; wc -c < /tmp/menu-confirm-42.mp3
+          printf 'rebuilt_sha256='; sha256sum /tmp/menu-confirm-42.mp3
+          echo 'expected_rebuilt=97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e'
