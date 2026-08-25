@@ -398,12 +398,20 @@
         const rightId=memberId(layout.right);
         if(memberId(info.top)!==topId)return null;
 
-        /* Direction is the authority; pair metadata is only its consequence.
-           Older wrappers could carry a stale pairLower/solo assignment from a
-           previous approach even after `dir` had been corrected. Derive both
-           lower roles afresh from the confirmed split direction before any
-           two-ball rigidity is accepted or committed. */
-        const pairDir=Math.sign(Number(info.dir)||0);
+        /* The CURRENT contact side is the authority; pair metadata and an
+           approach-time `dir` are only consequences. Older wrappers can keep
+           the direction of the preceding rigid slope after the protrusion has
+           actually hit the other half of the lower edge. Derive a fresh pair
+           direction from hitFraction: LEFT contact keeps top+RIGHT, while
+           RIGHT contact keeps top+LEFT. Only an exact centre contact has no
+           side information and may retain the canonical tie-break direction. */
+        const contactDelta=hitFraction-.5;
+        const pairDir=
+            contactDelta< -1e-9
+                ?1
+                :contactDelta>1e-9
+                    ?-1
+                    :Math.sign(Number(info.dir)||0);
         if(!pairDir)return null;
         const pairLower=pairDir>0?layout.right:layout.left;
         const solo=pairDir>0?layout.left:layout.right;
@@ -1023,11 +1031,12 @@
     window.__sixBallPositionFinalMeansMissingSelectedProposal=false;
     window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=true;
     window.__sixBallLegalPairSlopeBeatsEverySplitOrRelease=true;
+    window.__sixBallCurrentContactFractionDefinesSplitSide=true;
     window.__sixBallCurrentCentralSplitBeatsHorizontalSnap=true;
     window.__sixBallOrdinarySplitOnlyCentralOrPositionFinal=false;
     window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=true;
     window.__sixBallInverseTriangleUsesLegacySplitRules=true;
     window.__sixBallDivergentMotionAloneCannotSplit=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v14";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v15";
 })();

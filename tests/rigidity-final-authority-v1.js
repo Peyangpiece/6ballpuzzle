@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v14","v14 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v15","v15 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -137,6 +137,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallPureHorizontalGroupMotionForbidden===true,"pure-horizontal group guard missing");
   expect(ctx.__sixBallPairOnlyReleaseRequiresPositionFinalSupport===true,"pair-only support proof marker missing");
   expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
+  expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
   expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
   expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
   expect(ctx.__sixBallUpConvexSplitOnlyCentralOrPositionFinal===true,"up-convex two-trigger split whitelist marker missing");
@@ -324,6 +325,41 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(!left.ball.rigid&&right.ball.rigid,"corrected left split metadata is wrong");
   expect(right.ball.motionGroupRole===right.role,"correct right-pair role was not restored after stale solo metadata");
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="split-direction-confirmed-before-pair-rigidity","pair was not committed after direction confirmation");
+}
+
+/* Recording 17:08:01: the BLUE lower-left side is the current contact side.
+   A stale approach direction still says -1 (left pair), but hitFraction is on
+   the left half. Current contact must release BLUE to the left and rebuild the
+   RIGHT pair from PURPLE top + RED lower-right. */
+{
+  const members=makeUpMembers(823);
+  const [purple,blue,red]=members;
+  const ctx=install({
+    independent:(board,group,member)=>member===purple
+      ?motion(member,1,1)
+      :{...motion(member,member===blue?-1:1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.4,top:purple,pairLower:blue,solo:red,
+      soloMotion:{...motion(red,1,1),pivot:[6,5]},
+      px:6,py:5,dir:-1
+    }),
+    splitPlan:(board,group,info)=>[
+      {...motion(info.top,info.dir,1),bundleId:823,groupSize:2},
+      {...motion(info.pairLower,info.dir,1),bundleId:823,groupSize:2},
+      {...info.soloMotion,bundleId:0,groupSize:0}
+    ],
+    base:()=>[
+      {...motion(purple,-1,1),bundleId:823,groupSize:2},
+      {...motion(blue,-1,1),bundleId:823,groupSize:2},
+      {...motion(red,1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  expect(JSON.stringify(pair)===JSON.stringify([purple.ball.id,red.ball.id].sort()),"blue-side contact kept the reversed left pair");
+  const solo=out.find(step=>step.ball.id===blue.ball.id);
+  expect(solo?.groupSize===0&&solo.tx-solo.x===-1,"blue contact ball did not split left as the solo");
+  expect(!blue.ball.rigid&&purple.ball.rigid&&red.ball.rigid,"blue-side contact committed the wrong rigidity pair");
 }
 
 /* At a current middle-50% contact, a whole-triplet horizontal correction from
@@ -588,4 +624,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v14 PASS");
+console.log("final rigidity authority v15 PASS");

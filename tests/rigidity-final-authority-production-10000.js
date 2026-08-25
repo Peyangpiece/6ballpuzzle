@@ -253,7 +253,8 @@ expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geomet
 expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
 expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
 expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v14","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v15","final authority version mismatch");
 expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
+expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
 expect(inverseLegacyDelegations>0,"production audit contained no inverse-triangle legacy delegation cases");
 console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} inverseLegacy=${inverseLegacyDelegations} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);
