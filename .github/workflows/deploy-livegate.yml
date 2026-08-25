@@ -49,6 +49,24 @@ jobs:
           grep -q "ballpuzzle-8cc87" livegate-prod/public/firebase-config.js
           grep -q "livegate-next/users" livegate-prod/public/firebase-bridge.js
 
+      - name: Verify Firebase Auth and Realtime Database
+        shell: bash
+        env:
+          FIREBASE_API_KEY: AIzaSyAanVETIredUVH1slS8OtIMSPdOn91u2HM
+          FIREBASE_DB_URL: https://ballpuzzle-8cc87-default-rtdb.asia-southeast1.firebasedatabase.app
+        run: |
+          set -euo pipefail
+          AUTH_JSON="$(curl -fsS -X POST "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${FIREBASE_API_KEY}" \
+            -H 'Content-Type: application/json' \
+            --data '{"returnSecureToken":true}')"
+          ID_TOKEN="$(printf '%s' "$AUTH_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);if(!j.idToken)process.exit(2);process.stdout.write(j.idToken)})')"
+          UID="$(printf '%s' "$AUTH_JSON" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);if(!j.localId)process.exit(2);process.stdout.write(j.localId)})')"
+          TEST_URL="${FIREBASE_DB_URL}/livegate-next/deploy-check/${UID}.json?auth=${ID_TOKEN}"
+          curl -fsS -X PUT "$TEST_URL" -H 'Content-Type: application/json' --data '{"ok":true,"source":"github-actions"}' > /tmp/firebase-write.json
+          curl -fsS "$TEST_URL" | grep -q '"ok":true'
+          curl -fsS -X DELETE "$TEST_URL" > /dev/null
+          echo "Firebase anonymous auth and livegate-next database access verified."
+
       - name: Deploy standalone Live Gate Worker
         id: deploy
         uses: cloudflare/wrangler-action@v4
@@ -63,15 +81,18 @@ jobs:
         shell: bash
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+          STABLE_URL: https://live-gate-next.hrk-6888.workers.dev
         run: |
           set -euo pipefail
-          echo "Live Gate URL: ${DEPLOYMENT_URL}"
-          test -n "${DEPLOYMENT_URL}"
+          URL="${DEPLOYMENT_URL:-$STABLE_URL}"
+          echo "Live Gate deployment URL: ${URL}"
+          echo "Live Gate stable URL: ${STABLE_URL}"
           for attempt in $(seq 1 20); do
-            if curl -fsSL "${DEPLOYMENT_URL%/}/" | grep -q "Live Gate" \
-              && curl -fsSL "${DEPLOYMENT_URL%/}/firebase-config.js" | grep -q "ballpuzzle-8cc87" \
-              && curl -fsSL "${DEPLOYMENT_URL%/}/app-4.js" | grep -q "adminCheckin"; then
-              echo "Live Gate deployment verified."
+            if curl -fsSL "${URL%/}/" | grep -q "Live Gate" \
+              && curl -fsSL "${URL%/}/firebase-config.js" | grep -q "ballpuzzle-8cc87" \
+              && curl -fsSL "${URL%/}/app-4.js" | grep -q "adminCheckin" \
+              && curl -fsSL "${STABLE_URL%/}/" | grep -q "Live Gate"; then
+              echo "Live Gate deployment and stable domain verified."
               exit 0
             fi
             sleep 3
