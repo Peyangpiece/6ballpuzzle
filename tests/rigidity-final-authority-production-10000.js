@@ -129,7 +129,8 @@ for(const input of cases){
     commit.length===0&&
     [
       "reject-upward-split-outside-middle-fifty-percent",
-      "wait-instead-of-opposite-upward-split"
+      "wait-instead-of-opposite-upward-split",
+      "wait-instead-of-unconfirmed-directional-pair"
     ].includes(finalCorrection?.reason);
   if(waitingRigid)rejectedOutsideBand++;
   expect(
@@ -176,10 +177,8 @@ for(const input of cases){
     if(soloMoves){
       activeCentralSplits++;
       expect(
-        [
-          "selected-upward-contact-side-preserved",
-          "opposite-upward-split-side-corrected"
-        ].includes(finalCorrection?.reason),
+        finalCorrection?.reason===
+          "split-direction-confirmed-before-pair-rigidity",
         `case ${input.index}: active split lacks central-contact authority`
       );
       expect(
@@ -215,6 +214,7 @@ expect(ctx.__sixBallPositionFinalMeansMissingSelectedProposal===true,"selected-e
 expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
 expect(ctx.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact===true,"current bilateral contact invariant marker missing");
 expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,"airborne 2+1 invariant marker missing");
+expect(ctx.__sixBallSplitDirectionPrecedesPairRigidity===true,"direction-before-pair invariant marker missing");
 expect(ctx.__sixBallUpConvexPositionFinalReleaseExemptsContactBand===true,"position-final band exemption marker missing");
 expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
 expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
@@ -223,5 +223,5 @@ expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geomet
 expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
 expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
 expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v7","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v8","final authority version mismatch");
 console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);

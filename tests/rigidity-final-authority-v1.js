@@ -110,12 +110,13 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v7","v7 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v8","v8 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact===true,"current bilateral contact marker missing");
   expect(ctx.__sixBallAirborneUpConvexTwoPlusOneIsForbidden===true,"airborne 2+1 guard marker missing");
+  expect(ctx.__sixBallSplitDirectionPrecedesPairRigidity===true,"direction-before-pair marker missing");
   expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation invariant marker missing");
   expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===true,"outer-quarter rigid-slide invariant marker missing");
 }
@@ -199,7 +200,7 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.groupSize===3&&step.bundleId===810),"prospective 2+1 split beat a same-direction triplet");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction prospective-contact triplet lost rigidity");
-  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="same-direction-before-prospective-two-plus-one","prospective split correction was not recorded");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="same-direction-whole-group","same-direction correction was not recorded");
   expect(ctx.__sixBallSameDirectionBeatsProspectiveTwoPlusOne===true,"same-direction 2+1 priority marker missing");
 }
 
@@ -227,8 +228,9 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-airborne-upward-two-plus-one","airborne split rejection was not recorded");
 }
 
-/* A legacy layer proposes the opposite side. A proven LEFT contact in the
-   middle 50% must rebuild it as top+RIGHT pair and LEFT solo. */
+/* Direction +1 is finalized before pair metadata. Even if both the separator
+   fields and the base plan still name the opposite pair, rebuild top+RIGHT as
+   the rigid pair and release LEFT solo. */
 {
   const members=makeUpMembers(815);
   const [top,left,right]=members;
@@ -237,8 +239,8 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
       ?motion(member,1,1)
       :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
-      hitFraction:.5,top,pairLower:right,solo:left,
-      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      hitFraction:.5,top,pairLower:left,solo:right,
+      soloMotion:{...motion(right,1,1),pivot:[6,5]},
       px:6,py:5,dir:1
     }),
     splitPlan:()=>[
@@ -256,6 +258,40 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
   expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,right.ball.id].sort()),"legacy opposite-side split was not corrected");
   expect(!left.ball.rigid&&right.ball.rigid,"corrected left split metadata is wrong");
+  expect(right.ball.motionGroupRole===right.role,"correct right-pair role was not restored after stale solo metadata");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="split-direction-confirmed-before-pair-rigidity","pair was not committed after direction confirmation");
+}
+
+/* Mirrored direction -1 must independently derive top+LEFT as the pair and
+   release RIGHT solo, regardless of stale right-pair metadata. */
+{
+  const members=makeUpMembers(816);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>member===top
+      ?motion(member,-1,1)
+      :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.5,top,pairLower:right,solo:left,
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      px:6,py:5,dir:-1
+    }),
+    splitPlan:()=>[
+      {...motion(top,-1,1),bundleId:816,groupSize:2},
+      {...motion(left,-1,1),bundleId:816,groupSize:2},
+      {...motion(right,1,1),bundleId:0,groupSize:0}
+    ],
+    base:()=>[
+      {...motion(top,1,1),bundleId:816,groupSize:2},
+      {...motion(right,1,1),bundleId:816,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,left.ball.id].sort()),"mirrored split direction did not derive the left pair");
+  expect(!right.ball.rigid&&left.ball.rigid,"mirrored direction committed stale right-pair rigidity");
+  expect(left.ball.motionGroupRole===left.role,"correct left-pair role was not restored after stale solo metadata");
 }
 
 /* An active pair+solo proposal outside the lower edge's middle 50% is not a
@@ -346,4 +382,4 @@ function install({base,independent,natural,groupPlan,separator,splitPlan,rigidSl
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v7 PASS");
+console.log("final rigidity authority v8 PASS");

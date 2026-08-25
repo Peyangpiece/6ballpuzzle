@@ -10,7 +10,8 @@
  *    temporarily reports one member as stopped.
  * 2. A prospective upward-convex 2+1 split never overrides a legal
  *    same-direction three-ball descent. Once common motion differs,
- *    a real split on the left keeps the pair on the right, and vice versa.
+ *    the split direction is finalized first; only then is the opposite-side
+ *    pair rebuilt and given two-ball rigidity.
  * 3. An active upward-convex split is legal only when the protrusion
  *    contacts the middle 50% of the lower two-ball edge and BOTH lower
  *    balls currently name that same protrusion as their contact pivot.
@@ -119,6 +120,12 @@
         const size=members.length;
         for(const member of members){
             if(gid)member.ball.motionGroupId=gid;
+            if(Number.isFinite(member.role)){
+                member.ball.motionGroupRole=member.role;
+            }
+            if(member.orientation){
+                member.ball.motionGroupOrientation=member.orientation;
+            }
             member.ball.motionGroupSize=size;
             member.ball.rigid=true;
         }
@@ -262,10 +269,31 @@
         const topId=memberId(layout.top);
         const leftId=memberId(layout.left);
         const rightId=memberId(layout.right);
-        const infoTopId=memberId(info.top);
-        const pairLowerId=memberId(info.pairLower);
-        const soloId=memberId(info.solo);
-        if(infoTopId!==topId||pairLowerId===soloId)return null;
+        if(memberId(info.top)!==topId)return null;
+
+        /* Direction is the authority; pair metadata is only its consequence.
+           Older wrappers could carry a stale pairLower/solo assignment from a
+           previous approach even after `dir` had been corrected. Derive both
+           lower roles afresh from the confirmed split direction before any
+           two-ball rigidity is accepted or committed. */
+        const pairDir=Math.sign(Number(info.dir)||0);
+        if(!pairDir)return null;
+        const pairLower=pairDir>0?layout.right:layout.left;
+        const solo=pairDir>0?layout.left:layout.right;
+        const pairMotion=motions?.[members.indexOf(pairLower)]||null;
+        const soloMotion=motions?.[members.indexOf(solo)]||null;
+        if(
+            Math.sign(Number(pairMotion?.tx)-Number(pairMotion?.x))!==pairDir||
+            Math.sign(Number(soloMotion?.tx)-Number(soloMotion?.x))!==-pairDir
+        )return null;
+        const correctedInfo={
+            ...info,
+            dir:pairDir,
+            top:layout.top,
+            pairLower,
+            solo,
+            soloMotion
+        };
 
         /* Merely finding a pile ball below the lower edge is predictive
            geometry, not physical contact. The old separator could therefore
@@ -273,31 +301,20 @@
            A real split requires both lower balls to be tangent to this exact
            protrusion NOW. `topPivot` deliberately does not qualify: it encodes
            a free-fall approach whose contact occurs later in the segment. */
-        if(!currentBilateralCentralContact(info,members,motions))return null;
+        if(!currentBilateralCentralContact(correctedInfo,members,motions))return null;
 
-        if(soloId===leftId&&pairLowerId===rightId){
-            return{
-                info,
-                splitSide:"left",
-                pairSide:"right",
-                pairIds:[topId,rightId],
-                pairLowerId:rightId,
-                soloId:leftId,
-                hitFraction
-            };
-        }
-        if(soloId===rightId&&pairLowerId===leftId){
-            return{
-                info,
-                splitSide:"right",
-                pairSide:"left",
-                pairIds:[topId,leftId],
-                pairLowerId:leftId,
-                soloId:rightId,
-                hitFraction
-            };
-        }
-        return null;
+        const pairLowerId=memberId(pairLower);
+        const soloId=memberId(solo);
+        return{
+            info:correctedInfo,
+            splitDirection:pairDir,
+            splitSide:pairDir>0?"left":"right",
+            pairSide:pairDir>0?"right":"left",
+            pairIds:[topId,pairLowerId],
+            pairLowerId,
+            soloId,
+            hitFraction
+        };
     }
 
     /* At an outer-quarter hit the logical lattice still shows the protrusion
@@ -711,26 +728,17 @@
            current directions differ. */
         const explicitUpSplit=upwardOppositeSideSplit(movingBase,members);
 
-        /* The separator's physical contact-side decision is the final answer
-           for WHICH lower ball becomes solo. If an older pocket/pair layer
-           returned the opposite 2+1 plan, rebuild it from the authoritative
-           separator instead of accepting or rejoining that wrong side. */
+        /* Split direction is finalized first. Discard every pair/solo cohort
+           that an earlier layer committed, restore the triplet metadata, then
+           construct exactly one pair from that direction. Even a coincidentally
+           matching old pair is rebuilt so pair rigidity can never precede the
+           direction decision. */
         if(selectedSide){
-            if(explicitUpSplit?.soloId===selectedSide.soloId){
-                const normalized=normalizePlan(
-                    movingBase,
-                    members,
-                    preview,
-                    false,
-                    authorityGroupId
-                );
-                if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                    reason:"selected-upward-contact-side-preserved",
-                    ...selectedSide,
-                    info:undefined,
-                    at:Date.now()
-                };
-                return normalized;
+            if(!preview){
+                commitCohort(members,[],authorityGroupId);
+                for(const member of members){
+                    member.ball.motionGroupOrientation="up";
+                }
             }
 
             const corrected=requestedSplitPlan(
@@ -748,29 +756,24 @@
                     authorityGroupId
                 );
                 if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                    reason:"opposite-upward-split-side-corrected",
+                    reason:"split-direction-confirmed-before-pair-rigidity",
                     ...selectedSide,
                     info:undefined,
+                    replacedPair:explicitUpSplit||null,
                     at:Date.now()
                 };
                 return normalized;
             }
 
-            if(explicitUpSplit){
-                if(!preview){
-                    commitCohort(members,[],authorityGroupId);
-                    for(const member of members){
-                        member.ball.motionGroupOrientation="up";
-                    }
-                    window.__sixBallLastFinalRigidityCorrectionV1={
-                        reason:"wait-instead-of-opposite-upward-split",
-                        rejected:explicitUpSplit,
-                        required:selectedSide,
-                        at:Date.now()
-                    };
-                }
-                return[];
+            if(!preview){
+                window.__sixBallLastFinalRigidityCorrectionV1={
+                    reason:"wait-instead-of-unconfirmed-directional-pair",
+                    rejected:explicitUpSplit||null,
+                    required:selectedSide,
+                    at:Date.now()
+                };
             }
+            return[];
         }
 
         /* A moving solo plus a moving pair is an active physical split, not a
@@ -952,6 +955,7 @@
     window.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent=true;
     window.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact=true;
     window.__sixBallAirborneUpConvexTwoPlusOneIsForbidden=true;
+    window.__sixBallSplitDirectionPrecedesPairRigidity=true;
     window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=true;
     window.__sixBallCurrentCommonSlopeBeatsProspectiveSplit=true;
     window.__sixBallFallingRigidTriangleNeverRotates=true;
@@ -959,5 +963,5 @@
     window.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=true;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v7";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v8";
 })();
