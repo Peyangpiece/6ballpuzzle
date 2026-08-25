@@ -33,7 +33,7 @@
  *    lower ball; a stale approach direction may never reverse those roles.
  *    A contact strictly inside the right half of the central band always makes
  *    the right lower ball solo; the mirrored left half always makes the left
- *    lower ball solo. Stored/tie evidence is consulted only at exact centre.
+ *    lower ball solo. A former contact-side lock is never consulted.
  *
  * Garbage has its own zero-rigidity pipeline and is never changed
  * here. Preview calls are strictly read-only.
@@ -50,7 +50,6 @@
 
     const basePlanGroup=hexPhysPlanGroup;
     const liveEngineByBoard=new WeakMap();
-    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV19";
 
     /* Group planning normally receives only the board, while physical stop
        proof also needs the live visual/batch state. Register every engine at
@@ -258,7 +257,11 @@
        bilateral-pivot proof above. */
     function liveVisualCentralContact(board,members,info){
         const game=liveEngineByBoard.get(board);
-        if(!game)return{ok:true,source:"headless-bilateral-pivot"};
+        if(!game)return{
+            ok:true,
+            source:"headless-bilateral-pivot",
+            usesLiveGeometry:false
+        };
 
         const px=Number(info?.px);
         const py=Number(info?.py);
@@ -290,7 +293,8 @@
         }
 
         const layout=upwardTriangle(members);
-        const lower=[layout?.left,layout?.right];
+        if(!layout)return{ok:false,reason:"missing-live-upward-layout"};
+        const lower=[layout.left,layout.right];
         const supportVisual=game.vis?.get?.(support.id);
         const lowerVisuals=lower.map(member=>game.vis?.get?.(member?.ball?.id));
         if(!supportVisual||lowerVisuals.some(visual=>!visual)){
@@ -307,6 +311,70 @@
             return{ok:false,reason:"live-contact-visual-not-final"};
         }
 
+        const leftVisual=lowerVisuals[0];
+        const rightVisual=lowerVisuals[1];
+        const leftX=Number(leftVisual.x);
+        const rightX=Number(rightVisual.x);
+        const supportX=Number(supportVisual.x);
+        const leftY=Number(leftVisual.y);
+        const rightY=Number(rightVisual.y);
+        const supportY=Number(supportVisual.y);
+        const rowErrors={
+            left:Math.abs(leftY-Number(layout.left.y)),
+            right:Math.abs(rightY-Number(layout.right.y)),
+            support:Math.abs(supportY-py)
+        };
+
+        /* A cleared fallPath flag is not sufficient proof that the displayed
+           balls have reached the logical cells used by the separator. Reject
+           a whole-frame lattice lead/lag even if its relative distances happen
+           to resemble a valid triangle. */
+        if(Object.values(rowErrors).some(error=>error>.02)){
+            return{
+                ok:false,
+                reason:"displayed-contact-grid-not-current",
+                rowErrors,
+                logicalRows:[layout.left.y,layout.right.y,py],
+                visualRows:[leftY,rightY,supportY]
+            };
+        }
+
+        const baseSpan=rightX-leftX;
+        const lowerRowDelta=Math.abs(leftY-rightY);
+        const supportBelowRows=supportY-(leftY+rightY)/2;
+        if(
+            !(baseSpan>1.7&&baseSpan<2.3)||
+            lowerRowDelta>.02||
+            supportBelowRows<.92||
+            supportBelowRows>1.08
+        ){
+            return{
+                ok:false,
+                reason:"displayed-support-not-below-current-base",
+                baseSpan,
+                lowerRowDelta,
+                supportBelowRows
+            };
+        }
+
+        /* Recompute the contact fraction from the actual displayed centres.
+           This is independent of doubled-X lattice rounding and stale
+           impactOffsetX metadata. It is the sole live-game left/right source. */
+        const visualHitFraction=(supportX-leftX)/baseSpan;
+        if(
+            !Number.isFinite(visualHitFraction)||
+            visualHitFraction<=.25+1e-9||
+            visualHitFraction>=.75-1e-9
+        ){
+            return{
+                ok:false,
+                reason:"displayed-contact-outside-middle-fifty-percent",
+                visualHitFraction,
+                baseSpan,
+                supportBelowRows
+            };
+        }
+
         /* Doubled-X hex coordinates use half-width X and sqrt(3)/2 row
            height. Across the strict middle 50% of the lower edge, each lower
            centre is 0.90..1.15 ball diameters from the protrusion. The small
@@ -321,15 +389,26 @@
             (Number(visual.y)-Number(supportVisual.y))*rowHeight
         );
         const distances=lowerVisuals.map(distanceToSupport);
-        if(distances.some(distance=>distance<.82||distance>1.18)){
+        if(distances.some(distance=>distance<.82||distance>1.16)){
             return{
                 ok:false,
                 reason:"displayed-triplet-has-not-reached-support",
-                distances
+                distances,
+                visualHitFraction,
+                supportBelowRows
             };
         }
 
-        return{ok:true,source:"live-bilateral-tangent-contact",distances};
+        return{
+            ok:true,
+            source:"live-current-grid-contact-v20",
+            usesLiveGeometry:true,
+            hitFraction:visualHitFraction,
+            distances,
+            rowErrors,
+            baseSpan,
+            supportBelowRows
+        };
     }
 
     function memberIsPhysicallyStopped(board,member){
@@ -475,6 +554,13 @@
                 hitFraction,
                 reason:liveContact.reason,
                 liveDistances:liveContact.distances||null,
+                liveHitFraction:Number.isFinite(liveContact.visualHitFraction)
+                    ?liveContact.visualHitFraction
+                    :null,
+                liveRowErrors:liveContact.rowErrors||null,
+                liveSupportBelowRows:Number.isFinite(liveContact.supportBelowRows)
+                    ?liveContact.supportBelowRows
+                    :null,
                 logicalPivotOnly:true
             };
     }
@@ -527,19 +613,20 @@
         layout,
         info,
         motions,
-        hitFraction
+        hitFraction,
+        liveContact=null
     ){
         /* A non-centred CURRENT collision is conclusive. In particular,
            0.5 < hitFraction < 0.75 is the central-right half and therefore
-           must release the RIGHT lower ball as solo. Do this before reading
-           a stored first-contact lock, render-offset approximation, momentum,
-           or stale separator metadata; those are tie-breakers only when the
-           current collision itself is exactly centred. */
+           must release the RIGHT lower ball as solo. In a live game this
+           fraction came directly from the current rendered centres, never
+           from a stored first-contact lock or stale separator metadata. */
         const contactDelta=hitFraction-.5;
         if(Math.abs(contactDelta)>1e-9){
+            const prefix=liveContact?.usesLiveGeometry?"live-visual":"current";
             return contactDelta<0
-                ?{pairDir:1,solo:layout.left,source:"current-left-hit-fraction"}
-                :{pairDir:-1,solo:layout.right,source:"current-right-hit-fraction"};
+                ?{pairDir:1,solo:layout.left,source:prefix+"-left-hit-fraction"}
+                :{pairDir:-1,solo:layout.right,source:prefix+"-right-hit-fraction"};
         }
 
         const px=Number(info?.px);
@@ -549,31 +636,6 @@
             Number.isFinite(px)&&Number.isFinite(py)
                 ?board?.[py]?.[px]||null
                 :null;
-        const supportId=support?.id??info?.support?.id;
-        const pieceKey=members.map(member=>String(memberId(member))).sort().join(":");
-        const locks=members
-            .map(member=>member.ball?.[CONTACT_SIDE_STORE])
-            .filter(lock=>
-                lock&&
-                lock.pieceKey===pieceKey&&
-                lock.supportId===supportId
-            );
-        if(
-            locks.length===members.length&&
-            locks.every(lock=>
-                lock.soloId===locks[0].soloId&&
-                lock.pairDir===locks[0].pairDir
-            )
-        ){
-            const solo=members.find(member=>memberId(member)===locks[0].soloId);
-            if(solo){
-                return{
-                    pairDir:locks[0].pairDir,
-                    solo,
-                    source:"locked-first-current-contact"
-                };
-            }
-        }
         const visualFor=ball=>game?.vis?.get?.(ball?.id)||null;
         const leftVisual=visualFor(layout.left.ball);
         const rightVisual=visualFor(layout.right.ball);
@@ -637,46 +699,6 @@
         return null;
     }
 
-    function rememberCurrentContactSide(members,selected){
-        const source=String(selected?.contactSideSource||"");
-        if(
-            !selected?.info||
-            !selected?.soloId||
-            !selected?.splitDirection||
-            !(
-                source.startsWith("live-")||
-                source.startsWith("current-positive-")||
-                source.startsWith("current-negative-")||
-                source.startsWith("current-median-")||
-                source.startsWith("current-left-")||
-                source.startsWith("current-right-")
-            )
-        )return;
-
-        const supportId=
-            selected.info?.support?.id??
-            null;
-        if(supportId==null)return;
-        const record={
-            pieceKey:members.map(member=>String(memberId(member))).sort().join(":"),
-            supportId,
-            soloId:selected.soloId,
-            pairDir:selected.splitDirection,
-            source,
-            at:Date.now()
-        };
-        for(const member of members){
-            const old=member.ball?.[CONTACT_SIDE_STORE];
-            if(
-                !old||
-                old.pieceKey!==record.pieceKey||
-                old.supportId!==record.supportId
-            ){
-                member.ball[CONTACT_SIDE_STORE]={...record};
-            }
-        }
-    }
-
     function selectedUpwardSplitSide(board,members,motions){
         const layout=upwardTriangle(members);
         if(!layout||typeof hexPhysUpConvexSeparator!=="function")return null;
@@ -701,15 +723,34 @@
         const rightId=memberId(layout.right);
         if(memberId(info.top)!==topId)return null;
 
-        /* The CURRENT contact side is the authority; pair metadata and an
-           approach-time `dir` are never allowed to choose the opposite solo. */
+        /* A logical pivot may be one or more resolver steps ahead of the
+           rendered body. Prove that both lower balls currently pivot on the
+           support, then require the live displayed geometry to occupy these
+           exact logical rows before choosing either side. */
+        if(!currentBilateralCentralContact(info,members,motions))return null;
+        const liveContact=liveVisualCentralContact(board,members,info);
+        if(!liveContact.ok)return null;
+        const authoritativeHitFraction=
+            liveContact.usesLiveGeometry
+                ?Number(liveContact.hitFraction)
+                :hitFraction;
+        if(
+            !Number.isFinite(authoritativeHitFraction)||
+            authoritativeHitFraction<=.25+1e-9||
+            authoritativeHitFraction>=.75-1e-9
+        )return null;
+
+        /* The CURRENT rendered contact side is authoritative in live games;
+           headless planners use the canonical logical contact fraction. Pair
+           metadata and an approach-time `dir` may never reverse those roles. */
         const contact=currentContactSide(
             board,
             members,
             layout,
             info,
             motions,
-            hitFraction
+            authoritativeHitFraction,
+            liveContact
         );
         const pairDir=contact?.pairDir||0;
         if(!pairDir||!contact?.solo)return null;
@@ -728,6 +769,8 @@
         if(!soloMotion)return null;
         const correctedInfo={
             ...info,
+            logicalHitFraction:hitFraction,
+            hitFraction:authoritativeHitFraction,
             dir:pairDir,
             top:layout.top,
             pairLower,
@@ -745,10 +788,6 @@
            A real split requires both lower balls to be tangent to this exact
            protrusion NOW. `topPivot` deliberately does not qualify: it encodes
            a free-fall approach whose contact occurs later in the segment. */
-        if(!currentBilateralCentralContact(correctedInfo,members,motions))return null;
-        const liveContact=liveVisualCentralContact(board,members,correctedInfo);
-        if(!liveContact.ok)return null;
-
         const pairLowerId=memberId(pairLower);
         const soloId=memberId(solo);
         return{
@@ -759,10 +798,18 @@
             pairIds:[topId,pairLowerId],
             pairLowerId,
             soloId,
-            hitFraction,
+            hitFraction:authoritativeHitFraction,
+            logicalHitFraction:hitFraction,
             contactSideSource:contact.source,
             liveContactSource:liveContact.source,
-            liveContactDistances:liveContact.distances||null
+            liveContactDistances:liveContact.distances||null,
+            liveContactHitFraction:liveContact.usesLiveGeometry
+                ?authoritativeHitFraction
+                :null,
+            liveContactRowErrors:liveContact.rowErrors||null,
+            liveContactSupportBelowRows:Number.isFinite(liveContact.supportBelowRows)
+                ?liveContact.supportBelowRows
+                :null
         };
     }
 
@@ -1029,9 +1076,6 @@
         const selectedSide=
             selectedSideBefore||
             selectedUpwardSplitSide(board,members,motions);
-        if(!preview&&selectedSide){
-            rememberCurrentContactSide(members,selectedSide);
-        }
         const authoredBaseVector=
             baseMovesWholeGroup?sameVector(movingBase):null;
 
@@ -1349,9 +1393,13 @@
     window.__sixBallLegalPairSlopeBeatsEverySplitOrRelease=true;
     window.__sixBallCurrentContactFractionDefinesSplitSide=true;
     window.__sixBallExplicitCurrentContactHalfOverridesStoredSide=true;
+    window.__sixBallLiveVisualGridDefinesContactSide=true;
+    window.__sixBallLiveContactRequiresLogicalRowAlignment=true;
+    window.__sixBallLiveSupportMustBeBelowCurrentBase=true;
     window.__sixBallCurrentContactBallAlwaysBecomesSolo=true;
     window.__sixBallWrongContactPairWaitsInsteadOfReversing=true;
-    window.__sixBallFirstCurrentContactSidePersistsUntilSplit=true;
+    window.__sixBallFirstCurrentContactSidePersistsUntilSplit=false;
+    window.__sixBallCurrentLiveSideOverridesStoredSide=true;
     window.__sixBallCurrentCentralSplitBeatsHorizontalSnap=true;
     window.__sixBallOrdinarySplitOnlyCentralOrPositionFinal=false;
     window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=true;
@@ -1364,5 +1412,5 @@
     window.__sixBallLegacyProjectedPocketSplitLoaded=false;
     window.__sixBallLegacyRigidUntilPocketSplitLoaded=false;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v19";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v20";
 })();

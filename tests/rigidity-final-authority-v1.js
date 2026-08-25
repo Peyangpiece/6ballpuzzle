@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v19","v19 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v20","v20 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -140,8 +140,12 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
   expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");
   expect(ctx.__sixBallWrongContactPairWaitsInsteadOfReversing===true,"wrong contact-pair wait invariant missing");
-  expect(ctx.__sixBallFirstCurrentContactSidePersistsUntilSplit===true,"first contact-side persistence invariant missing");
+  expect(ctx.__sixBallFirstCurrentContactSidePersistsUntilSplit===false,"stale first-contact side lock remains enabled");
+  expect(ctx.__sixBallCurrentLiveSideOverridesStoredSide===true,"current live-side override missing");
   expect(ctx.__sixBallExplicitCurrentContactHalfOverridesStoredSide===true,"explicit current contact-half authority missing");
+  expect(ctx.__sixBallLiveVisualGridDefinesContactSide===true,"live visual-grid side authority missing");
+  expect(ctx.__sixBallLiveContactRequiresLogicalRowAlignment===true,"live logical-row alignment guard missing");
+  expect(ctx.__sixBallLiveSupportMustBeBelowCurrentBase===true,"live below-base support guard missing");
   expect(ctx.__sixBallCurrentCentralSplitBeatsHorizontalSnap===true,"central split vs horizontal-snap priority marker missing");
   expect(ctx.__sixBallOrdinarySplitOnlyCentralOrPositionFinal===false,"two-trigger whitelist still claims all ordinary groups");
   expect(ctx.__sixBallUpConvexSplitOnlyCentralOrPositionFinal===true,"up-convex two-trigger split whitelist marker missing");
@@ -509,6 +513,124 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   }
 }
 
+/* A live board can be one logical lattice step ahead and retain a stale
+   impactOffsetX/hitFraction. The displayed support is visibly nearer the
+   RIGHT lower ball, so live geometry must override the reversed logical
+   LEFT-side proposal and release RIGHT solo. */
+{
+  const members=makeUpMembers(844);
+  const [top,left,right]=members;
+  const support={id:9944,c:4,isGarbage:false};
+  const ctx=install({
+    createEngine:()=>({
+      board:Array.from({length:10},()=>Array(12).fill(null)),
+      vis:new Map(),_visualMovingIds:new Set(),
+      _liveBatchClock:{elapsed:0,duration:0,states:new Map()}
+    }),
+    independent:(board,group,member)=>member===right
+      ?{...motion(member,1,1),pivot:[6,5]}
+      :member===left
+        ?{...motion(member,-1,1),pivot:[6,5]}
+        :motion(member,-1,1),
+    separator:()=>({
+      /* Deliberately wrong logical side: LEFT solo. */
+      hitFraction:.375,top,pairLower:right,solo:left,
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      support,px:6,py:5,dir:1
+    }),
+    splitPlan:(board,group,info)=>[
+      {...motion(info.top,info.dir,1),bundleId:844,groupSize:2},
+      {...motion(info.pairLower,info.dir,1),bundleId:844,groupSize:2},
+      {...info.soloMotion,bundleId:0,groupSize:0}
+    ],
+    base:()=>[
+      {...motion(top,1,1),bundleId:844,groupSize:2},
+      {...motion(right,1,1),bundleId:844,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const game=ctx.createEngine();
+  for(const member of members){
+    game.board[member.y][member.x]=member.ball;
+    game.vis.set(member.ball.id,{
+      x:member.x-.35,y:member.y,vy:0,motionSpeed:0
+    });
+  }
+  game.board[5][6]=support;
+  game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
+
+  const out=ctx.hexPhysPlanGroup(game.board,members,false);
+  const pair=out.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
+  const solo=out.find(step=>step.groupSize===0);
+  expect(
+    JSON.stringify(pair)===JSON.stringify([top.ball.id,left.ball.id].sort()),
+    "live right contact kept the logically reversed right pair"
+  );
+  expect(solo?.ball.id===right.ball.id,"live right contact did not release RIGHT solo");
+  expect(
+    ctx.__sixBallLastFinalRigidityCorrectionV1?.contactSideSource===
+      "live-visual-right-hit-fraction",
+    "logical grid side overrode the live right contact"
+  );
+  expect(
+    Math.abs(ctx.__sixBallLastFinalRigidityCorrectionV1?.logicalHitFraction-.375)<1e-9&&
+    Math.abs(ctx.__sixBallLastFinalRigidityCorrectionV1?.liveContactHitFraction-.675)<1e-9,
+    "live/logical contact mismatch was not measured"
+  );
+}
+
+/* Even if every motion flag was cleared too early, a rendered triplet/support
+   configuration that is one full row behind the logical grid must not split.
+   Relative distances alone used to accept this as a current contact. */
+{
+  const members=makeUpMembers(845);
+  const [top,left,right]=members;
+  const support={id:9945,c:4,isGarbage:false};
+  const ctx=install({
+    createEngine:()=>({
+      board:Array.from({length:10},()=>Array(12).fill(null)),
+      vis:new Map(),_visualMovingIds:new Set(),
+      _liveBatchClock:{elapsed:0,duration:0,states:new Map()}
+    }),
+    independent:(board,group,member)=>member===right
+      ?{...motion(member,1,1),pivot:[6,5]}
+      :member===left
+        ?{...motion(member,-1,1),pivot:[6,5]}
+        :motion(member,-1,1),
+    separator:()=>({
+      hitFraction:.625,top,pairLower:left,solo:right,
+      soloMotion:{...motion(right,1,1),pivot:[6,5]},
+      support,px:6,py:5,dir:-1
+    }),
+    base:()=>[
+      {...motion(top,-1,1),bundleId:845,groupSize:2},
+      {...motion(left,-1,1),bundleId:845,groupSize:2},
+      {...motion(right,1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const game=ctx.createEngine();
+  for(const member of members){
+    game.board[member.y][member.x]=member.ball;
+    game.vis.set(member.ball.id,{
+      x:member.x-.35,y:member.y-1,vy:0,motionSpeed:0
+    });
+  }
+  game.board[5][6]=support;
+  game.vis.set(support.id,{x:6,y:4,vy:0,motionSpeed:0});
+
+  const out=ctx.hexPhysPlanGroup(game.board,members,false);
+  expect(out.length===0,"one-row logical/render grid mismatch split in air");
+  expect(
+    members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),
+    "grid-mismatch wait did not preserve the rigid triplet"
+  );
+  expect(
+    ctx.__sixBallLastFinalRigidityCorrectionV1?.airborneReason===
+      "displayed-contact-grid-not-current",
+    "grid-mismatch airborne cause was not recorded"
+  );
+}
+
 /* If an older resolver offers only the reversed pair and the true contact-side
    solo has no safe outward path, keep all three rigid and wait. Never accept
    the opposite 2+1 plan merely because it is the only proposal available. */
@@ -536,9 +658,9 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"blocked correct split did not wait as a rigid triplet");
 }
 
-/* A legal rigid slope can postpone a contact split by one event. Preserve the
-   first live contact ball even if the rendered centres cross the support before
-   the next planner pass; the later split must not reverse colours. */
+/* A legal rigid slope can postpone a contact split by one event. If the
+   rendered centres cross the support before the actual split, use the CURRENT
+   live side. Never preserve a stale first-contact lock into the split frame. */
 {
   const members=makeUpMembers(827);
   const [top,left,right]=members;
@@ -587,8 +709,8 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   for(const member of members)game.vis.get(member.ball.id).x=member.x-.35;
   const split=ctx.hexPhysPlanGroup(game.board,members,false);
   const pair=split.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
-  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,right.ball.id].sort()),"post-contact crossing reversed the remembered blue-side split");
-  expect(!left.ball.rigid&&right.ball.rigid,"post-contact crossing reversed the remembered rigidity pair");
+  expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,left.ball.id].sort()),"current right contact was overridden by the remembered left side");
+  expect(!right.ball.rigid&&left.ball.rigid,"current right contact kept the remembered reversed pair");
 }
 
 /* At a current middle-50% contact, a whole-triplet horizontal correction from
@@ -667,7 +789,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
     const pieceKey=members.map(member=>String(member.ball.id)).sort().join(":");
     for(const member of members){
       member.ball.impactOffsetX=.35;
-      member.ball._finalCurrentContactSoloV19={
+      member.ball._finalCurrentContactSoloV20={
         pieceKey,supportId:support.id,
         soloId:left.ball.id,pairDir:1,source:"stale-left-lock"
       };
@@ -917,4 +1039,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v19 PASS");
+console.log("final rigidity authority v20 PASS");

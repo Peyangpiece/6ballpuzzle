@@ -250,12 +250,16 @@ expect(ctx.__sixBallFinalUpConvexIsSoleMutationAuthority===true,"obsolete split 
 expect(ctx.__sixBallLegacyPreArcSideLockLoaded===false,"legacy pre-arc side lock remains active");
 expect(ctx.__sixBallLegacyProjectedPocketSplitLoaded===false,"legacy projected-pocket split remains active");
 expect(ctx.__sixBallLegacyRigidUntilPocketSplitLoaded===false,"legacy pocket-release planner remains active");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v19","final authority version mismatch");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v20","final authority version mismatch");
 expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
 expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
 expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");
 expect(ctx.__sixBallWrongContactPairWaitsInsteadOfReversing===true,"wrong contact-pair wait invariant missing");
-expect(ctx.__sixBallFirstCurrentContactSidePersistsUntilSplit===true,"first contact-side persistence invariant missing");
+expect(ctx.__sixBallFirstCurrentContactSidePersistsUntilSplit===false,"stale first-contact side lock remains enabled");
+expect(ctx.__sixBallCurrentLiveSideOverridesStoredSide===true,"current live-side override missing");
 expect(ctx.__sixBallExplicitCurrentContactHalfOverridesStoredSide===true,"explicit current contact-half authority missing");
+expect(ctx.__sixBallLiveVisualGridDefinesContactSide===true,"live visual-grid side authority missing");
+expect(ctx.__sixBallLiveContactRequiresLogicalRowAlignment===true,"live logical-row alignment guard missing");
+expect(ctx.__sixBallLiveSupportMustBeBelowCurrentBase===true,"live below-base support guard missing");
 expect(inverseLegacyDelegations>0,"production audit contained no inverse-triangle legacy delegation cases");
 console.log(`final rigidity production audit PASS ${cases.length}/${cases.length} sameDirection=${sameDirection} oppositeSplits=${oppositeSplits} activeCentralSplits=${activeCentralSplits} positionFinalSplits=${positionFinalSplits} inverseLegacy=${inverseLegacyDelegations} rejectedOutsideBand=${rejectedOutsideBand} releasedFixed=${releasedFixed}`);

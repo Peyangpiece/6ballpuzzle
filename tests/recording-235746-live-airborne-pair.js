@@ -90,7 +90,65 @@ expect(result.airborneCount===0,"recording 23:57:46 split while visually airborn
 expect(result.rigidInAir,"recording 23:57:46 lost three-ball rigidity in air");
 expect(JSON.stringify(result.pair)===JSON.stringify(result.expectedPair),"recording 23:57:46 kept the reversed pair");
 expect(result.soloId===result.expectedSoloId,"recording 23:57:46 did not make the contacted green-left ball solo");
-expect(result.version==="final-rigidity-authority-v19","v19 final authority is not active");
+expect(result.version==="final-rigidity-authority-v20","v20 final authority is not active");
 expect(result.soleAuthority===true,"obsolete UP-convex layer can still mutate the pair");
 
-console.log("recording 23:57:46 live airborne/opposite-pair regression PASS",JSON.stringify(result));
+const gridResult=vm.runInContext(`
+(()=>{
+  function scenario(seed,gid,logicalOffset,visualOffset,rowOffset){
+    const game=createEngine(seed);
+    const specs=[
+      {x:6,y:3,c:0,role:0},
+      {x:5,y:4,c:2,role:1},
+      {x:7,y:4,c:3,role:2}
+    ];
+    const members=specs.map(spec=>{
+      const ball=mkBall(game,spec.c);
+      ball.motionGroupId=gid;
+      ball.motionGroupRole=spec.role;
+      ball.motionGroupOrientation="up";
+      ball.motionGroupSize=3;
+      ball.rigid=true;
+      ball.impactOffsetX=logicalOffset;
+      game.board[spec.y][spec.x]=ball;
+      noteBoardCell(game.board,spec.y,ball);
+      game.vis.set(ball.id,{
+        x:spec.x+visualOffset,y:spec.y+rowOffset,vy:0,motionSpeed:0
+      });
+      return{ball,x:spec.x,y:spec.y,role:spec.role,orientation:"up"};
+    });
+    const support=mkBall(game,4);
+    game.board[5][6]=support;
+    noteBoardCell(game.board,5,support);
+    game.vis.set(support.id,{x:6,y:5+rowOffset,vy:0,motionSpeed:0});
+    game._visualMovingIds=new Set();
+    game._liveBatchClock={elapsed:0,duration:0,states:new Map()};
+    const plan=hexPhysPlanGroup(game.board,members,false)||[];
+    const pair=plan.filter(step=>Number(step.groupSize)===2)
+      .map(step=>step.ball.id).sort((a,b)=>a-b);
+    const solo=plan.find(step=>Number(step.groupSize)===0);
+    return{
+      count:plan.length,
+      rigid:members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),
+      pair,soloId:solo?.ball?.id??null,
+      topId:members[0].ball.id,leftId:members[1].ball.id,rightId:members[2].ball.id,
+      correction:{...(window.__sixBallLastFinalRigidityCorrectionV1||{})}
+    };
+  }
+  return{
+    oneRowAhead:scenario(235747,235747,.35,.35,-1),
+    reversedLogicalSide:scenario(235748,235748,.35,-.35,0)
+  };
+})()
+`,ctx);
+
+expect(gridResult.oneRowAhead.count===0,"one-row logical lead split in air in the production runtime");
+expect(gridResult.oneRowAhead.rigid,"one-row logical lead broke production triplet rigidity");
+expect(gridResult.oneRowAhead.correction.airborneReason==="displayed-contact-grid-not-current","production runtime missed the grid-ahead cause");
+expect(gridResult.reversedLogicalSide.soloId===gridResult.reversedLogicalSide.rightId,"live right contact did not override the reversed logical side");
+expect(JSON.stringify(gridResult.reversedLogicalSide.pair)===JSON.stringify([
+  gridResult.reversedLogicalSide.topId,gridResult.reversedLogicalSide.leftId
+].sort((a,b)=>a-b)),"live right contact kept the reversed production pair");
+expect(gridResult.reversedLogicalSide.correction.contactSideSource==="live-visual-right-hit-fraction","production side was not derived from live visuals");
+
+console.log("recording 23:57:46 live/grid/opposite-pair regression PASS",JSON.stringify({result,gridResult}));
