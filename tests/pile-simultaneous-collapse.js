@@ -17,8 +17,7 @@ const runtimeNames=[
   "app-floor-bridge-collapse-v1.js","app-lattice-finalize-v2.js",
   "app-coherent-collapse-v1.js","app-wall-boundary-authoritative-v1.js",
   "app-slope-upconvex-authoritative-v3.js","app-intentional-hexagon-stability-v1.js",
-  "app-rigidity-resolver-authoritative-v3.js","app-upconvex-contact-priority-v1.js",
-  "app-upconvex-pocket-capture-v1.js","app-upconvex-rigid-until-contact-v1.js",
+  "app-rigidity-resolver-authoritative-v3.js",
   "app-collapse-timing-authoritative-v2.js","app-runtime-performance-v3.js",
   "app-rigidity-final-authority-v1.js"
 ];

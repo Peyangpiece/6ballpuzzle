@@ -4,9 +4,6 @@ const path = require("path");
 const {ctx} = require("./v1303-plan-group-smoke.js");
 
 for(const file of [
-  "app-upconvex-contact-priority-v1.js",
-  "app-upconvex-pocket-capture-v1.js",
-  "app-upconvex-rigid-until-contact-v1.js",
   "app-collapse-timing-authoritative-v2.js",
   "app-runtime-performance-v3.js",
   "app-rigidity-final-authority-v1.js"

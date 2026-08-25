@@ -47,7 +47,7 @@
 
     const basePlanGroup=hexPhysPlanGroup;
     const liveEngineByBoard=new WeakMap();
-    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV17";
+    const CONTACT_SIDE_STORE="_finalCurrentContactSoloV18";
 
     /* Group planning normally receives only the board, while physical stop
        proof also needs the live visual/batch state. Register every engine at
@@ -992,7 +992,10 @@
         );
         let basePlan=[];
         try{
-            basePlan=basePlanGroup(board,members,preview)||[];
+            /* Every earlier UP-convex planner is proposal-only. It may no
+               longer commit pair metadata, side locks, or pocket releases
+               before this final authority validates live contact. */
+            basePlan=basePlanGroup(board,members,true)||[];
         }catch(_){
             basePlan=[];
         }
@@ -1038,9 +1041,6 @@
                     member.ball.rollDir=vector?.dx||0;
                     member.ball.subCellBias=vector?.dx||0;
                     member.ball._finalRigidSlopeContinuationV5=true;
-                }
-                if(typeof window.__sixBallRememberUpConvexRigidApproachV32==="function"){
-                    try{window.__sixBallRememberUpConvexRigidApproachV32(members,normalized);}catch(_){}
                 }
                 window.__sixBallLastFinalRigidityCorrectionV1={
                     reason:"current-common-rigid-slope-before-split",
@@ -1097,9 +1097,6 @@
                     member.ball.rollDir=vector?.dx||0;
                     member.ball.subCellBias=vector?.dx||0;
                     member.ball._finalRigidSlopeContinuationV5=true;
-                }
-                if(typeof window.__sixBallRememberUpConvexRigidApproachV32==="function"){
-                    try{window.__sixBallRememberUpConvexRigidApproachV32(members,normalized);}catch(_){}
                 }
                 window.__sixBallLastFinalRigidityCorrectionV1={
                     reason:"legal-pair-slope-before-split-or-position-final",
@@ -1352,6 +1349,10 @@
     window.__sixBallDivergentMotionAloneCannotSplit=true;
     window.__sixBallLiveVisualContactRequiredBeforeSplit=true;
     window.__sixBallLogicalPivotCannotSplitWhileVisualAirborne=true;
+    window.__sixBallFinalUpConvexIsSoleMutationAuthority=true;
+    window.__sixBallLegacyPreArcSideLockLoaded=false;
+    window.__sixBallLegacyProjectedPocketSplitLoaded=false;
+    window.__sixBallLegacyRigidUntilPocketSplitLoaded=false;
     window.__sixBallRigidityPreviewIsReadOnly=true;
-    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v17";
+    window.__sixBallFinalRigidityAuthorityVersion="final-rigidity-authority-v18";
 })();

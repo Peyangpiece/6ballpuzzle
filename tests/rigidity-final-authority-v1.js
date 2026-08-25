@@ -124,7 +124,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const out=ctx.hexPhysPlanGroup([],members,false);
   expect(out.length===3&&out.every(step=>step.bundleId===700&&step.groupSize===3),"same-direction triplet was not restored");
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"same-direction triplet metadata was not restored");
-  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v17","v17 final authority marker missing");
+  expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v18","v18 final authority marker missing");
   expect(ctx.__sixBallSlopeTriangleAlwaysKeepsRigidity===true,"slope invariant marker missing");
   expect(ctx.__sixBallUpConvexSplitKeepsOppositePair===true,"up-convex invariant marker missing");
   expect(ctx.__sixBallUpConvexActiveSplitRequiresMiddleFiftyPercent===true,"middle-50% invariant marker missing");
@@ -149,6 +149,10 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(ctx.__sixBallDivergentMotionAloneCannotSplit===true,"divergent-motion split rejection marker missing");
   expect(ctx.__sixBallLiveVisualContactRequiredBeforeSplit===true,"live visual contact marker missing");
   expect(ctx.__sixBallLogicalPivotCannotSplitWhileVisualAirborne===true,"logical/visual timing marker missing");
+  expect(ctx.__sixBallFinalUpConvexIsSoleMutationAuthority===true,"sole mutation authority marker missing");
+  expect(ctx.__sixBallLegacyPreArcSideLockLoaded===false,"legacy pre-arc side lock remains active");
+  expect(ctx.__sixBallLegacyProjectedPocketSplitLoaded===false,"legacy projected-pocket split remains active");
+  expect(ctx.__sixBallLegacyRigidUntilPocketSplitLoaded===false,"legacy pocket-release planner remains active");
 }
 
 /* Without a central split contact, an older same-row group correction is
@@ -307,6 +311,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const members=makeUpMembers(828);
   const [top,left,right]=members;
   const support={id:9928,c:4,isGarbage:false};
+  let legacyMutationCalls=0;
   const ctx=install({
     createEngine:()=>({
       board:Array.from({length:10},()=>Array(12).fill(null)),
@@ -317,26 +322,36 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
       ?motion(member,1,1)
       :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
-      hitFraction:.4,top,pairLower:right,solo:left,
-      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
-      support,px:6,py:5,dir:1
+      /* Deliberately return the obsolete reversed pair. Live contact must
+         still make LEFT green solo and keep top+RIGHT yellow. */
+      hitFraction:.5,top,pairLower:left,solo:right,
+      soloMotion:{...motion(right,1,1),pivot:[6,5]},
+      support,px:6,py:5,dir:-1
     }),
     splitPlan:(board,group,info)=>[
       {...motion(info.top,info.dir,1),bundleId:828,groupSize:2},
       {...motion(info.pairLower,info.dir,1),bundleId:828,groupSize:2},
       {...info.soloMotion,bundleId:0,groupSize:0}
     ],
-    base:()=>[
-      {...motion(top,1,1),bundleId:828,groupSize:2},
-      {...motion(right,1,1),bundleId:828,groupSize:2},
-      {...motion(left,-1,1),bundleId:0,groupSize:0}
-    ]
+    base:(board,group,preview)=>{
+      if(!preview){
+        legacyMutationCalls++;
+        clear(right.ball);
+        top.ball.motionGroupSize=2;
+        left.ball.motionGroupSize=2;
+      }
+      return[
+        {...motion(top,-1,1),bundleId:828,groupSize:2},
+        {...motion(left,-1,1),bundleId:828,groupSize:2},
+        {...motion(right,1,1),bundleId:0,groupSize:0}
+      ];
+    }
   });
   const game=ctx.createEngine();
   for(const member of members){
     game.board[member.y][member.x]=member.ball;
     game.vis.set(member.ball.id,{
-      x:member.x,y:member.y-3,vy:2,motionSpeed:2
+      x:member.x+.35,y:member.y-3,vy:2,motionSpeed:2
     });
     game._visualMovingIds.add(member.ball.id);
     game._liveBatchClock.states.set(member.ball.id,{});
@@ -349,12 +364,13 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"airborne visual wait broke triplet rigidity");
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-airborne-upward-two-plus-one","logical/render time gap was not diagnosed as airborne");
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.airborneReason==="triplet-visual-motion-incomplete","live motion clock was not recorded as the airborne cause");
+  expect(legacyMutationCalls===0,"obsolete split layer mutated the pair before live contact");
 
   game._visualMovingIds.clear();
   game._liveBatchClock.elapsed=1;
   for(const member of members){
     const visual=game.vis.get(member.ball.id);
-    visual.x=member.x;
+    visual.x=member.x+.35;
     visual.y=member.y;
     visual.vy=0;
     visual.motionSpeed=0;
@@ -363,6 +379,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const pair=contact.filter(step=>step.groupSize===2).map(step=>step.ball.id).sort();
   expect(JSON.stringify(pair)===JSON.stringify([top.ball.id,right.ball.id].sort()),"physical contact did not enable the correct opposite-side pair");
   expect(!left.ball.rigid&&right.ball.rigid,"physical contact committed the wrong rigidity pair");
+  expect(legacyMutationCalls===0,"obsolete split layer mutated the pair at live contact");
 }
 
 /* Direction +1 is finalized before pair metadata. Even if both the separator
@@ -835,4 +852,4 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(members[0].ball.motionGroupId===750,"ordinary final authority mutated garbage");
 }
 
-console.log("final rigidity authority v17 PASS");
+console.log("final rigidity authority v18 PASS");

@@ -7,9 +7,6 @@ const {ctx}=require("./v1303-plan-group-smoke.js");
    golden remains a core-regression test. Add the production tail here, in the
    exact index.html order, to audit the new final authority independently. */
 for(const file of[
-  "app-upconvex-contact-priority-v1.js",
-  "app-upconvex-pocket-capture-v1.js",
-  "app-upconvex-rigid-until-contact-v1.js",
   "app-collapse-timing-authoritative-v2.js",
   "app-runtime-performance-v3.js",
   "app-rigidity-final-authority-v1.js"
@@ -249,11 +246,11 @@ expect(ctx.__sixBallFallingRigidTriangleNeverRotates===true,"falling no-rotation
 expect(ctx.__sixBallUpConvexOuterQuarterUsesRigidSlide===false,"outer-quarter horizontal slide remains enabled");
 expect(ctx.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter===false,"horizontal-slide gravity bypass remains enabled");
 expect(ctx.__sixBallPureHorizontalGroupMotionForbidden===true,"pure-horizontal group guard missing");
-expect(ctx.__sixBallUpPocketCaptureOverridesGeometricSide===false,"pocket geometric override remains enabled");
-expect(ctx.__sixBallUpPocketCaptureRequiresMiddleFiftyPercent===true,"pocket middle-50% gate missing");
-expect(ctx.__sixBallUpPocketCaptureRequiresCentralSeparator===true,"rigid pocket central separator gate missing");
-expect(ctx.__sixBallUpConvexRigidApproachIsLastResort===false,"motion direction remains a split-side fallback");
-expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v17","final authority version mismatch");
+expect(ctx.__sixBallFinalUpConvexIsSoleMutationAuthority===true,"obsolete split layers can still mutate UP triplets");
+expect(ctx.__sixBallLegacyPreArcSideLockLoaded===false,"legacy pre-arc side lock remains active");
+expect(ctx.__sixBallLegacyProjectedPocketSplitLoaded===false,"legacy projected-pocket split remains active");
+expect(ctx.__sixBallLegacyRigidUntilPocketSplitLoaded===false,"legacy pocket-release planner remains active");
+expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v18","final authority version mismatch");
 expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
 expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
 expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");
