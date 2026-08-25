@@ -1,0 +1,40 @@
+/* Live Gate legacy-feature parity layer */
+.parity-page{max-width:1160px;margin:auto;padding:34px 20px 72px}
+.parity-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:22px;flex-wrap:wrap}
+.parity-head h1{margin:4px 0 0;font-size:34px;letter-spacing:-.045em}
+.parity-search-grid{display:grid;grid-template-columns:minmax(240px,1fr) auto auto;gap:10px;margin-bottom:18px}
+.parity-search-grid .search-input{height:50px}
+.parity-category-row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 22px}
+.parity-legal{max-width:820px;margin:auto}
+.parity-legal .panel{margin-bottom:16px}
+.parity-legal dl{margin:0}
+.parity-legal .legal-row{display:grid;grid-template-columns:190px 1fr;gap:20px;padding:15px 0;border-bottom:1px solid var(--line)}
+.parity-legal .legal-row:last-child{border-bottom:0}
+.parity-legal dt{font-size:13px;font-weight:900;color:#555b6d}
+.parity-legal dd{margin:0;font-size:14px}
+.parity-menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.parity-menu-item{width:100%;border:1px solid var(--line);background:#fff;border-radius:15px;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;text-align:left;font-weight:800}
+.parity-menu-item:hover{background:#fafbfe;border-color:#cfd4e1}
+.parity-map-btn{white-space:nowrap}
+.admin-side{overflow-y:auto}
+.admin-side::-webkit-scrollbar{width:6px}.admin-side::-webkit-scrollbar-thumb{background:#313b4f;border-radius:20px}
+.parity-admin-login{min-height:100vh;background:#f5f7fb;display:grid;place-items:center;padding:24px}
+.parity-admin-login .login-card{width:min(460px,100%);background:#fff;border:1px solid #e3e7ef;border-radius:24px;padding:32px;box-shadow:0 18px 46px rgba(20,25,45,.10)}
+.parity-admin-login .login-card h1{font-size:28px;margin:18px 0 6px}
+.parity-auth-state{display:flex;gap:8px;align-items:center;padding:12px 14px;background:#f7f9fc;border-radius:13px;margin:20px 0;font-size:12px;color:#657083}
+.parity-auth-dot{width:9px;height:9px;border-radius:50%;background:#15a06a;box-shadow:0 0 0 4px rgba(21,160,106,.10)}
+.parity-ticket-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.parity-admin-ticket{border:1px solid #e4e7ee;border-radius:16px;padding:17px;background:#fff}
+.parity-admin-ticket h3{margin:0 0 4px;font-size:16px}
+.parity-admin-ticket .ticket-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.parity-admin-ticket .ticket-kpis div{background:#f7f8fb;border-radius:11px;padding:10px}
+.parity-admin-ticket .ticket-kpis small{display:block;color:#7b8290;font-size:10px}.parity-admin-ticket .ticket-kpis b{display:block;font-size:14px;margin-top:2px}
+.parity-user-row{display:grid;grid-template-columns:1.2fr .8fr .7fr .8fr auto;align-items:center;gap:12px;padding:14px;border-bottom:1px solid #eef0f4}
+.parity-user-row.header{font-size:11px;color:#818693;font-weight:800;background:#fafbfc}
+.parity-user-cell{min-width:0}.parity-user-cell b,.parity-user-cell span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.parity-account-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.parity-account-card{background:#fff;border:1px solid #e3e6ed;border-radius:16px;padding:18px}.parity-account-card small{color:#747985;font-weight:800}.parity-account-card strong{display:block;font-size:24px;margin-top:5px}
+.parity-settlement-row{display:grid;grid-template-columns:1.4fr .8fr .8fr .8fr auto;gap:12px;align-items:center;padding:14px 10px;border-bottom:1px solid #eef0f4;font-size:12px}
+.parity-note{padding:14px 16px;border-radius:14px;background:#fff8e8;border:1px solid #ffe2a4;color:#76510b;font-size:12px;line-height:1.7}
+@media(max-width:900px){.parity-search-grid{grid-template-columns:1fr}.parity-ticket-grid{grid-template-columns:1fr}.parity-account-grid{grid-template-columns:1fr 1fr}.parity-user-row,.parity-settlement-row{grid-template-columns:1fr 1fr}.parity-user-row.header,.parity-settlement-row.header{display:none}}
+@media(max-width:640px){.parity-page{padding:20px 16px 92px}.parity-head h1{font-size:28px}.parity-menu-grid{grid-template-columns:1fr}.parity-legal .legal-row{grid-template-columns:1fr;gap:5px}.parity-account-grid{grid-template-columns:1fr 1fr}.parity-ticket-grid{grid-template-columns:1fr}.parity-user-row,.parity-settlement-row{grid-template-columns:1fr}.bottom-nav{grid-template-columns:repeat(4,1fr)!important}.bottom-link b{line-height:1}.parity-admin-login .login-card{padding:24px}}
