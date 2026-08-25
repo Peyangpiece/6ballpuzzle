@@ -1,10 +1,10 @@
-evalmachine.<anonymous>:2838
+evalmachine.<anonymous>:2845
 function expect(value,message){if(!value)throw new Error(message);}
                                          ^
 
 Error: garbage contact: packet did not hand off to independent board balls
-    at expect (evalmachine.<anonymous>:2838:48)
-    at evalmachine.<anonymous>:3001:2
+    at expect (evalmachine.<anonymous>:2845:48)
+    at evalmachine.<anonymous>:3008:2
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -37,13 +37,13 @@ Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6b
 }
 
 Node.js v22.23.2
-evalmachine.<anonymous>:3604
+evalmachine.<anonymous>:3611
 function check(id,name,value){if(!value)throw new Error(String(id).padStart(3,"0")+" "+name);passed.push({id,name});}
                                         ^
 
 Error: 018 counter rotation advances minus sixty
-    at check (evalmachine.<anonymous>:3604:47)
-    at evalmachine.<anonymous>:3637:34
+    at check (evalmachine.<anonymous>:3611:47)
+    at evalmachine.<anonymous>:3644:34
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -72,7 +72,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2357,
+  pid: 2361,
   stdout: null,
   stderr: null
 }
@@ -124,13 +124,13 @@ Error: ENOENT: no such file or directory, open '/home/runner/work/6ballpuzzle/6b
 Node.js v22.23.2
 reference convergence round 1 1000/1000 PASS
 reference convergence round 2 2000/2000 PASS
-evalmachine.<anonymous>:3605
+evalmachine.<anonymous>:3612
 function expect(v,m){if(!v)throw new Error(m);}
                            ^
 
 Error: round3 garbage contact 17
-    at expect (evalmachine.<anonymous>:3605:34)
-    at evalmachine.<anonymous>:3663:305
+    at expect (evalmachine.<anonymous>:3612:34)
+    at evalmachine.<anonymous>:3670:305
     at Script.runInContext (node:vm:149:12)
     at Script.runInNewContext (node:vm:154:17)
     at Object.runInNewContext (node:vm:310:38)
@@ -159,7 +159,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2386,
+  pid: 2390,
   stdout: null,
   stderr: null
 }
@@ -205,7 +205,7 @@ Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runn
   status: 1,
   signal: null,
   output: [ null, null, null ],
-  pid: 2405,
+  pid: 2407,
   stdout: null,
   stderr: null
 }
