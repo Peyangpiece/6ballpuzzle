@@ -60,7 +60,7 @@ jobs:
           node tests/v1303-upconvex-production-guard.js
           node tests/v1303-upconvex-live-pocket-v24.js
 
-      - name: Run Nintendo reference up-convex regressions
+      - name: Run Nintendo reference motion regressions
         shell: bash
         run: |
           set -euo pipefail
@@ -68,6 +68,7 @@ jobs:
           node tests/reference-20260826-rendered-pair-rigidity.js
           node tests/reference-20260826-solo-continuity-diagnostic.js
           node tests/reference-20260826-solo-pivot-arc.js
+          node tests/reference-20260814-inverted-rigid-slope.js
 
       - name: Run clear disappearance FX regression
         run: node tests/clear-all-ball-fx.js
