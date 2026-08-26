@@ -12,7 +12,7 @@
   }
 
   function performerCard(index){
-    return `<div class="ec-repeat ec-performer" data-index="${index}"><div class="ec-repeat-head"><b>出演者 #${index}</b>${index>1?`<button type="button" class="ec-remove" onclick="this.closest('.ec-repeat').remove();renumberEventCreate()">削除</button>`:''}</div>${field('出演者名',`performer-name-${index}`,'text',true,'出演者名')}${field('出演者画像（任意）',`performer-image-${index}`,'file',false,'','')}<label class="ec-inline-check"><input type="checkbox" class="ec-target-performer" checked>お目当て選択の対象にする</label></div>`;
+    return `<div class="ec-repeat ec-performer" data-index="${index}"><div class="ec-repeat-head"><b>出演者 #${index}</b>${index>1?`<button type="button" class="ec-remove" onclick="this.closest('.ec-repeat').remove();renumberEventCreate()">削除</button>`:''}</div>${field('出演者名',`performer-name-${index}`,'text',true,'出演者名')}${field('出演者画像（任意）',`performer-image-${index}`,'file',false,'','<div class="ec-help">画像を選択してください</div>')}<label class="ec-inline-check"><input type="checkbox" class="ec-target-performer" checked>お目当て選択の対象にする</label></div>`;
   }
 
   function ticketCard(index){
@@ -25,17 +25,17 @@
 
 <section class="ec-section"><h3>基本情報</h3>${field('イベント名','ec-name','text',true,'イベント名')}${field('イベント概要','ec-summary','textarea',true,'イベントの概要')}${field('主催者名','ec-organizer','text',true,'主催者名')}${field('主催者連絡先（任意）','ec-organizer-contact','text',false,'メールアドレス・電話番号・Xアカウント等')}</section>
 
-<section class="ec-section"><h3>会場情報</h3>${field('会場名','ec-venue','text',true,'会場名')}${field('会場住所','ec-address','text',true,'会場住所')}</section>
+<section class="ec-section"><h3>会場情報</h3>${field('会場名','ec-venue','text',true,'会場名')}${field('会場住所','ec-address','text',true,'会場住所')}${field('住所URL（Google Maps等）','ec-address-url','url',false,'https://maps.google.com/...','<div class="ec-help">Google Mapsや会場公式サイトの地図URLを登録できます。</div>')}</section>
 
 <section class="ec-section"><h3>開催日時</h3>${field('開場日時','ec-open','datetime-local',true,'')}${field('開演日時','ec-start','datetime-local',true,'')}${field('終演予定日時（任意）','ec-end','datetime-local',false,'')}</section>
 
-<section class="ec-section"><h3>出演者</h3><div id="ecPerformers">${performerCard(1)}</div><button type="button" class="btn btn-soft ec-add" onclick="addEventPerformer()">＋ 出演者を追加</button></section>
+<section class="ec-section"><h3>出演者</h3><div id="ecPerformers">${performerCard(1)}</div><button type="button" class="btn btn-soft ec-add" onclick="addEventPerformer()"><span>＋</span><span>出演者を追加</span></button></section>
 
 <section class="ec-section"><h3>販売期間</h3>${field('販売開始日時','ec-sale-start','datetime-local',true,'')}${field('販売終了日時','ec-sale-end','datetime-local',true,'')}</section>
 
 <section class="ec-section"><h3>購入制限</h3>${field('1ユーザーあたり購入上限','ec-purchase-limit','number',true,'','<div class="ec-help">販売可能枚数の最大値が上限です</div>')}</section>
 
-<section class="ec-section"><h3>チケット</h3><div id="ecTickets">${ticketCard(1)}</div><button type="button" class="btn btn-soft ec-add" onclick="addEventTicketType()">＋ チケット種別を追加</button></section>
+<section class="ec-section"><h3>チケット</h3><div id="ecTickets">${ticketCard(1)}</div><button type="button" class="btn btn-soft ec-add" onclick="addEventTicketType()"><span>＋</span><span>チケット種別を追加</span></button></section>
 
 <section class="ec-section"><h3>販売設定</h3><div class="ec-field"><label>販売方法<span class="ec-required"> *</span></label><div class="ec-radio-list"><label class="ec-radio"><input type="radio" name="ec-sale-method" value="先着販売" checked><span><b>先着販売</b><span>在庫がある限り購入できます。</span></span></label><label class="ec-radio"><input type="radio" name="ec-sale-method" value="抽選販売"><span><b>抽選販売</b><span>申込期間終了後に抽選を実施します。</span></span></label></div></div></section>
 
@@ -118,12 +118,12 @@
       title:value('ec-name'),
       status:'upcoming',statusLabel:'販売前',badgeClass:'chip-blue',
       date:p.date,displayDate:p.date,open:localDateTimeParts(open).time,start:p.time,
-      venue:value('ec-venue'),area:value('ec-address'),priceFrom:Math.min(...ticketTypes.map(x=>x.price)),
+      venue:value('ec-venue'),area:value('ec-address'),venueUrl:value('ec-address-url'),mapUrl:value('ec-address-url'),priceFrom:Math.min(...ticketTypes.map(x=>x.price)),
       description:value('ec-summary'),performers:performers.map(x=>x.name),
       organizer:{name:value('ec-organizer'),manager:value('ec-organizer'),x:value('ec-organizer-contact'),email:value('ec-organizer-contact'),note:value('ec-organizer-contact')||'主催者連絡先は未登録です。'},
       ticketTypes:ticketTypes.map(x=>({name:x.name,price:x.price,stock:`残り${x.stock}枚`,note:'',status:'販売前'})),
       originalForm:{
-        organizerContact:value('ec-organizer-contact'),venueAddress:value('ec-address'),openAt:open,startAt:start,endAt:end,
+        organizerContact:value('ec-organizer-contact'),venueAddress:value('ec-address'),venueUrl:value('ec-address-url'),openAt:open,startAt:start,endAt:end,
         saleStartAt:saleStart,saleEndAt:saleEnd,purchaseLimit,
         performers,tickets:ticketTypes,saleMethod:document.querySelector('input[name="ec-sale-method"]:checked')?.value||'先着販売',
         resaleEnabled,resaleFee,paymentMethod:'Stripe（クレジットカード）'
@@ -155,5 +155,5 @@
   window.liveGateRenderEventCreate=eventCreateRouter;
   window.addEventListener('hashchange',eventCreateRouter);
   window.addEventListener('load',eventCreateRouter);
-  document.documentElement.dataset.eventCreate='original-parity-v1';
+  document.documentElement.dataset.eventCreate='original-parity-v2';
 })();
