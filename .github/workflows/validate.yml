@@ -40,6 +40,7 @@ jobs:
           test -f public/controls-v7.js
           test -s public/assets/menu-confirm-42.mp3
           grep -q 'loadCurrentGameBuild' public/index.html
+          grep -q 'app-rigidity-nintendo-authority-v1.js' public/index.html
           grep -q 'controls-v7.js' public/index.html
           grep -q '__hexControlsV7Installed' public/controls-v7.js
           grep -q 'hexPhysNaturalMotion' public/app-02.js
@@ -69,6 +70,7 @@ jobs:
           node tests/reference-20260826-solo-continuity-diagnostic.js
           node tests/reference-20260826-solo-pivot-arc.js
           node tests/reference-20260814-inverted-flat-split-diagnostic.js
+          node tests/reference-rigidity-state-machine-v1.js
 
       - name: Run clear disappearance FX regression
         run: node tests/clear-all-ball-fx.js
