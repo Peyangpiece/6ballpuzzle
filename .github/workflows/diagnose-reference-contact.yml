@@ -7,6 +7,7 @@ on:
       - "public/app-reference-upconvex-authority-v1.js"
       - "public/app-reference-first-contact-sweep-v3.js"
       - "tests/reference-20260826-upconvex-dynamic-split.js"
+      - "tests/reference-20260826-rendered-pair-rigidity.js"
       - ".github/workflows/diagnose-reference-contact.yml"
   workflow_dispatch:
 
@@ -23,4 +24,6 @@ jobs:
         with:
           node-version: "22"
       - name: Run Nintendo-reference contact regression
-        run: node tests/reference-20260826-upconvex-dynamic-split.js
+        run: |
+          node tests/reference-20260826-upconvex-dynamic-split.js
+          node tests/reference-20260826-rendered-pair-rigidity.js
