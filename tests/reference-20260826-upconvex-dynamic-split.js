@@ -6,7 +6,8 @@ for(const file of[
 "app-collapse-timing-authoritative-v2.js",
 "app-runtime-performance-v3.js",
 "app-rigidity-final-authority-v1.js",
-"app-reference-upconvex-authority-v1.js"
+"app-reference-upconvex-authority-v1.js",
+"app-reference-first-contact-sweep-v3.js"
 ]){
 vm.runInContext(
 fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),
@@ -52,6 +53,7 @@ momentumRight:scenario(826002,1,.35,false),
 airborne:scenario(826003,-1,.35,true),
 version:window.__sixBallReferenceUpConvexAuthorityVersion,
 version2:window.__sixBallReferenceUpConvexAuthorityVersion2,
+sweepVersion:window.__sixBallReferenceFirstContactSweepVersion,
 contactAlwaysSolo:window.__sixBallCurrentContactBallAlwaysBecomesSolo,
 kinematic:window.__sixBallReferenceSplitUsesKinematicContinuity,
 v21:window.__sixBallFinalRigidityAuthorityVersion
@@ -60,6 +62,7 @@ v21:window.__sixBallFinalRigidityAuthorityVersion
 `,ctx);
 expect(dynamic.version==="reference-upconvex-authority-v1","compatibility authority marker missing");
 expect(dynamic.version2==="reference-upconvex-authority-v2","reference authority v2 not loaded");
+expect(dynamic.sweepVersion==="reference-first-contact-sweep-v3","reference rendered sweep v3 not loaded");
 expect(dynamic.v21==="final-rigidity-authority-v21","v21 safety authority missing underneath reference layer");
 expect(dynamic.contactAlwaysSolo===false,"contact-side solo is still exposed as an absolute invariant");
 expect(dynamic.kinematic===true,"kinematic selector flag missing");
@@ -93,13 +96,13 @@ for(const member of members){
 const v={x:member.x+offset,y:member.y+rowOffset,vy:5,motionSpeed:5,justReleased:true};game.vis.set(member.ball.id,v);
 }
 game._visualMovingIds=new Set();game._liveBatchClock={elapsed:0,duration:0,states:new Map()};
-window.__sixBallLastReferenceUpConvexChoiceV1={};window.__sixBallReferenceFirstContactDiagnosticV2={};
+window.__sixBallLastReferenceUpConvexChoiceV1={};window.__sixBallReferenceFirstContactDiagnosticV2={};window.__sixBallReferenceFirstContactSweepDiagnosticV3={};
 const plan=hexPhysPlanGroup(game.board,members,false)||[];
 const pair=plan.filter(p=>Number(p.groupSize)===2).map(p=>p.ball.id).sort((a,b)=>a-b),solo=plan.find(p=>Number(p.groupSize)===0);
 const rv=game.vis.get(members[2].ball.id),lv=game.vis.get(members[1].ball.id),sv=game.vis.get(support.id);
 const rd=Math.hypot((rv.x-sv.x)*.5,(rv.y-sv.y)*HEX_ROW_H),ld=Math.hypot((lv.x-sv.x)*.5,(lv.y-sv.y)*HEX_ROW_H);
 return{count:plan.length,pair,soloId:solo?.ball?.id??null,topId:members[0].ball.id,leftId:members[1].ball.id,rightId:members[2].ball.id,
-rightDistance:rd,leftDistance:ld,choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},diag:{...(window.__sixBallReferenceFirstContactDiagnosticV2||{})},rigid3:members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3)};
+rightDistance:rd,leftDistance:ld,choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},diag:{...(window.__sixBallReferenceFirstContactDiagnosticV2||{})},sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})},rigid3:members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3)};
 }
 return{
 touching:makeScenario(826101,0),
@@ -107,7 +110,8 @@ preContact:makeScenario(826102,.08),
 outerAllowed:window.__sixBallReferenceFirstContactCanSplitOuterQuarter,
 bilateralRequired:window.__sixBallReferenceFirstContactRequiresBilateralPivot,
 signedContact:window.__sixBallHardDropUsesSignedContactOffset,
-cohortTiming:window.__sixBallSplitBatchUsesPerCohortTiming
+cohortTiming:window.__sixBallSplitBatchUsesPerCohortTiming,
+renderedSweep:window.__sixBallReferenceFirstContactSweepUsesRenderedOrigin
 };
 })()
 `,ctx);
@@ -116,6 +120,7 @@ expect(firstContact.outerAllowed===true,"outer-quarter first contact is not enab
 expect(firstContact.bilateralRequired===false,"first contact still requires bilateral pivot");
 expect(firstContact.signedContact===true,"signed hard-drop contact handoff is not enabled");
 expect(firstContact.cohortTiming===true,"per-cohort split timing is not enabled");
+expect(firstContact.renderedSweep===true,"rendered-origin first-contact sweep is not enabled");
 expect(close(firstContact.touching.rightDistance,1,2e-6),"reference touching ball is not at one-diameter contact");
 expect(firstContact.touching.leftDistance>1.20,"opposite lower ball is not clearly free at first contact");
 expect(firstContact.touching.count===3,"outer-quarter first contact did not author one 2+1 event "+JSON.stringify(firstContact.touching));
@@ -123,6 +128,8 @@ expect(JSON.stringify(firstContact.touching.pair)===JSON.stringify([firstContact
 expect(firstContact.touching.soloId===firstContact.touching.rightId,"outer-quarter contacted right ball did not begin outward solo motion");
 expect(firstContact.touching.choice.reason==="reference-first-unilateral-contact","first-contact override was not the authority used");
 expect(firstContact.touching.choice.hitFraction>.88&&firstContact.touching.choice.hitFraction<.94,"reference outer hit fraction is not near measured .91");
+expect(firstContact.touching.sweep.hit===false,"rendered pair sweep still intersects a stationary ball");
+expect(firstContact.touching.sweep.minDistance>=.9994,"rendered pair sweep lost one-ball separation");
 expect(firstContact.preContact.choice.reason!=="reference-first-unilateral-contact","split fired before physical contact");
 const lockContact=vm.runInContext(`
 (()=>{
@@ -139,7 +146,7 @@ return{rd,firstFrom,rightV:right?.v?{x:right.v.x,y:right.v.y}:null,
 rightRigid:!!right?.b?.rigid,rightSize:Number(right?.b?.motionGroupSize)||0,
 leftRigid:!!left?.b?.rigid,leftSize:Number(left?.b?.motionGroupSize)||0,
 topRigid:!!top?.b?.rigid,topSize:Number(top?.b?.motionGroupSize)||0,
-signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})}};
+signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})}};
 })()
 `,ctx);
 expect(close(lockContact.rd,1,3e-5),"hard-drop handoff did not land at exact one-diameter visual contact");
@@ -148,6 +155,7 @@ expect(lockContact.signed.releaseFrac<0,"outer-quarter hard drop did not use the
 expect(lockContact.choice.reason==="reference-first-unilateral-contact","hard-drop lock did not split on its first physical contact");
 expect(lockContact.rightRigid===false&&lockContact.rightSize===0,"contacted right ball retained triplet rigidity after first contact");
 expect(lockContact.leftRigid&&lockContact.topRigid&&lockContact.leftSize===2&&lockContact.topSize===2,"surviving pair was not committed immediately at first contact");
+expect(lockContact.sweep.hit===false,"hard-drop surviving pair intersects a stationary ball in rendered sweep");
 const timing=vm.runInContext(`
 (()=>{
 const pairCell={id:9101},soloCell={id:9102};
@@ -161,4 +169,4 @@ return{pair:p,solo:s,pairTarget:pairMember.seg.to,soloTarget:soloMember.seg.to};
 `,ctx);
 expect(close(timing.pair[0],timing.pairTarget[0],1e-9)&&close(timing.pair[1],timing.pairTarget[1],1e-9),"short rigid cohort was still stretched to solo duration");
 expect(Math.hypot(timing.solo[0]-timing.soloTarget[0],timing.solo[1]-timing.soloTarget[1])>.05,"solo incorrectly completed at pair duration");
-console.log("2026-08-26 Nintendo-reference UP-convex v2 PASS",JSON.stringify({dynamic,firstContact,lockContact,timing}));
+console.log("2026-08-26 Nintendo-reference UP-convex v3 PASS",JSON.stringify({dynamic,firstContact,lockContact,timing}));
