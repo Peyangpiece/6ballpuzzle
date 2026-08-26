@@ -11,6 +11,7 @@ on:
       - "tests/v1303-upconvex-production-guard.js"
       - "tests/v1303-upconvex-live-pocket-v24.js"
       - "tests/reference-20260826-upconvex-dynamic-split.js"
+      - "tests/reference-20260826-rendered-pair-rigidity.js"
       - "tests/clear-all-ball-fx.js"
       - "tests/oracles/**"
       - ".github/workflows/deploy-cloudflare.yml"
@@ -48,7 +49,7 @@ jobs:
           mkdir -p audit-results
           node tests/v1303-plan-group-smoke.js >/tmp/production-smoke.log 2>&1; A=$?
           node tests/v1303-current-oracle-suite.js >/tmp/production-oracle.log 2>&1; B=$?
-          { node tests/v1303-upconvex-production-guard.js && node tests/v1303-upconvex-live-pocket-v24.js && node tests/reference-20260826-upconvex-dynamic-split.js; } >/tmp/production-upconvex.log 2>&1; C=$?
+          { node tests/v1303-upconvex-production-guard.js && node tests/v1303-upconvex-live-pocket-v24.js && node tests/reference-20260826-upconvex-dynamic-split.js && node tests/reference-20260826-rendered-pair-rigidity.js; } >/tmp/production-upconvex.log 2>&1; C=$?
           node tests/clear-all-ball-fx.js >/tmp/production-clearfx.log 2>&1; D=$?
           if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
           printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" > audit-results/deploy-gate.json
@@ -61,16 +62,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -u
           if [ ! -f audit-results/deploy-gate.json ]; then
             mkdir -p audit-results
             printf '{"sha":"%s","status":"fail","smoke":99,"oracle12k":99,"upconvex":99,"clearFx":99}\n' "$GITHUB_SHA" > audit-results/deploy-gate.json
           fi
           encoded="$(base64 -w0 audit-results/deploy-gate.json)"
-          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/deploy-gate.json?ref=main" --jq '.sha' 2>/dev/null || true)"
-          args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/deploy-gate.json" -f message='Record deploy gate audit [skip ci]' -f content="$encoded" -f branch='main')
-          if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
-          gh api "${args[@]}" >/dev/null
+          recorded=0
+          for attempt in $(seq 1 6); do
+            current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/deploy-gate.json?ref=main" --jq '.sha' 2>/dev/null || true)"
+            args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/deploy-gate.json" -f message='Record deploy gate audit [skip ci]' -f content="$encoded" -f branch='main')
+            if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
+            if gh api "${args[@]}" >/dev/null 2>&1; then recorded=1; break; fi
+            sleep 1
+          done
+          if [ "$recorded" -ne 1 ]; then echo "::warning::production gate audit record raced with another audit writer; deployment gate result remains authoritative"; fi
 
       - name: Stamp deploy commit
         if: ${{ steps.production_gate.outcome == 'success' }}
@@ -117,16 +123,21 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          set -euo pipefail
+          set -u
           if [ ! -f audit-results/cloudflare-deploy.json ]; then
             mkdir -p audit-results
             printf '{"sha":"%s","status":"fail","deployOutcome":"unknown","productionUrl":"%s","observedSha":""}\n' "$GITHUB_SHA" "https://6ballpuzzle.hrk-6888.workers.dev" > audit-results/cloudflare-deploy.json
           fi
           encoded="$(base64 -w0 audit-results/cloudflare-deploy.json)"
-          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-deploy.json?ref=main" --jq '.sha' 2>/dev/null || true)"
-          args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-deploy.json" -f message='Record Cloudflare production deploy [skip ci]' -f content="$encoded" -f branch='main')
-          if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
-          gh api "${args[@]}" >/dev/null
+          recorded=0
+          for attempt in $(seq 1 6); do
+            current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-deploy.json?ref=main" --jq '.sha' 2>/dev/null || true)"
+            args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/audit-results/cloudflare-deploy.json" -f message='Record Cloudflare production deploy [skip ci]' -f content="$encoded" -f branch='main')
+            if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
+            if gh api "${args[@]}" >/dev/null 2>&1; then recorded=1; break; fi
+            sleep 1
+          done
+          if [ "$recorded" -ne 1 ]; then echo "::warning::Cloudflare audit record raced with another audit writer; verified production result remains authoritative"; fi
 
       - name: Require verified production deployment
         if: always()
