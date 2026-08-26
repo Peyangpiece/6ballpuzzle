@@ -67,6 +67,7 @@ jobs:
           node tests/reference-20260826-upconvex-dynamic-split.js
           node tests/reference-20260826-rendered-pair-rigidity.js
           node tests/reference-20260826-solo-continuity-diagnostic.js
+          node tests/reference-20260826-solo-pivot-arc.js
 
       - name: Run clear disappearance FX regression
         run: node tests/clear-all-ball-fx.js
