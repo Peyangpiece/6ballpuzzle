@@ -24,23 +24,34 @@ function commitGroup(members,size,gid=gidOf(members)){for(const m of members){if
 function pointFor(step,t){return typeof proposalPointAt==="function"?proposalPointAt(step,t):normPoint(step.x+(step.tx-step.x)*t,step.y+(step.ty-step.y)*t);}
 function pairDistanceAt(a,b,t){const pa=a.step?pointFor(a.step,t):normPoint(a.member.x,a.member.y),pb=b.step?pointFor(b.step,t):normPoint(b.member.x,b.member.y);return Math.hypot(pa[0]-pb[0],pa[1]-pb[1]);}
 function distancePreserved(members,plan,eps=2e-5){const byId=new Map((plan||[]).map(p=>[id(p),p]));for(let a=0;a<members.length;a++)for(let b=a+1;b<members.length;b++){const ma=members[a],mb=members[b],d0=hexPhysDist(ma.x,ma.y,mb.x,mb.y);for(let i=0;i<=48;i++){const d=pairDistanceAt({member:ma,step:byId.get(id(ma))},{member:mb,step:byId.get(id(mb))},i/48);if(Math.abs(d-d0)>eps)return false;}}return true;}
+function planTargetsSafe(board,members,plan){
+ const moving=(plan||[]).filter(vec),movingIds=new Set(moving.map(id)),targets=new Set();
+ for(const p of moving){
+  if(typeof valid==="function"&&!valid(p.tx,p.ty))return false;
+  const key=p.tx+","+p.ty;if(targets.has(key))return false;targets.add(key);
+  for(const m of members){if(!movingIds.has(id(m))&&Number(m.x)===Number(p.tx)&&Number(m.y)===Number(p.ty))return false;}
+  const q=board?.[p.ty]?.[p.tx]||null;
+  if(q&&!movingIds.has(q.id)&&q.id!==p.ball.id)return false;
+ }
+ return true;
+}
 function allMembersMove(members,plan){const ids=new Set((plan||[]).filter(vec).map(id));return ids.size===members.length&&members.every(m=>ids.has(id(m)));}
 function normalizedWhole(members,plan,gid){return(plan||[]).filter(vec).map(p=>({...p,bundleId:gid||Number(p.bundleId)||0,groupSize:members.length}));}
 function motions(board,members){return members.map(m=>{try{return hexPhysIndependentMemberMotion(board,members,m)||null;}catch(_){return null;}});}
 function wholeRigid(board,members,ind,base){
   const gid=gidOf(members);
-  if(allMembersMove(members,base)&&distancePreserved(members,base))return normalizedWhole(members,base,gid);
+  if(allMembersMove(members,base)&&planTargetsSafe(board,members,base)&&distancePreserved(members,base))return normalizedWhole(members,base,gid);
   if(ind.every(Boolean)&&sameVector(ind)&&typeof hexPhysGroupTranslationPlan==="function"){
     const v=vec(ind[0]);let p=null;try{p=hexPhysGroupTranslationPlan(board,members,v.dx,v.dy,"NINTENDO_RIGID_TRANSLATE");}catch(_){}
-    if(allMembersMove(members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
+    if(allMembersMove(members,p)&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
   }
   if(members.length===3&&typeof hexPhysRigidSlopePlan==="function"){
     let p=null;try{p=hexPhysRigidSlopePlan(board,members,ind);}catch(_){}
-    if(allMembersMove(members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
+    if(allMembersMove(members,p)&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
   }
   if(members.length===2){
     let p=null;try{p=typeof hexPhysPairPivotPlan==="function"?hexPhysPairPivotPlan(board,members,ind):null;}catch(_){}
-    if(Array.isArray(p)&&p.length===1&&vec(p[0])&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
+    if(Array.isArray(p)&&p.length===1&&vec(p[0])&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
   }
   return null;
 }
@@ -53,7 +64,7 @@ function liveContacts(board,members){const game=gameByBoard.get(board);const own
 }
 function logicalContact(board,members){const own=new Set(members.map(id));for(const m of members){if(typeof touchesFloorRow==="function"&&touchesFloorRow(m.y))return true;if(typeof hexPhysSupportInfo==="function"){let s=null;try{s=hexPhysSupportInfo(board,m.x,m.y,own);}catch(_){}if(s&&(s.realCount>0||s.floor))return true;}}return false;}
 function currentContactState(board,members){const game=gameByBoard.get(board);if(!game)return{current:logicalContact(board,members),busy:false,live:false,contacts:[]};const busy=members.some(m=>liveBusy(game,m.ball));const contacts=liveContacts(board,members);return{current:contacts.length>0,busy,live:true,contacts};}
-function pairPlan(board,pair){const base=previewBase(board,pair);if(base.length&&distancePreserved(pair,base))return base;const ind=motions(board,pair);if(ind.every(Boolean)&&sameVector(ind)&&typeof hexPhysGroupTranslationPlan==="function"){const v=vec(ind[0]);let p=null;try{p=hexPhysGroupTranslationPlan(board,pair,v.dx,v.dy,"NINTENDO_PAIR_TRANSLATE");}catch(_){}if(p?.length&&distancePreserved(pair,p))return p;}if(typeof hexPhysPairPivotPlan==="function"){let p=null;try{p=hexPhysPairPivotPlan(board,pair,ind);}catch(_){}if(p?.length&&distancePreserved(pair,p))return p;}return null;}
+function pairPlan(board,pair){const base=previewBase(board,pair);if(base.length&&planTargetsSafe(board,pair,base)&&distancePreserved(pair,base))return base;const ind=motions(board,pair);if(ind.every(Boolean)&&sameVector(ind)&&typeof hexPhysGroupTranslationPlan==="function"){const v=vec(ind[0]);let p=null;try{p=hexPhysGroupTranslationPlan(board,pair,v.dx,v.dy,"NINTENDO_PAIR_TRANSLATE");}catch(_){}if(p?.length&&planTargetsSafe(board,pair,p)&&distancePreserved(pair,p))return p;}if(typeof hexPhysPairPivotPlan==="function"){let p=null;try{p=hexPhysPairPivotPlan(board,pair,ind);}catch(_){}if(p?.length&&planTargetsSafe(board,pair,p)&&distancePreserved(pair,p))return p;}return null;}
 function baseSpecialSplit(members,base){if(members.length!==3)return null;const moving=(base||[]).filter(vec);if(!moving.length)return null;const kinds=moving.map(p=>String(p.kind||""));const firstContact=kinds.some(k=>k==="REFERENCE_FIRST_CONTACT_PAIR"||k==="REFERENCE_FIRST_CONTACT_SOLO");const inverted=kinds.some(k=>/^REFERENCE_INVERTED_HARD_SPLIT_|^INVERTED_FLAT_SPLIT_/.test(k));if(firstContact){const pairSteps=moving.filter(p=>Number(p.groupSize)===2),solo=moving.find(p=>Number(p.groupSize)===0);const pairIds=new Set(pairSteps.map(id));if(pairIds.size===2&&solo&&distancePreserved(members.filter(m=>pairIds.has(id(m))),pairSteps))return{type:"pair",pairIds,soloId:id(solo),plan:moving,reason:"reference-first-contact"};}
  if(inverted)return{type:"full",plan:moving,reason:"reference-inverted-flat"};return null;}
 function candidatePairs(board,members,ind,base){const combos=[[0,1,2],[0,2,1],[1,2,0]],special=baseSpecialSplit(members,base);if(special?.type==="pair")return special;let best=null;
@@ -69,17 +80,13 @@ function stableAccumulated(board,members){
  const game=gameByBoard.get(board);
  if(game&&members.some(m=>liveBusy(game,m.ball)))return false;
  if(typeof hexPhysNaturalMotion!=="function")return false;
- for(const m of members){
-  let p=null;try{p=hexPhysNaturalMotion(board,m.x,m.y,null);}catch(_){return false;}
-  if(p)return false;
- }
+ for(const m of members){let p=null;try{p=hexPhysNaturalMotion(board,m.x,m.y,null);}catch(_){return false;}if(p)return false;}
  return true;
 }
 function commitPairSplit(members,candidate,gid){const pair=members.filter(m=>candidate.pairIds.has(id(m))),solo=members.find(m=>id(m)===candidate.soloId);if(pair.length!==2||!solo)return[];clear(solo);commitGroup(pair,2,gid);const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,bundleId:gid||Number(p.bundleId)||0,groupSize:2}));let soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p))||null;if(soloStep)soloStep={...soloStep,bundleId:0,groupSize:0};return soloStep?[...pairSteps,soloStep]:pairSteps;}
 hexPhysPlanGroup=function(board,members,preview=false){
  if(!ordinary(members))return basePlanGroup(board,members,preview)||[];
- const gid=gidOf(members),ind=motions(board,members),base=previewBase(board,members);
- const contact=currentContactState(board,members);
+ const gid=gidOf(members),ind=motions(board,members),base=previewBase(board,members),contact=currentContactState(board,members);
  if(contact.live&&contact.busy&&!contact.current){if(!preview)commitGroup(members,members.length,gid);return[];}
  const special=baseSpecialSplit(members,base);
  if(special?.type==="pair"&&contact.current){
@@ -89,6 +96,10 @@ hexPhysPlanGroup=function(board,members,preview=false){
  if(special?.type==="full"&&contact.current){if(!preview)for(const m of members)clear(m);return special.plan.map(p=>({...p,bundleId:0,groupSize:0}));}
  const whole=wholeRigid(board,members,ind,base);
  if(whole){if(!preview)commitGroup(members,members.length,gid);return whole;}
+ /* Stable is evaluated before any fragmentation. A body which has no actual
+  * motion with all of its members present has joined the pile; contact alone
+  * is not a reason to split it. */
+ if(stableAccumulated(board,members)){if(!preview)for(const m of members)clear(m);return[];}
  if(members.length===3&&(contact.current||!contact.live)){
    const candidate=candidatePairs(board,members,ind,base);
    if(candidate?.type==="pair"){if(preview){const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,groupSize:2,bundleId:gid||Number(p.bundleId)||0}));const soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p));return soloStep?[...pairSteps,{...soloStep,groupSize:0,bundleId:0}]:pairSteps;}const out=commitPairSplit(members,candidate,gid);window.__sixBallLastNintendoRigidityDecision={reason:candidate.reason,pairIds:[...candidate.pairIds],soloId:candidate.soloId,contactCount:contact.contacts.length,at:Date.now()};return out;}
@@ -98,7 +109,6 @@ hexPhysPlanGroup=function(board,members,preview=false){
  if(members.length===2&&(contact.current||!contact.live)){
    const moving=ind.filter(Boolean);if(moving.length){if(!preview)for(const m of members)clear(m);return moving.map(p=>({...p,bundleId:0,groupSize:0}));}
  }
- if(stableAccumulated(board,members)){if(!preview)for(const m of members)clear(m);return[];}
  if(!preview)commitGroup(members,members.length,gid);
  return[];
 };
@@ -110,4 +120,6 @@ window.__sixBallRigidityBilateralPivotGateRemoved=true;
 window.__sixBallRigidBodyDistanceInvariant=true;
 window.__sixBallPairPivotPreservesRigidity=true;
 window.__sixBallAccumulatedReleaseUsesActualBoard=true;
+window.__sixBallStableBeforeFragmentation=true;
+window.__sixBallStaticPairTargetOverlapForbidden=true;
 })();
