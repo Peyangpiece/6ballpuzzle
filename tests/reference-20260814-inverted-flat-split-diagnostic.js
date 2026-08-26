@@ -40,6 +40,7 @@ const result=vm.runInContext(`
   ];
   for(const m of members){
     b[m.y][m.x]=m.ball;
+    noteBoardCell(b,m.y,m.ball);
     g.vis.set(m.ball.id,{x:m.x,y:m.y,vy:5,motionSpeed:5,justReleased:true,sq:0});
   }
 
@@ -49,6 +50,7 @@ const result=vm.runInContext(`
   const supportL={id:5791,c:0,motionGroupId:0,motionGroupSize:0,rigid:false};
   const supportR={id:5792,c:0,motionGroupId:0,motionGroupSize:0,rigid:false};
   b[10][9]=supportL;b[10][11]=supportR;
+  noteBoardCell(b,10,supportL);noteBoardCell(b,10,supportR);
   g.vis.set(supportL.id,{x:9,y:10,vy:0,motionSpeed:0,sq:0});
   g.vis.set(supportR.id,{x:11,y:10,vy:0,motionSpeed:0,sq:0});
 
