@@ -27,6 +27,12 @@ const result=vm.runInContext(`
   const choice={...(window.__sixBallLastReferenceUpConvexChoiceV1||{})};
   const soloId=Number(choice.contactSoloId)||0;
   const pairIds=[...(choice.pairIds||[])];
+  function ballById(id){
+    for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+      const c=valid(x,y)?game.board[y][x]:null;if(c?.id===id)return c;
+    }
+    return null;
+  }
   function logical(id){
     for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){
       const c=valid(x,y)?game.board[y][x]:null;if(c?.id===id)return[x,y];
@@ -39,11 +45,8 @@ const result=vm.runInContext(`
   }
   function physDist(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
   function firstPath(id){
-    for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){
-      const c=valid(x,y)?game.board[y][x]:null;
-      if(c?.id===id){const s=c.fallPath?.[0];return s?{kind:s.kind,seq:s.motionSeq,from:s.from,to:s.to}:null;}
-    }
-    return null;
+    const c=ballById(id),s=c?.fallPath?.[0];
+    return s?{kind:s.kind,seq:s.motionSeq,from:s.from,to:s.to,referenceContinuation:!!s.referenceFirstContactSoloContinuationV3}:null;
   }
 
   const dt=1/240,frames=[],events=[];
@@ -64,19 +67,38 @@ const result=vm.runInContext(`
     stepEngine(game,dt);
   }
   maxZeroRun=Math.max(maxZeroRun,zeroRun);
-  const movingFrames=frames.filter((f,idx)=>idx&&physDist(f.p,frames[idx-1].p)>1e-5);
+  const continuation=events.find(e=>e.path?.referenceContinuation)||null;
   return{
     soloId,pairIds,choice,
     dt,firstMoveT,lastMoveT,totalDistance,
     maxStationaryGapBeforeLastMove:maxZeroRun*dt,
     finalPos:pos(soloId),logicalFinal:logical(soloId),
-    frames,events,
+    frames,events,continuation,
+    timing:{
+      fps:window.__sixBallReferenceCaptureFps,
+      pairFrames:window.__sixBallReferenceFirstContactPairFrames,
+      soloFrames:window.__sixBallReferenceFirstContactSoloFrames,
+      continuationFrames:window.__sixBallReferenceSoloContinuationFrames,
+      pairDuration:window.__sixBallReferenceFirstContactPairDuration,
+      soloDuration:window.__sixBallReferenceFirstContactSoloDuration,
+      continuationDuration:window.__sixBallReferenceSoloContinuationDuration,
+      captured:window.__sixBallReferenceSoloContinuationUsesCapturedFrames
+    },
     splitVersion:window.__sixBallReferenceUpConvexAuthorityVersion2,
     sweepVersion:window.__sixBallReferenceFirstContactSweepVersion
   };
 })()
 `,ctx);
 console.log("SOLO_CONTINUITY_DIAGNOSTIC",JSON.stringify(result));
+function close(a,b,eps=1e-9){return Math.abs(Number(a)-Number(b))<=eps;}
 if(!result.soloId)throw new Error("reference solo id missing");
 if(result.choice.reason!=="reference-first-unilateral-contact")throw new Error("reference first-contact split not used");
 if(!(result.lastMoveT>0))throw new Error("solo never moved");
+if(result.timing.captured!==true)throw new Error("captured continuation timing marker missing");
+if(result.timing.pairFrames!==4||result.timing.soloFrames!==5||result.timing.continuationFrames!==3)throw new Error("Nintendo F126/F130/F131/F134 frame budgets changed");
+if(!close(result.timing.pairDuration,4/result.timing.fps)||!close(result.timing.soloDuration,5/result.timing.fps)||!close(result.timing.continuationDuration,3/result.timing.fps))throw new Error("captured frame durations are not exact");
+if(!result.continuation||result.continuation.path?.kind!=="ROLL_RIGHT")throw new Error("immediate solo continuation was not tagged");
+const expectedFinal=8/result.timing.fps;
+if(Math.abs(result.lastMoveT-expectedFinal)>result.dt*1.1)throw new Error(`solo F134 timing mismatch: got ${result.lastMoveT}, expected ${expectedFinal}`);
+if(JSON.stringify(result.finalPos)!==JSON.stringify(result.logicalFinal))throw new Error("solo visual/logical final position mismatch");
+console.log("2026-08-26 Nintendo solo F126-F134 continuity PASS",JSON.stringify({lastMoveT:result.lastMoveT,expectedFinal,timing:result.timing,continuation:result.continuation}));
