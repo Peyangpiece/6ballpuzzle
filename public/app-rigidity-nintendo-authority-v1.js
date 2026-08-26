@@ -59,7 +59,22 @@ function baseSpecialSplit(members,base){if(members.length!==3)return null;const 
 function candidatePairs(board,members,ind,base){const combos=[[0,1,2],[0,2,1],[1,2,0]],special=baseSpecialSplit(members,base);if(special?.type==="pair")return special;let best=null;
  for(const[a,b,s]of combos){const pair=[members[a],members[b]],solo=members[s],pp=pairPlan(board,pair);if(!pp?.length)continue;const soloMotion=ind[s]||null;const va=vec(ind[a]),vb=vec(ind[b]),vs=vec(soloMotion);let score=0;if(va&&vb&&va.key===vb.key)score+=100;if(!soloMotion)score+=35;if(vs&&(va?.key!==vs.key||vb?.key!==vs.key))score+=25;const basePairIds=new Set((base||[]).filter(p=>Number(p.groupSize)===2).map(id));if(basePairIds.has(id(pair[0]))&&basePairIds.has(id(pair[1])))score+=12;const mv=pp.filter(vec);if(distancePreserved(pair,mv))score+=10;if(!best||score>best.score)best={type:"pair",pairIds:new Set(pair.map(id)),soloId:id(solo),pairPlan:mv,soloMotion,score,reason:"kinematic-partition"};}
  return best||special;}
-function stableAccumulated(board,members,ind,contact){if(ind.some(Boolean))return false;const game=gameByBoard.get(board);if(game&&members.some(m=>liveBusy(game,m.ball)))return false;return members.every(m=>{if(typeof touchesFloorRow==="function"&&touchesFloorRow(m.y))return true;if(typeof hexPhysSupportInfo!=="function")return false;let s=null;try{s=hexPhysSupportInfo(board,m.x,m.y,new Set(members.map(id)));}catch(_){}return!!s&&(Number(s.realCount||0)>=2||s.floor);})||(!contact.live&&logicalContact(board,members));}
+/* A constraint is removed only after the complete body has actually become
+ * part of the accumulated pile. Independent-member probes intentionally ignore
+ * the other members and therefore cannot prove settlement: a supported top
+ * ball may look free when its two partner supports are omitted. Use the real
+ * board with every partner present, and reject any release while visuals still
+ * carry motion. */
+function stableAccumulated(board,members){
+ const game=gameByBoard.get(board);
+ if(game&&members.some(m=>liveBusy(game,m.ball)))return false;
+ if(typeof hexPhysNaturalMotion!=="function")return false;
+ for(const m of members){
+  let p=null;try{p=hexPhysNaturalMotion(board,m.x,m.y,null);}catch(_){return false;}
+  if(p)return false;
+ }
+ return true;
+}
 function commitPairSplit(members,candidate,gid){const pair=members.filter(m=>candidate.pairIds.has(id(m))),solo=members.find(m=>id(m)===candidate.soloId);if(pair.length!==2||!solo)return[];clear(solo);commitGroup(pair,2,gid);const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,bundleId:gid||Number(p.bundleId)||0,groupSize:2}));let soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p))||null;if(soloStep)soloStep={...soloStep,bundleId:0,groupSize:0};return soloStep?[...pairSteps,soloStep]:pairSteps;}
 hexPhysPlanGroup=function(board,members,preview=false){
  if(!ordinary(members))return basePlanGroup(board,members,preview)||[];
@@ -83,7 +98,7 @@ hexPhysPlanGroup=function(board,members,preview=false){
  if(members.length===2&&(contact.current||!contact.live)){
    const moving=ind.filter(Boolean);if(moving.length){if(!preview)for(const m of members)clear(m);return moving.map(p=>({...p,bundleId:0,groupSize:0}));}
  }
- if(stableAccumulated(board,members,ind,contact)){if(!preview)for(const m of members)clear(m);return[];}
+ if(stableAccumulated(board,members)){if(!preview)for(const m of members)clear(m);return[];}
  if(!preview)commitGroup(members,members.length,gid);
  return[];
 };
@@ -94,4 +109,5 @@ window.__sixBallRigidityMiddleFiftyGateRemoved=true;
 window.__sixBallRigidityBilateralPivotGateRemoved=true;
 window.__sixBallRigidBodyDistanceInvariant=true;
 window.__sixBallPairPivotPreservesRigidity=true;
+window.__sixBallAccumulatedReleaseUsesActualBoard=true;
 })();
