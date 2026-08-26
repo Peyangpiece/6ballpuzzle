@@ -5,11 +5,14 @@ on:
     branches: [main]
     paths:
       - "public/app-rigidity-nintendo-authority-v1.js"
+      - "public/app-rigidity-release-bounce-authority-v1.js"
       - "public/app-reference-upconvex-authority-v1.js"
       - "public/app-reference-first-contact-sweep-v3.js"
       - "public/app-reference-inverted-flat-split-v1.js"
       - "tests/reference-rigidity-state-machine-v1.js"
+      - "tests/reference-rigidity-release-bounce-v1.js"
       - "tests/reference-rigidity-random-invariants-v1.js"
+      - "tests/reference-20260814-inverted-flat-split-diagnostic.js"
       - ".github/workflows/diagnose-rigidity-state-machine.yml"
   workflow_dispatch:
 
@@ -26,7 +29,11 @@ jobs:
         with:
           node-version: "22"
       - name: Check authority syntax
-        run: node --check public/app-rigidity-nintendo-authority-v1.js
+        run: |
+          node --check public/app-rigidity-nintendo-authority-v1.js
+          node --check public/app-rigidity-release-bounce-authority-v1.js
+      - name: Run inverted first-contact release reference
+        run: node tests/reference-20260814-inverted-flat-split-diagnostic.js
       - name: Run Nintendo rigidity state machine
         run: node tests/reference-rigidity-state-machine-v1.js
       - name: Run 10000-case rigidity invariant audit
