@@ -93,13 +93,13 @@ for(const member of members){
 const v={x:member.x+offset,y:member.y+rowOffset,vy:5,motionSpeed:5,justReleased:true};game.vis.set(member.ball.id,v);
 }
 game._visualMovingIds=new Set();game._liveBatchClock={elapsed:0,duration:0,states:new Map()};
-window.__sixBallLastReferenceUpConvexChoiceV1={};
+window.__sixBallLastReferenceUpConvexChoiceV1={};window.__sixBallReferenceFirstContactDiagnosticV2={};
 const plan=hexPhysPlanGroup(game.board,members,false)||[];
 const pair=plan.filter(p=>Number(p.groupSize)===2).map(p=>p.ball.id).sort((a,b)=>a-b),solo=plan.find(p=>Number(p.groupSize)===0);
 const rv=game.vis.get(members[2].ball.id),lv=game.vis.get(members[1].ball.id),sv=game.vis.get(support.id);
 const rd=Math.hypot((rv.x-sv.x)*.5,(rv.y-sv.y)*HEX_ROW_H),ld=Math.hypot((lv.x-sv.x)*.5,(lv.y-sv.y)*HEX_ROW_H);
 return{count:plan.length,pair,soloId:solo?.ball?.id??null,topId:members[0].ball.id,leftId:members[1].ball.id,rightId:members[2].ball.id,
-rightDistance:rd,leftDistance:ld,choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},rigid3:members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3)};
+rightDistance:rd,leftDistance:ld,choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},diag:{...(window.__sixBallReferenceFirstContactDiagnosticV2||{})},rigid3:members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3)};
 }
 return{
 touching:makeScenario(826101,0),
@@ -111,13 +111,14 @@ cohortTiming:window.__sixBallSplitBatchUsesPerCohortTiming
 };
 })()
 `,ctx);
+console.log("FIRST_CONTACT_DIAGNOSTIC",JSON.stringify(firstContact));
 expect(firstContact.outerAllowed===true,"outer-quarter first contact is not enabled");
 expect(firstContact.bilateralRequired===false,"first contact still requires bilateral pivot");
 expect(firstContact.signedContact===true,"signed hard-drop contact handoff is not enabled");
 expect(firstContact.cohortTiming===true,"per-cohort split timing is not enabled");
 expect(close(firstContact.touching.rightDistance,1,2e-6),"reference touching ball is not at one-diameter contact");
 expect(firstContact.touching.leftDistance>1.20,"opposite lower ball is not clearly free at first contact");
-expect(firstContact.touching.count===3,"outer-quarter first contact did not author one 2+1 event");
+expect(firstContact.touching.count===3,"outer-quarter first contact did not author one 2+1 event "+JSON.stringify(firstContact.touching));
 expect(JSON.stringify(firstContact.touching.pair)===JSON.stringify([firstContact.touching.topId,firstContact.touching.leftId].sort((a,b)=>a-b)),"outer-quarter right contact did not retain top + left pair");
 expect(firstContact.touching.soloId===firstContact.touching.rightId,"outer-quarter contacted right ball did not begin outward solo motion");
 expect(firstContact.touching.choice.reason==="reference-first-unilateral-contact","first-contact override was not the authority used");

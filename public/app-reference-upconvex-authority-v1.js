@@ -96,7 +96,9 @@ v?.pileFlow||v?.justReleased||v?._pendingPathComplete
 }
 function firstUnilateralReleaseContact(board,members,layout){
 const game=liveEngineByBoard.get(board);
+window.__sixBallReferenceFirstContactDiagnosticV2={phase:"scan",hasGame:!!game};
 if(!game)return null;
+window.__sixBallReferenceFirstContactDiagnosticV2.hasGame=true;
 const topV=visualFor(game,layout.top.ball),leftV=visualFor(game,layout.left.ball),rightV=visualFor(game,layout.right.ball);
 if(!topV||!leftV||!rightV)return null;
 if(![topV,leftV,rightV].some(v=>v?.justReleased))return null;
@@ -118,6 +120,7 @@ if(!best||score<best.score)best={lower,support,lv,sv,x,y,dist,score};
 }
 if(best)contacts.push(best);
 }
+window.__sixBallReferenceFirstContactDiagnosticV2={...(window.__sixBallReferenceFirstContactDiagnosticV2||{}),phase:"contacts",contactCount:contacts.length,contacts:contacts.map(c=>({lowerId:memberId(c.lower),supportId:c.support?.id,x:c.x,y:c.y,dist:c.dist}))};
 if(contacts.length!==1)return null;
 const hit=contacts[0],span=Number(rightV.x)-Number(leftV.x);
 if(!(span>1e-6))return null;
@@ -126,6 +129,7 @@ if(hitFraction<-.06||hitFraction>1.06)return null;
 const outward=Math.sign(Number(hit.lv.x)-Number(hit.sv.x))||
 (hit.lower===layout.right?1:-1);
 const other=hit.lower===layout.left?layout.right:layout.left;
+window.__sixBallReferenceFirstContactDiagnosticV2={...(window.__sixBallReferenceFirstContactDiagnosticV2||{}),phase:"detected",hitFraction,outward,soloId:memberId(hit.lower),pairIds:[memberId(layout.top),memberId(other)],supportId:hit.support?.id};
 return{...hit,hitFraction,outward,pair:[layout.top,other],solo:hit.lower,game};
 }
 function wholeRigidProposal(plan,members){
@@ -187,8 +191,9 @@ const whole=wholeRigidProposal(underlying,members);
 const pairPlan=(whole&&pairFromWhole(whole,hit.pair,gid))||
 pairFromIndependent(board,members,hit.pair,motions,gid);
 const soloPlan=soloFirstContactMotion(board,members,hit,motions);
-if(!pairPlan||!soloPlan)return null;
+if(!pairPlan||!soloPlan){window.__sixBallReferenceFirstContactDiagnosticV2={...(window.__sixBallReferenceFirstContactDiagnosticV2||{}),phase:"plan-failed",pairPlan:!!pairPlan,soloPlan:!!soloPlan,motions:motions.map(m=>m?{id:memberId(m),x:m.x,y:m.y,tx:m.tx,ty:m.ty,kind:m.kind,pivot:m.pivot||null}:null),underlying:underlying.map(m=>({id:memberId(m),x:m.x,y:m.y,tx:m.tx,ty:m.ty,kind:m.kind,groupSize:m.groupSize||0}))};return null;}
 const plan=[...pairPlan,soloPlan];
+window.__sixBallReferenceFirstContactDiagnosticV2={...(window.__sixBallReferenceFirstContactDiagnosticV2||{}),phase:"planned",plan:plan.map(p=>({id:memberId(p),x:p.x,y:p.y,tx:p.tx,ty:p.ty,kind:p.kind,groupSize:p.groupSize||0}))};
 if(!preview){
 pairCommit(hit.pair,hit.solo,pairPlan,gid);
 const pairV=sameVector(pairPlan);
