@@ -1,0 +1,30 @@
+name: Diagnose Nintendo Rigidity State Machine
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "public/app-rigidity-nintendo-authority-v1.js"
+      - "public/app-reference-upconvex-authority-v1.js"
+      - "public/app-reference-first-contact-sweep-v3.js"
+      - "public/app-reference-inverted-flat-split-v1.js"
+      - "tests/reference-rigidity-state-machine-v1.js"
+      - ".github/workflows/diagnose-rigidity-state-machine.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rigidity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check authority syntax
+        run: node --check public/app-rigidity-nintendo-authority-v1.js
+      - name: Run Nintendo rigidity state machine
+        run: node tests/reference-rigidity-state-machine-v1.js
