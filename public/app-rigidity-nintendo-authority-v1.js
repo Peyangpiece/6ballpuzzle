@@ -30,87 +30,91 @@ function planTargetsSafe(board,members,plan){
   if(typeof valid==="function"&&!valid(p.tx,p.ty))return false;
   const key=p.tx+","+p.ty;if(targets.has(key))return false;targets.add(key);
   for(const m of members){if(!movingIds.has(id(m))&&Number(m.x)===Number(p.tx)&&Number(m.y)===Number(p.ty))return false;}
-  const q=board?.[p.ty]?.[p.tx]||null;
-  if(q&&!movingIds.has(q.id)&&q.id!==p.ball.id)return false;
+  const q=board?.[p.ty]?.[p.tx]||null;if(q&&!movingIds.has(q.id)&&q.id!==p.ball.id)return false;
  }
  return true;
 }
 function allMembersMove(members,plan){const ids=new Set((plan||[]).filter(vec).map(id));return ids.size===members.length&&members.every(m=>ids.has(id(m)));}
 function normalizedWhole(members,plan,gid){return(plan||[]).filter(vec).map(p=>({...p,bundleId:gid||Number(p.bundleId)||0,groupSize:members.length}));}
+/* Independent probes answer how a member would move if its constraint partners
+ * vanished. Actual probes keep every ball on the board and answer what motion
+ * exists at this instant. Nintendo rigidity release is driven by the latter;
+ * the former is only a kinematic hint for choosing a surviving pair. */
 function motions(board,members){return members.map(m=>{try{return hexPhysIndependentMemberMotion(board,members,m)||null;}catch(_){return null;}});}
+function actualMotions(board,members){return members.map(m=>{try{return typeof hexPhysNaturalMotion==="function"?hexPhysNaturalMotion(board,m.x,m.y,null)||null:null;}catch(_){return null;}});}
+function exactPairPivot(board,members){
+ if(members.length!==2)return null;
+ const actual=actualMotions(board,members),gid=gidOf(members);
+ for(let fixedIndex=0;fixedIndex<2;fixedIndex++){
+  const movingIndex=1-fixedIndex,fixed=members[fixedIndex],p=actual[movingIndex];
+  if(actual[fixedIndex]||!p||!Array.isArray(p.pivot))continue;
+  if(Number(p.pivot[0])!==Number(fixed.x)||Number(p.pivot[1])!==Number(fixed.y))continue;
+  if(Math.abs(hexPhysDist(p.tx,p.ty,fixed.x,fixed.y)-1)>2e-5)continue;
+  const step={...p,kind:"NINTENDO_PAIR_PIVOT",bundleId:gid,groupSize:2,followSupportIds:[fixed.ball.id]};
+  if(planTargetsSafe(board,members,[step])&&distancePreserved(members,[step]))return[step];
+ }
+ return null;
+}
 function wholeRigid(board,members,ind,base){
-  const gid=gidOf(members);
-  if(allMembersMove(members,base)&&planTargetsSafe(board,members,base)&&distancePreserved(members,base))return normalizedWhole(members,base,gid);
-  if(ind.every(Boolean)&&sameVector(ind)&&typeof hexPhysGroupTranslationPlan==="function"){
-    const v=vec(ind[0]);let p=null;try{p=hexPhysGroupTranslationPlan(board,members,v.dx,v.dy,"NINTENDO_RIGID_TRANSLATE");}catch(_){}
-    if(allMembersMove(members,p)&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
-  }
-  if(members.length===3&&typeof hexPhysRigidSlopePlan==="function"){
-    let p=null;try{p=hexPhysRigidSlopePlan(board,members,ind);}catch(_){}
-    if(allMembersMove(members,p)&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
-  }
-  if(members.length===2){
-    let p=null;try{p=typeof hexPhysPairPivotPlan==="function"?hexPhysPairPivotPlan(board,members,ind):null;}catch(_){}
-    if(Array.isArray(p)&&p.length===1&&vec(p[0])&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
-  }
-  return null;
+ const gid=gidOf(members);
+ if(allMembersMove(members,base)&&planTargetsSafe(board,members,base)&&distancePreserved(members,base))return normalizedWhole(members,base,gid);
+ if(ind.every(Boolean)&&sameVector(ind)&&typeof hexPhysGroupTranslationPlan==="function"){
+  const v=vec(ind[0]);let p=null;try{p=hexPhysGroupTranslationPlan(board,members,v.dx,v.dy,"NINTENDO_RIGID_TRANSLATE");}catch(_){}
+  if(allMembersMove(members,p)&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
+ }
+ if(members.length===3&&typeof hexPhysRigidSlopePlan==="function"){
+  let p=null;try{p=hexPhysRigidSlopePlan(board,members,ind);}catch(_){}
+  if(allMembersMove(members,p)&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
+ }
+ if(members.length===2){
+  const exact=exactPairPivot(board,members);if(exact)return exact;
+  let p=null;try{p=typeof hexPhysPairPivotPlan==="function"?hexPhysPairPivotPlan(board,members,ind):null;}catch(_){}
+  if(Array.isArray(p)&&p.length===1&&vec(p[0])&&planTargetsSafe(board,members,p)&&distancePreserved(members,p))return normalizedWhole(members,p,gid);
+ }
+ return null;
 }
 function liveBusy(game,ball){const v=game?.vis?.get?.(ball.id),clock=game?._liveBatchClock;return!!((Array.isArray(ball.fallPath)&&ball.fallPath.length)||(game?._visualMovingIds instanceof Set&&game._visualMovingIds.has(ball.id))||(clock?.states instanceof Map&&clock.states.has(ball.id)&&Number(clock.elapsed)<Number(clock.duration)-1e-9)||v?.pileFlow||v?._pendingPathComplete);}
-function liveContacts(board,members){const game=gameByBoard.get(board);const own=new Set(members.map(id));const out=[];if(!game?.vis)return out;
+function liveContacts(board,members){const game=gameByBoard.get(board),own=new Set(members.map(id)),out=[];if(!game?.vis)return out;
  for(const m of members){const mv=game.vis.get(m.ball.id);if(!mv)continue;if(typeof touchesFloorRow==="function"&&touchesFloorRow(m.y)&&Math.abs(Number(mv.y)-Number(m.y))<.08)out.push({member:m,kind:"floor",distance:0});
   for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?board[y][x]:null;if(!q||own.has(q.id)||liveBusy(game,q))continue;const qv=game.vis.get(q.id);if(!qv)continue;const dy=(Number(qv.y)-Number(mv.y))*HEX_ROW_H;if(dy<-.04||dy>1.15)continue;const d=Math.hypot((Number(qv.x)-Number(mv.x))*.5,dy);if(d>=.985&&d<=1.018)out.push({member:m,kind:"ball",support:q,x,y,distance:d});}
  }
  return out;
 }
 function logicalContact(board,members){const own=new Set(members.map(id));for(const m of members){if(typeof touchesFloorRow==="function"&&touchesFloorRow(m.y))return true;if(typeof hexPhysSupportInfo==="function"){let s=null;try{s=hexPhysSupportInfo(board,m.x,m.y,own);}catch(_){}if(s&&(s.realCount>0||s.floor))return true;}}return false;}
-function currentContactState(board,members){const game=gameByBoard.get(board);if(!game)return{current:logicalContact(board,members),busy:false,live:false,contacts:[]};const busy=members.some(m=>liveBusy(game,m.ball));const contacts=liveContacts(board,members);return{current:contacts.length>0,busy,live:true,contacts};}
-function pairPlan(board,pair){const base=previewBase(board,pair);if(base.length&&planTargetsSafe(board,pair,base)&&distancePreserved(pair,base))return base;const ind=motions(board,pair);if(ind.every(Boolean)&&sameVector(ind)&&typeof hexPhysGroupTranslationPlan==="function"){const v=vec(ind[0]);let p=null;try{p=hexPhysGroupTranslationPlan(board,pair,v.dx,v.dy,"NINTENDO_PAIR_TRANSLATE");}catch(_){}if(p?.length&&planTargetsSafe(board,pair,p)&&distancePreserved(pair,p))return p;}if(typeof hexPhysPairPivotPlan==="function"){let p=null;try{p=hexPhysPairPivotPlan(board,pair,ind);}catch(_){}if(p?.length&&planTargetsSafe(board,pair,p)&&distancePreserved(pair,p))return p;}return null;}
-function baseSpecialSplit(members,base){if(members.length!==3)return null;const moving=(base||[]).filter(vec);if(!moving.length)return null;const kinds=moving.map(p=>String(p.kind||""));const firstContact=kinds.some(k=>k==="REFERENCE_FIRST_CONTACT_PAIR"||k==="REFERENCE_FIRST_CONTACT_SOLO");const inverted=kinds.some(k=>/^REFERENCE_INVERTED_HARD_SPLIT_|^INVERTED_FLAT_SPLIT_/.test(k));if(firstContact){const pairSteps=moving.filter(p=>Number(p.groupSize)===2),solo=moving.find(p=>Number(p.groupSize)===0);const pairIds=new Set(pairSteps.map(id));if(pairIds.size===2&&solo&&distancePreserved(members.filter(m=>pairIds.has(id(m))),pairSteps))return{type:"pair",pairIds,soloId:id(solo),plan:moving,reason:"reference-first-contact"};}
- if(inverted)return{type:"full",plan:moving,reason:"reference-inverted-flat"};return null;}
-function candidatePairs(board,members,ind,base){const combos=[[0,1,2],[0,2,1],[1,2,0]],special=baseSpecialSplit(members,base);if(special?.type==="pair")return special;let best=null;
- for(const[a,b,s]of combos){const pair=[members[a],members[b]],solo=members[s],pp=pairPlan(board,pair);if(!pp?.length)continue;const soloMotion=ind[s]||null;const va=vec(ind[a]),vb=vec(ind[b]),vs=vec(soloMotion);let score=0;if(va&&vb&&va.key===vb.key)score+=100;if(!soloMotion)score+=35;if(vs&&(va?.key!==vs.key||vb?.key!==vs.key))score+=25;const basePairIds=new Set((base||[]).filter(p=>Number(p.groupSize)===2).map(id));if(basePairIds.has(id(pair[0]))&&basePairIds.has(id(pair[1])))score+=12;const mv=pp.filter(vec);if(distancePreserved(pair,mv))score+=10;if(!best||score>best.score)best={type:"pair",pairIds:new Set(pair.map(id)),soloId:id(solo),pairPlan:mv,soloMotion,score,reason:"kinematic-partition"};}
- return best||special;}
-/* A constraint is removed only after the complete body has actually become
- * part of the accumulated pile. Independent-member probes intentionally ignore
- * the other members and therefore cannot prove settlement: a supported top
- * ball may look free when its two partner supports are omitted. Use the real
- * board with every partner present, and reject any release while visuals still
- * carry motion. */
-function stableAccumulated(board,members){
- const game=gameByBoard.get(board);
- if(game&&members.some(m=>liveBusy(game,m.ball)))return false;
- if(typeof hexPhysNaturalMotion!=="function")return false;
- for(const m of members){let p=null;try{p=hexPhysNaturalMotion(board,m.x,m.y,null);}catch(_){return false;}if(p)return false;}
- return true;
+function currentContactState(board,members){const game=gameByBoard.get(board);if(!game)return{current:logicalContact(board,members),busy:false,live:false,contacts:[]};const busy=members.some(m=>liveBusy(game,m.ball)),contacts=liveContacts(board,members);return{current:contacts.length>0,busy,live:true,contacts};}
+function pairPlan(board,pair){
+ const exact=exactPairPivot(board,pair);if(exact)return exact;
+ const base=previewBase(board,pair);if(base.length&&planTargetsSafe(board,pair,base)&&distancePreserved(pair,base))return base;
+ const ind=motions(board,pair);
+ if(ind.every(Boolean)&&sameVector(ind)&&typeof hexPhysGroupTranslationPlan==="function"){const v=vec(ind[0]);let p=null;try{p=hexPhysGroupTranslationPlan(board,pair,v.dx,v.dy,"NINTENDO_PAIR_TRANSLATE");}catch(_){}if(p?.length&&planTargetsSafe(board,pair,p)&&distancePreserved(pair,p))return p;}
+ if(typeof hexPhysPairPivotPlan==="function"){let p=null;try{p=hexPhysPairPivotPlan(board,pair,ind);}catch(_){}if(p?.length&&planTargetsSafe(board,pair,p)&&distancePreserved(pair,p))return p;}
+ return null;
 }
+function baseSpecialSplit(members,base){if(members.length!==3)return null;const moving=(base||[]).filter(vec);if(!moving.length)return null;const kinds=moving.map(p=>String(p.kind||"")),firstContact=kinds.some(k=>k==="REFERENCE_FIRST_CONTACT_PAIR"||k==="REFERENCE_FIRST_CONTACT_SOLO"),inverted=kinds.some(k=>/^REFERENCE_INVERTED_HARD_SPLIT_|^INVERTED_FLAT_SPLIT_/.test(k));if(firstContact){const pairSteps=moving.filter(p=>Number(p.groupSize)===2),solo=moving.find(p=>Number(p.groupSize)===0),pairIds=new Set(pairSteps.map(id));if(pairIds.size===2&&solo&&distancePreserved(members.filter(m=>pairIds.has(id(m))),pairSteps))return{type:"pair",pairIds,soloId:id(solo),plan:moving,reason:"reference-first-contact"};}if(inverted)return{type:"full",plan:moving,reason:"reference-inverted-flat"};return null;}
+function candidatePairs(board,members,ind,actual,base){const combos=[[0,1,2],[0,2,1],[1,2,0]],special=baseSpecialSplit(members,base);if(special?.type==="pair")return special;let best=null;
+ for(const[a,b,s]of combos){const pair=[members[a],members[b]],solo=members[s],pp=pairPlan(board,pair);if(!pp?.length)continue;const baseSolo=(base||[]).find(p=>id(p)===id(solo)&&Number(p.groupSize)===0&&vec(p));const soloMotion=(actual[s]&&planTargetsSafe(board,members,[actual[s]]))?actual[s]:(baseSolo||null);const va=vec(ind[a]),vb=vec(ind[b]),vs=vec(ind[s]);let score=0;if(va&&vb&&va.key===vb.key)score+=100;if(!ind[s])score+=35;if(vs&&(va?.key!==vs.key||vb?.key!==vs.key))score+=25;const basePairIds=new Set((base||[]).filter(p=>Number(p.groupSize)===2).map(id));if(basePairIds.has(id(pair[0]))&&basePairIds.has(id(pair[1])))score+=12;if(distancePreserved(pair,pp.filter(vec)))score+=10;if(!best||score>best.score)best={type:"pair",pairIds:new Set(pair.map(id)),soloId:id(solo),pairPlan:pp.filter(vec),soloMotion,score,reason:"kinematic-partition"};}
+ return best||special;
+}
+function stableAccumulated(board,members,actual=null){const game=gameByBoard.get(board);if(game&&members.some(m=>liveBusy(game,m.ball)))return false;const a=actual||actualMotions(board,members);return a.every(p=>!p);}
 function commitPairSplit(members,candidate,gid){const pair=members.filter(m=>candidate.pairIds.has(id(m))),solo=members.find(m=>id(m)===candidate.soloId);if(pair.length!==2||!solo)return[];clear(solo);commitGroup(pair,2,gid);const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,bundleId:gid||Number(p.bundleId)||0,groupSize:2}));let soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p))||null;if(soloStep)soloStep={...soloStep,bundleId:0,groupSize:0};return soloStep?[...pairSteps,soloStep]:pairSteps;}
 hexPhysPlanGroup=function(board,members,preview=false){
  if(!ordinary(members))return basePlanGroup(board,members,preview)||[];
- const gid=gidOf(members),ind=motions(board,members),base=previewBase(board,members),contact=currentContactState(board,members);
+ const gid=gidOf(members),ind=motions(board,members),actual=actualMotions(board,members),base=previewBase(board,members),contact=currentContactState(board,members);
  if(contact.live&&contact.busy&&!contact.current){if(!preview)commitGroup(members,members.length,gid);return[];}
  const special=baseSpecialSplit(members,base);
- if(special?.type==="pair"&&contact.current){
-   if(preview){const pairSteps=special.plan.filter(p=>special.pairIds.has(id(p))).map(p=>({...p,groupSize:2,bundleId:gid||Number(p.bundleId)||0}));const soloStep=special.plan.find(p=>id(p)===special.soloId&&vec(p));return soloStep?[...pairSteps,{...soloStep,groupSize:0,bundleId:0}]:pairSteps;}
-   const out=commitPairSplit(members,special,gid);window.__sixBallLastNintendoRigidityDecision={reason:special.reason,pairIds:[...special.pairIds],soloId:special.soloId,contactCount:contact.contacts.length,at:Date.now()};return out;
- }
+ if(special?.type==="pair"&&contact.current){if(preview){const pairSteps=special.plan.filter(p=>special.pairIds.has(id(p))).map(p=>({...p,groupSize:2,bundleId:gid||Number(p.bundleId)||0})),soloStep=special.plan.find(p=>id(p)===special.soloId&&vec(p));return soloStep?[...pairSteps,{...soloStep,groupSize:0,bundleId:0}]:pairSteps;}const out=commitPairSplit(members,special,gid);window.__sixBallLastNintendoRigidityDecision={reason:special.reason,pairIds:[...special.pairIds],soloId:special.soloId,contactCount:contact.contacts.length,at:Date.now()};return out;}
  if(special?.type==="full"&&contact.current){if(!preview)for(const m of members)clear(m);return special.plan.map(p=>({...p,bundleId:0,groupSize:0}));}
- const whole=wholeRigid(board,members,ind,base);
- if(whole){if(!preview)commitGroup(members,members.length,gid);return whole;}
- /* Stable is evaluated before any fragmentation. A body which has no actual
-  * motion with all of its members present has joined the pile; contact alone
-  * is not a reason to split it. */
- if(stableAccumulated(board,members)){if(!preview)for(const m of members)clear(m);return[];}
+ const whole=wholeRigid(board,members,ind,base);if(whole){if(!preview)commitGroup(members,members.length,gid);return whole;}
+ if(stableAccumulated(board,members,actual)){if(!preview)for(const m of members)clear(m);return[];}
  if(members.length===3&&(contact.current||!contact.live)){
-   const candidate=candidatePairs(board,members,ind,base);
-   if(candidate?.type==="pair"){if(preview){const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,groupSize:2,bundleId:gid||Number(p.bundleId)||0}));const soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p));return soloStep?[...pairSteps,{...soloStep,groupSize:0,bundleId:0}]:pairSteps;}const out=commitPairSplit(members,candidate,gid);window.__sixBallLastNintendoRigidityDecision={reason:candidate.reason,pairIds:[...candidate.pairIds],soloId:candidate.soloId,contactCount:contact.contacts.length,at:Date.now()};return out;}
-   const moving=ind.filter(Boolean);
-   if(moving.length){if(!preview)for(const m of members)clear(m);const out=moving.map(p=>({...p,bundleId:0,groupSize:0}));if(!preview)window.__sixBallLastNintendoRigidityDecision={reason:"full-physical-fragmentation",ids:members.map(id),contactCount:contact.contacts.length,at:Date.now()};return out;}
+  const candidate=candidatePairs(board,members,ind,actual,base);
+  if(candidate?.type==="pair"){if(preview){const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,groupSize:2,bundleId:gid||Number(p.bundleId)||0})),soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p));return soloStep?[...pairSteps,{...soloStep,groupSize:0,bundleId:0}]:pairSteps;}const out=commitPairSplit(members,candidate,gid);window.__sixBallLastNintendoRigidityDecision={reason:candidate.reason,pairIds:[...candidate.pairIds],soloId:candidate.soloId,contactCount:contact.contacts.length,at:Date.now()};return out;}
+  const moving=actual.filter(Boolean).filter(p=>planTargetsSafe(board,members,[p]));if(moving.length){if(!preview)for(const m of members)clear(m);const out=moving.map(p=>({...p,bundleId:0,groupSize:0}));if(!preview)window.__sixBallLastNintendoRigidityDecision={reason:"full-physical-fragmentation",ids:members.map(id),contactCount:contact.contacts.length,at:Date.now()};return out;}
  }
  if(members.length===2&&(contact.current||!contact.live)){
-   const moving=ind.filter(Boolean);if(moving.length){if(!preview)for(const m of members)clear(m);return moving.map(p=>({...p,bundleId:0,groupSize:0}));}
+  const moving=actual.filter(Boolean).filter(p=>planTargetsSafe(board,members,[p]));if(moving.length){if(!preview)for(const m of members)clear(m);return moving.map(p=>({...p,bundleId:0,groupSize:0}));}
  }
- if(!preview)commitGroup(members,members.length,gid);
- return[];
+ if(!preview)commitGroup(members,members.length,gid);return[];
 };
 window.__sixBallNintendoRigidityVersion="nintendo-rigidity-authority-v1";
 window.__sixBallRigidityUsesPhysicalContact=true;
@@ -122,4 +126,6 @@ window.__sixBallPairPivotPreservesRigidity=true;
 window.__sixBallAccumulatedReleaseUsesActualBoard=true;
 window.__sixBallStableBeforeFragmentation=true;
 window.__sixBallStaticPairTargetOverlapForbidden=true;
+window.__sixBallPairPivotUsesActualPartnerContact=true;
+window.__sixBallFragmentationUsesActualBoardMotion=true;
 })();
