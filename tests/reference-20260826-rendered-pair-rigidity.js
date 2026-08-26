@@ -15,26 +15,44 @@ function expect(v,msg){if(!v)throw new Error(msg);}
 const result=vm.runInContext(`
 (()=>{
   const game=createEngine(826301);game.state="PLAYING";
-  const support=mkBall(game,1);
-  game.board[5][6]=support;noteBoardCell(game.board,5,support);
-  game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
 
-  game.piece={x:5,y:4,rot:1,colors:[2,4,0]};
-  game.freeX=4.18;game.pieceVX=4.18;game.dropT=0;
+  // Reference contact requires a support that is already part of a settled
+  // pile. Put the pivot one row above the floor and support it with two floor
+  // balls so settlePass cannot move the pivot itself.
+  const support=mkBall(game,1),baseL=mkBall(game,3),baseR=mkBall(game,3);
+  game.board[10][5]=support;noteBoardCell(game.board,10,support);
+  game.board[11][4]=baseL;noteBoardCell(game.board,11,baseL);
+  game.board[11][6]=baseR;noteBoardCell(game.board,11,baseR);
+  game.vis.set(support.id,{x:5,y:10,vy:0,motionSpeed:0});
+  game.vis.set(baseL.id,{x:4,y:11,vy:0,motionSpeed:0});
+  game.vis.set(baseR.id,{x:6,y:11,vy:0,motionSpeed:0});
+
+  // Same geometry as the measured F126 outer-right contact, translated down
+  // and one doubled-x column left so the supporting pile can sit on the floor.
+  game.piece={x:4,y:9,rot:1,colors:[2,4,0]};
+  game.freeX=3.18;game.pieceVX=3.18;game.dropT=0;
   lock(game,5);
 
+  const snapshot=[];
+  for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+    const cell=valid(x,y)?game.board[y][x]:null;
+    if(!cell)continue;
+    snapshot.push({id:cell.id,x,y,rigid:!!cell.rigid,size:Number(cell.motionGroupSize)||0,role:Number(cell.motionGroupRole),
+      path:(cell.fallPath||[]).map(s=>({kind:s.kind,from:s.from,to:s.to,seq:s.motionSeq,size:s.groupSize,bundle:s.bundleId}))});
+  }
+
   const batch=collectLiveMotionBatch(game);
-  if(!batch)return{error:"no-live-batch"};
+  if(!batch)return{error:"no-live-batch",snapshot};
   const pair=batch.members.filter(m=>String(m.seg?.kind||"")==="REFERENCE_FIRST_CONTACT_PAIR");
   const solo=batch.members.find(m=>String(m.seg?.kind||"")==="REFERENCE_FIRST_CONTACT_SOLO")||null;
-  if(pair.length!==2)return{error:"wrong-pair-count",pairCount:pair.length,kinds:batch.members.map(m=>m.seg?.kind)};
+  if(pair.length!==2)return{error:"wrong-pair-count",pairCount:pair.length,kinds:batch.members.map(m=>m.seg?.kind),snapshot,
+    choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},signed:{...(window.__sixBallLastSignedHardDropContactV2||{})}};
 
   const states=new Map(batch.members.map(m=>[
     m.cell.id,
     {startState:{...m.startState},endState:{...m.endState},naturalDuration:m.duration}
   ]));
-  let maxPairDistanceError=0,minPairDistance=Infinity,maxPairDistance=0;
-  let maxCommonBowMismatch=0;
+  let maxPairDistanceError=0,minPairDistance=Infinity,maxPairDistance=0,maxCommonBowMismatch=0;
   const samples=[];
   for(let i=0;i<=240;i++){
     const t=i/240;
@@ -44,8 +62,12 @@ const result=vm.runInContext(`
     minPairDistance=Math.min(minPairDistance,d);maxPairDistance=Math.max(maxPairDistance,d);
     maxPairDistanceError=Math.max(maxPairDistanceError,Math.abs(d-1));
 
-    const base0=liveSegPoint(pair[0].seg,Math.min(1,t*batch.duration/pair[0].duration),pair[0].startState,pair[0].duration);
-    const base1=liveSegPoint(pair[1].seg,Math.min(1,t*batch.duration/pair[1].duration),pair[1].startState,pair[1].duration);
+    // Strip only the v3 common bow by evaluating the v2/base segment. If the
+    // two rendered members receive different bow amounts, rigidity is broken.
+    const local0=Math.min(1,t*batch.duration/pair[0].duration);
+    const local1=Math.min(1,t*batch.duration/pair[1].duration);
+    const base0=liveSegPoint(pair[0].seg,local0,pair[0].startState,pair[0].duration);
+    const base1=liveSegPoint(pair[1].seg,local1,pair[1].startState,pair[1].duration);
     maxCommonBowMismatch=Math.max(maxCommonBowMismatch,Math.abs((p0[0]-base0[0])-(p1[0]-base1[0])));
     if(i%60===0)samples.push({t,p0,p1,d});
   }
@@ -66,8 +88,7 @@ const result=vm.runInContext(`
   return{
     pairIds:pair.map(m=>m.cell.id),soloId:solo?.cell?.id??null,
     pairDuration:Math.max(...pair.map(m=>m.duration)),soloDuration:solo?.duration??null,batchDuration:batch.duration,
-    maxPairDistanceError,minPairDistance,maxPairDistance,maxCommonBowMismatch,startErr,endErr,
-    samples,
+    maxPairDistanceError,minPairDistance,maxPairDistance,maxCommonBowMismatch,startErr,endErr,samples,snapshot,
     choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},
     signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},
     sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})}
@@ -75,6 +96,7 @@ const result=vm.runInContext(`
 })()
 `,ctx);
 
+console.log("RENDERED_PAIR_DIAGNOSTIC",JSON.stringify(result));
 expect(!result.error,"rendered trajectory setup failed: "+JSON.stringify(result));
 expect(result.pairIds.length===2,"rendered pair not found");
 expect(result.soloId!==null,"rendered solo not found");
