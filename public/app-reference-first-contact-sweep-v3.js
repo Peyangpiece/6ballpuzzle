@@ -15,9 +15,10 @@
  *
  * Timing is taken directly from the 2026-08-26 Nintendo reference capture:
  * first unilateral contact is F126, the surviving pair reaches its first
- * landing at F130 (4 frame intervals), and the solo reaches its first lattice
- * landing at F131 (5 frame intervals).  Keeping those cohorts on independent
- * frame budgets removes the staged/draggy feel without changing later physics.
+ * landing at F130 (4 frame intervals), the solo reaches its first lattice
+ * landing at F131 (5 intervals), and that solo completes its immediate
+ * continuation at F134 (3 more intervals).  Only this first-contact sequence
+ * uses captured frame budgets; later motion returns to canonical physics.
  */
 (function(){
 if(
@@ -29,6 +30,7 @@ if(
 
 window.__sixBallReferenceFirstContactSweepV3=true;
 const basePathHitsStationary=hexPhysPathHitsStationary;
+const baseHexPhysAppendSegment=typeof hexPhysAppendSegment==="function"?hexPhysAppendSegment:null;
 const baseHexMotionDuration=typeof hexMotionDuration==="function"?hexMotionDuration:null;
 const baseLiveBatchPointAt=typeof liveBatchPointAt==="function"?liveBatchPointAt:null;
 const gameByBoard=new WeakMap();
@@ -38,8 +40,10 @@ const SWEEP_SAMPLES=96;
 const REFERENCE_CAPTURE_FPS=30.02001334222815;
 const REFERENCE_FIRST_CONTACT_PAIR_FRAMES=4;
 const REFERENCE_FIRST_CONTACT_SOLO_FRAMES=5;
+const REFERENCE_SOLO_CONTINUATION_FRAMES=3;
 const REFERENCE_FIRST_CONTACT_PAIR_DURATION=REFERENCE_FIRST_CONTACT_PAIR_FRAMES/REFERENCE_CAPTURE_FPS;
 const REFERENCE_FIRST_CONTACT_SOLO_DURATION=REFERENCE_FIRST_CONTACT_SOLO_FRAMES/REFERENCE_CAPTURE_FPS;
+const REFERENCE_SOLO_CONTINUATION_DURATION=REFERENCE_SOLO_CONTINUATION_FRAMES/REFERENCE_CAPTURE_FPS;
 
 createEngine=function(...args){
   const game=baseCreateEngine(...args);
@@ -118,12 +122,36 @@ hexPhysPathHitsStationary=function(p,board,movingIds){
   return basePathHitsStationary(p,board,movingIds);
 };
 
+/* Tag exactly one normal segment immediately following the special solo
+ * contact segment.  This gives F131->F134 its measured three-frame budget
+ * without accelerating unrelated future rolls or either member of the pair. */
+if(baseHexPhysAppendSegment){
+  hexPhysAppendSegment=function(ball,p,eventSeq){
+    const before=Array.isArray(ball?.fallPath)?ball.fallPath.length:0;
+    const result=baseHexPhysAppendSegment(ball,p,eventSeq);
+    const path=Array.isArray(ball?.fallPath)?ball.fallPath:null;
+    const appended=!!path&&path.length>before?path[path.length-1]:null;
+    if(!appended)return result;
+    const kind=String(appended.kind||"");
+    if(kind==="REFERENCE_FIRST_CONTACT_SOLO"&&Number(ball?.motionGroupSize||0)===0){
+      ball._referenceSoloContinuationPendingV3=true;
+    }else if(ball?._referenceSoloContinuationPendingV3&&
+      !kind.startsWith("REFERENCE_FIRST_CONTACT_")){
+      appended.referenceFirstContactSoloContinuationV3=true;
+      ball._referenceSoloContinuationPendingV3=false;
+      ball._referenceSoloContinuationConsumedV3=true;
+    }
+    return result;
+  };
+}
+
 if(baseHexMotionDuration){
   hexMotionDuration=function(seg,state={vy:0,speed:0}){
     const natural=baseHexMotionDuration(seg,state);
     const kind=String(seg?.kind||"");
     if(kind==="REFERENCE_FIRST_CONTACT_PAIR")return REFERENCE_FIRST_CONTACT_PAIR_DURATION;
     if(kind==="REFERENCE_FIRST_CONTACT_SOLO")return REFERENCE_FIRST_CONTACT_SOLO_DURATION;
+    if(seg?.referenceFirstContactSoloContinuationV3)return REFERENCE_SOLO_CONTINUATION_DURATION;
     return natural;
   };
 }
@@ -155,8 +183,11 @@ window.__sixBallReferenceFirstContactPairUsesSharedBow=true;
 window.__sixBallReferenceCaptureFps=REFERENCE_CAPTURE_FPS;
 window.__sixBallReferenceFirstContactPairFrames=REFERENCE_FIRST_CONTACT_PAIR_FRAMES;
 window.__sixBallReferenceFirstContactSoloFrames=REFERENCE_FIRST_CONTACT_SOLO_FRAMES;
+window.__sixBallReferenceSoloContinuationFrames=REFERENCE_SOLO_CONTINUATION_FRAMES;
 window.__sixBallReferenceFirstContactPairDuration=REFERENCE_FIRST_CONTACT_PAIR_DURATION;
 window.__sixBallReferenceFirstContactSoloDuration=REFERENCE_FIRST_CONTACT_SOLO_DURATION;
+window.__sixBallReferenceSoloContinuationDuration=REFERENCE_SOLO_CONTINUATION_DURATION;
 window.__sixBallReferenceFirstContactTimingUsesCapturedFrames=true;
+window.__sixBallReferenceSoloContinuationUsesCapturedFrames=true;
 window.__sixBallReferenceFirstContactSweepVersion="reference-first-contact-sweep-v3";
 })();
