@@ -14,6 +14,7 @@ on:
       - "tests/reference-20260826-rendered-pair-rigidity.js"
       - "tests/reference-20260826-solo-continuity-diagnostic.js"
       - "tests/reference-20260826-solo-pivot-arc.js"
+      - "tests/reference-20260814-inverted-flat-split-diagnostic.js"
       - "tests/clear-all-ball-fx.js"
       - "tests/oracles/**"
       - ".github/workflows/deploy-cloudflare.yml"
@@ -53,8 +54,9 @@ jobs:
           node tests/v1303-current-oracle-suite.js >/tmp/production-oracle.log 2>&1; B=$?
           { node tests/v1303-upconvex-production-guard.js && node tests/v1303-upconvex-live-pocket-v24.js && node tests/reference-20260826-upconvex-dynamic-split.js && node tests/reference-20260826-rendered-pair-rigidity.js && node tests/reference-20260826-solo-continuity-diagnostic.js && node tests/reference-20260826-solo-pivot-arc.js; } >/tmp/production-upconvex.log 2>&1; C=$?
           node tests/clear-all-ball-fx.js >/tmp/production-clearfx.log 2>&1; D=$?
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" > audit-results/deploy-gate.json
+          node tests/reference-20260814-inverted-flat-split-diagnostic.js >/tmp/production-inverted-split.log 2>&1; E=$?
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s,"invertedSplit":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" > audit-results/deploy-gate.json
           for f in /tmp/production-*.log; do echo "===== $f ====="; tail -80 "$f"; done
           test "$STATUS" = pass
 
@@ -67,7 +69,7 @@ jobs:
           set -u
           if [ ! -f audit-results/deploy-gate.json ]; then
             mkdir -p audit-results
-            printf '{"sha":"%s","status":"fail","smoke":99,"oracle12k":99,"upconvex":99,"clearFx":99}\n' "$GITHUB_SHA" > audit-results/deploy-gate.json
+            printf '{"sha":"%s","status":"fail","smoke":99,"oracle12k":99,"upconvex":99,"clearFx":99,"invertedSplit":99}\n' "$GITHUB_SHA" > audit-results/deploy-gate.json
           fi
           encoded="$(base64 -w0 audit-results/deploy-gate.json)"
           recorded=0
