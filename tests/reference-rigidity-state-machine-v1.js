@@ -10,7 +10,8 @@ for(const file of[
   "app-reference-upconvex-authority-v1.js",
   "app-reference-first-contact-sweep-v3.js",
   "app-reference-inverted-flat-split-v1.js",
-  "app-rigidity-nintendo-authority-v1.js"
+  "app-rigidity-nintendo-authority-v1.js",
+  "app-rigidity-release-bounce-authority-v1.js"
 ])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
 
 function expect(v,msg){if(!v)throw new Error(msg);}
@@ -61,3 +62,4 @@ expect(result.settled.actual.every(v=>v===false),"settled triplet still has actu
 expect(result.settled.independent.some(Boolean),"regression fixture no longer distinguishes independent probe from actual stability");
 expect(result.settled.count===0&&result.settled.released,"settled triplet did not transition to accumulated zero-rigidity pile");
 console.log("Nintendo rigidity state-machine v1 PASS");
+require("./reference-rigidity-release-bounce-v1.js");
