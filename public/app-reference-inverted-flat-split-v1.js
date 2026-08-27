@@ -23,7 +23,18 @@ function downLayout(members){
  if(Number(bottom.x)!==(Number(tops[0].x)+Number(tops[1].x))/2)return null;
  return{left:tops[0],right:tops[1],bottom};
 }
-function lowerCentreFinal(board,bottom){if(!bottom)return false;if(typeof touchesFloorRow==="function"&&touchesFloorRow(bottom.y))return true;if(typeof hexPhysSupportInfo!=="function")return false;const s=hexPhysSupportInfo(board,bottom.x,bottom.y);return Number(s?.realCount||0)>=2;}
+function lowerCentreFinal(board,bottom){
+ if(!bottom)return false;
+ if(typeof touchesFloorRow==="function"&&touchesFloorRow(bottom.y))return true;
+ if(typeof hexPhysSupportInfo!=="function")return false;
+ const s=hexPhysSupportInfo(board,bottom.x,bottom.y);
+ // Some late physics authorities intentionally expose only contact objects and
+ // omit the derived realCount field. The physical rule is two REAL lower ball
+ // supports, so inspect those contacts directly instead of treating a missing
+ // convenience counter as zero. A wall alone never satisfies this condition.
+ if(s?.left?.ball&&s?.right?.ball)return true;
+ return Number.isFinite(Number(s?.realCount))&&Number(s.realCount)>=2;
+}
 function targetFree(board,x,y,ownIds){if(typeof valid!=="function"||!valid(x,y))return false;const q=board?.[y]?.[x]||null;return!q||ownIds.has(q.id);}
 function isLiveHardRelease(board,members){const game=liveEngineByBoard.get(board);if(!game?.vis)return false;let peak=0;for(const m of members){const v=game.vis.get(m.ball.id);if(!v?.justReleased)return false;peak=Math.max(peak,Number(v.motionSpeed)||0,Number(v.vy)||0);}return peak>=HARD_RELEASE_SPEED_MIN;}
 function proposal(member,bottom,dir,bundleId,hard){return{x:member.x,y:member.y,tx:member.x+dir,ty:member.y+1,ball:member.ball,kind:hard?(dir<0?"REFERENCE_INVERTED_HARD_SPLIT_LEFT":"REFERENCE_INVERTED_HARD_SPLIT_RIGHT"):(dir<0?"INVERTED_FLAT_SPLIT_LEFT":"INVERTED_FLAT_SPLIT_RIGHT"),pivot:[bottom.x,bottom.y],topPivot:null,followSupportIds:[],bundleId,groupSize:0,referenceInvertedFlatSplit:true,referenceInvertedHardSplit:hard};}
