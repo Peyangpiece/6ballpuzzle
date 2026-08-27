@@ -10,6 +10,7 @@ if(typeof window==="undefined"||window.__sixBallRigidityReleaseBounceAuthorityV1
 window.__sixBallRigidityReleaseBounceAuthorityV1=true;
 
 const basePlanGroup=hexPhysPlanGroup;
+const baseResolveEvent=typeof hexPhysResolveEvent==="function"?hexPhysResolveEvent:null;
 const baseApplyEvent=typeof hexPhysApplyEvent==="function"?hexPhysApplyEvent:null;
 const gameByBoard=new WeakMap();
 const baseCreateEngine=typeof createEngine==="function"?createEngine:null;
@@ -112,6 +113,37 @@ hexPhysPlanGroup=function(board,members,preview=false){
  return basePlanGroup(board,members,false)||[];
 };
 
+function ordinaryVisualMotionBusy(board){
+ const game=gameByBoard.get(board);
+ if(!game)return false;
+ for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){
+  const ball=valid(x,y)?board[y][x]:null;
+  if(!ball||typeof ball!=="object"||ball.isGarbage)continue;
+  if(liveBusy(game,ball))return true;
+ }
+ return false;
+}
+
+/*
+ * Several legacy resolver fallbacks run AFTER group planning. If the final
+ * group planner returns [] because its current fallPath is still being drawn,
+ * those fallbacks used to mistake the temporary visual wait for a broken
+ * constraint and manufacture a second logical move. That creates snap-back,
+ * double-booked slope cells and visible stair-step jitter.
+ *
+ * A live ordinary-ball path is the authoritative motion until it finishes.
+ * Garbage uses its own pileFlow timeline and is intentionally not blocked here.
+ */
+if(baseResolveEvent){
+ hexPhysResolveEvent=function(board,preview=false){
+  if(ordinaryVisualMotionBusy(board)){
+   window.__sixBallLastResolverNoBounceDecision={reason:"ordinary-visual-path-in-flight",preview:!!preview,at:Date.now()};
+   return[];
+  }
+  return baseResolveEvent(board,preview)||[];
+ };
+}
+
 if(baseApplyEvent){
  hexPhysApplyEvent=function(board,accepted){
   const game=gameByBoard.get(board),origins=new Map();
@@ -136,6 +168,7 @@ if(baseApplyEvent){
 
 window.__sixBallRigidityReleaseBounceVersion="rigidity-release-bounce-authority-v1";
 window.__sixBallRigidityBlocksReplanWhileVisualBusy=true;
+window.__sixBallResolverBlocksReplanWhileVisualBusy=true;
 window.__sixBallFreshSegmentsStartAtRenderedCentre=true;
 window.__sixBallExternallyPinnedMemberBreaksTriplet=true;
 window.__sixBallValidPairPivotMayRetainRigidity=true;

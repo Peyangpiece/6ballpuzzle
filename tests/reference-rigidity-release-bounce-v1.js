@@ -68,12 +68,12 @@ const result=vm.runInContext(`
   const members=[{ball:f,x:10,y:11,role:0,orientation:"pair"},{ball:m,x:9,y:10,role:1,orientation:"pair"}],plan=hexPhysPlanGroup(g.board,members,false)||[];
   return{plan:plan.map(p=>({id:p.ball.id,size:p.groupSize||0,to:[p.tx,p.ty],pivot:p.pivot||null,kind:p.kind||""})),after:members.map(q=>({id:q.ball.id,size:q.ball.motionGroupSize,rigid:!!q.ball.rigid}))};
  }
- return{flags:{version:window.__sixBallRigidityReleaseBounceVersion,busy:window.__sixBallRigidityBlocksReplanWhileVisualBusy,rebase:window.__sixBallFreshSegmentsStartAtRenderedCentre,pinned:window.__sixBallExternallyPinnedMemberBreaksTriplet,pair:window.__sixBallValidPairPivotMayRetainRigidity},bounce:noBounce(),stable:stableRelease(),differential:pinnedDifferential(),pair:pairPivot()};
+ return{flags:{version:window.__sixBallRigidityReleaseBounceVersion,busy:window.__sixBallRigidityBlocksReplanWhileVisualBusy,resolverBusy:window.__sixBallResolverBlocksReplanWhileVisualBusy,rebase:window.__sixBallFreshSegmentsStartAtRenderedCentre,pinned:window.__sixBallExternallyPinnedMemberBreaksTriplet,pair:window.__sixBallValidPairPivotMayRetainRigidity},bounce:noBounce(),stable:stableRelease(),differential:pinnedDifferential(),pair:pairPivot()};
 })()
 `,ctx);
 
 console.log("RIGIDITY_RELEASE_BOUNCE",JSON.stringify(result));
-expect(result.flags.version==="rigidity-release-bounce-authority-v1"&&result.flags.busy&&result.flags.rebase&&result.flags.pinned&&result.flags.pair,"release/bounce authority flags missing");
+expect(result.flags.version==="rigidity-release-bounce-authority-v1"&&result.flags.busy&&result.flags.resolverBusy&&result.flags.rebase&&result.flags.pinned&&result.flags.pair,"release/bounce authority flags missing");
 expect(result.bounce.first===true,"fixture did not create first rigid motion");
 expect(result.bounce.originMatch&&result.bounce.allRebased,"fresh fall path did not start at current rendered centre");
 expect(result.bounce.second===false&&result.bounce.sigSame&&result.bounce.lensSame,"planner queued another move while visual path was active");
