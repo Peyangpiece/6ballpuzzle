@@ -11,6 +11,7 @@ window.__sixBallRigidityReleaseBounceAuthorityV1=true;
 
 const basePlanGroup=hexPhysPlanGroup;
 const baseResolveEvent=typeof hexPhysResolveEvent==="function"?hexPhysResolveEvent:null;
+const baseSettlePass=typeof settlePass==="function"?settlePass:null;
 const baseApplyEvent=typeof hexPhysApplyEvent==="function"?hexPhysApplyEvent:null;
 const gameByBoard=new WeakMap();
 const baseCreateEngine=typeof createEngine==="function"?createEngine:null;
@@ -134,6 +135,16 @@ function ordinaryVisualMotionBusy(board){
  * A live ordinary-ball path is the authoritative motion until it finishes.
  * Garbage uses its own pileFlow timeline and is intentionally not blocked here.
  */
+if(baseSettlePass){
+ settlePass=function(board,preview=false){
+  if(ordinaryVisualMotionBusy(board)){
+   window.__sixBallLastSettleNoBounceDecision={reason:"ordinary-visual-path-in-flight",preview:!!preview,at:Date.now()};
+   return false;
+  }
+  return !!baseSettlePass(board,preview);
+ };
+}
+
 if(baseResolveEvent){
  hexPhysResolveEvent=function(board,preview=false){
   if(ordinaryVisualMotionBusy(board)){
@@ -169,6 +180,7 @@ if(baseApplyEvent){
 window.__sixBallRigidityReleaseBounceVersion="rigidity-release-bounce-authority-v1";
 window.__sixBallRigidityBlocksReplanWhileVisualBusy=true;
 window.__sixBallResolverBlocksReplanWhileVisualBusy=true;
+window.__sixBallSettleBlocksReplanWhileVisualBusy=true;
 window.__sixBallFreshSegmentsStartAtRenderedCentre=true;
 window.__sixBallExternallyPinnedMemberBreaksTriplet=true;
 window.__sixBallValidPairPivotMayRetainRigidity=true;
