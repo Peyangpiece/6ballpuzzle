@@ -31,7 +31,10 @@ const result=vm.runInContext(`
  function obstacle(g,x,y,c=4){const b=mkBall(g,c);g.board[y][x]=b;noteBoardCell(g.board,y,b);setVis(g,b,x,y,0);return b;}
  function groupMembers(g,gid){return hexPhysGroups(g.board).get(gid)||[];}
  function noBounce(){
-  const g=createEngine(930001),gid=930001,members=install(g,[{x:6,y:2,vy:2.34},{x:5,y:3,vy:3.34},{x:7,y:3,vy:3.34}],gid,"up");
+  // Valid canonical DOWN triplet, rendered 0.34 row below its logical cells.
+  // The old fixture used x+y-even cells, which are outside this board lattice
+  // and therefore could never produce a first physics motion.
+  const g=createEngine(930001),gid=930001,members=install(g,[{x:7,y:2,vy:2.34},{x:9,y:2,vy:2.34},{x:8,y:3,vy:3.34}],gid,"down");
   const before=new Map(members.map(m=>[m.ball.id,{x:g.vis.get(m.ball.id).x,y:g.vis.get(m.ball.id).y}]));
   const first=settlePass(g.board,false),paths=members.map(m=>({id:m.ball.id,len:m.ball.fallPath?.length||0,from:m.ball.fallPath?.[0]?.from||null,to:m.ball.fallPath?.[0]?.to||null,rebased:!!m.ball.fallPath?.[0]?.noBounceRebased}));
   const sig1=physicsSignature(g.board),lens1=members.map(m=>m.ball.fallPath?.length||0),second=settlePass(g.board,false),sig2=physicsSignature(g.board),lens2=members.map(m=>m.ball.fallPath?.length||0);
