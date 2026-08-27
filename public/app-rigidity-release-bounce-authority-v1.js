@@ -120,6 +120,10 @@ function ordinaryVisualMotionBusy(board){
  for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){
   const ball=valid(x,y)?board[y][x]:null;
   if(!ball||typeof ball!=="object"||ball.isGarbage)continue;
+  const seg=Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
+  // Accumulated-pile motion keeps the exact legacy pipeline. The no-bounce
+  // guard is only for ordinary landing/split motion, never pileFlow/gravity.
+  if(seg?.pileFlow||seg?.pileGravityFall)continue;
   if(liveBusy(game,ball))return true;
  }
  return false;
@@ -181,6 +185,7 @@ window.__sixBallRigidityReleaseBounceVersion="rigidity-release-bounce-authority-
 window.__sixBallRigidityBlocksReplanWhileVisualBusy=true;
 window.__sixBallResolverBlocksReplanWhileVisualBusy=true;
 window.__sixBallSettleBlocksReplanWhileVisualBusy=true;
+window.__sixBallPileFlowExcludedFromNoBounceGuard=true;
 window.__sixBallFreshSegmentsStartAtRenderedCentre=true;
 window.__sixBallExternallyPinnedMemberBreaksTriplet=true;
 window.__sixBallValidPairPivotMayRetainRigidity=true;

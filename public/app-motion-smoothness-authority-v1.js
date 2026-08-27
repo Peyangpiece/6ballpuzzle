@@ -1,19 +1,11 @@
 /* Motion smoothness authority v1.
- * Presentation only; logical destinations, collision decisions and split rules
- * remain authoritative in the existing physics layers.
+ * Scope: ordinary non-pile motion only.
+ * Garbage and accumulated-pile presentation intentionally retain the exact
+ * pre-smoothness timing/projection path.
  */
 (function(){
 if(typeof window==="undefined"||window.__sixBallMotionSmoothnessAuthorityV1)return;
 window.__sixBallMotionSmoothnessAuthorityV1=true;
-
-if(typeof pileGravityLateralProgress==="function"){
-  pileGravityLateralProgress=function(seg,q){
-    q=Math.max(0,Math.min(1,Number(q)||0));
-    if(seg?.pileGravityLateralMode==="late")return q*q;
-    if(seg?.pileGravityLateralMode==="early")return 1-(1-q)*(1-q);
-    return q;
-  };
-}
 
 if(typeof liveBatchPointAt==="function"){
   const baseLiveBatchPointAt=liveBatchPointAt;
@@ -30,13 +22,25 @@ if(typeof liveBatchPointAt==="function"){
       (Array.isArray(m.seg?.followSupportIds)&&m.seg.followSupportIds.length)
     );
   }
+  function isLegacyPileOrGarbageBatch(batch){
+    return (batch?.members||[]).some(m=>
+      !!m?.cell?.isGarbage ||
+      !!m?.seg?.pileFlow ||
+      !!m?.seg?.pileGravityFall
+    );
+  }
   function naturalDuration(member,states){
     const state=states?.get(member?.cell?.id);
     return Math.max(1e-9,Number(state?.naturalDuration)||Number(member?.duration)||1/120);
   }
 
   liveBatchPointAt=function(batch,member,t,states,memo=new Map(),stack=new Set()){
-    if(!member||isReferenceSplitBatch(batch)||hasSupportDependency(batch)){
+    if(
+      !member ||
+      isLegacyPileOrGarbageBatch(batch) ||
+      isReferenceSplitBatch(batch) ||
+      hasSupportDependency(batch)
+    ){
       return baseLiveBatchPointAt(batch,member,t,states,memo,stack);
     }
 
@@ -46,8 +50,6 @@ if(typeof liveBatchPointAt==="function"){
     const bundle=Number(member.seg?.bundleId)||0;
     let cohortDuration=naturalDuration(member,states);
 
-    // Only a genuine rigid bundle shares the slowest member clock.
-    // Independent balls keep their own constant physical timing.
     if(size>=2&&bundle){
       const cohort=(batch?.members||[]).filter(m=>
         (Number(m.seg?.groupSize)||0)===size &&
@@ -61,9 +63,11 @@ if(typeof liveBatchPointAt==="function"){
   };
 }
 
-window.__sixBallSlopeLateralProfile="quadratic-continuous-v1";
 window.__sixBallIndependentLiveBatchUsesNaturalTime=true;
 window.__sixBallRigidCohortClockPreserved=true;
 window.__sixBallReferenceSplitTimingPreserved=true;
 window.__sixBallFollowSupportTimingPreserved=true;
+window.__sixBallPileMotionPreservesPreSmoothnessPath=true;
+window.__sixBallGarbageMotionPreservesPreSmoothnessPath=true;
+window.__sixBallMotionSmoothnessScope="ordinary-non-pile-only";
 })();
