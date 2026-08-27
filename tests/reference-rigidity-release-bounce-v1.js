@@ -38,8 +38,11 @@ const result=vm.runInContext(`
   const g=createEngine(930001),gid=930001,members=install(g,[{x:7,y:2,vy:2.34},{x:9,y:2,vy:2.34},{x:8,y:3,vy:3.34}],gid,"down");
   const before=new Map(members.map(m=>[m.ball.id,{x:g.vis.get(m.ball.id).x,y:g.vis.get(m.ball.id).y}]));
   const first=settlePass(g.board,false),paths=members.map(m=>({id:m.ball.id,len:m.ball.fallPath?.length||0,from:m.ball.fallPath?.[0]?.from||null,to:m.ball.fallPath?.[0]?.to||null,rebased:!!m.ball.fallPath?.[0]?.noBounceRebased}));
-  const sig1=physicsSignature(g.board),lens1=members.map(m=>m.ball.fallPath?.length||0),second=settlePass(g.board,false),sig2=physicsSignature(g.board),lens2=members.map(m=>m.ball.fallPath?.length||0);
-  return{first,second,sigSame:sig1===sig2,lensSame:JSON.stringify(lens1)===JSON.stringify(lens2),paths,originMatch:paths.every(p=>p.from&&closeLocal(p.from[0],before.get(p.id).x)&&closeLocal(p.from[1],before.get(p.id).y)),allRebased:paths.every(p=>p.rebased),rigid:groupMembers(g,gid).map(m=>({id:m.ball.id,size:m.ball.motionGroupSize,rigid:!!m.ball.rigid}))};
+  const sig1=physicsSignature(g.board),lens1=members.map(m=>m.ball.fallPath?.length||0);
+  const afterFirstMeta=members.map(m=>({id:m.ball.id,gid:m.ball.motionGroupId,size:m.ball.motionGroupSize,rigid:!!m.ball.rigid,path:m.ball.fallPath?.length||0}));
+  const groupsAfterFirst=[...hexPhysGroups(g.board).entries()].map(([group,ms])=>({group,ids:ms.map(q=>q.ball.id),sizes:ms.map(q=>q.ball.motionGroupSize)}));
+  const second=settlePass(g.board,false),sig2=physicsSignature(g.board),lens2=members.map(m=>m.ball.fallPath?.length||0);
+  return{first,second,sigSame:sig1===sig2,lensSame:JSON.stringify(lens1)===JSON.stringify(lens2),paths,afterFirstMeta,groupsAfterFirst,noBounceDecision:window.__sixBallLastRigidityNoBounceDecision||null,originMatch:paths.every(p=>p.from&&closeLocal(p.from[0],before.get(p.id).x)&&closeLocal(p.from[1],before.get(p.id).y)),allRebased:paths.every(p=>p.rebased),rigid:groupMembers(g,gid).map(m=>({id:m.ball.id,size:m.ball.motionGroupSize,rigid:!!m.ball.rigid}))};
  }
  function stableRelease(){
   const g=createEngine(930101),gid=930101,members=install(g,[{x:6,y:4},{x:5,y:5},{x:7,y:5}],gid,"up");
