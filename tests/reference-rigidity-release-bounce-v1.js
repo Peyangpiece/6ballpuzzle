@@ -21,6 +21,7 @@ expect(indexHtml.includes("app-rigidity-release-bounce-authority-v1.js"),"produc
 
 const result=vm.runInContext(`
 (()=>{
+ function closeLocal(a,b,eps=1e-7){return Math.abs(a-b)<=eps;}
  function install(g,specs,gid,orientation="up"){
   return specs.map((s,i)=>{
    const ball=mkBall(g,s.c??i);ball.motionGroupId=gid;ball.motionGroupRole=i;ball.motionGroupOrientation=orientation;ball.motionGroupSize=specs.length;ball.rigid=true;
@@ -38,7 +39,7 @@ const result=vm.runInContext(`
   const before=new Map(members.map(m=>[m.ball.id,{x:g.vis.get(m.ball.id).x,y:g.vis.get(m.ball.id).y}]));
   const first=settlePass(g.board,false),paths=members.map(m=>({id:m.ball.id,len:m.ball.fallPath?.length||0,from:m.ball.fallPath?.[0]?.from||null,to:m.ball.fallPath?.[0]?.to||null,rebased:!!m.ball.fallPath?.[0]?.noBounceRebased}));
   const sig1=physicsSignature(g.board),lens1=members.map(m=>m.ball.fallPath?.length||0),second=settlePass(g.board,false),sig2=physicsSignature(g.board),lens2=members.map(m=>m.ball.fallPath?.length||0);
-  return{first,second,sigSame:sig1===sig2,lensSame:JSON.stringify(lens1)===JSON.stringify(lens2),paths,originMatch:paths.every(p=>p.from&&close(p.from[0],before.get(p.id).x)&&close(p.from[1],before.get(p.id).y)),allRebased:paths.every(p=>p.rebased),rigid:groupMembers(g,gid).map(m=>({id:m.ball.id,size:m.ball.motionGroupSize,rigid:!!m.ball.rigid}))};
+  return{first,second,sigSame:sig1===sig2,lensSame:JSON.stringify(lens1)===JSON.stringify(lens2),paths,originMatch:paths.every(p=>p.from&&closeLocal(p.from[0],before.get(p.id).x)&&closeLocal(p.from[1],before.get(p.id).y)),allRebased:paths.every(p=>p.rebased),rigid:groupMembers(g,gid).map(m=>({id:m.ball.id,size:m.ball.motionGroupSize,rigid:!!m.ball.rigid}))};
  }
  function stableRelease(){
   const g=createEngine(930101),gid=930101,members=install(g,[{x:6,y:4},{x:5,y:5},{x:7,y:5}],gid,"up");

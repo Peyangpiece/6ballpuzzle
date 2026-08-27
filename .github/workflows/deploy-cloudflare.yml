@@ -16,6 +16,7 @@ on:
       - "tests/reference-20260826-solo-pivot-arc.js"
       - "tests/reference-20260814-inverted-flat-split-diagnostic.js"
       - "tests/reference-rigidity-state-machine-v1.js"
+      - "tests/reference-rigidity-release-bounce-v1.js"
       - "tests/motion-smoothness-regression-v1.js"
       - "tests/clear-all-ball-fx.js"
       - "tests/oracles/**"
