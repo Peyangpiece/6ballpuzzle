@@ -16,6 +16,7 @@ on:
       - "tests/reference-20260826-solo-pivot-arc.js"
       - "tests/reference-20260814-inverted-flat-split-diagnostic.js"
       - "tests/reference-rigidity-state-machine-v1.js"
+      - "tests/motion-smoothness-regression-v1.js"
       - "tests/clear-all-ball-fx.js"
       - "tests/oracles/**"
       - ".github/workflows/deploy-cloudflare.yml"
@@ -58,8 +59,9 @@ jobs:
           node tests/clear-all-ball-fx.js >/tmp/production-clearfx.log 2>&1; D=$?
           node tests/reference-20260814-inverted-flat-split-diagnostic.js >/tmp/production-inverted-split.log 2>&1; E=$?
           node tests/reference-rigidity-state-machine-v1.js >/tmp/production-rigidity-state.log 2>&1; F=$?
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s,"invertedSplit":%s,"rigidityState":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" > audit-results/deploy-gate.json
+          node tests/motion-smoothness-regression-v1.js >/tmp/production-smoothness.log 2>&1; G=$?
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s,"invertedSplit":%s,"rigidityState":%s,"smoothness":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" > audit-results/deploy-gate.json
           for f in /tmp/production-*.log; do echo "===== $f ====="; tail -100 "$f"; done
           test "$STATUS" = pass
 

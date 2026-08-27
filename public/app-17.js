@@ -107,6 +107,10 @@ function __hexdropGarbageMotionQueue(g){
     for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
         const ball=valid(x,y)?g.board[y][x]:null;
         const seg=ball&&Array.isArray(ball.fallPath)&&ball.fallPath.length?ball.fallPath[0]:null;
+        // pileFlow owns an absolute continuous timeline. Re-applying the legacy
+        // motionSeq wait restores a stale visual snapshot every frame and makes
+        // incoming garbage visibly stop/go.
+        if(seg?.pileFlow)continue;
         const seq=Number(seg?.motionSeq)||0;
         if(seq>0){entries.push({id:ball.id,isGarbage:!!ball.isGarbage,seq});minSeq=Math.min(minSeq,seq);}
     }
@@ -244,4 +248,5 @@ stepNetGarbageMotion=function(g,dt){
     }
 };
 
+window.__hexdropGarbagePileFlowBypassesLegacySeqGate=true;
 window.__mountHexdrop = function () { ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App)); };

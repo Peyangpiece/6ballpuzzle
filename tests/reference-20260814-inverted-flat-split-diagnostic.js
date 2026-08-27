@@ -23,6 +23,15 @@ const result=vm.runInContext(`
   b[10][9]=supportL;b[10][11]=supportR;noteBoardCell(b,10,supportL);noteBoardCell(b,10,supportR);
   g.vis.set(supportL.id,{x:9,y:10,vy:0,motionSpeed:0,sq:0});g.vis.set(supportR.id,{x:11,y:10,vy:0,motionSpeed:0,sq:0});
 
+  // Captured Nintendo contact occurs on an already-settled receiving pile.
+  // Stabilize the two pivot supports on the floor so this fixture tests the
+  // intended inverted split instead of letting the supports fall first.
+  for(const [id,x] of [[5801,8],[5802,10],[5803,12]]){
+    const base={id,c:0,motionGroupId:0,motionGroupSize:0,rigid:false};
+    b[11][x]=base;noteBoardCell(b,11,base);
+    g.vis.set(id,{x,y:11,vy:0,motionSpeed:0,sq:0});
+  }
+
   const ownIds=new Set(members.map(m=>m.ball.id));
   const s=hexPhysSupportInfo(b,10,9);
   const probeL={x:9,y:8,tx:8,ty:9,ball:left,kind:"REFERENCE_INVERTED_HARD_SPLIT_LEFT",pivot:[10,9],topPivot:null,followSupportIds:[],bundleId:826567,groupSize:0};
