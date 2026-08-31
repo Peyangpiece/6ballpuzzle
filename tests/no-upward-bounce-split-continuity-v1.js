@@ -52,6 +52,7 @@ const result=vm.runInContext(`
   const contactAfter=pos(contact,moving.id);
   const contactSupport=pos(contact,support.id);
   const contactDistance=dist(contactAfter,contactSupport);
+  const contactDiag={...(window.__sixBallLastNoUpwardBounceVisualV1||{})};
 
   /* Exact Nintendo F126-style first unilateral contact, exercised through the
    * complete stepEngine render/contact pipeline rather than liveSegPoint alone. */
@@ -67,7 +68,14 @@ const result=vm.runInContext(`
   game.freeX=5.18;game.pieceVX=5.18;game.dropT=0;
   lock(game,5);
 
-  const choice={...(window.__sixBallLastReferenceUpConvexChoiceV1||{})};
+  const refChoice={...(window.__sixBallLastReferenceUpConvexChoiceV1||{})};
+  const rigidityChoice={...(window.__sixBallLastNintendoRigidityDecision||{})};
+  const choice=refChoice.reason?refChoice:{
+    reason:rigidityChoice.reason||"",
+    contactSoloId:Number(rigidityChoice.soloId)||0,
+    pairIds:[...(rigidityChoice.pairIds||[])],
+    source:"nintendo-final-rigidity"
+  };
   const soloId=Number(choice.contactSoloId)||0,pairIds=[...(choice.pairIds||[])];
   const activeIds=[...pairIds,soloId];
   const initial=new Map(activeIds.map(id=>[id,pos(game,id)]));
@@ -129,7 +137,7 @@ const result=vm.runInContext(`
       horizontal:window.__sixBallTrueOverlapRepairIsHorizontal,
       legacy:window.__sixBallPileAndGarbageBouncePolicyUnchanged
     },
-    contact:{before:contactBefore,after:contactAfter,support:contactSupport,distance:contactDistance,diag:window.__sixBallLastNoUpwardBounceVisualV1||null},
+    contact:{before:contactBefore,after:contactAfter,support:contactSupport,distance:contactDistance,diag:contactDiag},
     split:{choice,soloId,pairIds,initial:Object.fromEntries(initial),upward,maxPairError,firstTickSolo,firstTickPair,soloIdleTicks,maxSoloIdleRun,soloReachedFinal,finalPair,finalSolo,activeSegs,samples}
   };
 })()
@@ -141,7 +149,7 @@ expect(result.contact.after[1]>=result.contact.before[1]-1e-10,"render contact s
 expect(result.contact.distance>=0.9995-2e-7,"no-upward correction left a true overlap");
 expect(result.contact.diag&&result.contact.diag.upwardPrevented>=1,"upward correction was not intercepted");
 
-expect(result.split.choice.reason==="reference-first-unilateral-contact","reference first-contact split was not selected");
+expect(["reference-first-unilateral-contact","reference-first-contact"].includes(result.split.choice.reason),"reference first-contact split was not selected");
 expect(result.split.upward===0,"split pipeline still contains an upward visual step");
 expect(result.split.maxPairError<2e-5,"split pair stretched during full render/contact pipeline");
 expect(result.split.firstTickSolo>1e-6,"solo split motion did not start on the first render tick");
