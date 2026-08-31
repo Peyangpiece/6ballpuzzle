@@ -18,6 +18,7 @@ on:
       - "tests/reference-rigidity-state-machine-v1.js"
       - "tests/reference-rigidity-release-bounce-v1.js"
       - "tests/motion-smoothness-regression-v1.js"
+      - "tests/no-upward-bounce-split-continuity-v1.js"
       - "tests/clear-all-ball-fx.js"
       - "tests/oracles/**"
       - ".github/workflows/deploy-cloudflare.yml"
@@ -47,6 +48,7 @@ jobs:
           set -euo pipefail
           test -s public/assets/menu-confirm-42.mp3
           grep -q 'app-rigidity-nintendo-authority-v1.js' public/index.html
+          grep -q 'app-no-upward-bounce-split-authority-v1.js' public/index.html
 
       - name: Run current production gate
         id: production_gate
@@ -61,8 +63,9 @@ jobs:
           node tests/reference-20260814-inverted-flat-split-diagnostic.js >/tmp/production-inverted-split.log 2>&1; E=$?
           node tests/reference-rigidity-state-machine-v1.js >/tmp/production-rigidity-state.log 2>&1; F=$?
           node tests/motion-smoothness-regression-v1.js >/tmp/production-smoothness.log 2>&1; G=$?
-          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
-          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s,"invertedSplit":%s,"rigidityState":%s,"smoothness":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" > audit-results/deploy-gate.json
+          node tests/no-upward-bounce-split-continuity-v1.js >/tmp/production-no-bounce-split.log 2>&1; H=$?
+          if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ] && [ "$F" -eq 0 ] && [ "$G" -eq 0 ] && [ "$H" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
+          printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s,"invertedSplit":%s,"rigidityState":%s,"smoothness":%s,"noBounceSplit":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" "$F" "$G" "$H" > audit-results/deploy-gate.json
           for f in /tmp/production-*.log; do echo "===== $f ====="; tail -100 "$f"; done
           test "$STATUS" = pass
 
