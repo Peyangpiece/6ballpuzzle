@@ -284,17 +284,13 @@ if(plan)return plan;
 let authorized=[];try{authorized=basePlanGroup(board,members,true)||[];}catch(_){authorized=[];}
 const baseChoice=classifyActiveSplit(authorized,members);
 if(!baseChoice)return basePlanGroup(board,members,preview)||[];
-const motions=independentMotions(board,members);
-let separator=null;try{separator=typeof hexPhysUpConvexSeparator==="function"?hexPhysUpConvexSeparator(board,members,motions):null;}catch(_){separator=null;}
-if(!separator||!Number.isFinite(Number(separator.px))||!Number.isFinite(Number(separator.py)))return basePlanGroup(board,members,preview)||[];
-const baseCandidate=buildCandidate(board,members,layout,separator,motions,baseChoice.dir)||baseChoice;
-const alternateCandidate=buildCandidate(board,members,layout,separator,motions,-baseChoice.dir);
-if(!alternateCandidate)return basePlanGroup(board,members,preview)||[];
-const baseScore=evidenceScore(baseCandidate,members,motions,true),alternateScore=evidenceScore(alternateCandidate,members,motions,false);
-if(!(alternateScore>baseScore+1.5))return basePlanGroup(board,members,preview)||[];
-if(preview)return alternateCandidate.plan;
-commitChosen(alternateCandidate,members,baseChoice,baseScore,alternateScore);
-return alternateCandidate.plan;
+/* Contact side is an absolute identity rule.  Momentum, roll direction,
+ * sub-cell bias and approach history may shape the trajectory, but may never
+ * swap which lower ball becomes the solo member.  The lower final authority
+ * has already selected the current physical contact side and already gives a
+ * legal whole-triplet slope priority over every 2+1 proposal.  Preserve that
+ * decision verbatim instead of rebuilding an opposite kinematic candidate. */
+return basePlanGroup(board,members,preview)||[];
 };
 function signedHardDropContactOffset(g,cells,dx,dOff,desired=2){
 if(!g?.board)return 0;
@@ -384,9 +380,11 @@ const localT=Math.max(0,Math.min(1,Number(t)*Math.max(1e-9,Number(batch?.duratio
 return baseLiveBatchPointAt(batch,member,localT,states,memo,stack);
 };
 }
-window.__sixBallCurrentContactBallAlwaysBecomesSolo=false;
-window.__sixBallReferenceMayKeepContactSideInPair=true;
-window.__sixBallReferenceSplitUsesKinematicContinuity=true;
+window.__sixBallCurrentContactBallAlwaysBecomesSolo=true;
+window.__sixBallReferenceMayKeepContactSideInPair=false;
+window.__sixBallReferenceSplitUsesKinematicContinuity=false;
+window.__sixBallSlopeNeverSplits=true;
+window.__sixBallContactSideAlwaysSolo=true;
 window.__sixBallReferenceSplitStillRequiresV21CurrentContact=false;
 window.__sixBallReferenceFirstContactCanSplitOuterQuarter=true;
 window.__sixBallReferenceFirstContactRequiresBilateralPivot=false;
