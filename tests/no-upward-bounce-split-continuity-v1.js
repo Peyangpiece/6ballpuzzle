@@ -133,6 +133,8 @@ const result=vm.runInContext(`
       loaded:window.__sixBallNoUpwardBounceSplitAuthorityV1,
       upward:window.__sixBallOrdinaryVisualCorrectionsNeverMoveUp,
       integrator:window.__sixBallOrdinaryIntegratorNeverMovesUp,
+      horizontalOnly:window.__sixBallOrdinaryContactCorrectionIsHorizontalOnly,
+      evenUpLanding:window.__sixBallEvenRowUpTriangleLandingNeverLifts,
       split:window.__sixBallReferenceSplitPathBeatsGenericContactCorrection,
       noPause:window.__sixBallSplitHasNoResolverPause,
       horizontal:window.__sixBallTrueOverlapRepairIsHorizontal,

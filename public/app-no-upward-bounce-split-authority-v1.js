@@ -91,7 +91,10 @@ if(typeof updateVisuals==="function"){
     let prevented=0;
     for(const q of boardItems(g)){
       const old=snap.get(q.ball.id);
-      if(!old||old.pile||!old.moving)continue;
+      /* There is no legitimate upward correction for a board ball.  Include
+       * the exact landing frame as well: by then fallPath may already have
+       * been consumed and the old `moving` flag can be false. */
+      if(!old||old.pile)continue;
       if(Number(q.v.y)<old.y-EPS){
         q.v.y=old.y;
         prevented++;
@@ -189,7 +192,14 @@ resolveVisualContacts=function(g){
       }
       continue;
     }
-    if(Number(q.v.y)<s.y-EPS){
+    /* The authored gravity/slope path owns vertical motion.  The generic
+     * overlap solver runs afterwards and used to move an even-row UP triangle
+     * vertically because doubled-x parity makes its contact normal slightly
+     * asymmetric.  That downward push was snapped back to the logical row on
+     * the next frame and appeared as a landing bounce.  Restore Y after every
+     * render-only contact correction; the horizontal repair below resolves
+     * any true penetration without creating a future snap-back. */
+    if(Math.abs(Number(q.v.y)-s.y)>EPS){
       q.v.y=s.y;
       q.v.vy=Math.max(0,Number(q.v.vy)||0);
       upwardPrevented++;
@@ -247,6 +257,8 @@ if(typeof liveBatchPointAt==="function"){
 window.__sixBallNoUpwardBounceVersion="no-upward-bounce-split-authority-v1";
 window.__sixBallOrdinaryVisualCorrectionsNeverMoveUp=true;
 window.__sixBallOrdinaryIntegratorNeverMovesUp=true;
+window.__sixBallOrdinaryContactCorrectionIsHorizontalOnly=true;
+window.__sixBallEvenRowUpTriangleLandingNeverLifts=true;
 window.__sixBallReferenceSplitPathBeatsGenericContactCorrection=true;
 window.__sixBallSplitHasNoResolverPause=true;
 window.__sixBallTrueOverlapRepairIsHorizontal=true;
