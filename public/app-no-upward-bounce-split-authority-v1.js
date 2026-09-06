@@ -66,6 +66,44 @@ function boardItems(g){
   }
   return out;
 }
+
+/* Contact correction is not the only place that can alter the rendered
+ * centre.  updateVisuals also consumes/rebases path segments and older layers
+ * may briefly restore a pivot/sample above the previous frame.  Guard the
+ * complete visual integration boundary so an ordinary gravity-driven ball can
+ * never acquire an upward frame even when no overlap pass runs that tick. */
+if(typeof updateVisuals==="function"){
+  const baseUpdateVisuals=updateVisuals;
+  updateVisuals=function(g,dt){
+    if(!g?.board||!g?.vis)return baseUpdateVisuals(g,dt);
+
+    const before=boardItems(g);
+    const snap=new Map(before.map(q=>[
+      q.ball.id,
+      {
+        y:Number(q.v.y),
+        moving:q.moving,
+        pile:legacyPile(q.seg)
+      }
+    ]));
+
+    const result=baseUpdateVisuals(g,dt);
+    let prevented=0;
+    for(const q of boardItems(g)){
+      const old=snap.get(q.ball.id);
+      if(!old||old.pile||!old.moving)continue;
+      if(Number(q.v.y)<old.y-EPS){
+        q.v.y=old.y;
+        prevented++;
+      }
+      q.v.vy=Math.max(0,Number(q.v.vy)||0);
+    }
+    if(prevented){
+      window.__sixBallLastNoUpwardIntegratorV2={prevented,at:Date.now()};
+    }
+    return result;
+  };
+}
 function cohortItems(items,item){
   const gid=Number(item?.ball?.motionGroupId)||0;
   const size=Number(item?.ball?.motionGroupSize)||0;
@@ -208,6 +246,7 @@ if(typeof liveBatchPointAt==="function"){
 
 window.__sixBallNoUpwardBounceVersion="no-upward-bounce-split-authority-v1";
 window.__sixBallOrdinaryVisualCorrectionsNeverMoveUp=true;
+window.__sixBallOrdinaryIntegratorNeverMovesUp=true;
 window.__sixBallReferenceSplitPathBeatsGenericContactCorrection=true;
 window.__sixBallSplitHasNoResolverPause=true;
 window.__sixBallTrueOverlapRepairIsHorizontal=true;
