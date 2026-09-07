@@ -34,6 +34,7 @@ function sameSnapshots(a,b,eps=2e-10){
   return true;
 }
 function sameCells(a,b,eps=1e-11){
+  if(a==null||b==null)return a===b;
   if(!Array.isArray(a)||!Array.isArray(b)||a.length!==b.length)return false;
   for(let i=0;i<a.length;i++){
     if(a[i].length!==b[i].length)return false;
@@ -74,7 +75,7 @@ for(let trial=0;trial<320;trial++){
   __perfV3Resolve(a);
   resolveVisualContacts(b);
   const ids=cells.map(q=>q.id),sa=snapshot(a,ids),sb=snapshot(b,ids);
-  expect(sameSnapshots(sa,sb),"v4 contact result diverged from v3 at trial "+trial+"\n"+JSON.stringify({v3:sa,v4:sb}));
+  expect(sameSnapshots(sa,sb),"v4 contact result diverged from v3 at trial "+trial+"\\n"+JSON.stringify({v3:sa,v4:sb}));
   contactCases++;
   fastFrames+=b._perfV4FastContactFrames||0;
   fallbacks+=b._perfV4CanonicalContactFallbacks||0;
@@ -116,7 +117,7 @@ for(let trial=0;trial<120;trial++){
   const a=__perfV3Safe(g,cells,dx,dOff,desired),b=safeActiveFallOffset(g,cells,dx,dOff,desired);
   expect(Math.abs(a-b)<1e-12,"column-index active clamp changed geometry at trial "+trial+": "+a+" vs "+b);
   const sa=__perfV3Shadow(g),sb=landingShadowVisualCells(g);
-  expect(sameCells(sa,sb),"column-index landing shadow changed geometry at trial "+trial);
+  expect(sameCells(sa,sb),"column-index landing shadow changed geometry at trial "+trial+" v3="+JSON.stringify(sa)+" v4="+JSON.stringify(sb));
   staticCases++;
 }
 expect(staticCases===120,"static parity coverage incomplete");
