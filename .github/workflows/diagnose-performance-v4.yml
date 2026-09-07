@@ -22,7 +22,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Run and record runtime performance tests
+      - name: Run runtime performance tests
+        id: perf
         shell: bash
         run: |
           set +e
@@ -34,13 +35,26 @@ jobs:
           B=$?
           if [ "$A" -eq 0 ] && [ "$B" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
           printf '{"sha":"%s","status":"%s","v2":%s,"v4":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" > audit-results/performance-v4-diagnostic.json
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add audit-results/performance-v4-diagnostic.log audit-results/performance-v4-diagnostic.json
-          git commit -m 'Record runtime performance v4 diagnostic [skip ci]' || true
-          git pull --rebase origin main
-          git push origin HEAD:main
-
           cat audit-results/performance-v4-diagnostic.log
-          test "$STATUS" = pass
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Record runtime performance diagnostic
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for file in performance-v4-diagnostic.log performance-v4-diagnostic.json; do
+            path="audit-results/$file"
+            encoded="$(base64 -w0 "$path")"
+            current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${path}?ref=main" --jq '.sha' 2>/dev/null || true)"
+            args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='Record runtime performance v4 diagnostic [skip ci]' -f content="$encoded" -f branch='main')
+            if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
+            gh api "${args[@]}" >/dev/null
+          done
+
+      - name: Require runtime performance parity
+        if: always()
+        run: test "${{ steps.perf.outputs.status }}" = pass
