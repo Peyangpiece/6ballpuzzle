@@ -93,7 +93,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
       ?motion(member,1,1)
       :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
-      hitFraction:.5,top,pairLower:right,solo:left,
+      hitFraction:.4,top,pairLower:right,solo:left,
       soloMotion:{...motion(left,-1,1),pivot:[6,5]},
       px:6,py:5,dir:1
     }),
@@ -270,7 +270,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
       ?motion(member,1,1)
       :{...motion(member,1,1),pivot:[6,5]},
     separator:()=>({
-      hitFraction:.5,top,pairLower:right,solo:left,
+      hitFraction:.4,top,pairLower:right,solo:left,
       soloMotion:{...motion(left,-1,1),pivot:[6,5]},
       px:6,py:5,dir:1
     }),
@@ -296,7 +296,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   const ctx=install({
     independent:(board,group,member)=>motion(member,member===left?-1:1,1),
     separator:()=>({
-      hitFraction:.5,top,pairLower:right,solo:left,
+      hitFraction:.4,top,pairLower:right,solo:left,
       soloMotion:motion(left,-1,1),px:6,py:5,dir:1
     }),
     base:()=>[
@@ -333,7 +333,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
     separator:()=>({
       /* Deliberately return the obsolete reversed pair. Live contact must
          still make LEFT green solo and keep top+RIGHT yellow. */
-      hitFraction:.5,top,pairLower:left,solo:right,
+      hitFraction:.4,top,pairLower:left,solo:right,
       soloMotion:{...motion(right,1,1),pivot:[6,5]},
       support,px:6,py:5,dir:-1
     }),
@@ -402,7 +402,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
       ?motion(member,1,1)
       :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
-      hitFraction:.5,top,pairLower:left,solo:right,
+      hitFraction:.4,top,pairLower:left,solo:right,
       soloMotion:{...motion(right,1,1),pivot:[6,5]},
       px:6,py:5,dir:1
     }),
@@ -423,6 +423,33 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
   expect(!left.ball.rigid&&right.ball.rigid,"corrected left split metadata is wrong");
   expect(right.ball.motionGroupRole===right.role,"correct right-pair role was not restored after stale solo metadata");
   expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="split-direction-confirmed-before-pair-rigidity","pair was not committed after direction confirmation");
+}
+
+/* An exactly centred support touches neither side more than the other. It has
+   no legal solo identity, so stale direction and pair metadata must not turn
+   it into an arbitrary left/right split. */
+{
+  const members=makeUpMembers(818);
+  const [top,left,right]=members;
+  const ctx=install({
+    independent:(board,group,member)=>member===top
+      ?motion(member,1,1)
+      :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
+    separator:()=>({
+      hitFraction:.5,top,pairLower:right,solo:left,
+      soloMotion:{...motion(left,-1,1),pivot:[6,5]},
+      px:6,py:5,dir:1
+    }),
+    base:()=>[
+      {...motion(top,1,1),bundleId:818,groupSize:2},
+      {...motion(right,1,1),bundleId:818,groupSize:2},
+      {...motion(left,-1,1),bundleId:0,groupSize:0}
+    ]
+  });
+  const out=ctx.hexPhysPlanGroup([],members,false);
+  expect(out.length===0,"centred contact manufactured a directional split");
+  expect(members.every(member=>member.ball.rigid&&member.ball.motionGroupSize===3),"centred contact broke triplet rigidity");
+  expect(ctx.__sixBallLastFinalRigidityCorrectionV1?.reason==="reject-upward-split-without-inner-contact","centred contact did not reject stale split metadata");
 }
 
 /* Regression: an obsolete splitter ignored preview=true and immediately made
@@ -777,7 +804,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
       ?motion(member,1,1)
       :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
-      hitFraction:.5,top,pairLower:right,solo:left,
+      hitFraction:.4,top,pairLower:right,solo:left,
       soloMotion:{...motion(left,-1,1),pivot:[6,5]},
       px:6,py:5,dir:1
     }),
@@ -807,7 +834,7 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
       ?motion(member,-1,1)
       :{...motion(member,member===left?-1:1,1),pivot:[6,5]},
     separator:()=>({
-      hitFraction:.5,top,pairLower:right,solo:left,
+      hitFraction:.6,top,pairLower:right,solo:left,
       soloMotion:{...motion(left,-1,1),pivot:[6,5]},
       px:6,py:5,dir:-1
     }),

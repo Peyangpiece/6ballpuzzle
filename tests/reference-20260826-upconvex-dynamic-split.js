@@ -195,4 +195,20 @@ return{pair:p,solo:s,pairTarget:pairMember.seg.to,soloTarget:soloMember.seg.to};
 `,ctx);
 expect(close(timing.pair[0],timing.pairTarget[0],1e-9)&&close(timing.pair[1],timing.pairTarget[1],1e-9),"short rigid cohort was still stretched to solo duration");
 expect(Math.hypot(timing.solo[0]-timing.soloTarget[0],timing.solo[1]-timing.soloTarget[1])>.05,"solo incorrectly completed at pair duration");
+const directionAuthoritySource=[
+  "app-02.js",
+  "app-rigidity-final-authority-v1.js",
+  "app-reference-upconvex-authority-v1.js"
+].map(file=>fs.readFileSync(path.join(__dirname,"../public",file),"utf8")).join("\n");
+for(const forbidden of[
+  "reference-kinematic-side-overrode-contact-side",
+  "current-positive-release-offset",
+  "current-negative-release-offset",
+  "current-median-release-offset",
+  "current-top-motion-right",
+  "current-top-motion-left",
+  "canonical-left-solo-tie",
+  "canonical-right-solo-tie"
+])expect(!directionAuthoritySource.includes(forbidden),`reverse-direction authority remains: ${forbidden}`);
+expect(directionAuthoritySource.includes("if(Math.abs(relative)<=1e-9)return null;"),"centred contact can still choose a direction");
 console.log("2026-08-26 Nintendo-reference UP-convex v3 PASS",JSON.stringify({dynamic,firstContact,lockContact,timing}));

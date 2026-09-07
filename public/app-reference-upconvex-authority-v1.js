@@ -76,12 +76,6 @@ try{return hexPhysIndependentMemberMotion(board,members,member)||null;}
 catch(_){return null;}
 });
 }
-function ballBias(ball){
-for(const key of["momentumX","rollDir","subCellBias"]){
-const sign=Math.sign(Number(ball?.[key])||0);if(sign)return sign;
-}
-return 0;
-}
 function physicalVisualDistance(a,b){
 return Math.hypot((Number(a.x)-Number(b.x))*.5,(Number(a.y)-Number(b.y))*HEX_ROW_H);
 }
@@ -249,59 +243,6 @@ at:Date.now()
 }
 return plan;
 }
-function classifyActiveSplit(plan,members){
-const layout=upwardLayout(members);if(!layout||!Array.isArray(plan))return null;
-const moving=plan.filter(step=>vectorOf(step));
-const pairSteps=moving.filter(step=>Number(step.groupSize)===2),soloSteps=moving.filter(step=>Number(step.groupSize)===0);
-const pairIds=new Set(pairSteps.map(memberId));
-if(pairIds.size!==2||soloSteps.length!==1||!pairIds.has(memberId(layout.top)))return null;
-const soloId=memberId(soloSteps[0]);if(pairIds.has(soloId))return null;
-const pairLower=pairIds.has(memberId(layout.left))?layout.left:pairIds.has(memberId(layout.right))?layout.right:null;
-const solo=soloId===memberId(layout.left)?layout.left:soloId===memberId(layout.right)?layout.right:null;
-if(!pairLower||!solo||pairLower===solo)return null;
-const dir=pairLower===layout.left?-1:1,pairVector=vectorOf(pairSteps[0]);
-if(!pairVector||Math.sign(pairVector.dx)!==dir||pairVector.dy<=0)return null;
-return{plan:moving,layout,pairLower,solo,dir,pairIds,soloId};
-}
-function buildCandidate(board,members,layout,separator,motions,dir){
-if(typeof hexPhysUpConvexSplitPlan!=="function")return null;
-const pairLower=dir<0?layout.left:layout.right,solo=dir<0?layout.right:layout.left;
-const soloIndex=members.indexOf(solo),soloMotion=soloIndex>=0?motions[soloIndex]:null,soloVector=vectorOf(soloMotion);
-if(!soloVector||Math.sign(soloVector.dx)!==-dir||soloVector.dy<=0)return null;
-const info={...separator,dir,top:layout.top,pairLower,solo,soloMotion,
-pairSide:dir<0?"left":"right",soloSide:dir<0?"right":"left",splitSide:dir<0?"right":"left"};
-let plan=null;try{plan=hexPhysUpConvexSplitPlan(board,members,info,true)||null;}catch(_){plan=null;}
-const classified=classifyActiveSplit(plan,members);
-return classified&&classified.dir===dir?{...classified,info}:null;
-}
-function evidenceScore(candidate,members,motions,isBase){
-const expected=new Map([
-[memberId(candidate.layout.top),candidate.dir],
-[memberId(candidate.pairLower),candidate.dir],
-[memberId(candidate.solo),-candidate.dir]
-]);
-let score=isBase?.75:0;
-for(const member of members){
-const target=expected.get(memberId(member));if(!target)continue;
-const moveDir=Math.sign(vectorOf(motions[members.indexOf(member)])?.dx||0),isTop=member===candidate.layout.top;
-if(moveDir)score+=moveDir===target?(isTop?10:2):-(isTop?10:2);
-const bias=ballBias(member.ball);if(bias)score+=bias===target?(isTop?6:1.5):-(isTop?6:1.5);
-}
-const groupBias=Math.sign(members.reduce((sum,m)=>sum+ballBias(m.ball),0));
-if(groupBias)score+=groupBias===candidate.dir?3:-3;
-return score;
-}
-function commitChosen(candidate,members,baseChoice,baseScore,chosenScore){
-const pair=[...members].filter(m=>candidate.pairIds.has(memberId(m))),solo=candidate.solo;
-pairCommit(pair,solo,candidate.plan,Number(members[0]?.ball?.motionGroupId)||0);
-for(const member of pair){member.ball.momentumX=candidate.dir;member.ball.rollDir=candidate.dir;member.ball.subCellBias=candidate.dir;}
-solo.ball.momentumX=-candidate.dir;solo.ball.rollDir=-candidate.dir;solo.ball.subCellBias=-candidate.dir;
-window.__sixBallLastReferenceUpConvexChoiceV1={
-reason:"reference-kinematic-side-overrode-contact-side",
-chosenDir:candidate.dir,baseDir:baseChoice.dir,chosenPairIds:[...candidate.pairIds],chosenSoloId:memberId(solo),
-basePairIds:[...baseChoice.pairIds],baseSoloId:baseChoice.soloId,baseScore,chosenScore,at:Date.now()
-};
-}
 hexPhysPlanGroup=function(board,members,preview=false){
 const layout=upwardLayout(members);
 if(!layout)return basePlanGroup(board,members,preview)||[];
@@ -310,15 +251,10 @@ if(first){
 const plan=planFirstContact(board,members,layout,first,preview);
 if(plan)return plan;
 }
-let authorized=[];try{authorized=basePlanGroup(board,members,true)||[];}catch(_){authorized=[];}
-const baseChoice=classifyActiveSplit(authorized,members);
-if(!baseChoice)return basePlanGroup(board,members,preview)||[];
 /* Contact side is an absolute identity rule.  Momentum, roll direction,
  * sub-cell bias and approach history may shape the trajectory, but may never
- * swap which lower ball becomes the solo member.  The lower final authority
- * has already selected the current physical contact side and already gives a
- * legal whole-triplet slope priority over every 2+1 proposal.  Preserve that
- * decision verbatim instead of rebuilding an opposite kinematic candidate. */
+ * swap which lower ball becomes the solo member. No alternate candidate or
+ * score-based side-selection path exists here. */
 return basePlanGroup(board,members,preview)||[];
 };
 function signedHardDropContactOffset(g,cells,dx,dOff,desired=2){

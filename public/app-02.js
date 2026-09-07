@@ -227,8 +227,15 @@ function hexPhysUpConvexSeparator(b,members,motions){
  // Exact quarter boundaries belong to the rigid outer quarters. Only a
  // strictly interior middle-half contact may split the upward triangle.
  if(hitFraction<=.25+1e-9||hitFraction>=.75-1e-9)return null;
- const actualCenter=(baseLeft+baseRight)/2,relative=px-actualCenter,topIndex=members.indexOf(top),topMove=motions[topIndex];
- const bias=relative>1e-9?-1:relative<-1e-9?1:(Math.sign(topMove?.tx-top.x)||hexPhysBias(top.ball)||Math.sign(members.reduce((n,m)=>n+hexPhysBias(m.ball),0))||-1);
+ const actualCenter=(baseLeft+baseRight)/2,relative=px-actualCenter;
+ // A centred protrusion has no unique contacted lower ball. Never choose a
+ // side from momentum, roll bias, approach direction or a default: doing so
+ // can manufacture the reverse 2+1 assignment. Wait rigid until the current
+ // physical contact identifies the left or right lower ball.
+ if(Math.abs(relative)<=1e-9)return null;
+ // Protrusion left of centre touches LEFT -> LEFT solo, top+RIGHT pair.
+ // Protrusion right of centre touches RIGHT -> RIGHT solo, top+LEFT pair.
+ const bias=relative>0?-1:1;
  const pairLower=bias<0?lower[0]:lower[1],solo=bias<0?lower[1]:lower[0],soloMotion=motions[members.indexOf(solo)];
  if(!soloMotion||Math.sign(soloMotion.tx-solo.x)!==-bias)return null;
  // A pile ball merely present below the edge is a future geometric candidate,

@@ -589,16 +589,12 @@
         )||null;
     }
 
-    /* Determine WHICH lower ball is touching now without trusting any pair
-       assignment or approach-time direction from an older wrapper. The live
-       rendered positions are the strongest signal because the discrete grid
-       can round a visibly one-sided collision to hitFraction=0.5. */
+    /* Determine WHICH lower ball is touching now from the current contact
+       fraction alone. A centred contact has no left/right identity and must
+       remain rigid; stale offsets, momentum, motion direction and older pair
+       declarations are forbidden from manufacturing either side. */
     function currentContactSide(
-        board,
-        members,
         layout,
-        info,
-        motions,
         hitFraction,
         liveContact=null
     ){
@@ -614,74 +610,6 @@
                 ?{pairDir:1,solo:layout.left,source:prefix+"-left-hit-fraction"}
                 :{pairDir:-1,solo:layout.right,source:prefix+"-right-hit-fraction"};
         }
-
-        const px=Number(info?.px);
-        const py=Number(info?.py);
-        const game=liveEngineByBoard.get(board);
-        const support=
-            Number.isFinite(px)&&Number.isFinite(py)
-                ?board?.[py]?.[px]||null
-                :null;
-        const visualFor=ball=>game?.vis?.get?.(ball?.id)||null;
-        const leftVisual=visualFor(layout.left.ball);
-        const rightVisual=visualFor(layout.right.ball);
-        const supportVisual=visualFor(support);
-        const leftX=Number(leftVisual?.x);
-        const rightX=Number(rightVisual?.x);
-        const supportX=Number.isFinite(Number(supportVisual?.x))
-            ?Number(supportVisual.x)
-            :px;
-
-        if(
-            Number.isFinite(leftX)&&
-            Number.isFinite(rightX)&&
-            Number.isFinite(supportX)
-        ){
-            const leftDistance=Math.abs(leftX-supportX);
-            const rightDistance=Math.abs(rightX-supportX);
-            if(Math.abs(leftDistance-rightDistance)>1e-5){
-                return leftDistance<rightDistance
-                    ?{pairDir:1,solo:layout.left,source:"live-left-contact"}
-                    :{pairDir:-1,solo:layout.right,source:"live-right-contact"};
-            }
-        }
-
-        const topOffset=Number(layout.top.ball?.impactOffsetX);
-        if(Number.isFinite(topOffset)&&Math.abs(topOffset)>1e-5){
-            return topOffset>0
-                ?{pairDir:1,solo:layout.left,source:"current-positive-release-offset"}
-                :{pairDir:-1,solo:layout.right,source:"current-negative-release-offset"};
-        }
-
-        const offsets=members
-            .map(member=>Number(member.ball?.impactOffsetX))
-            .filter(Number.isFinite)
-            .sort((a,b)=>a-b);
-        const medianOffset=offsets.length
-            ?offsets[Math.floor(offsets.length/2)]
-            :0;
-        if(Math.abs(medianOffset)>1e-5){
-            return medianOffset>0
-                ?{pairDir:1,solo:layout.left,source:"current-median-release-offset"}
-                :{pairDir:-1,solo:layout.right,source:"current-median-release-offset"};
-        }
-
-        const topMotion=motions?.[members.indexOf(layout.top)]||null;
-        const topDirection=Math.sign(vectorOf(topMotion)?.dx||0);
-        if(topDirection){
-            return topDirection>0
-                ?{pairDir:1,solo:layout.left,source:"current-top-motion-right"}
-                :{pairDir:-1,solo:layout.right,source:"current-top-motion-left"};
-        }
-
-        const declaredSoloId=memberId(info?.solo);
-        if(declaredSoloId===memberId(layout.left)){
-            return{pairDir:1,solo:layout.left,source:"canonical-left-solo-tie"};
-        }
-        if(declaredSoloId===memberId(layout.right)){
-            return{pairDir:-1,solo:layout.right,source:"canonical-right-solo-tie"};
-        }
-
         return null;
     }
 
@@ -730,11 +658,7 @@
            headless planners use the canonical logical contact fraction. Pair
            metadata and an approach-time `dir` may never reverse those roles. */
         const contact=currentContactSide(
-            board,
-            members,
             layout,
-            info,
-            motions,
             authoritativeHitFraction,
             liveContact
         );
@@ -1274,6 +1198,8 @@
     window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=false;
     window.__sixBallLegalPairSlopeBeatsEverySplitOrRelease=true;
     window.__sixBallCurrentContactFractionDefinesSplitSide=true;
+    window.__sixBallCenteredUpConvexContactNeverChoosesSide=true;
+    window.__sixBallMomentumCannotChooseUpConvexSplitSide=true;
     window.__sixBallExplicitCurrentContactHalfOverridesStoredSide=true;
     window.__sixBallLiveVisualGridDefinesContactSide=true;
     window.__sixBallLiveContactRequiresLogicalRowAlignment=true;
