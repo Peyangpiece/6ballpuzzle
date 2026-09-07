@@ -20,9 +20,9 @@
  *    live game the displayed lower balls must also have reached the displayed
  *    support after their current motion batch. A future/logical pivot is an
  *    airborne approach and cannot split.
- * 4. An omitted member is detached only after the board proves that
- *    it is position-final on the floor or on two real lower supports.
- *    A temporarily missing isolated probe on a slope is not settlement.
+ * 4. There is no position-final or externally-pinned exception for an
+ *    upward triangle. Outside the strict middle-50% contact band, a partial
+ *    plan may never detach one member or manufacture a two-ball cohort.
  * 5. A declared moving pair is always normalized to one two-ball
  *    constraint; solo movers always have zero rigidity.
  * 6. For an upward-convex triplet, different independent directions,
@@ -475,86 +475,6 @@
             baseSpan,
             supportBelowRows
         };
-    }
-
-    function memberIsPhysicallyStopped(board,member){
-        const ball=member?.ball;
-        if(!ball)return false;
-        if(Array.isArray(ball.fallPath)&&ball.fallPath.length)return false;
-
-        const game=liveEngineByBoard.get(board);
-        if(!game){
-            /* Headless planner/audit boards have no render clock. In that
-               environment an empty physical path is the strongest available
-               stop proof; live games always take the stricter branch below. */
-            return true;
-        }
-
-        if(
-            game._visualMovingIds instanceof Set&&
-            game._visualMovingIds.has(ball.id)
-        )return false;
-
-        const clock=game._liveBatchClock;
-        if(
-            clock?.states instanceof Map&&
-            clock.states.has(ball.id)&&
-            Number(clock.elapsed)<Number(clock.duration)-1e-9
-        )return false;
-
-        const visual=game.vis?.get?.(ball.id);
-        if(!visual)return false;
-        if(
-            Math.abs(Number(visual.x)-Number(member.x))>1e-6||
-            Math.abs(Number(visual.y)-Number(member.y))>1e-6||
-            Math.abs(Number(visual.vy)||0)>1e-5||
-            Math.abs(Number(visual.motionSpeed)||0)>1e-5||
-            visual.pileFlow||
-            visual.justReleased||
-            visual._pendingPathComplete
-        )return false;
-
-        return true;
-    }
-
-    /* A lower member disappearing from an earlier layer's plan is not proof
-       that it has settled. Isolated probes can temporarily return null at a
-       slope collision even though the complete triangle can still descend.
-       Only the floor or two real lower supports establish a position-final
-       ball, and even that support proof is accepted only after its physical
-       motion has completely stopped. Ignore the other members so the old
-       triplet cannot prove its own settlement. */
-    function positionFinalSupportProven(board,members,motions,id){
-        const index=members.findIndex(member=>memberId(member)===id);
-        const member=index>=0?members[index]:null;
-        if(!member?.ball||motions?.[index])return false;
-        if(!memberIsPhysicallyStopped(board,member))return false;
-
-        try{
-            if(
-                typeof touchesFloorRow==="function"&&
-                touchesFloorRow(member.y)
-            )return true;
-        }catch(_){}
-
-        if(typeof hexPhysSupportInfo!=="function")return false;
-        const ownIds=new Set(members.map(memberId));
-        let support=null;
-        try{
-            support=hexPhysSupportInfo(
-                board,
-                member.x,
-                member.y,
-                ownIds
-            );
-        }catch(_){
-            support=null;
-        }
-        if(!support)return false;
-        const realCount=Number.isFinite(support.realCount)
-            ?Number(support.realCount)
-            :Number(support.count)||0;
-        return !!support.floor||realCount>=2;
     }
 
     /* If a pair-only slope plan was created from one null isolated probe, ask
@@ -1024,72 +944,10 @@
                 :null;
     }
 
-    /* The only non-contact split is a proven position-final release. Detach
-       exactly the omitted settled members. If two members remain, they keep
-       one pair constraint even when this resolver pass cannot move them; the
-       authorized fixed-ball release must not accidentally split that pair too. */
-    function positionFinalRelease(
-        board,
-        members,
-        motions,
-        plan,
-        preview,
-        authorityGroupId
-    ){
-        const movingIds=new Set((plan||[]).map(memberId));
-        const omitted=members.filter(member=>!movingIds.has(memberId(member)));
-        if(
-            !omitted.length||
-            !omitted.every(member=>positionFinalSupportProven(
-                board,
-                members,
-                motions,
-                memberId(member)
-            ))
-        )return null;
-
-        const remaining=members.filter(member=>movingIds.has(memberId(member)));
-        const clean=(plan||[]).filter(step=>movingIds.has(memberId(step))&&vectorOf(step));
-        let authorized=[];
-
-        if(remaining.length>=2){
-            const complete=
-                clean.length===remaining.length&&
-                new Set(clean.map(memberId)).size===remaining.length&&
-                !!sameVector(clean);
-            if(complete){
-                authorized=normalizePlan(
-                    clean,
-                    remaining,
-                    preview,
-                    true,
-                    authorityGroupId
-                );
-            }else if(!preview){
-                commitCohort(remaining,[],authorityGroupId);
-            }
-        }else if(remaining.length===1){
-            authorized=normalizePlan(
-                clean,
-                remaining,
-                preview,
-                false,
-                authorityGroupId
-            );
-        }
-
-        if(!preview)for(const member of omitted)clearMember(member);
-        return{
-            plan:authorized,
-            omittedIds:omitted.map(memberId),
-            remainingIds:remaining.map(memberId)
-        };
-    }
-
     hexPhysPlanGroup=function(board,members,preview=false){
         if(!ordinaryGroup(members))return basePlanGroup(board,members,preview)||[];
 
-        /* The middle-50% / position-final whitelist belongs exclusively to
+        /* The middle-50% split whitelist belongs exclusively to
            the upward-convex triangle. A downward (inverse) triangle must use
            the planner that existed before this final authority was installed;
            the same is true once a legacy split has produced a two-ball group.
@@ -1135,7 +993,7 @@
             Number(step.tx)!==Number(step.x)
         );
         /* Pure sideways proposals are not physical gravity. Remove them before
-           any whole-group, pair or position-final classification. A diagonal
+           any whole-group or pair classification. A diagonal
            slope remains legal because its target is strictly lower. */
         const movingBase=proposedBase.filter(step=>Number(step.ty)>Number(step.y));
         const baseMovesWholeGroup=
@@ -1197,7 +1055,7 @@
             return normalized;
         }
 
-        /* A pair-only downhill proposal is not yet a position-final release.
+        /* A pair-only downhill proposal is not permission to release a member.
            First ask whether that exact slope vector can translate the complete
            triangle without hitting the board. If it can, the third ball is
            still physically movable through the rigid constraint: no separator
@@ -1321,11 +1179,15 @@
                     false,
                     authorityGroupId
                 );
+                const authorized=normalized.map(step=>({
+                    ...step,
+                    strictInnerContactAuthorized:true
+                }));
                 if(!preview){
                     commitSelectedSplitRigidity(
                         members,
                         selectedSide,
-                        normalized,
+                        authorized,
                         authorityGroupId
                     );
                     window.__sixBallLastFinalRigidityCorrectionV1={
@@ -1336,7 +1198,7 @@
                         at:Date.now()
                     };
                 }
-                return normalized;
+                return authorized;
             }
 
             if(!preview){
@@ -1350,14 +1212,10 @@
             return[];
         }
 
-        /* A moving solo plus a moving pair is an active physical split, not a
-           position-final release. Without a proven middle-50% contact it is
-           forbidden, regardless of what a generic pair or pocket layer
-           proposed. */
-        if(
-            explicitUpSplit&&
-            movingBase.some(step=>memberId(step)===explicitUpSplit.soloId)
-        ){
+        /* No pair-only or pair+solo proposal may bypass the strict contact
+           band. The former position-final exception was an alternate outer
+           split path and is intentionally removed. */
+        if(explicitUpSplit){
             if(!preview){
                 commitCohort(members,[],authorityGroupId);
                 for(const member of members){
@@ -1366,7 +1224,7 @@
                 window.__sixBallLastFinalRigidityCorrectionV1={
                     reason:airborneSplitBefore
                         ?"reject-airborne-upward-two-plus-one"
-                        :"reject-upward-split-outside-middle-fifty-percent",
+                        :"reject-upward-split-without-inner-contact",
                     rejected:explicitUpSplit,
                     airborneCandidate:!!airborneSplitBefore,
                     airborneReason:airborneSplitBefore?.reason||null,
@@ -1377,70 +1235,14 @@
             return[];
         }
 
-        if(explicitUpSplit){
-            const positionFinal=positionFinalSupportProven(
-                board,
-                members,
-                motions,
-                explicitUpSplit.soloId
-            );
-            if(!positionFinal){
-                if(!preview){
-                    commitCohort(members,[],authorityGroupId);
-                    for(const member of members){
-                        member.ball.motionGroupOrientation="up";
-                    }
-                    window.__sixBallLastFinalRigidityCorrectionV1={
-                        reason:"reject-pair-only-slope-contact-not-position-final",
-                        rejected:explicitUpSplit,
-                        at:Date.now()
-                    };
-                }
-                return[];
-            }
-
-            const normalized=normalizePlan(
-                movingBase,
-                members,
-                preview,
-                false,
-                authorityGroupId
-            );
-            if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                reason:"position-final-member-released-after-support-proof",
-                ...explicitUpSplit,
-                at:Date.now()
-            };
-            return normalized;
-        }
-
-        const finalized=positionFinalRelease(
-            board,
-            members,
-            motions,
-            movingBase,
-            preview,
-            authorityGroupId
-        );
-        if(finalized){
-            if(!preview)window.__sixBallLastFinalRigidityCorrectionV1={
-                reason:"release-only-proven-position-final-members",
-                omittedIds:finalized.omittedIds,
-                remainingIds:finalized.remainingIds,
-                at:Date.now()
-            };
-            return finalized.plan;
-        }
-
         /* No other trigger may divide an ordinary rigid body. Restore the
-           complete current cohort and wait for either a current middle-50%
-           contact or a board-proven position-final member. */
+           complete current cohort and wait for a current middle-50% contact. */
         if(!preview){
             commitCohort(members,[],authorityGroupId);
             window.__sixBallLastFinalRigidityCorrectionV1={
                 reason:baseHasPureHorizontal
                     ?"reject-pure-horizontal-group-motion"
-                    :"reject-ordinary-split-without-central-contact-or-position-final",
+                    :"reject-upward-split-without-inner-contact",
                 ids:members.map(memberId),
                 proposedIds:movingBase.map(memberId),
                 at:Date.now()
@@ -1451,8 +1253,8 @@
 
     window.__sixBallSameDirectionAlwaysKeepsRigidity=true;
     window.__sixBallSameDirectionBeatsProspectiveTwoPlusOne=true;
-    window.__sixBallPositionFinalAlwaysReleasesRigidity=true;
-    window.__sixBallPositionFinalRequiresPhysicalStop=true;
+    window.__sixBallPositionFinalAlwaysReleasesRigidity=false;
+    window.__sixBallPositionFinalRequiresPhysicalStop=false;
     window.__sixBallSlopeTriangleAlwaysKeepsRigidity=true;
     window.__sixBallUpConvexSplitKeepsOppositePair=true;
     window.__sixBallUpConvexSelectedSideCannotBeOverridden=true;
@@ -1461,14 +1263,15 @@
     window.__sixBallUpConvexSplitRequiresCurrentBilateralPivotContact=true;
     window.__sixBallAirborneUpConvexTwoPlusOneIsForbidden=true;
     window.__sixBallSplitDirectionPrecedesPairRigidity=true;
-    window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=true;
+    window.__sixBallUpConvexPositionFinalReleaseExemptsContactBand=false;
+    window.__sixBallUpConvexPositionFinalSplitRemoved=true;
     window.__sixBallCurrentCommonSlopeBeatsProspectiveSplit=true;
     window.__sixBallFallingRigidTriangleNeverRotates=true;
     window.__sixBallUpConvexOuterQuarterUsesRigidSlide=false;
     window.__sixBallOuterQuarterRigidSlideBypassesPerMemberDownFilter=false;
     window.__sixBallPureHorizontalGroupMotionForbidden=true;
     window.__sixBallPositionFinalMeansMissingSelectedProposal=false;
-    window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=true;
+    window.__sixBallPairOnlyReleaseRequiresPositionFinalSupport=false;
     window.__sixBallLegalPairSlopeBeatsEverySplitOrRelease=true;
     window.__sixBallCurrentContactFractionDefinesSplitSide=true;
     window.__sixBallExplicitCurrentContactHalfOverridesStoredSide=true;
@@ -1481,7 +1284,9 @@
     window.__sixBallCurrentLiveSideOverridesStoredSide=true;
     window.__sixBallCurrentCentralSplitBeatsHorizontalSnap=true;
     window.__sixBallOrdinarySplitOnlyCentralOrPositionFinal=false;
-    window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=true;
+    window.__sixBallUpConvexSplitOnlyCentralOrPositionFinal=false;
+    window.__sixBallUpConvexSplitOnlyStrictInnerContact=true;
+    window.__sixBallStrictInnerSplitCarriesAuthorityToken=true;
     window.__sixBallInverseTriangleUsesLegacySplitRules=true;
     window.__sixBallDivergentMotionAloneCannotSplit=true;
     window.__sixBallLiveVisualContactRequiredBeforeSplit=true;

@@ -24,6 +24,16 @@ const EPS=2e-5;
 function id(v){return v?.ball?.id;}
 function vec(p){if(!p)return null;const dx=Number(p.tx)-Number(p.x),dy=Number(p.ty)-Number(p.y);return Number.isFinite(dx)&&Number.isFinite(dy)&&(dx||dy)?{dx,dy,key:dx+","+dy}:null;}
 function ordinary(members){return Array.isArray(members)&&(members.length===2||members.length===3)&&members.every(m=>m?.ball&&typeof m.ball==="object"&&!m.ball.isGarbage);}
+function upwardTriplet(members){
+ if(!Array.isArray(members)||members.length!==3)return false;
+ const ordered=[...members].sort((a,b)=>Number(a.y)-Number(b.y)||Number(a.x)-Number(b.x));
+ const top=ordered[0],lower=ordered.slice(1).sort((a,b)=>Number(a.x)-Number(b.x));
+ return !!(
+  top&&lower.length===2&&Number(lower[0].y)===Number(lower[1].y)&&
+  Number(top.y)<Number(lower[0].y)&&
+  Number(lower[0].x)<Number(top.x)&&Number(top.x)<Number(lower[1].x)
+ );
+}
 function snap(members){return members.map(m=>({ball:m.ball,v:Object.fromEntries(FIELDS.map(k=>[k,{has:Object.prototype.hasOwnProperty.call(m.ball,k),value:m.ball[k]}]))}));}
 function restore(s){for(const e of s)for(const[k,q]of Object.entries(e.v)){if(q.has)e.ball[k]=q.value;else delete e.ball[k];}}
 function previewBase(board,members){const s=snap(members);let out=[];try{out=basePlanGroup(board,members,true)||[];}catch(_){out=[];}finally{restore(s);}return out;}
@@ -101,7 +111,17 @@ hexPhysPlanGroup=function(board,members,preview=false){
   window.__sixBallLastRigidityNoBounceDecision={reason:"visual-path-in-flight",ids:members.map(id),at:Date.now()};
   return[];
  }
- const plan=previewBase(board,members),actual=actualMotions(board,members),decision=shouldBreak(board,members,actual,plan);
+ const plan=previewBase(board,members);
+ /* UP triplets have one split authority: the strict inner-contact planner in
+  * the wrapped stack. Do not reinterpret an empty/partial outer-contact plan
+  * as an externally-pinned release; that was the final alternate path by
+  * which an outer quarter could still divide after the central gate rejected
+  * it. Delegate the validated plan unchanged. */
+ if(upwardTriplet(members)){
+  if(preview)return plan;
+  return basePlanGroup(board,members,false)||[];
+ }
+ const actual=actualMotions(board,members),decision=shouldBreak(board,members,actual,plan);
  if(decision.break){
   const released=safeReleasedMotions(board,members,actual);
   if(!preview){
@@ -182,12 +202,14 @@ if(baseApplyEvent){
 }
 
 window.__sixBallRigidityReleaseBounceVersion="rigidity-release-bounce-authority-v1";
+window.__sixBallReleaseBounceCannotSplitUpwardOuterContact=true;
 window.__sixBallRigidityBlocksReplanWhileVisualBusy=true;
 window.__sixBallResolverBlocksReplanWhileVisualBusy=true;
 window.__sixBallSettleBlocksReplanWhileVisualBusy=true;
 window.__sixBallPileFlowExcludedFromNoBounceGuard=true;
 window.__sixBallFreshSegmentsStartAtRenderedCentre=true;
 window.__sixBallExternallyPinnedMemberBreaksTriplet=true;
+window.__sixBallExternallyPinnedUpwardTripletBreaks=false;
 window.__sixBallValidPairPivotMayRetainRigidity=true;
 window.__sixBallReleasedConstraintUsesActualBoardMotion=true;
 })();

@@ -28,7 +28,24 @@ function upwardTriplet(members){
 function baseAuthorizedUpwardSplit(members,plan){
  if(!upwardTriplet(members))return false;
  const moving=(plan||[]).filter(vec);
- return moving.length>0&&moving.some(step=>Number(step.groupSize)!==3);
+ const pair=moving.filter(step=>
+  String(step.kind||"")==="REFERENCE_FIRST_CONTACT_PAIR"&&
+  Number(step.groupSize)===2
+ );
+ const solo=moving.filter(step=>
+  String(step.kind||"")==="REFERENCE_FIRST_CONTACT_SOLO"&&
+  Number(step.groupSize)===0
+ );
+ const finalPair=moving.filter(step=>
+  step.strictInnerContactAuthorized===true&&Number(step.groupSize)===2
+ );
+ const finalSolo=moving.filter(step=>
+  step.strictInnerContactAuthorized===true&&Number(step.groupSize)===0
+ );
+ return moving.length===3&&(
+  (pair.length===2&&solo.length===1)||
+  (finalPair.length===2&&finalSolo.length===1)
+ );
 }
 function snapshot(members){return members.map(m=>({ball:m.ball,fields:Object.fromEntries(MUTATION_FIELDS.map(k=>[k,{has:Object.prototype.hasOwnProperty.call(m.ball,k),v:m.ball[k]}]))}));}
 function restore(s){for(const e of s)for(const[k,q]of Object.entries(e.fields)){if(q.has)e.ball[k]=q.v;else delete e.ball[k];}}
