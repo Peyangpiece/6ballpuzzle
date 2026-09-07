@@ -1,0 +1,11 @@
+sha=9fbb908dd5fb1fce8fa2f4eda5255009b95cf4a2
+reference-20260826-upconvex-dynamic-split.js=0
+reference-20260826-rendered-pair-rigidity.js=1
+reference-20260826-solo-continuity-diagnostic.js=1
+reference-20260826-solo-pivot-arc.js=1
+reference-20260814-inverted-flat-split-diagnostic.js=0
+reference-rigidity-state-machine-v1.js=0
+motion-smoothness-regression-v1.js=0
+no-upward-bounce-split-continuity-v1.js=0
+even-row-strict-inner-split-continuity-v1.js=0
+STATUS=fail
