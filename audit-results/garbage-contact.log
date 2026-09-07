@@ -1,23 +1,7 @@
 garbage ordinary-physics + frozen existing pile PASS {"doneFrame":406,"spawned":12,"minDistance":0.9999999990070921}
 garbage spawn effect + 0.600 s PYRAMID cadence PASS {"starts":[{"seq":0,"t":0.008333333333333333,"ids":[1,2,3,4,5,6]},{"seq":1,"t":0.6083333333333336,"ids":[7,8,9,10,11,12]}],"delta":0.6000000000000003}
 accumulated pile gravity/no-horizontal motion PASS
-evalmachine.<anonymous>:4738
-function expect(v,m){if(!v)throw new Error(m);}
-                           ^
-
-Error: fixture did not produce a split plan
-    at expect (evalmachine.<anonymous>:4738:34)
-    at evalmachine.<anonymous>:4762:1
-    at Script.runInContext (node:vm:149:12)
-    at Script.runInNewContext (node:vm:154:17)
-    at Object.runInNewContext (node:vm:310:38)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-zero-rigidity.js:68:4)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-
-Node.js v22.23.2
+garbage zero-rigidity current-authority PASS {"released":[1,2,3],"ordinaryGroup":1}
 garbage lower-diagonal before final settle PASS {"from":[2,1],"to":[1,2],"frozen":[8,1],"kind":"ROLL_LEFT","pivot":[3,2],"topPivot":null}
 garbage chain-free dense settle PASS [{"type":1,"done":411,"spawned":18,"maxGlobalStall":2,"minDistance":0.999996095262861},{"type":2,"done":298,"spawned":18,"maxGlobalStall":0,"minDistance":0.999999998784755},{"type":3,"done":326,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999986719219},{"type":4,"done":314,"spawned":18,"maxGlobalStall":1,"minDistance":0.9998569508717506}]
 post-garbage internal + secondary-clear collapse PASS
