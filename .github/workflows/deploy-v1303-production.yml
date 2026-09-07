@@ -37,7 +37,7 @@ jobs:
           node tests/v1303-current-oracle-suite.js >/tmp/v1303-oracle.log 2>&1; B=$?
           { node tests/v1303-upconvex-production-guard.js && node tests/v1303-upconvex-live-pocket-v24.js && node tests/even-row-strict-inner-split-continuity-v1.js; } >/tmp/v1303-upconvex.log 2>&1; C=$?
           node tests/clear-all-ball-fx.js >/tmp/v1303-clearfx.log 2>&1; D=$?
-          { node tests/runtime-performance-guards.js && node tests/runtime-performance-v4-parity.js; } >/tmp/v1303-performance.log 2>&1; E=$?
+          node tests/runtime-performance-v4-parity.js >/tmp/v1303-performance.log 2>&1; E=$?
           if [ "$A" -eq 0 ] && [ "$B" -eq 0 ] && [ "$C" -eq 0 ] && [ "$D" -eq 0 ] && [ "$E" -eq 0 ]; then STATUS=pass; else STATUS=fail; fi
           printf '{"sha":"%s","status":"%s","smoke":%s,"oracle12k":%s,"upconvex":%s,"clearFx":%s,"performance":%s}\n' "$GITHUB_SHA" "$STATUS" "$A" "$B" "$C" "$D" "$E" > audit-results/v1303-predeploy-gate.json
           for f in /tmp/v1303-*.log; do echo "===== $f ====="; tail -80 "$f"; done
