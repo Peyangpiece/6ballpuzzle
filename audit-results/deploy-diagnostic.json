@@ -1,1 +1,1 @@
-{"sha":"27a91f612721b56e0825a8683095b28868d109de","status":"pass","smoke":0,"oracle12k":0,"upconvex":0,"clearFx":0}
+{"sha":"6d93c563f62297a5ff6a7e1db4d9981da71cd684","status":"fail","smoke":0,"oracle12k":0,"upconvex":0,"clearFx":0,"performance":1}
