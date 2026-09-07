@@ -28,8 +28,10 @@ jobs:
         run: |
           set +e
           mkdir -p audit-results
-          out=audit-results/nintendo-motion-diagnostic.txt
-          : > "$out"
+          summary=audit-results/nintendo-motion-summary.txt
+          log=audit-results/nintendo-motion-diagnostic.txt
+          : > "$summary"
+          : > "$log"
           STATUS=pass
           tests=(
             reference-20260826-upconvex-dynamic-split.js
@@ -42,37 +44,34 @@ jobs:
             no-upward-bounce-split-continuity-v1.js
             even-row-strict-inner-split-continuity-v1.js
           )
-          printf 'sha=%s\n' "$GITHUB_SHA" >> "$out"
+          printf 'sha=%s\n' "$GITHUB_SHA" >> "$summary"
           for t in "${tests[@]}"; do
-            echo "===== $t =====" >> "$out"
-            node "tests/$t" >> "$out" 2>&1
+            echo "===== $t =====" >> "$log"
+            node "tests/$t" >> "$log" 2>&1
             code=$?
-            echo "EXIT=$code" >> "$out"
+            printf '%s=%s\n' "$t" "$code" >> "$summary"
             if [ "$code" -ne 0 ]; then STATUS=fail; fi
           done
-          printf 'STATUS=%s\n' "$STATUS" >> "$out"
-          cat "$out"
+          printf 'STATUS=%s\n' "$STATUS" >> "$summary"
+          cat "$summary"
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           exit 0
 
-      - name: Record Nintendo motion diagnostic
+      - name: Record compact Nintendo summary
         if: always()
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          path='audit-results/nintendo-motion-diagnostic.txt'
+          path='audit-results/nintendo-motion-summary.txt'
           encoded="$(base64 -w0 "$path")"
-          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${path}?ref=main" --jq '.sha' 2>/dev/null || true)"
-          args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='Record Nintendo motion diagnostic [skip ci]' -f content="$encoded" -f branch='main')
-          if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
           for attempt in 1 2 3 4 5; do
+            current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${path}?ref=main" --jq '.sha' 2>/dev/null || true)"
+            args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='Record Nintendo motion summary [skip ci]' -f content="$encoded" -f branch='main')
+            if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
             if gh api "${args[@]}" >/dev/null 2>&1; then exit 0; fi
             sleep 2
-            current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/contents/${path}?ref=main" --jq '.sha' 2>/dev/null || true)"
-            args=(--method PUT "repos/${GITHUB_REPOSITORY}/contents/${path}" -f message='Record Nintendo motion diagnostic [skip ci]' -f content="$encoded" -f branch='main')
-            if [ -n "$current_sha" ]; then args+=(-f sha="$current_sha"); fi
           done
           exit 1
 
