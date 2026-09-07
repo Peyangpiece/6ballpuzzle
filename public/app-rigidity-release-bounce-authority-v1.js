@@ -28,10 +28,21 @@ function upwardTriplet(members){
  if(!Array.isArray(members)||members.length!==3)return false;
  const ordered=[...members].sort((a,b)=>Number(a.y)-Number(b.y)||Number(a.x)-Number(b.x));
  const top=ordered[0],lower=ordered.slice(1).sort((a,b)=>Number(a.x)-Number(b.x));
- return !!(
+ const geometric=!!(
   top&&lower.length===2&&Number(lower[0].y)===Number(lower[1].y)&&
   Number(top.y)<Number(lower[0].y)&&
   Number(lower[0].x)<Number(top.x)&&Number(top.x)<Number(lower[1].x)
+ );
+ if(geometric)return true;
+ /* The final release guard must recognize the same unsplit UP cohort even
+  * while a slope/pivot has tilted its logical cells. Otherwise an external
+  * pin can recreate the outer-contact split rejected by the inner-half gate. */
+ const gid=Number(members[0]?.ball?.motionGroupId)||0;
+ return !!gid&&members.every(m=>
+  Number(m?.ball?.motionGroupId)===gid&&
+  Number(m?.ball?.motionGroupSize)===3&&
+  m?.ball?.rigid===true&&
+  (m?.ball?.motionGroupOrientation==="up"||m?.ball?.visualTripletOrientation==="up")
  );
 }
 function snap(members){return members.map(m=>({ball:m.ball,v:Object.fromEntries(FIELDS.map(k=>[k,{has:Object.prototype.hasOwnProperty.call(m.ball,k),value:m.ball[k]}]))}));}

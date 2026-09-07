@@ -252,8 +252,39 @@
             lower[0].y!==lower[1].y||
             !(top.y<lower[0].y)||
             !(lower[0].x<top.x&&top.x<lower[1].x)
-        )return null;
-        return{top,left:lower[0],right:lower[1]};
+        ){
+            /* A rigid slope/pivot step can temporarily leave the logical
+               cells non-horizontal even though these are still the same
+               unsplit UP piece.  Do not let that transient shape bypass this
+               authority and fall into the generic pinned-member 3 -> 2+1
+               resolver.  Current group identity is required so a genuinely
+               completed split is never reassembled. */
+            const groupId=Number(members[0]?.ball?.motionGroupId)||0;
+            const sameUnsplitUpGroup=!!groupId&&members.every(member=>
+                Number(member?.ball?.motionGroupId)===groupId&&
+                Number(member?.ball?.motionGroupSize)===3&&
+                member?.ball?.rigid===true&&
+                (
+                    member?.ball?.motionGroupOrientation==="up"||
+                    member?.ball?.visualTripletOrientation==="up"
+                )
+            );
+            if(!sameUnsplitUpGroup)return null;
+
+            const roleOf=member=>{
+                const visual=Number(member?.ball?.visualTripletRole);
+                return Number.isFinite(visual)&&visual>=0
+                    ?visual
+                    :Number(member?.ball?.motionGroupRole);
+            };
+            const byRole=new Map(members.map(member=>[roleOf(member),member]));
+            const roleTop=byRole.get(0);
+            const roleRight=byRole.get(1);
+            const roleLeft=byRole.get(2);
+            if(!roleTop||!roleLeft||!roleRight)return null;
+            return{top:roleTop,left:roleLeft,right:roleRight,transient:true};
+        }
+        return{top,left:lower[0],right:lower[1],transient:false};
     }
 
     /* A genuine upward-convex split is encoded by a rigid pair containing

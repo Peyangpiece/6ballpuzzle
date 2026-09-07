@@ -19,10 +19,21 @@ function upwardTriplet(members){
  if(!Array.isArray(members)||members.length!==3)return false;
  const ordered=[...members].sort((a,b)=>Number(a.y)-Number(b.y)||Number(a.x)-Number(b.x));
  const top=ordered[0],lower=ordered.slice(1).sort((a,b)=>Number(a.x)-Number(b.x));
- return !!(
+ const geometric=!!(
   top&&lower.length===2&&Number(lower[0].y)===Number(lower[1].y)&&
   Number(top.y)<Number(lower[0].y)&&
   Number(lower[0].x)<Number(top.x)&&Number(top.x)<Number(lower[1].x)
+ );
+ if(geometric)return true;
+ /* Keep the original UP identity across a transient tilted logical step.
+  * Without this fallback the generic kinematic partition below can turn an
+  * rejected outer contact into contacted-side pair + opposite-side solo. */
+ const gid=Number(members[0]?.ball?.motionGroupId)||0;
+ return !!gid&&members.every(m=>
+  Number(m?.ball?.motionGroupId)===gid&&
+  Number(m?.ball?.motionGroupSize)===3&&
+  m?.ball?.rigid===true&&
+  (m?.ball?.motionGroupOrientation==="up"||m?.ball?.visualTripletOrientation==="up")
  );
 }
 function baseAuthorizedUpwardSplit(members,plan){

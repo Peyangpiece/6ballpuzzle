@@ -32,14 +32,15 @@ function fixture(offset){
 
 for(const [offset,shouldSplit] of [
   [-.501,false],[-.5,false],[-.499,true],
-  [0,true],
+  /* Exact centre has no left/right contact identity, so it waits rigid. */
+  [0,false],
   [.499,true],[.5,false],[.501,false]
 ]){
   const result=fixture(offset);
   if(shouldSplit){
     expect(result.separator&&result.activeSplit,"strict middle-half contact "+offset+" did not split");
   }else{
-    expect(!result.separator&&!result.activeSplit,"outer-quarter contact "+offset+" split the triangle");
+    expect(!result.separator&&!result.activeSplit,"non-directional or outer contact "+offset+" split the triangle");
   }
 }
 
