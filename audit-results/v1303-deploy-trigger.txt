@@ -1,2 +1,2 @@
-trigger=2026-08-26T08:18:00+09:00
-reason=deploy latest main after final rigidity authority v21 and verify Cloudflare production parity
+trigger=2026-09-07T20:15:00+09:00
+reason=deploy strict-inner narrow-row split continuity authority and verify Cloudflare production parity
