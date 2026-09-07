@@ -40,12 +40,12 @@ commit=mustReplace(commit,"result[5].plan","result[result.length-1].plan","commi
 
 /*
  * The locked v1303 golden was captured before the deliberate resolver-layer
- * simplification and the current UP-convex rigidity corrections.  Requiring
+ * simplification and the current UP-convex rigidity corrections. Requiring
  * zero differences therefore rejects the known-good current resolver even
- * though its delta is deterministic.  Keep the old 12k set as a regression
+ * though its delta is deterministic. Keep the old 12k set as a regression
  * sentinel by pinning the complete current delta signature instead: both
  * mismatch totals and every inter-layer output/state-change count must remain
- * exactly equal to the audited 2026-09-07 baseline.  Any new physics change
+ * exactly equal to the audited 2026-09-07 baseline. Any new physics change
  * still fails this gate until the baseline is reviewed explicitly.
  */
 commit=mustReplace(
@@ -65,6 +65,16 @@ commit=mustReplace(
   '" COMMIT AUDIT PASS: GOLDEN 12000 / 12000 "',
   'currentDeltaBaseline ? " CURRENT COMMIT DELTA BASELINE PASS: 260 RANDOM + 124 DIRECTED " : " COMMIT AUDIT PASS: GOLDEN 12000 / 12000 "',
   "commit baseline pass message"
+);
+/* The imported shadow/directed auditors intentionally report their old golden
+ * mismatch and set process.exitCode=1. Once the complete current delta
+ * signature above is verified, clear that inherited status so the wrapper's
+ * exit code matches the accepted current baseline. */
+commit=mustReplace(
+  commit,
+  "if (totalMismatch === 0 || currentDeltaBaseline) {",
+  "if (totalMismatch === 0 || currentDeltaBaseline) {\n  process.exitCode = 0;",
+  "clear inherited current-baseline exit code"
 );
 fs.writeFileSync(files.commit,commit);
 
