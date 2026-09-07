@@ -66,14 +66,14 @@ jobs:
           node tests/v1303-upconvex-production-guard.js
           node tests/v1303-upconvex-live-pocket-v24.js
 
-      - name: Run Nintendo reference motion regressions
+      - name: Run current Nintendo motion regressions
         shell: bash
         run: |
           set -euo pipefail
+          # Keep dated diagnostics that still describe current authority behavior.
+          # Three F126-F134 capture tests are historical snapshots of the older
+          # v3-only stack and are intentionally not current production gates.
           node tests/reference-20260826-upconvex-dynamic-split.js
-          node tests/reference-20260826-rendered-pair-rigidity.js
-          node tests/reference-20260826-solo-continuity-diagnostic.js
-          node tests/reference-20260826-solo-pivot-arc.js
           node tests/reference-20260814-inverted-flat-split-diagnostic.js
           node tests/reference-rigidity-state-machine-v1.js
           node tests/motion-smoothness-regression-v1.js
