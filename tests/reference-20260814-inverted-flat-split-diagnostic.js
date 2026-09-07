@@ -34,8 +34,8 @@ const result=vm.runInContext(`
 
   const ownIds=new Set(members.map(m=>m.ball.id));
   const s=hexPhysSupportInfo(b,10,9);
-  const probeL={x:9,y:8,tx:8,ty:9,ball:left,kind:"REFERENCE_INVERTED_HARD_SPLIT_LEFT",pivot:[10,9],topPivot:null,followSupportIds:[],bundleId:826567,groupSize:0};
-  const probeR={x:11,y:8,tx:12,ty:9,ball:right,kind:"REFERENCE_INVERTED_HARD_SPLIT_RIGHT",pivot:[10,9],topPivot:null,followSupportIds:[],bundleId:826567,groupSize:0};
+  const probeL={x:9,y:8,tx:8,ty:9,ball:left,kind:"INVERTED_FLAT_SPLIT_LEFT",pivot:[10,9],topPivot:null,followSupportIds:[],bundleId:826567,groupSize:0};
+  const probeR={x:11,y:8,tx:12,ty:9,ball:right,kind:"INVERTED_FLAT_SPLIT_RIGHT",pivot:[10,9],topPivot:null,followSupportIds:[],bundleId:826567,groupSize:0};
   function minStationary(p){
     let best={dist:Infinity,id:null,cell:null,t:null};
     for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -64,7 +64,7 @@ const result=vm.runInContext(`
   let maxRadiusError=0,maxAngularProgressError=0,maxMirrorError=0;const samples=[],segL=left.fallPath?.[0],segR=right.fallPath?.[0];
   if(segL&&segR){const pivot=[10,9],a0L=angleAround(segL.from,pivot),a0R=angleAround(segR.from,pivot),total=Math.PI/3;for(let i=0;i<=120;i++){const u=i/120,pL=liveSegPoint(segL,u,{vy:5,speed:5},moving[0].duration),pR=liveSegPoint(segR,u,{vy:5,speed:5},moving[1].duration);maxRadiusError=Math.max(maxRadiusError,Math.abs(physDist(pL,pivot)-1),Math.abs(physDist(pR,pivot)-1));let dL=angleAround(pL,pivot)-a0L,dR=angleAround(pR,pivot)-a0R;while(dL>Math.PI)dL-=TAU;while(dL<-Math.PI)dL+=TAU;while(dR>Math.PI)dR-=TAU;while(dR<-Math.PI)dR+=TAU;maxAngularProgressError=Math.max(maxAngularProgressError,Math.abs(dL+total*u),Math.abs(dR-total*u));maxMirrorError=Math.max(maxMirrorError,Math.abs((pL[0]+pR[0])-20),Math.abs(pL[1]-pR[1]));if(i%30===0)samples.push({u,pL,pR,dL,dR});}}
   const occupied=[];for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++)if(valid(x,y)&&b[y][x])occupied.push([b[y][x].id,x,y]);
-  return{authority:window.__sixBallReferenceInvertedFlatSplitVersion||null,preDiag,firstMoved,before,afterFirst,moving,occupied,maxRadiusError,maxAngularProgressError,maxMirrorError,samples,choice:window.__sixBallLastReferenceInvertedFlatSplitV1||null,reference:{source:"Nintendo 2026-08-14 859W absolute F567-F571",fps:30,contactFrame:567,finalFrame:571,intervals:4,duration:4/30}};
+  return{authority:window.__sixBallReferenceInvertedFlatSplitVersion||null,normalTiming:window.__sixBallHardDropUsesNormalInvertedSlopeTiming,hardDuration:window.__sixBallReferenceInvertedHardSplitDuration,preDiag,firstMoved,before,afterFirst,moving,occupied,maxRadiusError,maxAngularProgressError,maxMirrorError,samples,choice:window.__sixBallLastReferenceInvertedFlatSplitV1||null,reference:{duration:SLOPE_NORMAL_DURATION}};
 })()
 `,ctx);
 console.log("NINTENDO_20260814_INVERTED_FLAT_SPLIT",JSON.stringify(result));
@@ -76,12 +76,13 @@ if(!right||right[1]!==12||right[2]!==9)throw new Error(`right outward target mis
 if(!bottom||bottom[1]!==10||bottom[2]!==9)throw new Error(`bottom centre moved: ${JSON.stringify(bottom)}`);
 if(result.moving.some(q=>!q.seg||!Array.isArray(q.seg.pivot)||q.seg.pivot[0]!==10||q.seg.pivot[1]!==9))throw new Error("outward rolls do not share the lower-centre pivot");
 if(result.moving[0].seg.motionSeq!==result.moving[1].seg.motionSeq)throw new Error("left/right split does not start in one motion batch");
-if(result.moving[0].seg.kind!=="REFERENCE_INVERTED_HARD_SPLIT_LEFT")throw new Error(`left hard kind mismatch: ${result.moving[0].seg.kind}`);
-if(result.moving[1].seg.kind!=="REFERENCE_INVERTED_HARD_SPLIT_RIGHT")throw new Error(`right hard kind mismatch: ${result.moving[1].seg.kind}`);
-for(const q of result.moving)if(Math.abs(q.duration-result.reference.duration)>1e-12)throw new Error(`hard split timing mismatch ${q.id}: ${q.duration}`);
+if(result.moving[0].seg.kind!=="INVERTED_FLAT_SPLIT_LEFT")throw new Error(`left normal-slope kind mismatch: ${result.moving[0].seg.kind}`);
+if(result.moving[1].seg.kind!=="INVERTED_FLAT_SPLIT_RIGHT")throw new Error(`right normal-slope kind mismatch: ${result.moving[1].seg.kind}`);
+if(!result.normalTiming||result.hardDuration!==0||result.choice?.hardDropTiming!==false)throw new Error("hard-drop-specific inverted timing remains enabled");
+for(const q of result.moving)if(Math.abs(q.duration-result.reference.duration)>1e-12)throw new Error(`normal split timing mismatch ${q.id}: ${q.duration}`);
 if(result.afterFirst.some(q=>q.gid!==0||q.size!==0||q.rigid))throw new Error("inverted flat split retained stale triplet rigidity");
 if(result.afterFirst.find(q=>q.id===5673)?.path?.length)throw new Error("stable lower centre received a motion path");
 if(result.maxRadiusError>1e-9)throw new Error(`pivot radius drift: ${result.maxRadiusError}`);
 if(result.maxAngularProgressError>1e-9)throw new Error(`constant-angle timing drift: ${result.maxAngularProgressError}`);
 if(result.maxMirrorError>1e-9)throw new Error(`left/right mirror drift: ${result.maxMirrorError}`);
-console.log("2026-08-14 Nintendo inverted flat-split F567-F571 PASS",JSON.stringify({duration:result.moving[0].duration,firstMoved:result.firstMoved,maxRadiusError:result.maxRadiusError,maxAngularProgressError:result.maxAngularProgressError,maxMirrorError:result.maxMirrorError}));
+console.log("inverted flat-split normal-slope timing PASS",JSON.stringify({duration:result.moving[0].duration,firstMoved:result.firstMoved,maxRadiusError:result.maxRadiusError,maxAngularProgressError:result.maxAngularProgressError,maxMirrorError:result.maxMirrorError}));

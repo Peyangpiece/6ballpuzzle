@@ -154,7 +154,7 @@ const lockContact=vm.runInContext(`
 const game=createEngine(826201);game.state="PLAYING";
 const support=mkBall(game,1);game.board[5][6]=support;noteBoardCell(game.board,5,support);game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
 game.piece={x:5,y:4,rot:1,colors:[2,4,0]};game.freeX=4.60;game.pieceVX=4.60;game.dropT=0;
-lock(game,5);
+hardDrop(game);
 const balls=[];for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?game.board[y][x]:null;if(b&&b!==support&&b.visualTripletId)balls.push({b,x,y,v:game.vis.get(b.id)});}
 const right=balls.find(q=>q.b.visualTripletRole===1),left=balls.find(q=>q.b.visualTripletRole===2),top=balls.find(q=>q.b.visualTripletRole===0);
 const sv=game.vis.get(support.id);
@@ -164,12 +164,20 @@ return{rd,firstFrom,rightV:right?.v?{x:right.v.x,y:right.v.y}:null,
 rightRigid:!!right?.b?.rigid,rightSize:Number(right?.b?.motionGroupSize)||0,
 leftRigid:!!left?.b?.rigid,leftSize:Number(left?.b?.motionGroupSize)||0,
 topRigid:!!top?.b?.rigid,topSize:Number(top?.b?.motionGroupSize)||0,
+maxReleaseVy:Math.max(...balls.map(q=>Number(q.v?.vy)||0)),
+maxReleaseSpeed:Math.max(...balls.map(q=>Number(q.v?.motionSpeed)||0)),
+neutralReleased:balls.every(q=>q.v?.neutralInstantDrop===true),
+impactVelocityAdded:window.__sixBallHardDropAddsImpactVelocity,
+normalPostContactVelocity:window.__sixBallHardDropPostContactVelocity,
 signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})}};
 })()
 `,ctx);
 expect(close(lockContact.rd,1,3e-5),"hard-drop handoff did not land at exact one-diameter visual contact");
 expect(lockContact.firstFrom&&lockContact.rightV&&close(lockContact.firstFrom[0],lockContact.rightV.x,1e-9)&&close(lockContact.firstFrom[1],lockContact.rightV.y,1e-9),"first split segment did not start at exact signed contact visual");
 expect(lockContact.signed.releaseFrac<0,"inner-contact hard drop did not use the required negative fractional contact offset");
+expect(lockContact.impactVelocityAdded===false,"hard drop still adds impact velocity");
+expect(lockContact.neutralReleased,"hard-drop release was not tagged as neutral");
+expect(lockContact.maxReleaseVy<=lockContact.normalPostContactVelocity+1e-9&&lockContact.maxReleaseSpeed<=lockContact.normalPostContactVelocity+1e-9,"hard drop carried excess momentum into slope motion");
 expect(lockContact.choice.reason==="reference-first-unilateral-contact","hard-drop lock did not split on its first physical contact");
 expect(lockContact.rightRigid===false&&lockContact.rightSize===0,"contacted right ball retained triplet rigidity after first contact");
 expect(lockContact.leftRigid&&lockContact.topRigid&&lockContact.leftSize===2&&lockContact.topSize===2,"surviving pair was not committed immediately at first contact");

@@ -103,7 +103,12 @@ function hardDrop(g){
  armHardDropImpact(g,target,dx,contactFrac);
  g.piece={...target};
  g.dropT=g.dropInterval*Math.max(0,Math.min(2,contactFrac))/2;
- emit(g,{t:"drop"});lock(g,5);
+ /* Instant drop skips only the open-air travel. It must enter contact with
+  * exactly the same physical velocity as an ordinary lock; speed/impact may
+  * never be inferred from the distance that was skipped. */
+ emit(g,{t:"drop"});
+ g._neutralInstantDrop=true;
+ try{lock(g,3);}finally{g._neutralInstantDrop=false;}
 }
 
 function lock(g,vy=2){

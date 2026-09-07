@@ -14,7 +14,7 @@ const FIRST_CONTACT_MIN=0.94;
 const INNER_CONTACT_MIN=0.25;
 const INNER_CONTACT_MAX=0.75;
 const INNER_CONTACT_EPS=1e-9;
-const HARD_DROP_VY_MIN=4.5;
+const NORMAL_LOCK_VY=3;
 if(typeof createEngine==="function"){
 const baseCreateEngine=createEngine;
 createEngine=function(...args){
@@ -340,7 +340,8 @@ return Math.max(-1.999999,Math.min(desired,safe));
 if(typeof lock==="function"){
 const baseLock=lock;
 lock=function(g,vy=2){
-if(!g?.piece||Number(vy)<HARD_DROP_VY_MIN)return baseLock(g,vy);
+if(!g?.piece||!g._neutralInstantDrop)return baseLock(g,vy);
+const releaseVy=Math.max(RELEASE_INITIAL_VY,NORMAL_LOCK_VY);
 clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
 const preSnapX=g.freeX!=null?g.freeX:g.piece.x,splitRot=g.piece.rot;
 if(g.freeX!=null)setColumn(g,g.freeX);
@@ -363,8 +364,8 @@ for(let role=0;role<cells.length;role++){
 const[x,y,c]=cells[role],ball=mkBall(g,c);
 ball.impactOffsetX=splitOffset;ball.subCellBias=Math.abs(splitOffset)>1e-5?Math.sign(splitOffset):0;ball.momentumX=ball.subCellBias;
 g.board[y][x]=ball;noteBoardCell(g.board,y,ball);made.push({ball,role,x,y});
-setVis(g,ball,x+splitOffset,y+releaseFrac,Math.max(RELEASE_INITIAL_VY,vy||0));
-const vv=g.vis.get(ball.id);vv.motionSpeed=Math.max(RELEASE_INITIAL_VY,vy||0);vv.justReleased=true;
+setVis(g,ball,x+splitOffset,y+releaseFrac,releaseVy);
+const vv=g.vis.get(ball.id);vv.motionSpeed=releaseVy;vv.justReleased=true;vv.neutralInstantDrop=true;
 }
 const gid=made.length?HEX_PHYS_GROUP_SEQ++:0,orientation=((splitRot&1)===0)?"down":"up";
 for(const m of made){
@@ -422,6 +423,8 @@ window.__sixBallReferenceInnerContactMax=INNER_CONTACT_MAX;
 window.__sixBallReferenceInnerContactBoundariesSplit=false;
 window.__sixBallReferenceFirstContactRequiresBilateralPivot=false;
 window.__sixBallHardDropUsesSignedContactOffset=true;
+window.__sixBallHardDropAddsImpactVelocity=false;
+window.__sixBallHardDropPostContactVelocity=Math.max(RELEASE_INITIAL_VY,NORMAL_LOCK_VY);
 window.__sixBallSplitBatchUsesPerCohortTiming=true;
 window.__sixBallReferenceImpactSlideFrames=REFERENCE_SLOPE_HARD_FRAMES;
 window.__sixBallReferenceUpConvexAuthorityVersion="reference-upconvex-authority-v1";

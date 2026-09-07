@@ -66,7 +66,7 @@ const result=vm.runInContext(`
   game.vis.set(blue.id,{x:7,y:10,vy:0,motionSpeed:0});
   game.piece={x:6,y:9,rot:1,colors:[2,4,0]};
   game.freeX=5.60;game.pieceVX=5.60;game.dropT=0;
-  lock(game,5);
+  hardDrop(game);
 
   const refChoice={...(window.__sixBallLastReferenceUpConvexChoiceV1||{})};
   const rigidityChoice={...(window.__sixBallLastNintendoRigidityDecision||{})};
@@ -78,6 +78,9 @@ const result=vm.runInContext(`
   };
   const soloId=Number(choice.contactSoloId)||0,pairIds=[...(choice.pairIds||[])];
   const activeIds=[...pairIds,soloId];
+  const releaseSpeeds=activeIds.map(id=>{
+    const v=game.vis.get(id);return{vy:Number(v?.vy)||0,speed:Number(v?.motionSpeed)||0,neutral:v?.neutralInstantDrop===true};
+  });
   const initial=new Map(activeIds.map(id=>[id,pos(game,id)]));
   const pairInitial=pairIds.map(id=>pos(game,id));
   let upward=0,maxPairError=0;
@@ -141,7 +144,7 @@ const result=vm.runInContext(`
       legacy:window.__sixBallPileAndGarbageBouncePolicyUnchanged
     },
     contact:{before:contactBefore,after:contactAfter,support:contactSupport,distance:contactDistance,diag:contactDiag},
-    split:{choice,soloId,pairIds,initial:Object.fromEntries(initial),upward,maxPairError,firstTickSolo,firstTickPair,soloIdleTicks,maxSoloIdleRun,soloReachedFinal,finalPair,finalSolo,activeSegs,samples}
+    split:{choice,soloId,pairIds,releaseSpeeds,normalPostContactVelocity:window.__sixBallHardDropPostContactVelocity,impactVelocityAdded:window.__sixBallHardDropAddsImpactVelocity,initial:Object.fromEntries(initial),upward,maxPairError,firstTickSolo,firstTickPair,soloIdleTicks,maxSoloIdleRun,soloReachedFinal,finalPair,finalSolo,activeSegs,samples}
   };
 })()
 `,ctx);
@@ -153,6 +156,8 @@ expect(result.contact.distance>=0.9995-2e-7,"no-upward correction left a true ov
 expect(result.contact.diag&&result.contact.diag.upwardPrevented>=1,"upward correction was not intercepted");
 
 expect(["reference-first-unilateral-contact","reference-first-contact"].includes(result.split.choice.reason),"reference first-contact split was not selected");
+expect(result.split.impactVelocityAdded===false,"hard drop still adds impact velocity");
+expect(result.split.releaseSpeeds.every(v=>v.neutral&&v.vy<=result.split.normalPostContactVelocity+1e-9&&v.speed<=result.split.normalPostContactVelocity+1e-9),"hard drop entered the slope faster than an ordinary lock");
 expect(result.split.upward===0,"split pipeline still contains an upward visual step");
 expect(result.split.maxPairError<2e-5,"split pair stretched during full render/contact pipeline");
 expect(result.split.firstTickSolo>1e-6,"solo split motion did not start on the first render tick");
