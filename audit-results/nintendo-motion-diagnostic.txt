@@ -1,0 +1,1315 @@
+sha=1714620115ac2522c4d3df84b4c5beada907713f
+===== reference-20260826-upconvex-dynamic-split.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+FIRST_CONTACT_DIAGNOSTIC {"outerRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1,"leftDistance":1.349073756323204,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":1}]},"sweep":{},"rigid3":true},"innerRight":{"count":3,"pair":[1,2],"soloId":3,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.1832159566199232,"choice":{"reason":"reference-first-unilateral-contact","hitFraction":0.7000000000000002,"contactSide":"right","contactSoloId":3,"pairIds":[1,2],"supportId":4,"supportCell":[6,5],"visualDistance":0.9999999999999999,"at":1788782736926},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.7000000000000002,"outward":1,"soloId":3,"pairIds":[1,2],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":5,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":2,"from":[4.6,3.8984858905427795],"to":[4,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1788782736925},"rigid3":false},"innerLeft":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.1832159566199232,"leftDistance":0.9999999999999999,"choice":{"reason":"reference-first-unilateral-contact","hitFraction":0.2999999999999998,"contactSide":"left","contactSoloId":2,"pairIds":[1,3],"supportId":4,"supportCell":[6,5],"visualDistance":0.9999999999999999,"at":1788782736928},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.2999999999999998,"outward":-1,"soloId":2,"pairIds":[1,3],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":7,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":3,"from":[7.4,3.8984858905427795],"to":[8,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1788782736928},"rigid3":false},"boundaryRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.2247448713915892,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"boundaryLeft":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.2247448713915892,"leftDistance":0.9999999999999999,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"preContact":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.0662934366931398,"leftDistance":1.239750657646475,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":0,"contacts":[]},"sweep":{},"rigid3":true},"outerAllowed":false,"innerRequired":true,"innerMin":0.25,"innerMax":0.75,"boundariesSplit":false,"bilateralRequired":false,"signedContact":true,"cohortTiming":true,"renderedSweep":true}
+2026-08-26 Nintendo-reference UP-convex v3 PASS {"dynamic":{"momentumLeft":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"maxPairDistanceError":6.661338147750939e-16,"rigid3":false,"choice":{}},"momentumRight":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"maxPairDistanceError":6.661338147750939e-16,"rigid3":false,"choice":{}},"airborne":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"maxPairDistanceError":0,"rigid3":true,"choice":{}},"version":"reference-upconvex-authority-v1","version2":"reference-upconvex-authority-v2","sweepVersion":"reference-first-contact-sweep-v3","contactAlwaysSolo":true,"kinematic":false,"v21":"final-rigidity-authority-v21"},"firstContact":{"outerRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1,"leftDistance":1.349073756323204,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":1}]},"sweep":{},"rigid3":true},"innerRight":{"count":3,"pair":[1,2],"soloId":3,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.1832159566199232,"choice":{"reason":"reference-first-unilateral-contact","hitFraction":0.7000000000000002,"contactSide":"right","contactSoloId":3,"pairIds":[1,2],"supportId":4,"supportCell":[6,5],"visualDistance":0.9999999999999999,"at":1788782736926},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.7000000000000002,"outward":1,"soloId":3,"pairIds":[1,2],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":5,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":2,"from":[4.6,3.8984858905427795],"to":[4,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1788782736925},"rigid3":false},"innerLeft":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.1832159566199232,"leftDistance":0.9999999999999999,"choice":{"reason":"reference-first-unilateral-contact","hitFraction":0.2999999999999998,"contactSide":"left","contactSoloId":2,"pairIds":[1,3],"supportId":4,"supportCell":[6,5],"visualDistance":0.9999999999999999,"at":1788782736928},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.2999999999999998,"outward":-1,"soloId":2,"pairIds":[1,3],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":7,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":3,"from":[7.4,3.8984858905427795],"to":[8,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1788782736928},"rigid3":false},"boundaryRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.2247448713915892,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"boundaryLeft":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.2247448713915892,"leftDistance":0.9999999999999999,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"preContact":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.0662934366931398,"leftDistance":1.239750657646475,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":0,"contacts":[]},"sweep":{},"rigid3":true},"outerAllowed":false,"innerRequired":true,"innerMin":0.25,"innerMax":0.75,"boundariesSplit":false,"bilateralRequired":false,"signedContact":true,"cohortTiming":true,"renderedSweep":true},"lockContact":{"rd":1.0000010000000004,"firstFrom":[6.6,3.8984846800877735],"rightV":{"x":6.6,"y":3.8984846800877735},"rightRigid":false,"rightSize":0,"leftRigid":true,"leftSize":2,"topRigid":true,"topSize":2,"maxReleaseVy":3.788971974109861,"maxReleaseSpeed":3.788971974109861,"neutralReleased":true,"impactVelocityAdded":false,"normalPostContactVelocity":3.788971974109861,"signed":{"releaseFrac":-0.10151531991222633,"splitOffset":-0.40000000000000036,"immediateMoved":true,"at":1788782736944},"choice":{"reason":"reference-first-unilateral-contact","hitFraction":0.7000000000000002,"contactSide":"right","contactSoloId":3,"pairIds":[2,4],"supportId":1,"supportCell":[6,5],"visualDistance":1.0000010000000004,"at":1788782736941},"sweep":{"ballId":4,"from":[4.6,3.8984846800877735],"to":[4,5],"minDistance":null,"minT":0,"closestId":0,"closestCell":null,"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1788782736942}},"timing":{"pair":[0,1.9999999999999998],"solo":[3.7320508075688776,1.4226497308103743],"pairTarget":[0,2],"soloTarget":[4,2]}}
+EXIT=0
+===== reference-20260826-rendered-pair-rigidity.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+RENDERED_PAIR_DIAGNOSTIC {"error":"wrong-pair-count","pairCount":0,"kinds":["ROLL_LEFT"],"snapshot":[{"id":4,"x":5,"y":8,"rigid":false,"size":0,"role":-1,"path":[]},{"id":5,"x":6,"y":9,"rigid":false,"size":0,"role":-1,"path":[]},{"id":6,"x":3,"y":10,"rigid":false,"size":0,"role":-1,"path":[{"kind":"ROLL_LEFT","from":[4,9],"to":[3,10],"seq":1,"size":0,"bundle":0}]},{"id":1,"x":5,"y":10,"rigid":false,"size":0,"role":-1,"path":[]},{"id":2,"x":4,"y":11,"rigid":false,"size":0,"role":-1,"path":[]},{"id":3,"x":6,"y":11,"rigid":false,"size":0,"role":-1,"path":[]}],"choice":{},"signed":{}}
+/home/runner/work/6ballpuzzle/6ballpuzzle/tests/reference-20260826-rendered-pair-rigidity.js:13
+function expect(v,msg){if(!v)throw new Error(msg);}
+                             ^
+
+Error: rendered trajectory setup failed: {"error":"wrong-pair-count","pairCount":0,"kinds":["ROLL_LEFT"],"snapshot":[{"id":4,"x":5,"y":8,"rigid":false,"size":0,"role":-1,"path":[]},{"id":5,"x":6,"y":9,"rigid":false,"size":0,"role":-1,"path":[]},{"id":6,"x":3,"y":10,"rigid":false,"size":0,"role":-1,"path":[{"kind":"ROLL_LEFT","from":[4,9],"to":[3,10],"seq":1,"size":0,"bundle":0}]},{"id":1,"x":5,"y":10,"rigid":false,"size":0,"role":-1,"path":[]},{"id":2,"x":4,"y":11,"rigid":false,"size":0,"role":-1,"path":[]},{"id":3,"x":6,"y":11,"rigid":false,"size":0,"role":-1,"path":[]}],"choice":{},"signed":{}}
+    at expect (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/reference-20260826-rendered-pair-rigidity.js:13:36)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/reference-20260826-rendered-pair-rigidity.js:100:1)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.23.2
+EXIT=1
+===== reference-20260826-solo-continuity-diagnostic.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+evalmachine.<anonymous>:72
+    if(i%4===0)frames.push({t,p:[...p],pair:pair.map(q=>q?[...q]:null),state:game.state,phase:game.phase,path:firstPath(soloId)});
+                                    ^
+
+TypeError: p is not iterable
+    at evalmachine.<anonymous>:72:37
+    at evalmachine.<anonymous>:98:3
+    at Script.runInContext (node:vm:149:12)
+    at Object.runInContext (node:vm:301:6)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/reference-20260826-solo-continuity-diagnostic.js:13:17)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+
+Node.js v22.23.2
+EXIT=1
+===== reference-20260826-solo-pivot-arc.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+NINTENDO_F126_F131_SOLO_PIVOT_ARC {"choice":{},"soloId":0,"seg":null}
+/home/runner/work/6ballpuzzle/6ballpuzzle/tests/reference-20260826-solo-pivot-arc.js:63
+if(!result.soloId||!result.seg)throw new Error("reference solo segment missing");
+                               ^
+
+Error: reference solo segment missing
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/reference-20260826-solo-pivot-arc.js:63:38)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at node:internal/main/run_main_module:36:49
+
+Node.js v22.23.2
+EXIT=1
+===== reference-20260814-inverted-flat-split-diagnostic.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+NINTENDO_20260814_INVERTED_FLAT_SPLIT {"authority":"reference-inverted-flat-split-v1","normalTiming":true,"hardDuration":0,"preDiag":{"scanMin":0,"groupSizes":[[[5671,9,8,"down"],[5672,11,8,"down"],[5673,10,9,"down"]]],"support":{"floor":false,"count":2,"leftId":5791,"rightId":5792},"targets":{"left":{"valid":true,"occupied":null},"right":{"valid":true,"occupied":null}},"pathHits":{"left":false,"right":false},"minStationary":{"left":{"dist":0.9999999999999993,"id":5791,"cell":[9,10],"t":1},"right":{"dist":0.9999999999999993,"id":5792,"cell":[11,10],"t":1}},"directPreview":[{"id":5671,"from":[9,8],"to":[8,9],"kind":"INVERTED_FLAT_SPLIT_LEFT","pivot":[10,9],"groupSize":0,"bundleId":826567},{"id":5672,"from":[11,8],"to":[12,9],"kind":"INVERTED_FLAT_SPLIT_RIGHT","pivot":[10,9],"groupSize":0,"bundleId":826567}]},"firstMoved":true,"before":[{"id":5671,"gid":826567,"size":3,"rigid":true},{"id":5672,"gid":826567,"size":3,"rigid":true},{"id":5673,"gid":826567,"size":3,"rigid":true}],"afterFirst":[{"id":5671,"gid":0,"size":0,"rigid":false,"path":[{"kind":"INVERTED_FLAT_SPLIT_LEFT","from":[9,8],"to":[8,9],"pivot":[10,9],"motionSeq":1,"bundleId":826567,"groupSize":0}]},{"id":5672,"gid":0,"size":0,"rigid":false,"path":[{"kind":"INVERTED_FLAT_SPLIT_RIGHT","from":[11,8],"to":[12,9],"pivot":[10,9],"motionSeq":1,"bundleId":826567,"groupSize":0}]},{"id":5673,"gid":0,"size":0,"rigid":false,"path":[]}],"moving":[{"id":5671,"seg":{"kind":"INVERTED_FLAT_SPLIT_LEFT","from":[9,8],"to":[8,9],"pivot":[10,9],"motionSeq":1,"bundleId":826567,"groupSize":0},"duration":0.16666666666666663,"endState":{"vy":7.255197456936871,"speed":6.283185307179586}},{"id":5672,"seg":{"kind":"INVERTED_FLAT_SPLIT_RIGHT","from":[11,8],"to":[12,9],"pivot":[10,9],"motionSeq":1,"bundleId":826567,"groupSize":0},"duration":0.16666666666666666,"endState":{"vy":7.255197456936871,"speed":6.283185307179586}}],"occupied":[[5671,8,9],[5673,10,9],[5672,12,9],[5791,9,10],[5792,11,10],[5801,8,11],[5802,10,11],[5803,12,11]],"maxRadiusError":7.771561172376096e-16,"maxAngularProgressError":9.992007221626409e-16,"maxMirrorError":1.7763568394002505e-15,"samples":[{"u":0,"pL":[9,8],"pR":[11,8],"dL":0,"dR":0},{"u":0.25,"pL":[8.585786437626904,8.183503419072274],"pR":[11.414213562373096,8.183503419072274],"dL":-0.26179938779914913,"dR":0.26179938779914946},{"u":0.5,"pL":[8.267949192431123,8.422649730810374],"pR":[11.732050807568877,8.422649730810374],"dL":-0.5235987755982983,"dR":0.5235987755982984},{"u":0.75,"pL":[8.068148347421863,8.701141509277315],"pR":[11.931851652578137,8.701141509277315],"dL":-0.7853981633974478,"dR":0.7853981633974481},{"u":1,"pL":[8,9],"pR":[12,9],"dL":-1.0471975511965974,"dR":1.0471975511965976}],"choice":{"ids":{"left":5671,"right":5672,"bottom":5673},"hardDropTiming":false,"duration":null,"at":1788782737281},"reference":{"duration":0.16666666666666666}}
+inverted flat-split normal-slope timing PASS {"duration":0.16666666666666663,"firstMoved":true,"maxRadiusError":7.771561172376096e-16,"maxAngularProgressError":9.992007221626409e-16,"maxMirrorError":1.7763568394002505e-15}
+EXIT=0
+===== reference-rigidity-state-machine-v1.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+NINTENDO_RIGIDITY_STATE_MACHINE {"flags":{"version":"nintendo-rigidity-authority-v1","physical":true,"kinematic":true,"middle50Removed":false,"innerHalf":true,"outerRecreateBlocked":true,"noBilateral":true,"distance":true,"actualSettle":true,"stableFirst":true,"noStaticOverlap":true,"actualPivot":true,"actualFragment":true},"free":{"count":3,"sizes":[3,3,3],"sameBundle":true,"rigid3":true,"error":6.661338147750939e-16},"outerRight":{"count":0,"pairIds":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rigid":[{"id":1,"size":3,"rigid":true},{"id":2,"size":3,"rigid":true},{"id":3,"size":3,"rigid":true}],"pairError":null,"decision":{"reason":"reject-upward-split-without-authorized-inner-contact","ids":[1,2,3],"contactCount":1,"at":1788782737379}},"outerLeft":{"count":0,"pairIds":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rigid":[{"id":1,"size":3,"rigid":true},{"id":2,"size":3,"rigid":true},{"id":3,"size":3,"rigid":true}],"pairError":null,"decision":{"reason":"reject-upward-split-without-authorized-inner-contact","ids":[1,2,3],"contactCount":1,"at":1788782737385}},"innerRight":{"count":3,"pairIds":[1,2],"soloId":3,"topId":1,"leftId":2,"rightId":3,"rigid":[{"id":1,"size":2,"rigid":true},{"id":2,"size":2,"rigid":true},{"id":3,"size":0,"rigid":false}],"pairError":6.661338147750939e-16,"decision":{"reason":"reference-first-contact","pairIds":[1,2],"soloId":3,"contactCount":1,"at":1788782737394}},"innerLeft":{"count":3,"pairIds":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"rigid":[{"id":1,"size":2,"rigid":true},{"id":2,"size":0,"rigid":false},{"id":3,"size":2,"rigid":true}],"pairError":6.661338147750939e-16,"decision":{"reason":"reference-first-contact","pairIds":[1,3],"soloId":2,"contactCount":1,"at":1788782737399}},"preRight":{"count":0,"pairIds":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rigid":[{"id":1,"size":3,"rigid":true},{"id":2,"size":3,"rigid":true},{"id":3,"size":3,"rigid":true}],"pairError":null,"decision":{"reason":"reject-upward-split-without-authorized-inner-contact","ids":[1,2,3],"contactCount":0,"at":1788782737404}},"tiltedOuterRight":{"count":3,"sizes":[3,3,3],"rigid":[{"id":1,"gid":910306,"size":3,"rigid":true},{"id":2,"gid":910306,"size":3,"rigid":true},{"id":3,"gid":910306,"size":3,"rigid":true}]},"tiltedOuterLeft":{"count":3,"sizes":[3,3,3],"rigid":[{"id":1,"gid":910307,"size":3,"rigid":true},{"id":2,"gid":910307,"size":3,"rigid":true},{"id":3,"gid":910307,"size":3,"rigid":true}]},"pivot":{"actual":[null,{"kind":"ROLL_LEFT","to":[8,11],"pivot":[10,11]}],"independent":[null,{"kind":"FLOOR_GRAVITY_DROP","to":[10,11],"pivot":null}],"count":1,"kind":"NINTENDO_PAIR_PIVOT","target":[8,11],"pivot":[10,11],"groupSize":2,"fixedRigid":true,"fixedSize":2,"movingRigid":true,"movingSize":2,"error":1.3322676295501878e-15},"settled":{"actual":[false,false,false],"independent":[true,false,false],"count":0,"released":true}}
+Nintendo rigidity state-machine v1 PASS
+RIGIDITY_RELEASE_BOUNCE {"flags":{"version":"rigidity-release-bounce-authority-v1","busy":true,"resolverBusy":true,"settleBusy":true,"rebase":true,"pinned":true,"pair":true,"upOuterBlocked":true,"upPinnedBreaks":false},"bounce":{"first":true,"second":false,"sigSame":true,"lensSame":true,"paths":[{"id":1,"len":1,"from":[7,2.34],"to":[7,4],"rebased":true},{"id":2,"len":1,"from":[9,2.34],"to":[9,4],"rebased":true},{"id":3,"len":1,"from":[8,3.34],"to":[8,5],"rebased":true}],"afterFirstMeta":[{"id":1,"gid":930001,"size":3,"rigid":true,"path":1},{"id":2,"gid":930001,"size":3,"rigid":true,"path":1},{"id":3,"gid":930001,"size":3,"rigid":true,"path":1}],"groupsAfterFirst":[{"group":930001,"ids":[1,2,3],"sizes":[3,3,3]}],"noBounceDecision":null,"originMatch":true,"allRebased":true,"rigid":[{"id":1,"size":3,"rigid":true},{"id":2,"size":3,"rigid":true},{"id":3,"size":3,"rigid":true}]},"stable":{"actual":[false,false,false],"preview":[],"previewMeta":[[3,true],[3,true],[3,true]],"commit":[],"after":[{"id":1,"size":0,"gid":0,"rigid":false},{"id":2,"size":0,"gid":0,"rigid":false},{"id":3,"size":0,"gid":0,"rigid":false}]},"differential":{"actual":[null,null,null],"external":[{"floor":false},{"floor":false},{"floor":false}],"preview":[],"commit":[],"after":[{"id":1,"size":0,"rigid":false},{"id":2,"size":0,"rigid":false},{"id":3,"size":0,"rigid":false}]},"pair":{"plan":[{"id":2,"size":2,"to":[8,11],"pivot":[10,11],"kind":"NINTENDO_PAIR_PIVOT"}],"after":[{"id":1,"size":2,"rigid":true},{"id":2,"size":2,"rigid":true}]}}
+Nintendo rigidity release + no-bounce v1 PASS
+EXIT=0
+===== motion-smoothness-regression-v1.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+ordinary smoothness + legacy pile/garbage regression PASS {"early":[0,0.68359375,0.9375,0.99609375,1],"late":[0,0.00390625,0.0625,0.31640625,1],"ordinaryHalf":[[1,1],[0.5,0.5]],"pileHalf":[[0.5,0.5],[0.5,0.5]],"garbageHalf":[[0.5,0.5],[0.5,0.5]],"flags":{"smooth":true,"natural":true,"rigid":true,"pileLegacy":true,"garbageLegacy":true,"noBouncePileExclusion":true,"scope":"ordinary-non-pile-only"}}
+EXIT=0
+===== no-upward-bounce-split-continuity-v1.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+NO_UPWARD_BOUNCE_SPLIT_CONTINUITY {"flags":{"loaded":true,"upward":true,"integrator":true,"horizontalOnly":true,"evenUpLanding":true,"split":true,"noPause":true,"horizontal":true,"legacy":true},"completion":{"upward":0,"y":9.42,"core":true},"contact":{"before":[7,8.22],"after":[6.526636161703429,8.22],"support":[8,9],"distance":0.9995,"diag":{"upwardPrevented":1,"splitRestored":0,"horizontalRepairs":1,"at":1788782737581}},"split":{"choice":{"reason":"reference-first-contact","contactSoloId":6,"pairIds":[5,7],"source":"nintendo-final-rigidity"},"soloId":6,"pairIds":[5,7],"releaseSpeeds":[{"vy":3.788971974109861,"speed":3.788971974109861,"neutral":true},{"vy":3.788971974109861,"speed":3.788971974109861,"neutral":true},{"vy":3.788971974109861,"speed":3.788971974109861,"neutral":true}],"normalPostContactVelocity":3.788971974109861,"impactVelocityAdded":false,"initial":{"5":[6.6,7.898484680087773],"6":[7.6,8.898484680087773],"7":[5.6,8.898484680087773]},"upward":0,"maxPairError":7.771561172376096e-16,"firstTickSolo":0.031672423187623,"firstTickPair":0.07081570024617848,"soloIdleTicks":0,"maxSoloIdleRun":0,"soloReachedFinal":true,"finalPair":[[6,9],[5,10]],"finalSolo":[10,11],"activeSegs":[{"id":5,"kind":null},{"id":7,"kind":null},{"id":6,"kind":null}],"samples":[{"t":0.03333333333333333,"solo":[8.059121539934878,9.020498500315938],"pair":[[6.329846582177756,8.17404721842472],[5.329846582177756,9.17404721842472]]},{"t":0.06666666666666667,"solo":[8.450603819903403,9.205066762198303],"pair":[[6.139799937783739,8.449609756761669],[5.139799937783739,9.449609756761669]]},{"t":0.1,"solo":[8.749445392282631,9.44040228156735],"pair":[[6.02986006681795,8.725172295098616],[5.02986006681795,9.725172295098616]]},{"t":0.13333333333333333,"solo":[8.936561173783485,9.711475697038454],"pair":[[6,9],[5,10]]},{"t":0.16666666666666666,"solo":[9,10],"pair":[[6,9],[5,10]]},{"t":0.2,"solo":[9.532388211211165,10.257978803056353],"pair":[[6,9],[5,10]]},{"t":0.23333333333333334,"solo":[9.87970361692734,10.605574547596856],"pair":[[6,9],[5,10]]},{"t":0.26666666666666666,"solo":[10,11],"pair":[[6,9],[5,10]]}]}}
+no upward bounce + zero-gap split continuity PASS
+EXIT=0
+===== even-row-strict-inner-split-continuity-v1.js =====
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-simultaneous-collapse-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": [
+    {
+      "id": 120,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 121,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 502,
+      "groupSize": 2
+    },
+    {
+      "id": 122,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+even-row strict-inner split continuity PASS {"pair":{"kind":"GROUP_SLOPE_TRANSLATE","groupSize":2,"upward":0,"finalY":9.42,"strict":true,"token":true,"classified":true,"semantic":true},"solo":{"kind":"ROLL_RIGHT","groupSize":0,"upward":0,"finalY":9.42,"strict":true,"token":true,"classified":true,"semantic":true},"normal":{"token":false,"strict":false,"classified":false},"flags":{"loaded":true,"survives":true,"noLift":true,"parityUnified":true}}
+EXIT=0
+STATUS=fail
