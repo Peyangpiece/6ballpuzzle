@@ -109,7 +109,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 120,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -117,7 +117,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 121,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -246,7 +246,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 120,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -254,7 +254,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 121,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -288,15 +288,96 @@ replayed 9000 / 10000
 replayed 10000 / 10000
 
 ===== LAYER ACTIVATION =====
-Layer 1 changed: 3007
+Layer 1 changed: 3267
 Layer 2 changed: 509
 Layer 3 changed: 2966
 Layer 4 changed: 3096
 Layer 5 changed: 0
 
 ===== FINAL GOLDEN CHECK =====
-FINAL MATCH: 10000 / 10000
-FINAL MISMATCH: 0
+FINAL MATCH: 9740 / 10000
+FINAL MISMATCH: 260
+
+FIRST FINAL MISMATCH:
+{
+  "index": 19,
+  "shadow": [
+    {
+      "id": 1000190,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000191,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000192,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ],
+  "golden": [
+    {
+      "id": 1000190,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000191,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000192,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
 
 ===== FIRST ACTIVATION PER LAYER =====
 
@@ -566,19 +647,17 @@ FINAL MISMATCH: 0
 --- Layer 5 ---
 NO OUTPUT CHANGE IN RANDOM ORACLE
 
-============================================
- SHADOW AUDIT PASS: FINAL = GOLDEN 10000/10000 
-============================================
+SHADOW AUDIT FAILED
 
 ===== DIRECTED SHADOW RESULT =====
-Layer 1 changed: 751
+Layer 1 changed: 875
 Layer 2 changed: 250
 Layer 3 changed: 500
 Layer 4 changed: 375
 Layer 5 changed: 0
 
-DIRECTED FINAL MATCH: 2000 / 2000
-DIRECTED FINAL MISMATCH: 0
+DIRECTED FINAL MATCH: 1876 / 2000
+DIRECTED FINAL MISMATCH: 124
 
 ===== DIRECTED BY TYPE =====
 blocked { total: 250, finalMismatch: 0 }
@@ -586,13 +665,93 @@ floor { total: 250, finalMismatch: 0 }
 leftWall { total: 250, finalMismatch: 0 }
 rightWall { total: 250, finalMismatch: 0 }
 valley { total: 250, finalMismatch: 0 }
-leftSupport { total: 250, finalMismatch: 0 }
+leftSupport { total: 250, finalMismatch: 62 }
 rightSupport { total: 250, finalMismatch: 0 }
-separator { total: 250, finalMismatch: 0 }
+separator { total: 250, finalMismatch: 62 }
 
-==============================================
- DIRECTED SHADOW PASS: FINAL = GOLDEN 2000/2000 
-==============================================
+FIRST DIRECTED MISMATCH:
+{
+  "index": 1253,
+  "type": "leftSupport",
+  "shadow": [
+    {
+      "id": 3012530,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012531,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012532,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ],
+  "golden": [
+    {
+      "id": 3012530,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012531,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012532,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+DIRECTED SHADOW FAILED
 
 ===== COMMIT AUDIT RANDOM 10000 =====
 random 1000 / 10000
@@ -617,17 +776,17 @@ directed 1750 / 2000
 directed 2000 / 2000
 
 ===== COMMIT LAYER DELTAS =====
-Layer 1: output changed=3758, state changed=3585
+Layer 1: output changed=4142, state changed=3969
 Layer 2: output changed=759, state changed=759
 Layer 3: output changed=3466, state changed=3466
 Layer 4: output changed=3471, state changed=3466
 Layer 5: output changed=0, state changed=0
 
 ===== COMMIT GOLDEN RESULT =====
-RANDOM COMMIT MATCH: 10000 / 10000
-RANDOM COMMIT MISMATCH: 0
-DIRECTED COMMIT MATCH: 2000 / 2000
-DIRECTED COMMIT MISMATCH: 0
+RANDOM COMMIT MATCH: 9740 / 10000
+RANDOM COMMIT MISMATCH: 260
+DIRECTED COMMIT MATCH: 1876 / 2000
+DIRECTED COMMIT MISMATCH: 124
 
 ===== FIRST STATE CHANGE PER LAYER =====
 
@@ -909,10 +1068,31 @@ DIRECTED COMMIT MISMATCH: 0
 --- Layer 5 ---
 NO STATE CHANGE IN 12000 CASES
 
-==============================================
- COMMIT AUDIT PASS: GOLDEN 12000 / 12000 
-==============================================
-v1303 CURRENT 4-LAYER ORACLE SUITE PASS: 12000 PREVIEW + COMMIT CASES
+COMMIT AUDIT FAILED
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.v1303-rigidity-commit-state-current.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/v1303-current-oracle-suite.js:43:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2218,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
 final rigidity authority v21 PASS
 ===== LOAD V1303 PHYSICS RUNTIME =====
 OK  app-01.js
@@ -1025,7 +1205,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 120,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -1033,7 +1213,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 121,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -1051,7 +1231,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 =======================================
  SUCCESS: V1303 FINAL PLANNER LOADED 
 =======================================
-final rigidity production audit PASS 10000/10000 sameDirection=3096 oppositeSplits=260 activeCentralSplits=260 positionFinalSplits=0 inverseLegacy=5088 rejectedOutsideBand=1553 releasedFixed=1375
+final rigidity production audit PASS 10000/10000 sameDirection=3096 oppositeSplits=0 activeCentralSplits=0 positionFinalSplits=0 inverseLegacy=5088 rejectedOutsideBand=1813 releasedFixed=1375
 ===== LOAD V1303 PHYSICS RUNTIME =====
 OK  app-01.js
 OK  app-02.js
@@ -1163,7 +1343,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 120,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -1171,7 +1351,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 121,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -1189,6 +1369,6 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 =======================================
  SUCCESS: V1303 FINAL PLANNER LOADED 
 =======================================
-recording 23:57:46 live/grid/opposite-pair regression PASS {"result":{"airborneCount":0,"rigidInAir":true,"pair":[1,3],"expectedPair":[1,3],"soloId":2,"expectedSoloId":2,"version":"final-rigidity-authority-v21","soleAuthority":true,"reason":"split-direction-confirmed-before-pair-rigidity"},"gridResult":{"oneRowAhead":{"count":0,"rigid":true,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"state":[{"id":1,"rigid":true,"groupId":235747,"groupSize":3},{"id":2,"rigid":true,"groupId":235747,"groupSize":3},{"id":3,"rigid":true,"groupId":235747,"groupSize":3}],"correction":{"reason":"reject-airborne-upward-two-plus-one","rejected":{"splitSide":"left","pairSide":"right","pairIds":[1,3],"soloId":2},"airborneCandidate":true,"airborneReason":"displayed-contact-grid-not-current","liveDistances":null,"at":1788761453785}},"reversedLogicalSide":{"count":3,"rigid":false,"pair":[1,2],"soloId":3,"topId":1,"leftId":2,"rightId":3,"state":[{"id":1,"rigid":true,"groupId":235748,"groupSize":2},{"id":2,"rigid":true,"groupId":235748,"groupSize":2},{"id":3,"rigid":false,"groupId":0,"groupSize":0}],"correction":{"reason":"split-direction-confirmed-before-pair-rigidity","splitDirection":-1,"splitSide":"right","pairSide":"left","pairIds":[1,2],"pairLowerId":2,"soloId":3,"hitFraction":0.6749999999999998,"logicalHitFraction":0.3250000000000002,"contactSideSource":"live-visual-right-hit-fraction","liveContactSource":"live-current-grid-contact-v21","liveContactDistances":[1.0980095627998874,0.9250000000000002],"liveContactHitFraction":0.6749999999999998,"liveContactRowErrors":{"left":0,"right":0,"support":0},"liveContactSupportBelowRows":1,"replacedPair":{"splitSide":"left","pairSide":"right","pairIds":[1,3],"soloId":2},"at":1788761453787}}}}
-up-convex production contact sweep PASS 29160/29160 active=14328 outerRigid=14832 outerMoving=0 outerWaiting=14832 exactBoundaries=144 pairOnly=0 leftSolo=7128 rightSolo=7128 dense=1080 resolverNoHorizontal=2 settleNoHorizontal=2 outerReasons={"reject-upward-split-without-inner-contact":14832}
+recording 23:57:46 live/grid/opposite-pair regression PASS {"result":{"airborneCount":0,"rigidInAir":true,"pair":[1,3],"expectedPair":[1,3],"soloId":2,"expectedSoloId":2,"version":"final-rigidity-authority-v21","soleAuthority":true,"reason":"split-direction-confirmed-before-pair-rigidity"},"gridResult":{"oneRowAhead":{"count":0,"rigid":true,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"state":[{"id":1,"rigid":true,"groupId":235747,"groupSize":3},{"id":2,"rigid":true,"groupId":235747,"groupSize":3},{"id":3,"rigid":true,"groupId":235747,"groupSize":3}],"correction":{"reason":"reject-airborne-upward-two-plus-one","rejected":{"splitSide":"left","pairSide":"right","pairIds":[1,3],"soloId":2},"airborneCandidate":true,"airborneReason":"displayed-contact-grid-not-current","liveDistances":null,"at":1788770913484}},"reversedLogicalSide":{"count":3,"rigid":false,"pair":[1,2],"soloId":3,"topId":1,"leftId":2,"rightId":3,"state":[{"id":1,"rigid":true,"groupId":235748,"groupSize":2},{"id":2,"rigid":true,"groupId":235748,"groupSize":2},{"id":3,"rigid":false,"groupId":0,"groupSize":0}],"correction":{"reason":"split-direction-confirmed-before-pair-rigidity","splitDirection":-1,"splitSide":"right","pairSide":"left","pairIds":[1,2],"pairLowerId":2,"soloId":3,"hitFraction":0.6749999999999998,"logicalHitFraction":0.3250000000000002,"contactSideSource":"live-visual-right-hit-fraction","liveContactSource":"live-current-grid-contact-v21","liveContactDistances":[1.0980095627998874,0.9250000000000002],"liveContactHitFraction":0.6749999999999998,"liveContactRowErrors":{"left":0,"right":0,"support":0},"liveContactSupportBelowRows":1,"replacedPair":{"splitSide":"left","pairSide":"right","pairIds":[1,3],"soloId":2},"at":1788770913486}}}}
+up-convex production contact sweep PASS 29160/29160 active=14256 outerRigid=14832 outerMoving=0 outerWaiting=14832 exactBoundaries=144 pairOnly=0 leftSolo=7128 rightSolo=7128 dense=1080 resolverNoHorizontal=2 settleNoHorizontal=2 outerReasons={"reject-upward-split-without-inner-contact":14832}
 every cleared ball disappearance FX PASS {"cells":7,"arcs":14,"strokes":7,"fills":7}
