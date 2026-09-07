@@ -11,6 +11,9 @@ const basePlanGroup=hexPhysPlanGroup;
 const liveEngineByBoard=new WeakMap();
 const FIRST_CONTACT_EPS=0.014;
 const FIRST_CONTACT_MIN=0.94;
+const INNER_CONTACT_MIN=0.25;
+const INNER_CONTACT_MAX=0.75;
+const INNER_CONTACT_EPS=1e-9;
 const HARD_DROP_VY_MIN=4.5;
 if(typeof createEngine==="function"){
 const baseCreateEngine=createEngine;
@@ -125,7 +128,14 @@ if(contacts.length!==1)return null;
 const hit=contacts[0],span=Number(rightV.x)-Number(leftV.x);
 if(!(span>1e-6))return null;
 const hitFraction=(Number(hit.sv.x)-Number(leftV.x))/span;
-if(hitFraction<-.06||hitFraction>1.06)return null;
+/* Only a protrusion entering the inner half of the lower-ball span may split
+ * the triplet.  Contact in either outer quarter is ordinary slope contact and
+ * must leave all three balls rigid.  Exact 25% and 75% boundary contacts are
+ * non-splitting so only the strictly inner region has split authority. */
+if(
+hitFraction<=INNER_CONTACT_MIN+INNER_CONTACT_EPS||
+hitFraction>=INNER_CONTACT_MAX-INNER_CONTACT_EPS
+)return null;
 const outward=Math.sign(Number(hit.lv.x)-Number(hit.sv.x))||
 (hit.lower===layout.right?1:-1);
 const other=hit.lower===layout.left?layout.right:layout.left;
@@ -166,6 +176,24 @@ steps.push(step);
 }
 return steps;
 }
+function pairFromContactSide(board,members,pair,hit,gid){
+const pairLower=[...pair].sort((a,b)=>Number(b.y)-Number(a.y))[0];
+const dir=Number(hit.lower.x)>Number(pairLower.x)?-1:1;
+const own=new Set(members.map(memberId)),targets=new Set(),plan=[];
+for(const member of pair){
+const tx=Number(member.x)+dir,ty=Number(member.y)+1,key=tx+","+ty;
+if(!valid(tx,ty)||targets.has(key))return null;
+const occupied=board?.[ty]?.[tx]||null;
+if(occupied&&!own.has(occupied.id))return null;
+targets.add(key);
+const step={x:member.x,y:member.y,tx,ty,ball:member.ball,
+kind:"REFERENCE_FIRST_CONTACT_PAIR",pivot:null,topPivot:null,
+followSupportIds:[],bundleId:gid,groupSize:2};
+if(typeof hexPhysPathHitsStationary==="function"&&hexPhysPathHitsStationary(step,board,own))return null;
+plan.push(step);
+}
+return sameVector(plan)?plan:null;
+}
 function soloFirstContactMotion(board,members,hit,motions){
 const index=members.indexOf(hit.solo),natural=index>=0?motions[index]:null;
 const naturalPivot=Array.isArray(natural?.pivot)&&
@@ -189,6 +217,7 @@ try{underlying=basePlanGroup(board,members,true)||[];}catch(_){underlying=[];}
 const motions=independentMotions(board,members),gid=Number(members[0]?.ball?.motionGroupId)||0;
 const whole=wholeRigidProposal(underlying,members);
 const pairPlan=(whole&&pairFromWhole(whole,hit.pair,gid))||
+pairFromContactSide(board,members,hit.pair,hit,gid)||
 pairFromIndependent(board,members,hit.pair,motions,gid);
 const soloPlan=soloFirstContactMotion(board,members,hit,motions);
 if(!pairPlan||!soloPlan){window.__sixBallReferenceFirstContactDiagnosticV2={...(window.__sixBallReferenceFirstContactDiagnosticV2||{}),phase:"plan-failed",pairPlan:!!pairPlan,soloPlan:!!soloPlan,motions:motions.map(m=>m?{id:memberId(m),x:m.x,y:m.y,tx:m.tx,ty:m.ty,kind:m.kind,pivot:m.pivot||null}:null),underlying:underlying.map(m=>({id:memberId(m),x:m.x,y:m.y,tx:m.tx,ty:m.ty,kind:m.kind,groupSize:m.groupSize||0}))};return null;}
@@ -386,7 +415,11 @@ window.__sixBallReferenceSplitUsesKinematicContinuity=false;
 window.__sixBallSlopeNeverSplits=true;
 window.__sixBallContactSideAlwaysSolo=true;
 window.__sixBallReferenceSplitStillRequiresV21CurrentContact=false;
-window.__sixBallReferenceFirstContactCanSplitOuterQuarter=true;
+window.__sixBallReferenceFirstContactCanSplitOuterQuarter=false;
+window.__sixBallReferenceFirstContactRequiresInnerHalf=true;
+window.__sixBallReferenceInnerContactMin=INNER_CONTACT_MIN;
+window.__sixBallReferenceInnerContactMax=INNER_CONTACT_MAX;
+window.__sixBallReferenceInnerContactBoundariesSplit=false;
 window.__sixBallReferenceFirstContactRequiresBilateralPivot=false;
 window.__sixBallHardDropUsesSignedContactOffset=true;
 window.__sixBallSplitBatchUsesPerCohortTiming=true;

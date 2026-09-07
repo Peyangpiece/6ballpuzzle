@@ -15,6 +15,21 @@ function id(v){return v?.ball?.id;}
 function vec(p){if(!p)return null;const dx=Number(p.tx)-Number(p.x),dy=Number(p.ty)-Number(p.y);return Number.isFinite(dx)&&Number.isFinite(dy)&&(dx||dy)?{dx,dy,key:dx+","+dy}:null;}
 function sameVector(steps){if(!steps?.length)return null;const a=vec(steps[0]);return a&&steps.every(s=>vec(s)?.key===a.key)?a:null;}
 function ordinary(members){return Array.isArray(members)&&(members.length===2||members.length===3)&&members.every(m=>m?.ball&&typeof m.ball==="object"&&!m.ball.isGarbage);}
+function upwardTriplet(members){
+ if(!Array.isArray(members)||members.length!==3)return false;
+ const ordered=[...members].sort((a,b)=>Number(a.y)-Number(b.y)||Number(a.x)-Number(b.x));
+ const top=ordered[0],lower=ordered.slice(1).sort((a,b)=>Number(a.x)-Number(b.x));
+ return !!(
+  top&&lower.length===2&&Number(lower[0].y)===Number(lower[1].y)&&
+  Number(top.y)<Number(lower[0].y)&&
+  Number(lower[0].x)<Number(top.x)&&Number(top.x)<Number(lower[1].x)
+ );
+}
+function baseAuthorizedUpwardSplit(members,plan){
+ if(!upwardTriplet(members))return false;
+ const moving=(plan||[]).filter(vec);
+ return moving.length>0&&moving.some(step=>Number(step.groupSize)!==3);
+}
 function snapshot(members){return members.map(m=>({ball:m.ball,fields:Object.fromEntries(MUTATION_FIELDS.map(k=>[k,{has:Object.prototype.hasOwnProperty.call(m.ball,k),v:m.ball[k]}]))}));}
 function restore(s){for(const e of s)for(const[k,q]of Object.entries(e.fields)){if(q.has)e.ball[k]=q.v;else delete e.ball[k];}}
 function previewBase(board,members){const s=snapshot(members);let p=[];try{p=basePlanGroup(board,members,true)||[];}catch(_){p=[];}finally{restore(s);}return p;}
@@ -104,8 +119,21 @@ hexPhysPlanGroup=function(board,members,preview=false){
  const special=baseSpecialSplit(members,base);
  if(special?.type==="pair"&&contact.current){if(preview){const pairSteps=special.plan.filter(p=>special.pairIds.has(id(p))).map(p=>({...p,groupSize:2,bundleId:gid||Number(p.bundleId)||0})),soloStep=special.plan.find(p=>id(p)===special.soloId&&vec(p));return soloStep?[...pairSteps,{...soloStep,groupSize:0,bundleId:0}]:pairSteps;}const out=commitPairSplit(members,special,gid);window.__sixBallLastNintendoRigidityDecision={reason:special.reason,pairIds:[...special.pairIds],soloId:special.soloId,contactCount:contact.contacts.length,at:Date.now()};return out;}
  if(special?.type==="full"&&contact.current){if(!preview)for(const m of members)clear(m);return special.plan.map(p=>({...p,bundleId:0,groupSize:0}));}
- const whole=wholeRigid(board,members,ind,base);if(whole){if(!preview)commitGroup(members,members.length,gid);return whole;}
  if(stableAccumulated(board,members,actual)){if(!preview)for(const m of members)clear(m);return[];}
+ /* For an UP triplet, the lower final authority is the only layer allowed to
+  * authorize a 2+1 event.  This preserves its inner-50% contact gate and stops
+  * the generic kinematic partition below from recreating an outer-contact
+  * split after that authority has rejected it. */
+ if(baseAuthorizedUpwardSplit(members,base)){
+  if(preview)return base;
+  return basePlanGroup(board,members,false)||[];
+ }
+ const whole=wholeRigid(board,members,ind,base);if(whole){if(!preview)commitGroup(members,members.length,gid);return whole;}
+ if(upwardTriplet(members)){
+  if(!preview)commitGroup(members,3,gid);
+  window.__sixBallLastNintendoRigidityDecision={reason:"reject-upward-split-without-authorized-inner-contact",ids:members.map(id),contactCount:contact.contacts.length,at:Date.now()};
+  return[];
+ }
  if(members.length===3&&(contact.current||!contact.live)){
   const candidate=candidatePairs(board,members,ind,actual,base);
   if(candidate?.type==="pair"){if(preview){const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,groupSize:2,bundleId:gid||Number(p.bundleId)||0})),soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p));return soloStep?[...pairSteps,{...soloStep,groupSize:0,bundleId:0}]:pairSteps;}const out=commitPairSplit(members,candidate,gid);window.__sixBallLastNintendoRigidityDecision={reason:candidate.reason,pairIds:[...candidate.pairIds],soloId:candidate.soloId,contactCount:contact.contacts.length,at:Date.now()};return out;}
@@ -119,7 +147,9 @@ hexPhysPlanGroup=function(board,members,preview=false){
 window.__sixBallNintendoRigidityVersion="nintendo-rigidity-authority-v1";
 window.__sixBallRigidityUsesPhysicalContact=true;
 window.__sixBallRigidityUsesKinematicPartition=true;
-window.__sixBallRigidityMiddleFiftyGateRemoved=true;
+window.__sixBallRigidityMiddleFiftyGateRemoved=false;
+window.__sixBallRigidityInnerHalfGateIsAuthoritative=true;
+window.__sixBallNintendoCannotRecreateOuterUpwardSplit=true;
 window.__sixBallRigidityBilateralPivotGateRemoved=true;
 window.__sixBallRigidBodyDistanceInvariant=true;
 window.__sixBallPairPivotPreservesRigidity=true;

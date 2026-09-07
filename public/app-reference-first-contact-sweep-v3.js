@@ -1,11 +1,10 @@
 /* Nintendo-reference first-contact sweep v3.
  *
  * The v2 first-contact authority starts a just-released UP triangle at its
- * signed rendered hard-drop contact.  At an outer hit the surviving
- * top+opposite-lower pair is still falling while the contacted solo ball rolls
- * away.  The snapped logical chord for that pair can cut a few thousandths of
- * a diameter through the support even though the reference motion stays
- * tangent to it.
+ * signed rendered hard-drop contact.  For an authorized inner-half hit the
+ * surviving top+opposite-lower pair is still falling while the contacted solo
+ * ball rolls away.  The snapped logical chord for that pair can cut through
+ * the support even though the intended motion remains tangent to it.
  *
  * For REFERENCE_FIRST_CONTACT_PAIR only, collision validation and rendering
  * use the same tiny outward tangent bow from the exact rendered start to the
@@ -35,7 +34,10 @@ const baseHexMotionDuration=typeof hexMotionDuration==="function"?hexMotionDurat
 const baseLiveBatchPointAt=typeof liveBatchPointAt==="function"?liveBatchPointAt:null;
 const gameByBoard=new WeakMap();
 const baseCreateEngine=createEngine;
-const REFERENCE_PAIR_TANGENT_BULGE=0.04;
+/* Inner-half contacts start closer to the separator than the retired outer
+ * contact case.  Use the collision-swept outward bow required to keep the
+ * surviving pair tangent to that separator throughout the first segment. */
+const REFERENCE_PAIR_TANGENT_BULGE=0.16;
 const SWEEP_SAMPLES=96;
 const REFERENCE_CAPTURE_FPS=30.02001334222815;
 const REFERENCE_FIRST_CONTACT_PAIR_FRAMES=4;

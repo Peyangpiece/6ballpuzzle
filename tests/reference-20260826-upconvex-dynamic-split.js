@@ -78,8 +78,8 @@ expect(dynamic.airborne.count===0,"reference selector split while visually airbo
 expect(dynamic.airborne.rigid3,"reference selector broke triplet in air");
 const firstContact=vm.runInContext(`
 (()=>{
-function makeScenario(seed,raiseRows=0){
-const game=createEngine(seed),gid=seed,offset=-.82;
+function makeScenario(seed,offset,raiseRows=0){
+const game=createEngine(seed),gid=seed;
 const specs=[{x:6,y:3,c:2,role:0},{x:5,y:4,c:0,role:2},{x:7,y:4,c:4,role:1}];
 const members=specs.map(spec=>{
 const ball=mkBall(game,spec.c);ball.motionGroupId=gid;ball.motionGroupRole=spec.role;ball.motionGroupOrientation="up";ball.motionGroupSize=3;ball.rigid=true;
@@ -88,10 +88,11 @@ game.board[spec.y][spec.x]=ball;noteBoardCell(game.board,spec.y,ball);
 return{ball,x:spec.x,y:spec.y,role:spec.role,orientation:"up"};
 });
 const support=mkBall(game,1);game.board[5][6]=support;noteBoardCell(game.board,5,support);game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
-const rightRealDx=Math.abs(((7+offset)-6)*.5);
-const vertical=Math.sqrt(1-rightRealDx*rightRealDx);
-const rightContactRow=5-vertical/HEX_ROW_H-raiseRows;
-const rowOffset=rightContactRow-4;
+const contactX=offset<0?7+offset:5+offset;
+const contactRealDx=Math.abs((contactX-6)*.5);
+const vertical=Math.sqrt(1-contactRealDx*contactRealDx);
+const contactRow=5-vertical/HEX_ROW_H-raiseRows;
+const rowOffset=contactRow-4;
 for(const member of members){
 const v={x:member.x+offset,y:member.y+rowOffset,vy:5,motionSpeed:5,justReleased:true};game.vis.set(member.ball.id,v);
 }
@@ -105,9 +106,17 @@ return{count:plan.length,pair,soloId:solo?.ball?.id??null,topId:members[0].ball.
 rightDistance:rd,leftDistance:ld,choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},diag:{...(window.__sixBallReferenceFirstContactDiagnosticV2||{})},sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})},rigid3:members.every(m=>m.ball.rigid&&m.ball.motionGroupSize===3)};
 }
 return{
-touching:makeScenario(826101,0),
-preContact:makeScenario(826102,.08),
+outerRight:makeScenario(826101,-.82,0),
+innerRight:makeScenario(826102,-.40,0),
+innerLeft:makeScenario(826103,.40,0),
+boundaryRight:makeScenario(826104,-.50,0),
+boundaryLeft:makeScenario(826105,.50,0),
+preContact:makeScenario(826106,-.40,.08),
 outerAllowed:window.__sixBallReferenceFirstContactCanSplitOuterQuarter,
+innerRequired:window.__sixBallReferenceFirstContactRequiresInnerHalf,
+innerMin:window.__sixBallReferenceInnerContactMin,
+innerMax:window.__sixBallReferenceInnerContactMax,
+boundariesSplit:window.__sixBallReferenceInnerContactBoundariesSplit,
 bilateralRequired:window.__sixBallReferenceFirstContactRequiresBilateralPivot,
 signedContact:window.__sixBallHardDropUsesSignedContactOffset,
 cohortTiming:window.__sixBallSplitBatchUsesPerCohortTiming,
@@ -116,26 +125,35 @@ renderedSweep:window.__sixBallReferenceFirstContactSweepUsesRenderedOrigin
 })()
 `,ctx);
 console.log("FIRST_CONTACT_DIAGNOSTIC",JSON.stringify(firstContact));
-expect(firstContact.outerAllowed===true,"outer-quarter first contact is not enabled");
+expect(firstContact.outerAllowed===false,"outer-quarter first contact can still split");
+expect(firstContact.innerRequired===true,"inner-half first-contact gate is not enabled");
+expect(firstContact.innerMin===.25&&firstContact.innerMax===.75,"inner contact boundaries changed");
+expect(firstContact.boundariesSplit===false,"25%/75% boundaries can still split");
 expect(firstContact.bilateralRequired===false,"first contact still requires bilateral pivot");
 expect(firstContact.signedContact===true,"signed hard-drop contact handoff is not enabled");
 expect(firstContact.cohortTiming===true,"per-cohort split timing is not enabled");
 expect(firstContact.renderedSweep===true,"rendered-origin first-contact sweep is not enabled");
-expect(close(firstContact.touching.rightDistance,1,2e-6),"reference touching ball is not at one-diameter contact");
-expect(firstContact.touching.leftDistance>1.20,"opposite lower ball is not clearly free at first contact");
-expect(firstContact.touching.count===3,"outer-quarter first contact did not author one 2+1 event "+JSON.stringify(firstContact.touching));
-expect(JSON.stringify(firstContact.touching.pair)===JSON.stringify([firstContact.touching.topId,firstContact.touching.leftId].sort((a,b)=>a-b)),"outer-quarter right contact did not retain top + left pair");
-expect(firstContact.touching.soloId===firstContact.touching.rightId,"outer-quarter contacted right ball did not begin outward solo motion");
-expect(firstContact.touching.choice.reason==="reference-first-unilateral-contact","first-contact override was not the authority used");
-expect(firstContact.touching.choice.hitFraction>.88&&firstContact.touching.choice.hitFraction<.94,"reference outer hit fraction is not near measured .91");
-expect(firstContact.touching.sweep.hit===false,"rendered pair sweep still intersects a stationary ball");
-expect(firstContact.touching.sweep.minDistance>=.9994,"rendered pair sweep lost one-ball separation");
+expect(close(firstContact.outerRight.rightDistance,1,2e-6),"outer reference ball is not at one-diameter contact");
+expect(firstContact.outerRight.count===0&&firstContact.outerRight.rigid3,"outer-quarter contact split the triplet");
+expect(firstContact.outerRight.choice.reason!=="reference-first-unilateral-contact","outer-quarter contact reached the immediate split authority");
+expect(close(firstContact.innerRight.rightDistance,1,2e-6),"inner-right ball is not at one-diameter contact");
+expect(firstContact.innerRight.count===3,"inner-right contact did not split immediately");
+expect(JSON.stringify(firstContact.innerRight.pair)===JSON.stringify([firstContact.innerRight.topId,firstContact.innerRight.leftId].sort((a,b)=>a-b)),"inner-right contact did not retain top + left pair");
+expect(firstContact.innerRight.soloId===firstContact.innerRight.rightId,"inner-right contacted ball did not become solo");
+expect(firstContact.innerRight.choice.hitFraction>.69&&firstContact.innerRight.choice.hitFraction<.71,"inner-right hit fraction is not near .70");
+expect(firstContact.innerRight.sweep.hit===false&&firstContact.innerRight.sweep.minDistance>=.9994,"inner-right split sweep lost separation");
+expect(firstContact.innerLeft.count===3,"inner-left contact did not split immediately");
+expect(JSON.stringify(firstContact.innerLeft.pair)===JSON.stringify([firstContact.innerLeft.topId,firstContact.innerLeft.rightId].sort((a,b)=>a-b)),"inner-left contact did not retain top + right pair");
+expect(firstContact.innerLeft.soloId===firstContact.innerLeft.leftId,"inner-left contacted ball did not become solo");
+expect(firstContact.innerLeft.choice.hitFraction>.29&&firstContact.innerLeft.choice.hitFraction<.31,"inner-left hit fraction is not near .30");
+expect(firstContact.boundaryRight.count===0&&firstContact.boundaryRight.rigid3,"75% boundary split the triplet");
+expect(firstContact.boundaryLeft.count===0&&firstContact.boundaryLeft.rigid3,"25% boundary split the triplet");
 expect(firstContact.preContact.choice.reason!=="reference-first-unilateral-contact","split fired before physical contact");
 const lockContact=vm.runInContext(`
 (()=>{
 const game=createEngine(826201);game.state="PLAYING";
 const support=mkBall(game,1);game.board[5][6]=support;noteBoardCell(game.board,5,support);game.vis.set(support.id,{x:6,y:5,vy:0,motionSpeed:0});
-game.piece={x:5,y:4,rot:1,colors:[2,4,0]};game.freeX=4.18;game.pieceVX=4.18;game.dropT=0;
+game.piece={x:5,y:4,rot:1,colors:[2,4,0]};game.freeX=4.60;game.pieceVX=4.60;game.dropT=0;
 lock(game,5);
 const balls=[];for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?game.board[y][x]:null;if(b&&b!==support&&b.visualTripletId)balls.push({b,x,y,v:game.vis.get(b.id)});}
 const right=balls.find(q=>q.b.visualTripletRole===1),left=balls.find(q=>q.b.visualTripletRole===2),top=balls.find(q=>q.b.visualTripletRole===0);
@@ -151,7 +169,7 @@ signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},choice:{...(window
 `,ctx);
 expect(close(lockContact.rd,1,3e-5),"hard-drop handoff did not land at exact one-diameter visual contact");
 expect(lockContact.firstFrom&&lockContact.rightV&&close(lockContact.firstFrom[0],lockContact.rightV.x,1e-9)&&close(lockContact.firstFrom[1],lockContact.rightV.y,1e-9),"first split segment did not start at exact signed contact visual");
-expect(lockContact.signed.releaseFrac<0,"outer-quarter hard drop did not use the required negative fractional contact offset");
+expect(lockContact.signed.releaseFrac<0,"inner-contact hard drop did not use the required negative fractional contact offset");
 expect(lockContact.choice.reason==="reference-first-unilateral-contact","hard-drop lock did not split on its first physical contact");
 expect(lockContact.rightRigid===false&&lockContact.rightSize===0,"contacted right ball retained triplet rigidity after first contact");
 expect(lockContact.leftRigid&&lockContact.topRigid&&lockContact.leftSize===2&&lockContact.topSize===2,"surviving pair was not committed immediately at first contact");

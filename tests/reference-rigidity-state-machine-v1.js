@@ -31,25 +31,25 @@ const result=vm.runInContext(`
  }
  function pairPivot(){const g=createEngine(910101),fixed=mkBall(g,1),moving=mkBall(g,2),gid=910101;for(const [ball,role,x,y] of [[fixed,0,10,11],[moving,1,9,10]]){ball.motionGroupId=gid;ball.motionGroupRole=role;ball.motionGroupOrientation="pair";ball.motionGroupSize=2;ball.rigid=true;g.board[y][x]=ball;noteBoardCell(g.board,y,ball);g.vis.set(ball.id,{x,y,vy:0,motionSpeed:0});}const members=[{ball:fixed,x:10,y:11,role:0,orientation:"pair"},{ball:moving,x:9,y:10,role:1,orientation:"pair"}],actual=members.map(m=>hexPhysNaturalMotion(g.board,m.x,m.y,null)),independent=members.map(m=>hexPhysIndependentMemberMotion(g.board,members,m)),plan=hexPhysPlanGroup(g.board,members,false)||[],p=plan[0]||null;return{actual:actual.map(q=>q?{kind:q.kind,to:[q.tx,q.ty],pivot:q.pivot}:null),independent:independent.map(q=>q?{kind:q.kind,to:[q.tx,q.ty],pivot:q.pivot}:null),count:plan.length,kind:p?.kind||null,target:p?[p.tx,p.ty]:null,pivot:p?.pivot||null,groupSize:p?.groupSize||0,fixedRigid:fixed.rigid,fixedSize:fixed.motionGroupSize,movingRigid:moving.rigid,movingSize:moving.motionGroupSize,error:plan.length?maxDistanceError(members,plan):99};}
  function settledTriplet(){const g=createEngine(910201),members=installTriplet(g,[{x:9,y:10},{x:8,y:11},{x:10,y:11}],910201,"up"),actual=members.map(m=>hexPhysNaturalMotion(g.board,m.x,m.y,null)),independent=members.map(m=>hexPhysIndependentMemberMotion(g.board,members,m)),plan=hexPhysPlanGroup(g.board,members,false)||[];return{actual:actual.map(Boolean),independent:independent.map(Boolean),count:plan.length,released:members.every(m=>!m.ball.rigid&&m.ball.motionGroupSize===0&&m.ball.motionGroupId===0)};}
- return{flags:{version:window.__sixBallNintendoRigidityVersion,physical:window.__sixBallRigidityUsesPhysicalContact,kinematic:window.__sixBallRigidityUsesKinematicPartition,noMiddle50:window.__sixBallRigidityMiddleFiftyGateRemoved,noBilateral:window.__sixBallRigidityBilateralPivotGateRemoved,distance:window.__sixBallRigidBodyDistanceInvariant,actualSettle:window.__sixBallAccumulatedReleaseUsesActualBoard,stableFirst:window.__sixBallStableBeforeFragmentation,noStaticOverlap:window.__sixBallStaticPairTargetOverlapForbidden,actualPivot:window.__sixBallPairPivotUsesActualPartnerContact,actualFragment:window.__sixBallFragmentationUsesActualBoardMotion},free:freeFlight(),outerRight:outerContact(910301,-.82,0),outerLeft:outerContact(910302,.82,0),preRight:outerContact(910303,-.82,.08),pivot:pairPivot(),settled:settledTriplet()};
+ return{flags:{version:window.__sixBallNintendoRigidityVersion,physical:window.__sixBallRigidityUsesPhysicalContact,kinematic:window.__sixBallRigidityUsesKinematicPartition,middle50Removed:window.__sixBallRigidityMiddleFiftyGateRemoved,innerHalf:window.__sixBallRigidityInnerHalfGateIsAuthoritative,outerRecreateBlocked:window.__sixBallNintendoCannotRecreateOuterUpwardSplit,noBilateral:window.__sixBallRigidityBilateralPivotGateRemoved,distance:window.__sixBallRigidBodyDistanceInvariant,actualSettle:window.__sixBallAccumulatedReleaseUsesActualBoard,stableFirst:window.__sixBallStableBeforeFragmentation,noStaticOverlap:window.__sixBallStaticPairTargetOverlapForbidden,actualPivot:window.__sixBallPairPivotUsesActualPartnerContact,actualFragment:window.__sixBallFragmentationUsesActualBoardMotion},free:freeFlight(),outerRight:outerContact(910301,-.82,0),outerLeft:outerContact(910302,.82,0),innerRight:outerContact(910303,-.40,0),innerLeft:outerContact(910304,.40,0),preRight:outerContact(910305,-.40,.08),pivot:pairPivot(),settled:settledTriplet()};
 })()
 `,ctx);
 console.log("NINTENDO_RIGIDITY_STATE_MACHINE",JSON.stringify(result));
 expect(result.flags.version==="nintendo-rigidity-authority-v1","Nintendo rigidity authority not loaded");
-expect(Object.entries(result.flags).filter(([k])=>k!=="version").every(([,v])=>v===true),"Nintendo rigidity contract flags incomplete");
+expect(result.flags.middle50Removed===false&&result.flags.innerHalf===true&&result.flags.outerRecreateBlocked===true,"Nintendo inner-half split gate is incomplete");
+expect(Object.entries(result.flags).filter(([k])=>!["version","middle50Removed"].includes(k)).every(([,v])=>v===true),"Nintendo rigidity contract flags incomplete");
 expect(result.free.count===3,"free triplet did not move as one body");
 expect(result.free.sizes.every(v=>v===3)&&result.free.sameBundle&&result.free.rigid3,"free triplet lost 3-ball rigidity");
 expect(result.free.error<1e-8,"free triplet changed internal distances");
-expect(result.outerRight.count===3,"measured right outer contact did not split immediately");
-expect(JSON.stringify(result.outerRight.pairIds)===JSON.stringify([result.outerRight.topId,result.outerRight.leftId].sort((a,b)=>a-b)),"right contact did not keep top+left pair");
-expect(result.outerRight.soloId===result.outerRight.rightId,"right contact did not release right lower solo");
-expect(result.outerRight.pairError<1e-8,"right-contact surviving pair stretched");
-expect(result.outerRight.rigid.find(q=>q.id===result.outerRight.rightId).size===0,"right-contact solo retained rigidity");
-expect(result.outerRight.rigid.filter(q=>q.id!==result.outerRight.rightId).every(q=>q.rigid&&q.size===2),"right-contact pair did not retain 2-ball rigidity");
-expect(result.outerLeft.count===3,"mirrored left outer contact did not split immediately");
-expect(JSON.stringify(result.outerLeft.pairIds)===JSON.stringify([result.outerLeft.topId,result.outerLeft.rightId].sort((a,b)=>a-b)),"left contact did not keep top+right pair");
-expect(result.outerLeft.soloId===result.outerLeft.leftId,"left contact did not release left lower solo");
-expect(result.outerLeft.pairError<1e-8,"left-contact surviving pair stretched");
+expect(result.outerRight.count===0&&result.outerRight.rigid.every(q=>q.rigid&&q.size===3),"right outer contact split or released the triplet");
+expect(result.outerLeft.count===0&&result.outerLeft.rigid.every(q=>q.rigid&&q.size===3),"left outer contact split or released the triplet");
+expect(result.innerRight.count===3,"inner-right contact did not split immediately");
+expect(JSON.stringify(result.innerRight.pairIds)===JSON.stringify([result.innerRight.topId,result.innerRight.leftId].sort((a,b)=>a-b)),"inner-right contact did not keep top+left pair");
+expect(result.innerRight.soloId===result.innerRight.rightId,"inner-right contacted ball did not become solo");
+expect(result.innerRight.pairError<1e-8,"inner-right surviving pair stretched");
+expect(result.innerLeft.count===3,"inner-left contact did not split immediately");
+expect(JSON.stringify(result.innerLeft.pairIds)===JSON.stringify([result.innerLeft.topId,result.innerLeft.rightId].sort((a,b)=>a-b)),"inner-left contact did not keep top+right pair");
+expect(result.innerLeft.soloId===result.innerLeft.leftId,"inner-left contacted ball did not become solo");
 expect(!result.preRight.rigid.some(q=>q.size===2),"triplet split before physical contact");
 expect(result.preRight.rigid.every(q=>q.rigid&&q.size===3),"pre-contact triplet did not keep 3-ball rigidity");
 expect(result.pivot.count===1,"2-ball rigid pivot did not produce one moving member "+JSON.stringify(result.pivot));

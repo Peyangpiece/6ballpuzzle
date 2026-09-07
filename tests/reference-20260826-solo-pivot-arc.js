@@ -23,7 +23,7 @@ const result=vm.runInContext(`
   game.vis.set(support.id,{x:7,y:10,vy:0,motionSpeed:0});
 
   game.piece={x:6,y:9,rot:1,colors:[2,4,0]};
-  game.freeX=5.18;game.pieceVX=5.18;game.dropT=0;
+  game.freeX=5.60;game.pieceVX=5.60;game.dropT=0;
   lock(game,5);
 
   const choice={...(window.__sixBallLastReferenceUpConvexChoiceV1||{})};

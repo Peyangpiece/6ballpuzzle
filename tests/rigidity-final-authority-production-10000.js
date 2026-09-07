@@ -3,13 +3,19 @@ const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
-/* The legacy smoke/oracle deliberately stops at the v3 resolver so its locked
-   golden remains a core-regression test. Add the production tail here, in the
-   exact index.html order, to audit the new final authority independently. */
+/* The legacy smoke/oracle deliberately stops at the v3 resolver. Load every
+   planner wrapper that follows it in index.html so this audit exercises the
+   effective production authority rather than stopping at the nominal v21
+   layer before later wrappers can alter its decision. */
 for(const file of[
   "app-collapse-timing-authoritative-v2.js",
   "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js"
+  "app-rigidity-final-authority-v1.js",
+  "app-reference-upconvex-authority-v1.js",
+  "app-reference-first-contact-sweep-v3.js",
+  "app-reference-inverted-flat-split-v1.js",
+  "app-rigidity-nintendo-authority-v1.js",
+  "app-rigidity-release-bounce-authority-v1.js"
 ]){
   vm.runInContext(
     fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),
@@ -144,13 +150,8 @@ for(const input of cases){
   }
   const waitingRigid=
     commit.length===0&&
-    [
-      "reject-upward-split-outside-middle-fifty-percent",
-      "reject-pair-only-slope-contact-not-position-final",
-      "reject-ordinary-split-without-central-contact-or-position-final",
-      "wait-instead-of-opposite-upward-split",
-      "wait-instead-of-unconfirmed-directional-pair"
-    ].includes(finalCorrection?.reason);
+    upwardLayout(input.members)&&
+    metadata(commitFixture.members).every(state=>state.rigid&&state.size===3);
   if(waitingRigid)rejectedOutsideBand++;
   expect(
     JSON.stringify(preview)===JSON.stringify(commit),
@@ -167,7 +168,9 @@ for(const input of cases){
     cohorts.get(key).push(step);
   }
   for(const [key,steps] of cohorts){
-    expect(steps.length===steps[0].groupSize,`case ${input.index}: incomplete cohort ${key}`);
+    const [bundle,size]=key.split(":").map(Number);
+    const cohortState=[...stateById.values()].filter(state=>state.group===bundle&&state.size===size);
+    expect(steps.length<=size&&cohortState.length===size&&cohortState.every(state=>state.rigid),`case ${input.index}: incomplete cohort ${key}`);
     expect(new Set(steps.map(vector)).size===1,`case ${input.index}: divergent rigid cohort ${key}`);
   }
   for(const member of commitFixture.members){
@@ -177,6 +180,9 @@ for(const input of cases){
       expect(state.rigid&&state.size===3,`case ${input.index}: rejected split did not restore triplet`);
     }else if(step?.groupSize>=2){
       expect(state.rigid&&state.size===step.groupSize,`case ${input.index}: moving cohort lost rigidity`);
+    }else if(state.rigid&&state.size>=2&&commit.some(other=>other.bundleId===state.group&&other.groupSize===state.size)){
+      /* A valid pair pivot has one moving member and one stationary pivot;
+         the stationary member remains part of the same rigid cohort. */
     }else{
       expect(!state.rigid&&state.group===0&&state.size===0,`case ${input.index}: fixed/solo member retained rigidity`);
       if(!step)releasedFixed++;
@@ -254,6 +260,11 @@ expect(ctx.__sixBallFinalRigidityAuthorityVersion==="final-rigidity-authority-v2
 expect(ctx.__sixBallLegalPairSlopeBeatsEverySplitOrRelease===true,"legal pair-slope priority marker missing");
 expect(ctx.__sixBallCurrentContactFractionDefinesSplitSide===true,"current contact-side marker missing");
 expect(ctx.__sixBallCurrentContactBallAlwaysBecomesSolo===true,"contact-side solo invariant missing");
+expect(ctx.__sixBallReferenceFirstContactCanSplitOuterQuarter===false,"outer-quarter first contact remains authorized");
+expect(ctx.__sixBallReferenceFirstContactRequiresInnerHalf===true,"inner-half first-contact gate missing");
+expect(ctx.__sixBallReferenceInnerContactBoundariesSplit===false,"25%/75% boundary contact remains authorized");
+expect(ctx.__sixBallRigidityMiddleFiftyGateRemoved===false,"Nintendo layer still removes the middle-50% gate");
+expect(ctx.__sixBallNintendoCannotRecreateOuterUpwardSplit===true,"Nintendo layer can recreate an outer split");
 expect(ctx.__sixBallWrongContactPairWaitsInsteadOfReversing===true,"wrong contact-pair wait invariant missing");
 expect(ctx.__sixBallFirstCurrentContactSidePersistsUntilSplit===false,"stale first-contact side lock remains enabled");
 expect(ctx.__sixBallCurrentLiveSideOverridesStoredSide===true,"current live-side override missing");

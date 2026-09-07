@@ -27,10 +27,10 @@ const result=vm.runInContext(`
   game.vis.set(baseL.id,{x:4,y:11,vy:0,motionSpeed:0});
   game.vis.set(baseR.id,{x:6,y:11,vy:0,motionSpeed:0});
 
-  // Same geometry as the measured F126 outer-right contact, translated down
-  // and one doubled-x column left so the supporting pile can sit on the floor.
+  // Authorized inner-right contact, translated down and one doubled-x column
+  // left so the supporting pile can sit on the floor.
   game.piece={x:4,y:9,rot:1,colors:[2,4,0]};
-  game.freeX=3.18;game.pieceVX=3.18;game.dropT=0;
+  game.freeX=3.60;game.pieceVX=3.60;game.dropT=0;
   lock(game,5);
 
   const snapshot=[];
