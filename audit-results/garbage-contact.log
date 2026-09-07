@@ -1,7 +1,23 @@
 garbage ordinary-physics + frozen existing pile PASS {"doneFrame":406,"spawned":12,"minDistance":0.9999999990070921}
 garbage spawn effect + 0.600 s PYRAMID cadence PASS {"starts":[{"seq":0,"t":0.008333333333333333,"ids":[1,2,3,4,5,6]},{"seq":1,"t":0.6083333333333336,"ids":[7,8,9,10,11,12]}],"delta":0.6000000000000003}
 accumulated pile gravity/no-horizontal motion PASS
-garbage post-split rigidity zero PASS {"plan":[{"id":2,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":3,"kind":"GROUP_SLOPE_TRANSLATE","bundle":0,"size":0},{"id":4,"kind":"ROLL_RIGHT","bundle":0,"size":0}],"support":1}
+evalmachine.<anonymous>:4722
+function expect(v,m){if(!v)throw new Error(m);}
+                           ^
+
+Error: fixture did not produce a split plan
+    at expect (evalmachine.<anonymous>:4722:34)
+    at evalmachine.<anonymous>:4746:1
+    at Script.runInContext (node:vm:149:12)
+    at Script.runInNewContext (node:vm:154:17)
+    at Object.runInNewContext (node:vm:310:38)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/garbage-zero-rigidity.js:68:4)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+
+Node.js v22.23.2
 garbage lower-diagonal before final settle PASS {"from":[2,1],"to":[1,2],"frozen":[8,1],"kind":"ROLL_LEFT","pivot":[3,2],"topPivot":null}
 garbage chain-free dense settle PASS [{"type":1,"done":411,"spawned":18,"maxGlobalStall":2,"minDistance":0.999996095262861},{"type":2,"done":298,"spawned":18,"maxGlobalStall":0,"minDistance":0.999999998784755},{"type":3,"done":326,"spawned":18,"maxGlobalStall":0,"minDistance":0.9999999986719219},{"type":4,"done":314,"spawned":18,"maxGlobalStall":1,"minDistance":0.9998569508717506}]
 post-garbage internal + secondary-clear collapse PASS
@@ -118,7 +134,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 120,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -126,7 +142,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
       "id": 121,
       "dx": 1,
       "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
+      "kind": "RIGID_SMOOTH_SLOPE",
       "bundleId": 502,
       "groupSize": 2
     },
@@ -160,15 +176,96 @@ replayed 9000 / 10000
 replayed 10000 / 10000
 
 ===== LAYER ACTIVATION =====
-Layer 1 changed: 3007
+Layer 1 changed: 3267
 Layer 2 changed: 509
 Layer 3 changed: 2966
 Layer 4 changed: 3096
 Layer 5 changed: 0
 
 ===== FINAL GOLDEN CHECK =====
-FINAL MATCH: 10000 / 10000
-FINAL MISMATCH: 0
+FINAL MATCH: 9740 / 10000
+FINAL MISMATCH: 260
+
+FIRST FINAL MISMATCH:
+{
+  "index": 19,
+  "shadow": [
+    {
+      "id": 1000190,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000191,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000192,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ],
+  "golden": [
+    {
+      "id": 1000190,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000191,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 500019,
+      "groupSize": 2
+    },
+    {
+      "id": 1000192,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
 
 ===== FIRST ACTIVATION PER LAYER =====
 
@@ -438,19 +535,17 @@ FINAL MISMATCH: 0
 --- Layer 5 ---
 NO OUTPUT CHANGE IN RANDOM ORACLE
 
-============================================
- SHADOW AUDIT PASS: FINAL = GOLDEN 10000/10000 
-============================================
+SHADOW AUDIT FAILED
 
 ===== DIRECTED SHADOW RESULT =====
-Layer 1 changed: 751
+Layer 1 changed: 875
 Layer 2 changed: 250
 Layer 3 changed: 500
 Layer 4 changed: 375
 Layer 5 changed: 0
 
-DIRECTED FINAL MATCH: 2000 / 2000
-DIRECTED FINAL MISMATCH: 0
+DIRECTED FINAL MATCH: 1876 / 2000
+DIRECTED FINAL MISMATCH: 124
 
 ===== DIRECTED BY TYPE =====
 blocked { total: 250, finalMismatch: 0 }
@@ -458,13 +553,93 @@ floor { total: 250, finalMismatch: 0 }
 leftWall { total: 250, finalMismatch: 0 }
 rightWall { total: 250, finalMismatch: 0 }
 valley { total: 250, finalMismatch: 0 }
-leftSupport { total: 250, finalMismatch: 0 }
+leftSupport { total: 250, finalMismatch: 62 }
 rightSupport { total: 250, finalMismatch: 0 }
-separator { total: 250, finalMismatch: 0 }
+separator { total: 250, finalMismatch: 62 }
 
-==============================================
- DIRECTED SHADOW PASS: FINAL = GOLDEN 2000/2000 
-==============================================
+FIRST DIRECTED MISMATCH:
+{
+  "index": 1253,
+  "type": "leftSupport",
+  "shadow": [
+    {
+      "id": 3012530,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012531,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "RIGID_SMOOTH_SLOPE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012532,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ],
+  "golden": [
+    {
+      "id": 3012530,
+      "x": 6,
+      "y": 5,
+      "tx": 7,
+      "ty": 6,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012531,
+      "x": 7,
+      "y": 6,
+      "tx": 8,
+      "ty": 7,
+      "dx": 1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 901253,
+      "groupSize": 2
+    },
+    {
+      "id": 3012532,
+      "x": 5,
+      "y": 6,
+      "tx": 4,
+      "ty": 7,
+      "dx": -1,
+      "dy": 1,
+      "kind": "ROLL_LEFT",
+      "bundleId": 0,
+      "groupSize": 0
+    }
+  ]
+}
+
+DIRECTED SHADOW FAILED
 
 ===== COMMIT AUDIT RANDOM 10000 =====
 random 1000 / 10000
@@ -489,17 +664,17 @@ directed 1750 / 2000
 directed 2000 / 2000
 
 ===== COMMIT LAYER DELTAS =====
-Layer 1: output changed=3758, state changed=3585
+Layer 1: output changed=4142, state changed=3969
 Layer 2: output changed=759, state changed=759
 Layer 3: output changed=3466, state changed=3466
 Layer 4: output changed=3471, state changed=3466
 Layer 5: output changed=0, state changed=0
 
 ===== COMMIT GOLDEN RESULT =====
-RANDOM COMMIT MATCH: 10000 / 10000
-RANDOM COMMIT MISMATCH: 0
-DIRECTED COMMIT MATCH: 2000 / 2000
-DIRECTED COMMIT MISMATCH: 0
+RANDOM COMMIT MATCH: 9740 / 10000
+RANDOM COMMIT MISMATCH: 260
+DIRECTED COMMIT MATCH: 1876 / 2000
+DIRECTED COMMIT MISMATCH: 124
 
 ===== FIRST STATE CHANGE PER LAYER =====
 
@@ -781,7 +956,28 @@ DIRECTED COMMIT MISMATCH: 0
 --- Layer 5 ---
 NO STATE CHANGE IN 12000 CASES
 
-==============================================
- COMMIT AUDIT PASS: GOLDEN 12000 / 12000 
-==============================================
-v1303 CURRENT 4-LAYER ORACLE SUITE PASS: 12000 PREVIEW + COMMIT CASES
+COMMIT AUDIT FAILED
+node:child_process:955
+    throw err;
+    ^
+
+Error: Command failed: /opt/hostedtoolcache/node/22.23.2/x64/bin/node /home/runner/work/6ballpuzzle/6ballpuzzle/tests/.v1303-rigidity-commit-state-current.js
+    at genericNodeError (node:internal/errors:983:15)
+    at wrappedFn (node:internal/errors:537:14)
+    at checkExecSyncError (node:child_process:916:11)
+    at Object.execFileSync (node:child_process:952:15)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/v1303-current-oracle-suite.js:43:6)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 2338,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v22.23.2
