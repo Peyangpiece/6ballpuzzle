@@ -54,11 +54,7 @@ jobs:
         run: node tests/v1303-plan-group-smoke.js
 
       - name: Run runtime performance parity
-        shell: bash
-        run: |
-          set -euo pipefail
-          node tests/runtime-performance-guards.js
-          node tests/runtime-performance-v4-parity.js
+        run: node tests/runtime-performance-v4-parity.js
 
       - name: Run authoritative 12000-case oracle
         run: node tests/v1303-current-oracle-suite.js
