@@ -152,20 +152,4 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 =======================================
  SUCCESS: V1303 FINAL PLANNER LOADED 
 =======================================
-evalmachine.<anonymous>:65
-  expect(sameSnapshots(sa,sb),"v4 contact result diverged from v3 at trial "+trial+"
-                                                                                   ^
-
-SyntaxError: Invalid or unexpected token
-    at new Script (node:vm:117:7)
-    at createScript (node:vm:269:10)
-    at Object.runInContext (node:vm:300:10)
-    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/runtime-performance-v4-parity.js:13:17)
-    at Module._compile (node:internal/modules/cjs/loader:1781:14)
-    at Object..js (node:internal/modules/cjs/loader:1913:10)
-    at Module.load (node:internal/modules/cjs/loader:1505:32)
-    at Function._load (node:internal/modules/cjs/loader:1309:12)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-
-Node.js v22.23.2
+runtime performance v4 parity PASS {"contactCases":320,"staticCases":120,"fastFrames":7,"fallbacks":313,"workspaceCache":true,"numericBuckets":true,"pairArrays":false,"columnIndex":true}
