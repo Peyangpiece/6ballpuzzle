@@ -15,11 +15,10 @@ function put(g,x,y,c=0,garbage=false){
 }
 expect(window.__hexGarbageSplitRigidityZero===true,"garbage zero-rigidity invariant missing");
 
-// Canonical up-convex split: top + two lower balls meet a centred support.
-// The ordinary core normally keeps the 2-ball side rigid after this 2+1 split;
-// garbage must instead become three independent zero-rigidity balls.
-const g=createEngine(77123);
-const support=put(g,6,5,4,false);
+// Current authority: incoming garbage is released into ordinary single-ball
+// physics immediately. Verify that production invariant directly instead of
+// relying on an obsolete up-convex split fixture to manufacture the release.
+const g=createEngine(77123);g.state="RESOLVING";g.phase="SETTLE";
 const top=put(g,6,3,0,true),left=put(g,5,4,1,true),right=put(g,7,4,2,true);
 const gid=901;
 const members=[
@@ -31,29 +30,30 @@ for(const m of members){
  m.ball.motionGroupId=gid;m.ball.motionGroupRole=m.role;m.ball.motionGroupOrientation="up";
  m.ball.motionGroupSize=3;m.ball.rigid=true;
 }
-top.momentumX=-1;top.rollDir=-1;top.subCellBias=-1;
-const plan=hexPhysPlanGroup(g.board,members,false);
-expect(Array.isArray(plan)&&plan.length>0,"fixture did not produce a split plan");
-for(const m of members){
- expect(m.ball.garbageSplitReleased===true,"split garbage was not marked independent: "+m.ball.id);
- expect(m.ball.rigid===false,"split garbage rigid remained true: "+m.ball.id);
- expect((m.ball.motionGroupId||0)===0,"split garbage kept motionGroupId: "+m.ball.id);
- expect((m.ball.motionGroupSize||0)===0,"split garbage kept motionGroupSize: "+m.ball.id);
-}
-for(const p of plan){
- if(!p.ball?.isGarbage)continue;
- expect((p.bundleId||0)===0,"split plan kept rigid bundle: "+p.ball.id);
- expect((p.groupSize||0)===0,"split plan kept rigid groupSize: "+p.ball.id);
-}
-expect(plan.some(p=>p.pivot||p.topPivot||(p.followSupportIds||[]).length),"contact arc/support geometry was removed with rigidity");
 
-// Re-rigidification must be impossible after the split, even if another helper
-// later tries to group two touching garbage balls.
+// updateVisuals is wrapped by app-garbage-zero-rigidity. Its pre-pass must
+// strip stale rigid metadata before motion/render processing can use it.
+updateVisuals(g,0);
+for(const m of members){
+ expect(m.ball.garbageSplitReleased===true,"incoming garbage was not marked independent: "+m.ball.id);
+ expect(m.ball.rigid===false,"incoming garbage rigid remained true: "+m.ball.id);
+ expect((m.ball.motionGroupId||0)===0,"incoming garbage kept motionGroupId: "+m.ball.id);
+ expect((m.ball.motionGroupSize||0)===0,"incoming garbage kept motionGroupSize: "+m.ball.id);
+}
+
+// Once released, no later grouping helper may recreate rigid pairs/groups.
 const regroup=hexPhysSetGroup([members[0],members[1]],2,"up");
-expect(regroup===0,"split garbage was allowed to form a rigid pair again");
+expect(regroup===0,"released garbage was allowed to form a rigid pair again");
 expect(!top.rigid&&!left.rigid&&top.motionGroupId===0&&left.motionGroupId===0,"re-group attempt restored rigidity");
 
-// A full, unsplit ordinary triplet remains untouched by the garbage-only rule.
+// Motion geometry is preserved while only rigid metadata is stripped.
+top.fallPath=[{kind:"ROLL_LEFT",from:[6,3],to:[5,4],pivot:[4,4],bundleId:777,groupSize:2}];
+top.garbageSplitReleased=true;
+hexPhysSetGroup([members[0]],1,"up");
+expect(top.fallPath[0].kind==="ROLL_LEFT"&&Array.isArray(top.fallPath[0].pivot),"garbage release removed motion geometry");
+expect((top.fallPath[0].bundleId||0)===0&&(top.fallPath[0].groupSize||0)===0,"released garbage fallPath kept rigid metadata");
+
+// Ordinary non-garbage triplets remain untouched by this garbage-only rule.
 const a=put(g,10,1,0,false),b=put(g,9,2,1,false),c=put(g,11,2,2,false);
 const ordinaryGroup=hexPhysSetGroup([
  {ball:a,x:10,y:1,role:0,orientation:"up"},
@@ -62,7 +62,7 @@ const ordinaryGroup=hexPhysSetGroup([
 ],3,"up");
 expect(ordinaryGroup>0&&a.rigid&&b.rigid&&c.rigid,"ordinary ball rigidity was changed by garbage invariant");
 
-console.log("garbage post-split rigidity zero PASS",JSON.stringify({plan:plan.map(p=>({id:p.ball.id,kind:p.kind,bundle:p.bundleId||0,size:p.groupSize||0})),support:support.id}));
+console.log("garbage zero-rigidity current-authority PASS",JSON.stringify({released:members.map(m=>m.ball.id),ordinaryGroup}));
 `;
 
 vm.runInNewContext(runtime+checks,{
