@@ -1,3 +1,13 @@
+function ordinarySplitSegmentNoLift(cell,seg){
+if(!cell||cell.isGarbage||!seg)return false;
+const kind=String(seg.kind||"");
+return kind==="REFERENCE_FIRST_CONTACT_PAIR"||
+kind==="REFERENCE_FIRST_CONTACT_SOLO"||
+/^REFERENCE_INVERTED_HARD_SPLIT_/.test(kind)||
+/^INVERTED_FLAT_SPLIT_/.test(kind);
+}
+if(typeof window!=="undefined")window.__sixBallCoreSplitCompletionNeverLifts=true;
+
 function updateVisuals(g, dt) {
 g.pileFlowClock=(g.pileFlowClock||0)+dt;
 const pileMemo=new Map();
@@ -123,9 +133,10 @@ const t=Math.min(1,g._liveBatchClock.elapsed/batchDuration);
 const motionState=g._liveBatchClock.states?.get(cell.id);
 const member=liveBatch.byId?.get(cell.id);
 const [nx,ny]=liveBatchPointAt(liveBatch,member,t,g._liveBatchClock.states,liveMemo);
+const splitNoLift=ordinarySplitSegmentNoLift(cell,seg);
 
 v.x=nx;
-v.y=seg.rigidPivotRoll?ny:Math.max(visualOldY,ny);
+v.y=seg.rigidPivotRoll&&!splitNoLift?ny:Math.max(visualOldY,ny);
 
 if(seg.pivot)g._visualArcPivotById.set(cell.id,seg.pivot);
 else if(seg.topPivot)g._visualArcPivotById.set(cell.id,seg.topPivot);
@@ -135,7 +146,9 @@ v.vy=Math.max(0,motionState?.endState?.vy||0);
 
 if(t>=1-1e-9){
 v.x=seg.to[0];
-v.y=cell.isGarbage?Math.max(visualOldY,seg.to[1]):seg.to[1];
+v.y=cell.isGarbage||splitNoLift
+?Math.max(visualOldY,seg.to[1])
+:seg.to[1];
 }
 
 } else if (seg) {
@@ -328,7 +341,8 @@ delete v._segDir;
 delete v._pendingPathComplete;
 }
 
-if(v.y < visualOldY - 1e-9 && !seg?.rigidPivotRoll){
+if(v.y < visualOldY - 1e-9 &&
+(!seg?.rigidPivotRoll||ordinarySplitSegmentNoLift(cell,seg))){
 v.y=visualOldY;
 v.vy=Math.max(0,v.vy||0);
 }
@@ -353,7 +367,9 @@ g._liveBatchClock.seq===liveBatch.seq &&
 g._liveBatchClock.elapsed>=g._liveBatchClock.duration-1e-9){
 for(const m of liveBatch.members){
 m.v.x=m.seg.to[0];
-m.v.y=m.cell.isGarbage?Math.max(m.v.y,m.seg.to[1]):m.seg.to[1];
+m.v.y=m.cell.isGarbage||ordinarySplitSegmentNoLift(m.cell,m.seg)
+?Math.max(m.v.y,m.seg.to[1])
+:m.seg.to[1];
 }
 for(const m of liveBatch.members){
 const {cell,v,seg}=m;

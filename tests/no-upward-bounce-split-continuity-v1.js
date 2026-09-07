@@ -54,6 +54,26 @@ const result=vm.runInContext(`
   const contactDistance=dist(contactAfter,contactSupport);
   const contactDiag={...(window.__sixBallLastNoUpwardBounceVisualV1||{})};
 
+  /* Recording regression: the rendered pair is already below the logical
+     split target when a rigid-pivot segment completes. The completion snap
+     itself must not move it upward, even before contact correction runs. */
+  const completion=createEngine(831003);completion.state="RESOLVING";completion.phase="SETTLE";
+  const completionBall=mkBall(completion,4);
+  completion.board[9][8]=completionBall;noteBoardCell(completion.board,9,completionBall);
+  completion.vis.set(completionBall.id,{x:8,y:9.42,vy:2,motionSpeed:2});
+  completionBall.fallPath=[{
+    from:[7,8],to:[8,9],kind:"REFERENCE_FIRST_CONTACT_PAIR",
+    pivot:[9,10],topPivot:null,motionSeq:831003,groupSize:2,
+    bundleId:831003,rigidPivotRoll:true
+  }];
+  let completionUpward=0,completionPrevious=9.42;
+  for(let i=0;i<40;i++){
+    updateVisuals(completion,1/120);
+    const y=Number(completion.vis.get(completionBall.id).y);
+    if(y<completionPrevious-1e-9)completionUpward++;
+    completionPrevious=y;
+  }
+
   /* Exact Nintendo F126-style first unilateral contact, exercised through the
    * complete stepEngine render/contact pipeline rather than liveSegPoint alone. */
   const game=createEngine(831002);game.state="PLAYING";
@@ -143,6 +163,7 @@ const result=vm.runInContext(`
       horizontal:window.__sixBallTrueOverlapRepairIsHorizontal,
       legacy:window.__sixBallPileAndGarbageBouncePolicyUnchanged
     },
+    completion:{upward:completionUpward,y:completionPrevious,core:window.__sixBallCoreSplitCompletionNeverLifts},
     contact:{before:contactBefore,after:contactAfter,support:contactSupport,distance:contactDistance,diag:contactDiag},
     split:{choice,soloId,pairIds,releaseSpeeds,normalPostContactVelocity:window.__sixBallHardDropPostContactVelocity,impactVelocityAdded:window.__sixBallHardDropAddsImpactVelocity,initial:Object.fromEntries(initial),upward,maxPairError,firstTickSolo,firstTickPair,soloIdleTicks,maxSoloIdleRun,soloReachedFinal,finalPair,finalSolo,activeSegs,samples}
   };
@@ -154,6 +175,7 @@ expect(Object.values(result.flags).every(Boolean),"no-upward/split-continuity fl
 expect(result.contact.after[1]>=result.contact.before[1]-1e-10,"render contact solver still moved an ordinary ball upward");
 expect(result.contact.distance>=0.9995-2e-7,"no-upward correction left a true overlap");
 expect(result.contact.diag&&result.contact.diag.upwardPrevented>=1,"upward correction was not intercepted");
+expect(result.completion.core&&result.completion.upward===0,"split batch completion snapped the pair upward");
 
 expect(["reference-first-unilateral-contact","reference-first-contact"].includes(result.split.choice.reason),"reference first-contact split was not selected");
 expect(result.split.impactVelocityAdded===false,"hard drop still adds impact velocity");
