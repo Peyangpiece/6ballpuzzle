@@ -1,2 +1,2 @@
-trigger=2026-09-07T20:15:00+09:00
-reason=deploy strict-inner narrow-row split continuity authority and verify Cloudflare production parity
+trigger=2026-09-07T20:31:00+09:00
+reason=re-run narrow-row split deployment after clearing inherited current-oracle exit status
