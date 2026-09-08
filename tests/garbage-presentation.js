@@ -8,7 +8,10 @@ const runtime=[
 const checks=String.raw`
 function expect(v,m){if(!v)throw new Error(m);}
 expect(window.__hexGarbageSpawnEffectPreserved===true,"garbage spawn effect layer missing");
-expect(Math.abs(window.__hexGarbageUnitInterval-.6)<1e-12,"garbage unit interval is not 0.600 s");
+expect(window.__hexGarbagePresentationVisualOnly===true,"garbage presentation is not visual-only");
+expect(window.__hexGarbagePresentationChangesCadence===false,"presentation must not own garbage cadence");
+expect(window.__hexGarbagePresentationChangesPhysics===false,"presentation must not own garbage physics");
+expect(Math.abs(window.__hexGarbageUnitInterval-.5)<1e-12,"garbage interval is not canonical 0.500 s");
 const g=createEngine(66119);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;g.garbShapes=["PYRAMID","PYRAMID"];g.garbLeft=0;
 prepareGarbageBatch(g);
 const starts=[];let firstIds=[];let firstMoved=false;let prevY=new Map();
@@ -32,10 +35,10 @@ for(let frame=0;frame<1600;frame++){
 }
 expect(starts.length===2,"two PYRAMID units did not start");
 const delta=starts[1].t-starts[0].t;
-expect(Math.abs(delta-.6)<=PHYSICS_FRAME*1.1,"PYRAMID unit starts are not 0.600 s apart: "+delta);
-expect(starts[0].ids.length===6&&starts[1].ids.length===6,"PYRAMID was not treated as one six-ball unit");
-expect(firstMoved,"spawn effect held the ordinary falling balls still");
-console.log("garbage spawn effect + 0.600 s PYRAMID cadence PASS",JSON.stringify({starts,delta}));
+expect(Math.abs(delta-.5)<=PHYSICS_FRAME*1.1,"PYRAMID starts are not 0.500 s apart: "+delta);
+expect(starts[0].ids.length===6&&starts[1].ids.length===6,"PYRAMID shape membership changed");
+expect(firstMoved,"spawn effect held ordinary falling balls still");
+console.log("garbage visual-only presentation + 0.500 s cadence PASS",JSON.stringify({starts,delta}));
 `;
 vm.runInNewContext(runtime+checks,{
  React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},
