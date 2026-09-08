@@ -14,14 +14,6 @@
     const NORMAL_GARBAGE_INTERVAL=0.5;
     const NORMAL_GARBAGE_SETTLE_TOL=0.06;
 
-    // app-17 contained the former garbage-only visual queue/contact gates.
-    // Restore the ordinary visual resolver captured before those gates.
-    if(typeof __hexdropUpdateVisualsBeforeGarbageQueueGate==="function")
-        updateVisuals=__hexdropUpdateVisualsBeforeGarbageQueueGate;
-    if(typeof __hexdropResolveVisualContactsBeforeGarbageQueueGate==="function")
-        resolveVisualContacts=__hexdropResolveVisualContactsBeforeGarbageQueueGate;
-    __hexdropGarbageMotionQueue=function(){return{minSeq:Infinity,queued:new Set()};};
-
     // GARBAGE does not remove board balls; it only adds incoming balls. Cache the
     // object references for the lifetime of the phase and invalidate only when a
     // new incoming ball is inserted. This removes repeated full-board scans from
@@ -258,9 +250,6 @@
         }
         g.garbageSeq=g.garbagePlans.length;
         g.garbageNextBallAt=0;
-        // The former emergency materializer is intentionally disabled. This
-        // batch is resolved only by ordinary gravity; a large value keeps the
-        // legacy GARBAGE watchdog from injecting a second physics model.
         g.garbageWatchdogLimit=1e9;
         g.ver++;
     };
@@ -270,15 +259,9 @@
         if(Array.isArray(g.activeGarbagePacks))g.activeGarbagePacks.length=0;
         else g.activeGarbagePacks=[];
 
-        // Exactly the same checkpoint used by normal SETTLE: do not advance
-        // logical gravity until the previous fallPath has visibly completed.
         if(pendingFallPathCount(g)!==0||!nearlySettled(g,NORMAL_GARBAGE_SETTLE_TOL))return;
-
-        // Continue ordinary gravity for all non-frozen balls already present.
         if(startOneOrdinaryGravityBatch(g))return;
 
-        // Reaching this point means every currently released garbage ball is at
-        // ordinary physical rest against the frozen pile/floor.
         for(const plan of g.garbagePlans)if(plan._started&&!plan.landed)plan.landed=true;
 
         const next=g.garbagePlans.find(p=>!p._started);
@@ -322,11 +305,6 @@
             delete q.ball.garbageSpawnHold;
             delete q.ball.equilibriumLocked;
             if(q.ball.isGarbage){
-                // Once the complete incoming batch has reached a quiescent board,
-                // every garbage ball is no longer an in-flight attack member: it
-                // is ordinary accumulated pile.  Mark this boundary explicitly so
-                // later post-clear arc binding may use garbage balls as real
-                // supports instead of treating them as stale transient obstacles.
                 q.ball.garbagePileSettled=true;
                 q.ball.garbageInitialRestReached=true;
                 q.ball.fixedGarbage=false;
@@ -346,13 +324,6 @@
         window.__hexInvalidateGarbagePhaseBallCache(g);
         refreshBoardScanMin(g.board);
     };
-
-    // Disable every legacy airborne/contact materializer. No normal incoming
-    // ball ever transitions between an airborne packet and a second board
-    // representation, so these entry points are deliberately inert.
-    materializeGarbagePack=function(){return false;};
-    materializeGarbagePackAtContact=function(){return false;};
-    materializeGarbageContactsThrough=function(){return 0;};
 
     window.__hexGarbageUsesNormalPhysics=true;
     window.__hexGarbageAirbornePacketsDisabled=true;
