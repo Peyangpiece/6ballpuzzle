@@ -45,111 +45,20 @@ OK  app-mass-motion-safety.js
 OK  app-gravity-priority-v1.js
 OK  app-garbage-performance-v1.js
 OK  app-post-clear-two-stage-v1.js
-OK  app-simultaneous-collapse-v1.js
-OK  app-garbage-continuous-v1.js
-OK  app-contact-separation-v1.js
-OK  app-floor-bridge-collapse-v1.js
-OK  app-lattice-finalize-v2.js
-OK  app-coherent-collapse-v1.js
-OK  app-wall-boundary-authoritative-v1.js
-OK  app-slope-upconvex-authoritative-v3.js
-OK  app-intentional-hexagon-stability-v1.js
-OK  app-rigidity-resolver-authoritative-v3.js
+/home/runner/work/6ballpuzzle/6ballpuzzle/tests/v1303-plan-group-smoke.js:152
+    throw new Error("MISSING FILE: " + file);
+    ^
 
-===== FINAL FUNCTION CHECK =====
-hexPhysPlanGroup function
-hexPhysNaturalMotion function
-hexPhysResolveEvent function
-hexPhysApplyEvent function
-settlePass function
+Error: MISSING FILE: app-simultaneous-collapse-v1.js
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/v1303-plan-group-smoke.js:152:11)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+    at Object..js (node:internal/modules/cjs/loader:1913:10)
+    at Module.load (node:internal/modules/cjs/loader:1505:32)
+    at Function._load (node:internal/modules/cjs/loader:1309:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+    at Module.require (node:internal/modules/cjs/loader:1527:12)
+    at require (node:internal/modules/helpers:147:16)
+    at Object.<anonymous> (/home/runner/work/6ballpuzzle/6ballpuzzle/tests/runtime-performance-v4-parity.js:4:13)
+    at Module._compile (node:internal/modules/cjs/loader:1781:14)
 
-===== VERSION MARKERS =====
-rigidityResolver: true
-gravityPriority: gravity-priority-v6-ai-fastpath
-
-===== CANONICAL SMOKE CASES =====
-{
-  "freeFall": [
-    {
-      "id": 100,
-      "dx": 0,
-      "dy": 2,
-      "kind": "GROUP_TRANSLATE",
-      "bundleId": 500,
-      "groupSize": 3
-    },
-    {
-      "id": 101,
-      "dx": 0,
-      "dy": 2,
-      "kind": "GROUP_TRANSLATE",
-      "bundleId": 500,
-      "groupSize": 3
-    },
-    {
-      "id": 102,
-      "dx": 0,
-      "dy": 2,
-      "kind": "GROUP_TRANSLATE",
-      "bundleId": 500,
-      "groupSize": 3
-    }
-  ],
-  "slope": [
-    {
-      "id": 110,
-      "dx": -1,
-      "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
-      "bundleId": 501,
-      "groupSize": 3
-    },
-    {
-      "id": 111,
-      "dx": -1,
-      "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
-      "bundleId": 501,
-      "groupSize": 3
-    },
-    {
-      "id": 112,
-      "dx": -1,
-      "dy": 1,
-      "kind": "GROUP_SLOPE_TRANSLATE",
-      "bundleId": 501,
-      "groupSize": 3
-    }
-  ],
-  "upConvex": [
-    {
-      "id": 120,
-      "dx": 1,
-      "dy": 1,
-      "kind": "RIGID_SMOOTH_SLOPE",
-      "bundleId": 502,
-      "groupSize": 2
-    },
-    {
-      "id": 121,
-      "dx": 1,
-      "dy": 1,
-      "kind": "RIGID_SMOOTH_SLOPE",
-      "bundleId": 502,
-      "groupSize": 2
-    },
-    {
-      "id": 122,
-      "dx": -1,
-      "dy": 1,
-      "kind": "ROLL_LEFT",
-      "bundleId": 0,
-      "groupSize": 0
-    }
-  ]
-}
-
-=======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
-=======================================
-runtime performance v4 parity PASS {"contactCases":320,"staticCases":120,"fastFrames":7,"fallbacks":313,"workspaceCache":true,"numericBuckets":true,"pairArrays":false,"columnIndex":true}
+Node.js v22.23.2
