@@ -1,1 +1,1 @@
-{"sha":"c8b3cb9887e59bc6f6bc32e52d8227f7599e0493","status":"fail","smoke":99,"oracle12k":99,"upconvex":99,"clearFx":99,"invertedSplit":99,"rigidityState":99}
+{"sha":"fa8494f49126dd0941fcbb5f13dd69d4bc16465b","status":"fail","smoke":1,"oracle12k":1,"upconvex":1,"clearFx":0,"invertedSplit":1,"rigidityState":1,"smoothness":1,"noBounceSplit":1}
