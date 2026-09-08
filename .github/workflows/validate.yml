@@ -1,4 +1,4 @@
-name: Validate HEXDROP Current Runtime
+name: Validate and Deploy HEXDROP Current Runtime
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hexdrop-current-validation
+  group: hexdrop-main-pipeline
   cancel-in-progress: true
 
 permissions:
@@ -43,12 +43,18 @@ jobs:
           grep -q 'app-rigidity-nintendo-authority-v1.js' public/index.html
           grep -q 'app-no-upward-bounce-split-authority-v1.js' public/index.html
           grep -q 'app-runtime-performance-v4.js' public/index.html
+          grep -q 'app-collapse-vertical-merge-v1.js' public/index.html
+          grep -q 'app-pile-motion-authority-v2.js' public/index.html
           grep -q 'controls-v7.js' public/index.html
           grep -q '__hexControlsV7Installed' public/controls-v7.js
           grep -q 'hexPhysNaturalMotion' public/app-02.js
           grep -q 'hexPhysPlanGroup' public/app-02.js
           grep -q 'hexPhysResolveEvent' public/app-03.js
           grep -q '__hexGarbageFinalizesIntoAccumulatedPile' public/app-garbage-normal-physics.js
+          test ! -e public/app-simultaneous-collapse-v1.js
+          test ! -e public/app-collapse-timing-authoritative-v2.js
+          test ! -e public/app-pile-collapse-chunk-compression-v1.js
+          test ! -e public/app-pile-motion-deadline-v1.js
 
       - name: Run current production smoke
         run: node tests/v1303-plan-group-smoke.js
@@ -70,12 +76,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Keep dated diagnostics that still describe current authority behavior.
-          # Three F126-F134 capture tests are historical snapshots of the older
-          # v3-only stack and are intentionally not current production gates.
           node tests/reference-20260826-upconvex-dynamic-split.js
+          node tests/reference-20260826-rendered-pair-rigidity.js
+          node tests/reference-20260826-solo-continuity-diagnostic.js
+          node tests/reference-20260826-solo-pivot-arc.js
           node tests/reference-20260814-inverted-flat-split-diagnostic.js
           node tests/reference-rigidity-state-machine-v1.js
+          node tests/reference-rigidity-release-bounce-v1.js
           node tests/motion-smoothness-regression-v1.js
           node tests/no-upward-bounce-split-continuity-v1.js
           node tests/even-row-strict-inner-split-continuity-v1.js
@@ -96,3 +103,41 @@ jobs:
           node tests/garbage-post-clear-collapse.js
           node tests/gameover-garbage-fade.js
           node tests/garbage-render-overlap-guard.js
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp deploy commit
+        shell: bash
+        run: printf '%s\n' "$GITHUB_SHA" > public/deploy-sha.txt
+
+      - name: Deploy 6ballpuzzle to Cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.123.0'
+          command: deploy
+
+      - name: Verify Cloudflare production commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$GITHUB_SHA"
+          url="https://6ballpuzzle.hrk-6888.workers.dev/deploy-sha.txt"
+          observed=""
+          for attempt in $(seq 1 30); do
+            observed="$(curl -fsS "${url}?run=${GITHUB_RUN_ID}-${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
+            if [ "$observed" = "$expected" ]; then
+              echo "Cloudflare production verified: $observed"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Expected: $expected"
+          echo "Observed: $observed"
+          exit 1
