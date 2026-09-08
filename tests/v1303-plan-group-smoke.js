@@ -5,10 +5,8 @@ const path = require("path");
 const PUBLIC = path.join(__dirname, "../public");
 
 /*
- * Only the runtime layers that can affect normal-ball physics
- * are loaded, in the same order as index.html.
- *
- * UI / audio / online / AI files are intentionally excluded.
+ * Only runtime layers that can affect ball physics or its rendered motion are
+ * loaded here, in the same order as index.html. UI/audio/online/AI are excluded.
  */
 const files = [
   "app-01.js",
@@ -18,33 +16,28 @@ const files = [
   "app-05.js",
   "app-06.js",
   "app-07.js",
-
   "app-pile-arc.js",
   "app-clear-gap-collapse.js",
   "app-floor-gap-invariant.js",
   "app-clear-vacancy-priority.js",
   "app-release-parity-settle.js",
-
   "app-08.js",
   "app-09.js",
   "app-10.js",
   "app-14.js",
   "app-17.js",
-
   "app-garbage-normal-physics.js",
   "app-garbage-presentation.js",
   "app-garbage-zero-rigidity.js",
   "app-garbage-deep-settle.js",
   "app-garbage-simultaneous-motion.js",
   "app-garbage-render-overlap-guard.js",
-
   "app-runtime-performance.js",
   "app-physics-safety-invariants.js",
   "app-mass-motion-safety.js",
   "app-gravity-priority-v1.js",
   "app-garbage-performance-v1.js",
   "app-post-clear-two-stage-v1.js",
-  "app-simultaneous-collapse-v1.js",
   "app-garbage-continuous-v1.js",
   "app-contact-separation-v1.js",
   "app-floor-bridge-collapse-v1.js",
@@ -53,7 +46,21 @@ const files = [
   "app-wall-boundary-authoritative-v1.js",
   "app-slope-upconvex-authoritative-v3.js",
   "app-intentional-hexagon-stability-v1.js",
-  "app-rigidity-resolver-authoritative-v3.js"
+  "app-rigidity-resolver-authoritative-v3.js",
+  "app-collapse-vertical-merge-v1.js",
+  "app-pile-motion-authority-v2.js",
+  "app-runtime-performance-v3.js",
+  "app-runtime-performance-v4.js",
+  "app-rigidity-final-authority-v1.js",
+  "app-reference-upconvex-authority-v1.js",
+  "app-reference-first-contact-sweep-v3.js",
+  "app-reference-inverted-flat-split-v1.js",
+  "app-rigidity-nintendo-authority-v1.js",
+  "app-rigidity-release-bounce-authority-v1.js",
+  "app-motion-smoothness-authority-v1.js",
+  "app-no-upward-bounce-split-authority-v1.js",
+  "app-even-row-split-continuity-v1.js",
+  "app-split-visual-smoothness-v1.js"
 ];
 
 const ctx = {
@@ -357,7 +364,6 @@ console.log();
 console.log("=======================================");
 console.log(" SUCCESS: V1303 FINAL PLANNER LOADED ");
 console.log("=======================================");
-
 
 // Reuse the verified v1303 runtime from Oracle tests.
 vm.runInContext(`
