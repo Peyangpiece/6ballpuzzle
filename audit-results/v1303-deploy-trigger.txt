@@ -1,3 +1,0 @@
-trigger=2026-09-07-performance-v4-production
-source=8f0cfc84f59bf7c11b6cff739768ec1296ea9a5f
-reason=deploy runtime performance v4 after full current-authority validation passed
