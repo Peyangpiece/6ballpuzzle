@@ -1,4 +1,4 @@
-sha=0700add9ae0b523474919f8bf5e68a741ff407f7
+sha=0b542ddff52cd519bee63560ab21f926df2fb35e
 reference-20260826-upconvex-dynamic-split.js=1
 reference-20260826-rendered-pair-rigidity.js=1
 reference-20260826-solo-continuity-diagnostic.js=1
