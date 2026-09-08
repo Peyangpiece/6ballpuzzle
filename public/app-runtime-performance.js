@@ -15,7 +15,6 @@
     const baseResolveVisualContacts=resolveVisualContacts;
     const baseRigidShadowPixelPlacement=typeof rigidShadowPixelPlacement==="function"?rigidShadowPixelPlacement:null;
     const baseDrawBall=typeof drawBall==="function"?drawBall:null;
-    const baseHexGarbageBoardBallById=typeof hexGarbageBoardBallById==="function"?hexGarbageBoardBallById:null;
 
     function boardStaticForActivePlay(g){
         return !!g&&g.state==="PLAYING"&&g.piece&&g._visualMovingIds instanceof Set&&g._visualMovingIds.size===0;
@@ -49,20 +48,6 @@
         }
         g._perfStaticVisualColliders={ver,scanMin,items};
         return items;
-    }
-
-    function logicalBallByIdMap(g){
-        if(!g?.board)return null;
-        const scanMin=boardScanMin(g.board),ver=Number(g.ver)||0;
-        const cache=g._perfLogicalBallById;
-        if(cache&&cache.ver===ver&&cache.scanMin===scanMin)return cache.map;
-        const map=new Map();
-        for(let y=scanMin;y<ROWS;y++)for(let x=0;x<W2;x++){
-            const ball=valid(x,y)?g.board[y][x]:null;
-            if(ball)map.set(ball.id,ball);
-        }
-        g._perfLogicalBallById={ver,scanMin,map};
-        return map;
     }
 
     safeActiveFallOffset=function(g,cells,dx,dOff,desired){
@@ -155,12 +140,6 @@
             const sq=o.sq===undefined?0:o.sq;
             const aura=o.aura===undefined?0:o.aura;
             const ring=o.ring===undefined?0:o.ring;
-            // Settled, unsquashed balls are by far the hottest render path.
-            // The canonical routine only save()s, sets globalAlpha=1, draws the
-            // already-decoded PNG, then restore()s. When the parent alpha is
-            // already 1, the direct drawImage below is pixel-identical and has
-            // no context-state side effects, so two state-stack operations per
-            // ball per frame can be removed safely.
             if(alpha===1&&scale===1&&sq===0&&aura===0&&ring===0&&d>1.2&&
                ctx?.globalAlpha===1&&typeof imgReady==="function"&&imgReady(ci)){
                 ctx.drawImage(BALL_IMG[ci],cx-d/2,cy-d/2,d,d);
@@ -170,17 +149,7 @@
         };
     }
 
-    if(baseHexGarbageBoardBallById){
-        hexGarbageBoardBallById=function(g,id){
-            const map=logicalBallByIdMap(g);
-            return map?.get(id)||null;
-        };
-    }
-
     resolveVisualContacts=function(g){
-        // updateVisuals() has already established _visualMovingIds immediately
-        // before this call in stepEngine. A static lattice cannot develop a new
-        // board-ball overlap, so the O(n^2) contact pass is redundant here.
         if(boardStaticForActivePlay(g)){
             g._perfStaticContactSkips=(g._perfStaticContactSkips||0)+1;
             return;
@@ -194,6 +163,5 @@
     window.__hexLandingShadowColliderCache=true;
     window.__hexRigidShadowVisualColliderCache=!!baseRigidShadowPixelPlacement;
     window.__hexDefaultBallDrawFastPath=!!baseDrawBall;
-    window.__hexGarbageBoardIdLookupCache=!!baseHexGarbageBoardBallById;
     window.__hexPerformanceBehaviorParityRequired=true;
 })();
