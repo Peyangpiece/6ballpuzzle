@@ -87,6 +87,15 @@ jobs:
           node tests/no-upward-bounce-split-continuity-v1.js
           node tests/even-row-strict-inner-split-continuity-v1.js
 
+      - name: Check split motion state and frame-rate continuity
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tests/split-visual-state-integrity.js
+          for fps in 30 60 120 240; do
+            TEST_FPS="$fps" node tests/no-upward-bounce-split-continuity-v1.js
+          done
+
       - name: Run clear disappearance FX regression
         run: node tests/clear-all-ball-fx.js
 

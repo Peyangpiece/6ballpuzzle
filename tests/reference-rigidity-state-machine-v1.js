@@ -3,16 +3,7 @@ const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js",
-  "app-reference-inverted-flat-split-v1.js",
-  "app-rigidity-nintendo-authority-v1.js",
-  "app-rigidity-release-bounce-authority-v1.js"
-])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
+// The shared harness already loads the current production physics layers once.
 
 function expect(v,msg){if(!v)throw new Error(msg);}
 const result=vm.runInContext(`

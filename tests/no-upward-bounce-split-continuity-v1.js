@@ -3,21 +3,11 @@ const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js",
-  "app-reference-inverted-flat-split-v1.js",
-  "app-rigidity-nintendo-authority-v1.js",
-  "app-rigidity-release-bounce-authority-v1.js",
-  "app-motion-smoothness-authority-v1.js",
-  "app-no-upward-bounce-split-authority-v1.js"
-])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
+// The shared harness already loads the current production physics layers once.
 
 function expect(v,msg){if(!v)throw new Error(msg);}
 
+ctx.testFrameRate=Number(process.env.TEST_FPS)||240;
 const result=vm.runInContext(`
 (()=>{
   function dist(a,b){return Math.hypot((a[0]-b[0])*.5,(a[1]-b[1])*HEX_ROW_H);}
@@ -109,9 +99,9 @@ const result=vm.runInContext(`
   let soloReachedFinal=false;
   let previous=new Map(activeIds.map(id=>[id,pos(game,id)]));
   const samples=[];
-  const dt=1/240;
+  const dt=1/testFrameRate;
 
-  for(let i=1;i<=90;i++){
+  for(let i=1;i<=Math.ceil(.375/dt);i++){
     stepEngine(game,dt);
     const now=new Map(activeIds.map(id=>[id,pos(game,id)]));
     for(const id of activeIds){
@@ -141,7 +131,7 @@ const result=vm.runInContext(`
 
     if(i%8===0)samples.push({t:i*dt,solo:soloNow,pair:pp});
     previous=now;
-    if(soloReachedFinal&&i>66)break;
+    if(soloReachedFinal&&i*dt>.275)break;
   }
 
   const finalPair=pairIds.map(id=>pos(game,id));
