@@ -2,19 +2,7 @@ const fs=require("fs");
 const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
-for(const file of[
-"app-collapse-timing-authoritative-v2.js",
-"app-runtime-performance-v3.js",
-"app-rigidity-final-authority-v1.js",
-"app-reference-upconvex-authority-v1.js",
-"app-reference-first-contact-sweep-v3.js"
-]){
-vm.runInContext(
-fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),
-ctx,
-{filename:file}
-);
-}
+// Shared harness loads the complete production runtime exactly once.
 function expect(value,message){if(!value)throw new Error(message);}
 function close(a,b,eps=1e-9){return Math.abs(a-b)<=eps;}
 const dynamic=vm.runInContext(`
@@ -140,12 +128,12 @@ expect(close(firstContact.innerRight.rightDistance,1,2e-6),"inner-right ball is 
 expect(firstContact.innerRight.count===3,"inner-right contact did not split immediately");
 expect(JSON.stringify(firstContact.innerRight.pair)===JSON.stringify([firstContact.innerRight.topId,firstContact.innerRight.leftId].sort((a,b)=>a-b)),"inner-right contact did not retain top + left pair");
 expect(firstContact.innerRight.soloId===firstContact.innerRight.rightId,"inner-right contacted ball did not become solo");
-expect(firstContact.innerRight.choice.hitFraction>.69&&firstContact.innerRight.choice.hitFraction<.71,"inner-right hit fraction is not near .70");
+expect(firstContact.innerRight.diag.hitFraction>.69&&firstContact.innerRight.diag.hitFraction<.71,"inner-right hit fraction is not near .70");
 expect(firstContact.innerRight.sweep.hit===false&&firstContact.innerRight.sweep.minDistance>=.9994,"inner-right split sweep lost separation");
 expect(firstContact.innerLeft.count===3,"inner-left contact did not split immediately");
 expect(JSON.stringify(firstContact.innerLeft.pair)===JSON.stringify([firstContact.innerLeft.topId,firstContact.innerLeft.rightId].sort((a,b)=>a-b)),"inner-left contact did not retain top + right pair");
 expect(firstContact.innerLeft.soloId===firstContact.innerLeft.leftId,"inner-left contacted ball did not become solo");
-expect(firstContact.innerLeft.choice.hitFraction>.29&&firstContact.innerLeft.choice.hitFraction<.31,"inner-left hit fraction is not near .30");
+expect(firstContact.innerLeft.diag.hitFraction>.29&&firstContact.innerLeft.diag.hitFraction<.31,"inner-left hit fraction is not near .30");
 expect(firstContact.boundaryRight.count===0&&firstContact.boundaryRight.rigid3,"75% boundary split the triplet");
 expect(firstContact.boundaryLeft.count===0&&firstContact.boundaryLeft.rigid3,"25% boundary split the triplet");
 expect(firstContact.preContact.choice.reason!=="reference-first-unilateral-contact","split fired before physical contact");
@@ -169,7 +157,7 @@ maxReleaseSpeed:Math.max(...balls.map(q=>Number(q.v?.motionSpeed)||0)),
 neutralReleased:balls.every(q=>q.v?.neutralInstantDrop===true),
 impactVelocityAdded:window.__sixBallHardDropAddsImpactVelocity,
 normalPostContactVelocity:window.__sixBallHardDropPostContactVelocity,
-signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})}};
+signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},choice:{...(window.__sixBallLastNintendoRigidityDecision||{})},sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})}};
 })()
 `,ctx);
 expect(close(lockContact.rd,1,3e-5),"hard-drop handoff did not land at exact one-diameter visual contact");
@@ -178,7 +166,7 @@ expect(lockContact.signed.releaseFrac<0,"inner-contact hard drop did not use the
 expect(lockContact.impactVelocityAdded===false,"hard drop still adds impact velocity");
 expect(lockContact.neutralReleased,"hard-drop release was not tagged as neutral");
 expect(lockContact.maxReleaseVy<=lockContact.normalPostContactVelocity+1e-9&&lockContact.maxReleaseSpeed<=lockContact.normalPostContactVelocity+1e-9,"hard drop carried excess momentum into slope motion");
-expect(lockContact.choice.reason==="reference-first-unilateral-contact","hard-drop lock did not split on its first physical contact");
+expect(lockContact.choice.reason==="reference-first-contact","hard-drop lock did not split on its first physical contact");
 expect(lockContact.rightRigid===false&&lockContact.rightSize===0,"contacted right ball retained triplet rigidity after first contact");
 expect(lockContact.leftRigid&&lockContact.topRigid&&lockContact.leftSize===2&&lockContact.topSize===2,"surviving pair was not committed immediately at first contact");
 expect(lockContact.sweep.hit===false,"hard-drop surviving pair intersects a stationary ball in rendered sweep");

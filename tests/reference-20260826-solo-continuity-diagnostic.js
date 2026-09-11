@@ -2,13 +2,7 @@ const fs=require("fs");
 const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js"
-])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
+// Shared harness loads the complete production runtime exactly once.
 
 const result=vm.runInContext(`
 (()=>{
@@ -31,10 +25,10 @@ const result=vm.runInContext(`
 
   game.piece={x:6,y:9,rot:1,colors:[2,4,0]};
   game.freeX=5.60;game.pieceVX=5.60;game.dropT=0;
-  lock(game,5);
+  hardDrop(game);
 
-  const choice={...(window.__sixBallLastReferenceUpConvexChoiceV1||{})};
-  const soloId=Number(choice.contactSoloId)||0;
+  const choice={...(window.__sixBallLastNintendoRigidityDecision||{})};
+  const soloId=Number(choice.soloId)||0;
   const pairIds=[...(choice.pairIds||[])];
   function ballById(id){
     for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -112,7 +106,7 @@ const result=vm.runInContext(`
 console.log("NINTENDO_F126_F134_EXACT_BOARD",JSON.stringify(result));
 function close(a,b,eps=1e-9){return Math.abs(Number(a)-Number(b))<=eps;}
 if(!result.soloId)throw new Error("reference solo id missing");
-if(result.choice.reason!=="reference-first-unilateral-contact")throw new Error("reference first-contact split not used");
+if(result.choice.reason!=="reference-first-contact")throw new Error("reference first-contact split not used");
 if(result.timing.captured!==true)throw new Error("captured continuation timing marker missing");
 if(result.timing.pairFrames!==4||result.timing.soloFrames!==5||result.timing.continuationFrames!==3)throw new Error("Nintendo F126/F130/F131/F134 frame budgets changed");
 if(!close(result.timing.pairDuration,4/result.timing.fps)||!close(result.timing.soloDuration,5/result.timing.fps)||!close(result.timing.continuationDuration,3/result.timing.fps))throw new Error("captured frame durations are not exact");

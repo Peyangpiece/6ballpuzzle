@@ -3,17 +3,7 @@ const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js",
-  "app-reference-inverted-flat-split-v1.js",
-  "app-rigidity-nintendo-authority-v1.js",
-  "app-rigidity-release-bounce-authority-v1.js",
-  "app-motion-smoothness-authority-v1.js"
-])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
+// Shared harness loads the complete production runtime exactly once.
 
 const result=vm.runInContext(`
 (()=>{
@@ -79,9 +69,5 @@ for(const pair of [...result.pileHalf,...result.garbageHalf]){
   if(!near(pair[0],.5)||!near(pair[1],.5))throw new Error("pile/garbage batch timing was modified");
 }
 
-const app17=fs.readFileSync(path.join(__dirname,"../public/app-17.js"),"utf8");
-if(app17.includes("if(seg?.pileFlow)continue;"))throw new Error("garbage pileFlow queue bypass was not reverted");
-if(app17.includes("__hexdropGarbagePileFlowBypassesLegacySeqGate"))throw new Error("garbage bypass marker still exists");
-if(!app17.includes("const seq=Number(seg?.motionSeq)||0;"))throw new Error("legacy garbage motionSeq queue missing");
-
+// Actual garbage scheduling and clearance are covered by garbage-chain-settle.js.
 console.log("ordinary smoothness + legacy pile/garbage regression PASS",JSON.stringify(result));

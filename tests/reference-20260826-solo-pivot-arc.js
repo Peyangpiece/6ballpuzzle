@@ -2,13 +2,7 @@ const fs=require("fs");
 const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js"
-])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
+// Shared harness loads the complete production runtime exactly once.
 
 const result=vm.runInContext(`
 (()=>{
@@ -24,10 +18,10 @@ const result=vm.runInContext(`
 
   game.piece={x:6,y:9,rot:1,colors:[2,4,0]};
   game.freeX=5.60;game.pieceVX=5.60;game.dropT=0;
-  lock(game,5);
+  hardDrop(game);
 
-  const choice={...(window.__sixBallLastReferenceUpConvexChoiceV1||{})};
-  const soloId=Number(choice.contactSoloId)||0;
+  const choice={...(window.__sixBallLastNintendoRigidityDecision||{})};
+  const soloId=Number(choice.soloId)||0;
   let solo=null;
   for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){
     const c=valid(x,y)?game.board[y][x]:null;if(c?.id===soloId)solo=c;
@@ -61,7 +55,7 @@ const result=vm.runInContext(`
 
 console.log("NINTENDO_F126_F131_SOLO_PIVOT_ARC",JSON.stringify(result));
 if(!result.soloId||!result.seg)throw new Error("reference solo segment missing");
-if(result.choice.reason!=="reference-first-unilateral-contact")throw new Error("reference first-contact split not used");
+if(result.choice.reason!=="reference-first-contact")throw new Error("reference first-contact split not used");
 if(result.seg.kind!=="REFERENCE_FIRST_CONTACT_SOLO")throw new Error(`unexpected solo segment ${result.seg.kind}`);
 if(JSON.stringify(result.seg.pivot)!==JSON.stringify([7,10]))throw new Error(`solo did not roll around Nintendo blue support: ${JSON.stringify(result.seg.pivot)}`);
 if(JSON.stringify(result.seg.to)!==JSON.stringify([9,10]))throw new Error(`solo first lattice target changed: ${JSON.stringify(result.seg.to)}`);

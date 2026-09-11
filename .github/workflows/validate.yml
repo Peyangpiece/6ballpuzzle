@@ -62,7 +62,7 @@ jobs:
       - name: Run runtime performance parity
         run: node tests/runtime-performance-v4-parity.js
 
-      - name: Run authoritative 12000-case oracle
+      - name: Run final production 12000-case contract audit
         run: node tests/v1303-current-oracle-suite.js
 
       - name: Run current up-convex production guards

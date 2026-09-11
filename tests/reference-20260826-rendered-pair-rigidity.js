@@ -2,13 +2,7 @@ const fs=require("fs");
 const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js"
-])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
+// Shared harness loads the complete production runtime exactly once.
 
 function expect(v,msg){if(!v)throw new Error(msg);}
 
@@ -31,7 +25,7 @@ const result=vm.runInContext(`
   // left so the supporting pile can sit on the floor.
   game.piece={x:4,y:9,rot:1,colors:[2,4,0]};
   game.freeX=3.60;game.pieceVX=3.60;game.dropT=0;
-  lock(game,5);
+  hardDrop(game);
 
   const snapshot=[];
   for(let y=boardScanMin(game.board);y<ROWS;y++)for(let x=0;x<W2;x++){
@@ -46,7 +40,7 @@ const result=vm.runInContext(`
   const pair=batch.members.filter(m=>String(m.seg?.kind||"")==="REFERENCE_FIRST_CONTACT_PAIR");
   const solo=batch.members.find(m=>String(m.seg?.kind||"")==="REFERENCE_FIRST_CONTACT_SOLO")||null;
   if(pair.length!==2)return{error:"wrong-pair-count",pairCount:pair.length,kinds:batch.members.map(m=>m.seg?.kind),snapshot,
-    choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},signed:{...(window.__sixBallLastSignedHardDropContactV2||{})}};
+    choice:{...(window.__sixBallLastNintendoRigidityDecision||{})},signed:{...(window.__sixBallLastSignedHardDropContactV2||{})}};
 
   const states=new Map(batch.members.map(m=>[
     m.cell.id,
@@ -89,7 +83,7 @@ const result=vm.runInContext(`
     pairIds:pair.map(m=>m.cell.id),soloId:solo?.cell?.id??null,
     pairDuration:Math.max(...pair.map(m=>m.duration)),soloDuration:solo?.duration??null,batchDuration:batch.duration,
     maxPairDistanceError,minPairDistance,maxPairDistance,maxCommonBowMismatch,startErr,endErr,samples,snapshot,
-    choice:{...(window.__sixBallLastReferenceUpConvexChoiceV1||{})},
+    choice:{...(window.__sixBallLastNintendoRigidityDecision||{})},
     signed:{...(window.__sixBallLastSignedHardDropContactV2||{})},
     sweep:{...(window.__sixBallReferenceFirstContactSweepDiagnosticV3||{})}
   };
@@ -100,7 +94,7 @@ console.log("RENDERED_PAIR_DIAGNOSTIC",JSON.stringify(result));
 expect(!result.error,"rendered trajectory setup failed: "+JSON.stringify(result));
 expect(result.pairIds.length===2,"rendered pair not found");
 expect(result.soloId!==null,"rendered solo not found");
-expect(result.choice.reason==="reference-first-unilateral-contact","rendered test did not use reference first-contact authority");
+expect(result.choice.reason==="reference-first-contact","rendered test did not use reference first-contact authority");
 expect(result.maxPairDistanceError<1e-9,"rendered pair spacing drifted: "+result.maxPairDistanceError);
 expect(result.maxCommonBowMismatch<1e-9,"pair members did not receive the same tangent bow");
 expect(result.startErr<1e-9,"rendered pair jumps at first-contact handoff");

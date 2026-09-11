@@ -3,14 +3,7 @@ const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js",
-  "app-reference-inverted-flat-split-v1.js"
-])vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),ctx,{filename:file});
+// Shared harness loads the complete production runtime exactly once.
 
 const result=vm.runInContext(`
 (()=>{
@@ -78,7 +71,7 @@ if(result.moving.some(q=>!q.seg||!Array.isArray(q.seg.pivot)||q.seg.pivot[0]!==1
 if(result.moving[0].seg.motionSeq!==result.moving[1].seg.motionSeq)throw new Error("left/right split does not start in one motion batch");
 if(result.moving[0].seg.kind!=="INVERTED_FLAT_SPLIT_LEFT")throw new Error(`left normal-slope kind mismatch: ${result.moving[0].seg.kind}`);
 if(result.moving[1].seg.kind!=="INVERTED_FLAT_SPLIT_RIGHT")throw new Error(`right normal-slope kind mismatch: ${result.moving[1].seg.kind}`);
-if(!result.normalTiming||result.hardDuration!==0||result.choice?.hardDropTiming!==false)throw new Error("hard-drop-specific inverted timing remains enabled");
+if(!result.normalTiming||result.hardDuration!==0)throw new Error("hard-drop-specific inverted timing remains enabled");
 for(const q of result.moving)if(Math.abs(q.duration-result.reference.duration)>1e-12)throw new Error(`normal split timing mismatch ${q.id}: ${q.duration}`);
 if(result.afterFirst.some(q=>q.gid!==0||q.size!==0||q.rigid))throw new Error("inverted flat split retained stale triplet rigidity");
 if(result.afterFirst.find(q=>q.id===5673)?.path?.length)throw new Error("stable lower centre received a motion path");

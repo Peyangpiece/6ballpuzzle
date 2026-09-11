@@ -1,11 +1,6 @@
 const fs=require("fs");
 const vm=require("vm");
-const runtime=[
-  "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
-  "app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js",
-  "app-17.js","app-garbage-normal-physics.js","app-garbage-presentation.js",
-  "app-garbage-zero-rigidity.js","app-garbage-deep-settle.js","app-garbage-simultaneous-motion.js"
-].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
+const {ctx}=require("./v1303-plan-group-smoke.js");
 const checks=String.raw`
 function expect(v,m){if(!v)throw new Error(m);}
 function put(g,x,y,c=0){if(!valid(x,y)||g.board[y][x])return null;const b=mkBall(g,c);g.board[y][x]=b;noteBoardCell(g.board,y,b);setVis(g,b,x,y,0);return b;}
@@ -37,12 +32,21 @@ function pathBlockers(g,p){
 expect(window.__hexGarbageNoChainFreeze===true,"chain-free garbage settle layer missing");
 expect(window.__hexGarbageMovingPeersAreSimultaneous===true,"garbage contact layer missing");
 expect(window.__hexGarbageCanonicalPositionRollbackDisabled===true,"obsolete canonical-position rollback is still active");
-expect(window.__hexGarbageUnitLocalTimeline===true,"unit-local ordinary timeline missing");
+expect(window.__hexGarbageUnitLocalTimeline===false,"obsolete presentation timeline overrides physics");
 expect(window.__hexGarbageDeepSettleUsesCanonicalEventResolver===true,"canonical deep settle resolver missing");
 expect(window.__hexGarbageRawFallbackAfterFailedFollow===true,"failed FOLLOW_SUPPORT raw-gravity fallback missing");
 const reports=[];
 for(let type=1;type<=4;type++){
  const g=createEngine(72000+type);g.state="RESOLVING";g.phase="GARBAGE";g.garbDone=true;terrain(g,type);
+ // Enter attack from a physically settled pile, as CHECK does in production.
+ g.phase="SETTLE";
+ for(let i=0;i<1200;i++){
+  if(!pendingFallPathCount(g)&&!hasLegalGravityMove(g.board)&&nearlySettled(g,SETTLE_TOL))break;
+  if(!pendingFallPathCount(g))settlePass(g.board);
+  updateVisuals(g,PHYSICS_FRAME);resolveVisualContacts(g);
+ }
+ expect(!pendingFallPathCount(g)&&nearlySettled(g,SETTLE_TOL),"terrain did not settle before attack");
+ g.phase="GARBAGE";
  g.garbShapes=["PYRAMID","HEXAGON","PYRAMID"];g.garbLeft=0;
  const original=new Map(entries(g).map(q=>[q.b.id,{x:q.x,y:q.y,vx:q.v.x,vy:q.v.y}]));prepareGarbageBatch(g);
  let prevState=null,globalStall=0,maxGlobalStall=0,done=-1,minDistance=Infinity,spawned=0;
@@ -56,7 +60,7 @@ for(let type=1;type<=4;type++){
   const hasPath=gs.some(q=>Array.isArray(q.b.fallPath)&&q.b.fallPath.length),safeRaw=gs.map(q=>({q,p:safeRawDown(g,q)})).filter(z=>z.p),accepted=window.__hexGarbageNextReadyGravityEvent(g,true)||[];
   const unfinished=hasPath||safeRaw.length>0||accepted.length>0||(g.garbagePlans||[]).some(p=>!p._started);
   if(unfinished&&!progress)globalStall++;else globalStall=0;maxGlobalStall=Math.max(maxGlobalStall,globalStall);
-  expect(globalStall<72,"whole garbage system chain-froze with reachable gravity: "+JSON.stringify({type,frame,safeRaw:safeRaw.slice(0,8).map(z=>({id:z.q.b.id,cell:[z.q.x,z.q.y],to:[z.p.tx,z.p.ty],kind:z.p.kind,pivot:z.p.pivot,blockers:pathBlockers(g,z.p)})),accepted:(accepted||[]).map(p=>({id:p.ball?.id,from:[p.x,p.y],to:[p.tx,p.ty],kind:p.kind,follow:p.followSupportIds||[]})),active:gs.filter(q=>q.b.fallPath?.length).slice(0,8).map(q=>({id:q.b.id,cell:[q.x,q.y],visual:[q.v.x,q.v.y],seg:q.b.fallPath[0]}))}));
+  expect(globalStall<72,"whole garbage system chain-froze with reachable gravity: "+JSON.stringify({type,frame,safeRaw:safeRaw.slice(0,8).map(z=>({id:z.q.b.id,cell:[z.q.x,z.q.y],to:[z.p.tx,z.p.ty],kind:z.p.kind,pivot:z.p.pivot,blockers:pathBlockers(g,z.p)})),accepted:(accepted||[]).map(p=>({id:p.ball?.id,from:[p.x,p.y],to:[p.tx,p.ty],kind:p.kind,follow:p.followSupportIds||[]})),active:gs.filter(q=>q.b.fallPath?.length).slice(0,8).map(q=>({id:q.b.id,cell:[q.x,q.y],visual:[q.v.x,q.v.y],seg:{kind:q.b.fallPath[0]?.kind,from:q.b.fallPath[0]?.from,to:q.b.fallPath[0]?.to}}))}));
   if(garbageBatchDone(g)){done=frame;break;}
  }
  expect(done>=0,"garbage batch never completed on terrain "+type);expect(spawned>=12,"too few garbage balls spawned on terrain "+type+": "+spawned);
@@ -70,7 +74,4 @@ for(let type=1;type<=4;type++){
 }
 console.log("garbage chain-free dense settle PASS",JSON.stringify(reports));
 `;
-vm.runInNewContext(runtime+checks,{
- React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,
- Image:function(){this.complete=false;this.naturalWidth=0;},Math,Map,Set,WeakMap,Array,Number,Object,String,Boolean,JSON,Date,setTimeout(){return 0},clearTimeout(){},performance:{now(){return 0}},localStorage:{getItem(){return null},setItem(){}},document:{getElementById(){return null}},ResizeObserver:function(){this.observe=()=>{};this.disconnect=()=>{};}
-},{timeout:120000});
+vm.runInContext(checks,ctx,{timeout:120000});

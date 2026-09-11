@@ -9,6 +9,22 @@ const cases=fs.readFileSync(
   "utf8"
 ).trim().split("\n").map(line=>JSON.parse(line).input);
 
+const directedBuilder=require("./fixtures/v1303-directed.js")({
+  __shadowNewBoard:ctx.__v1303OracleNewBoard,
+  __shadowValid:ctx.__v1303OracleValid
+});
+if(process.env.INCLUDE_DIRECTED==="1"){
+  const directed=fs.readFileSync(path.join(__dirname,"oracles/v1303-plan-group-directed-2000.jsonl"),"utf8").trim().split("\n").map(JSON.parse);
+  for(const row of directed){
+    const {board,members}=directedBuilder(row.index,row.type);
+    const own=new Set(members.map(m=>m.ball.id)),obstacles=[];
+    for(let y=0;y<board.length;y++)for(let x=0;x<board[y].length;x++){
+      const b=board[y][x];if(b&&!own.has(b.id))obstacles.push({x,y,id:b.id,c:b.c});
+    }
+    cases.push({index:10000+row.index,scenario:row.type,members:members.map(m=>({id:m.ball.id,x:m.x,y:m.y,role:m.role,orientation:m.orientation})),obstacles});
+  }
+}
+
 function expect(value,message){if(!value)throw new Error(message);}
 function ball(id,c=0){
   return{

@@ -3,17 +3,7 @@ const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js"
-]){
-  vm.runInContext(
-    fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),
-    ctx,
-    {filename:file}
-  );
-}
+// Shared harness loads the complete production runtime exactly once.
 
 function expect(value,message){if(!value)throw new Error(message);}
 
