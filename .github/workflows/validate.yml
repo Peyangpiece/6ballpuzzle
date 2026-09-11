@@ -94,6 +94,7 @@ jobs:
           node tests/split-visual-state-integrity.js
           for fps in 30 60 120 240; do
             TEST_FPS="$fps" node tests/no-upward-bounce-split-continuity-v1.js
+            TEST_FPS="$fps" node tests/reference-video-motion.js
           done
 
       - name: Run clear disappearance FX regression

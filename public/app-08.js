@@ -1,7 +1,7 @@
 function ordinarySplitSegmentNoLift(cell,seg){
 if(!cell||cell.isGarbage||!seg)return false;
 const kind=String(seg.kind||"");
-return kind==="REFERENCE_FIRST_CONTACT_PAIR"||
+return kind==="FLOOR_CONTACT_SPLIT"||kind==="REFERENCE_FIRST_CONTACT_PAIR"||
 kind==="REFERENCE_FIRST_CONTACT_SOLO"||
 /^REFERENCE_INVERTED_HARD_SPLIT_/.test(kind)||
 /^INVERTED_FLAT_SPLIT_/.test(kind);
@@ -25,8 +25,14 @@ g._liveBatchClock={
 seq:liveBatch.seq,elapsed:0,duration:liveBatch.duration,
 states:new Map(liveBatch.members.map(m=>[m.cell.id,{startState:m.startState,endState:m.endState,naturalDuration:m.duration}]))
 };
-}else{
-g._liveBatchClock.duration=Math.max(g._liveBatchClock.duration,liveBatch.duration);
+}
+// Segment clocks are fixed at entry. Recomputing duration from each frame's
+// new velocity changes normalized time and then snaps to the target on the
+// final tick. Interpolation and completion must use the same captured clock.
+liveBatch.duration=g._liveBatchClock.duration;
+for(const member of liveBatch.members){
+ const state=g._liveBatchClock.states?.get(member.cell.id);
+ if(state)member.duration=state.naturalDuration;
 }
 g._liveBatchClock.elapsed=Math.min(
 g._liveBatchClock.duration,
@@ -603,6 +609,12 @@ function finalizeCompletedVisualBatch(g, reason = "SETTLE_PATH_BOUNDARY") {
             v = { x, y, vy: 0, sq: 0 };
             g.vis.set(cell.id, v);
         }
+        // A finished batch does not mean every other ball is at its logical
+        // destination. Fractional releases can still be below their reserved
+        // cell and need the next gravity segment. Only clean up roundoff here;
+        // snapping an entire row up creates a visible bounce and wrong origin.
+        const mismatch=Math.hypot((v.x-x)*.5,(v.y-y)*HEX_ROW_H);
+        if(mismatch>0.02||v.y>y+1e-9)continue;
         if (Math.abs(v.x - x) > 1e-9 || Math.abs(v.y - y) > 1e-9) fixed++;
         v.x = x;
         v.y = y;

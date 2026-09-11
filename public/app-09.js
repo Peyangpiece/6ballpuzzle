@@ -75,6 +75,14 @@ function stepEngine(g, dt) {
             finalizeCompletedVisualBatch(g,"SETTLE_PATH_BOUNDARY");
 
             if(!nearlySettled(g,SETTLE_TOL)){
+                // No authored path is still in flight. A fractional release
+                // may lie below its reserved lattice cell; let the next safe
+                // gravity event start at that rendered centre instead of
+                // waiting for an impossible upward snap back to the cell.
+                if(hasLegalGravityMove(g.board)){
+                    const moved=settlePass(g.board);
+                    if(moved){g.ver++;g.balanceWait=0;}
+                }
                 g.stateT=0;
                 return;
             }

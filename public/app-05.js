@@ -111,6 +111,51 @@ function hardDrop(g){
  try{lock(g,3);}finally{g._neutralInstantDrop=false;}
 }
 
+// Floor contact is continuous even when the lower centre lies between
+// lattice columns. Both uppers roll outward while that centre seats itself.
+function floorContactPoint(fromX,toX,side,t){
+ const q=Math.max(0,Math.min(1,t)),cx=fromX+(toX-fromX)*Math.min(1,2*q);
+ if(!side)return [cx,ROWS-1];
+ const angle=side<0?-2*Math.PI/3-q*Math.PI/3:-Math.PI/3+q*Math.PI/3;
+ return [cx+2*Math.cos(angle),ROWS-1+Math.sin(angle)/HEX_ROW_H];
+}
+function floorContactSplit(g,cells,offset,fraction,rotation){
+ if((rotation&1)!==0||cells.length!==3)return null;
+ const origins=cells.map(([x,y])=>[x+offset,y+fraction]);
+ const order=cells.map((_,i)=>i).sort((a,b)=>origins[b][1]-origins[a][1]);
+ const bottom=order[0],tops=order.slice(1).sort((a,b)=>origins[a][0]-origins[b][0]);
+ if(Math.abs(origins[bottom][1]-(ROWS-1))>1e-5)return null;
+ const fromX=origins[bottom][0],toX=Math.max(2,Math.min(W2-3,Math.round(fromX/2)*2));
+ const sides=[];sides[bottom]=0;sides[tops[0]]=-1;sides[tops[1]]=1;
+ const targets=sides.map(side=>[toX+2*side,ROWS-1]);
+ if(targets.some(([x,y])=>!valid(x,y)||g.board[y][x]))return null;
+ for(let k=0;k<=48;k++){
+  const points=sides.map(side=>floorContactPoint(fromX,toX,side,k/48));
+  for(let i=0;i<points.length;i++){
+   const [x,y]=points[i];if(x<0||x>W2-1)return null;
+   for(let j=i+1;j<points.length;j++)if(Math.hypot((x-points[j][0])*.5,(y-points[j][1])*HEX_ROW_H)<.9995)return null;
+   for(let by=boardScanMin(g.board);by<ROWS;by++)for(let bx=0;bx<W2;bx++){
+    const ball=valid(bx,by)?g.board[by][bx]:null;if(!ball)continue;
+    const v=g.vis.get(ball.id)||{x:bx,y:by};
+    if(Math.hypot((x-v.x)*.5,(y-v.y)*HEX_ROW_H)<.9995-1e-7)return null;
+   }
+  }
+ }
+ return {origins,fromX,toX,sides,cells:targets.map(([x,y],i)=>[x,y,cells[i][2]])};
+}
+function queueFloorContactSplit(g,made,split){
+ if(!split)return false;
+ const seq=HEX_PHYS_EVENT_SEQ++;
+ for(const m of made){
+  hexPhysClearGroupBall(m.ball);
+  const [sx,sy]=split.origins[m.role];
+  hexPhysAppendSegment(m.ball,{x:sx,y:sy,tx:m.x,ty:m.y,
+   kind:"FLOOR_CONTACT_SPLIT",groupSize:0,bundleId:0},seq);
+  const seg=m.ball.fallPath[m.ball.fallPath.length-1];
+  seg.floorContact={fromX:split.fromX,toX:split.toX,side:split.sides[m.role]};
+ }
+ return true;
+}
 function lock(g,vy=2){
  if(!g.piece)return;
  clearBoardEquilibriumLocks(g.board);g.balanceWait=0;
@@ -137,6 +182,8 @@ function lock(g,vy=2){
   cells=pieceCells(g.piece);releaseFrac=safeActiveFallOffset(g,cells,splitOffset,0,activeDropFraction(g));invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
   if(invalid){die(g,cells.map(([x,y,c])=>[x,y,c]),"LIMIT");return;}
  }
+ const floorSplit=floorContactSplit(g,cells,splitOffset,releaseFrac,splitRot);
+ if(floorSplit)cells=floorSplit.cells;
  const made=[];
  for(let role=0;role<cells.length;role++){
   const[x,y,c]=cells[role],ball=mkBall(g,c);
@@ -147,7 +194,8 @@ function lock(g,vy=2){
   // the last rendered sub-cell X and let the continuous pile renderer consume
   // the remaining offset.  Snapping here was the visible one-frame sideways
   // jump that occurred at the instant of landing.
-  setVis(g,ball,x+splitOffset,y+releaseFrac,Math.max(RELEASE_INITIAL_VY,vy||0));
+  const origin=floorSplit?.origins[role]||[x+splitOffset,y+releaseFrac];
+  setVis(g,ball,origin[0],origin[1],Math.max(RELEASE_INITIAL_VY,vy||0));
   const vv=g.vis.get(ball.id);vv.motionSpeed=Math.max(RELEASE_INITIAL_VY,vy||0);vv.justReleased=true;
  }
  const gid=made.length?HEX_PHYS_GROUP_SEQ++:0,orientation=((splitRot&1)===0)?"down":"up";
@@ -155,11 +203,12 @@ function lock(g,vy=2){
   m.ball.motionGroupId=gid;m.ball.motionGroupRole=m.role;m.ball.motionGroupOrientation=orientation;m.ball.motionGroupSize=3;m.ball.rigid=true;
   m.ball.visualTripletId=gid;m.ball.visualTripletOrientation=orientation;m.ball.visualTripletRole=m.role;
  }
- const immediateMoved=settlePass(g.board);if(immediateMoved)g.ver++;
+ const floorMoved=queueFloorContactSplit(g,made,floorSplit);
+ const immediateMoved=floorMoved||settlePass(g.board);if(immediateMoved)g.ver++;
  // Logical proposals originate at lattice cells. Rendering must originate at
  // the actual fractional contact point or the first resolving frame jumps one
  // row upward. Translating every member equally preserves triplet rigidity.
- if(releaseFrac>1e-9)for(const m of made){const seg=m.ball.fallPath?.[0];if(seg?.from)seg.from=[m.x+splitOffset,m.y+releaseFrac];else{const v=g.vis.get(m.ball.id);if(v){v.x=m.x;v.y=m.y;v.vy=0;v.motionSpeed=0;}}}
+ if(!floorSplit&&releaseFrac>1e-9)for(const m of made){const seg=m.ball.fallPath?.[0];if(seg?.from)seg.from=[m.x+splitOffset,m.y+releaseFrac];else{const v=g.vis.get(m.ball.id);if(v){v.x=m.x;v.y=m.y;v.vy=0;v.motionSpeed=0;}}}
  g.piece=null;g.hardDropAnim=null;g.freeX=null;g.dragging=false;g.ver++;emit(g,{t:"land"});g.state="RESOLVING";g.phase="SETTLE";g.stateT=0;
  if(immediateMoved&&g.physicsWatch){g.physicsWatch.lastSig=physicsSignature(g);g.physicsWatch.repeats=0;g.physicsWatch.steps=0;}
 }

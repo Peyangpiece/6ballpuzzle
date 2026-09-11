@@ -1,0 +1,470 @@
+{
+  "reference_files": [
+    {
+      "i": 0,
+      "duration": "29.966700",
+      "width": 1920,
+      "height": 1080,
+      "fps": "3000000/99889",
+      "filename": "20260814-01KZY859WCA6E05B8W8KVXV08J-F7FDFCD7-C1D0-4B86-BB37-69ECBCBB54A8(4).mp4",
+      "sha256": "bc2aadab713388f69973083aa658737251ab964971edcfde284dbb452a9d0a31"
+    },
+    {
+      "i": 1,
+      "duration": "29.833311",
+      "width": 1920,
+      "height": 1080,
+      "fps": "40320000/1342499",
+      "filename": "20260814-01KZY8BWFNHVZZ5BF80ERVQGJ1-6A3B5C4B-FBDF-4B10-8E92-93112D279793(5).mp4",
+      "sha256": "b323dcc8b1d073d65426f3820165d21f8cdba5bb01e9d30c9b23d69cd6a1b3ea"
+    },
+    {
+      "i": 2,
+      "duration": "29.899856",
+      "width": 1920,
+      "height": 1080,
+      "fps": "80820000/2690987",
+      "filename": "20260814-01KZY8HMCZ13A6JT55BAQRAW1S-0C80C14A-9296-46EA-A240-FDF9DB68923A(4).mp4",
+      "sha256": "369c142784f0c5d71fe8486bb429dcc174b655a5ac9005e041001f282948cadc"
+    },
+    {
+      "i": 3,
+      "duration": "24.866556",
+      "width": 1920,
+      "height": 1080,
+      "fps": "6714000/223799",
+      "filename": "20260814-01KZY8JCG2T23AE4A41AKS6268-A42695F2-7126-4770-9797-0A2C3BD44C09(5).mp4",
+      "sha256": "bb48a9a1b2780976c22b130a218b5d9725f51e654afcd94b86e6786c935dfa43"
+    }
+  ],
+  "scope": "Four captures visually surveyed; two landing layouts replayed. This is not proof of frame-perfect equivalence for all four captures.",
+  "reference_windows": [
+    {
+      "clip_index": 0,
+      "frames_approx": [
+        47,
+        54
+      ],
+      "observation": "UP triangle slides left, right lower seats in a pocket, remaining balls descend to the left. Approximate visible settling interval 0.20-0.23 seconds.",
+      "remaining_difference": "Replay settles in 0.258 seconds; sub-frame alignment and intermediate trajectory still need calibration."
+    },
+    {
+      "clip_index": 2,
+      "frames_approx": [
+        33,
+        39
+      ],
+      "observation": "DOWN triangle contacts floor; both uppers spread as the lower centre seats. Approximately five 30fps intervals after contact."
+    },
+    {
+      "clip_index": 1,
+      "seconds": [
+        21,
+        25
+      ],
+      "observation": "Incoming straight preview persists during the active turn."
+    },
+    {
+      "clip_index": 3,
+      "seconds": [
+        18,
+        22
+      ],
+      "observation": "Clear and subsequent support-loss collapse surveyed; not yet an automated frame trace."
+    }
+  ],
+  "baseline_commit": "5934ebbbba389da5713756c5e4988b09d854fb9c",
+  "simulation_before": {
+    "fps": 120,
+    "replays": [
+      {
+        "kind": "up",
+        "mirror": false,
+        "normal": false,
+        "initial": [
+          {
+            "x": 6.3,
+            "y": 8.391721554986532
+          },
+          {
+            "x": 7.3,
+            "y": 9.391721554986532
+          },
+          {
+            "x": 5.3,
+            "y": 9.391721554986532
+          }
+        ],
+        "final": [
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 11
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999998,
+        "maxStep": 0.05235394896964441,
+        "settledAt": 0.425,
+        "pocketPair": false
+      },
+      {
+        "kind": "up",
+        "mirror": true,
+        "normal": false,
+        "initial": [
+          {
+            "x": 11.7,
+            "y": 8.391721554986532
+          },
+          {
+            "x": 12.7,
+            "y": 9.391721554986532
+          },
+          {
+            "x": 10.7,
+            "y": 9.391721554986532
+          }
+        ],
+        "final": [
+          {
+            "x": 13,
+            "y": 10
+          },
+          {
+            "x": 14,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 10
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999998,
+        "maxStep": 0.05235394896964441,
+        "settledAt": 0.425,
+        "pocketPair": false
+      },
+      {
+        "kind": "down",
+        "mirror": false,
+        "normal": false,
+        "initial": [
+          {
+            "x": 0.5,
+            "y": 10
+          },
+          {
+            "x": 2.5,
+            "y": 10
+          },
+          {
+            "x": 1.5,
+            "y": 11
+          }
+        ],
+        "final": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 11
+          }
+        ],
+        "upward": 1,
+        "minDistance": 0.9999999999999994,
+        "maxStep": 1.3983074304753644,
+        "settledAt": 0.425,
+        "pocketPair": false
+      },
+      {
+        "kind": "down",
+        "mirror": true,
+        "normal": false,
+        "initial": [
+          {
+            "x": 15.5,
+            "y": 10
+          },
+          {
+            "x": 17.5,
+            "y": 10
+          },
+          {
+            "x": 16.5,
+            "y": 11
+          }
+        ],
+        "final": [
+          {
+            "x": 14,
+            "y": 11
+          },
+          {
+            "x": 18,
+            "y": 11
+          },
+          {
+            "x": 16,
+            "y": 11
+          }
+        ],
+        "upward": 1,
+        "minDistance": 0.9999999999999991,
+        "maxStep": 1.3983074304753644,
+        "settledAt": 0.425,
+        "pocketPair": false
+      },
+      {
+        "kind": "down",
+        "mirror": false,
+        "normal": true,
+        "initial": [
+          {
+            "x": 0,
+            "y": 9
+          },
+          {
+            "x": 2.5,
+            "y": 10
+          },
+          {
+            "x": 1.5,
+            "y": 11
+          }
+        ],
+        "final": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 11
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999994,
+        "maxStep": 1.3983074304753644,
+        "settledAt": 0.425,
+        "pocketPair": false
+      }
+    ],
+    "clockError": 1.8618739931910202
+  },
+  "simulation_after": {
+    "fps": 120,
+    "replays": [
+      {
+        "kind": "up",
+        "mirror": false,
+        "normal": false,
+        "initial": [
+          {
+            "x": 6.3,
+            "y": 8.391721554986532
+          },
+          {
+            "x": 7.3,
+            "y": 9.391721554986532
+          },
+          {
+            "x": 5.3,
+            "y": 9.391721554986532
+          }
+        ],
+        "final": [
+          {
+            "x": 5,
+            "y": 10
+          },
+          {
+            "x": 7,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 11
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999998,
+        "maxStep": 0.05235394896964441,
+        "settledAt": 0.25833333333333336,
+        "pocketPair": true
+      },
+      {
+        "kind": "up",
+        "mirror": true,
+        "normal": false,
+        "initial": [
+          {
+            "x": 11.7,
+            "y": 8.391721554986532
+          },
+          {
+            "x": 12.7,
+            "y": 9.391721554986532
+          },
+          {
+            "x": 10.7,
+            "y": 9.391721554986532
+          }
+        ],
+        "final": [
+          {
+            "x": 13,
+            "y": 10
+          },
+          {
+            "x": 14,
+            "y": 11
+          },
+          {
+            "x": 11,
+            "y": 10
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999998,
+        "maxStep": 0.05235394896964441,
+        "settledAt": 0.25833333333333336,
+        "pocketPair": true
+      },
+      {
+        "kind": "down",
+        "mirror": false,
+        "normal": false,
+        "initial": [
+          {
+            "x": 0.5,
+            "y": 10
+          },
+          {
+            "x": 2.5,
+            "y": 10
+          },
+          {
+            "x": 1.5,
+            "y": 11
+          }
+        ],
+        "final": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 11
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999997,
+        "maxStep": 0.07481899652898075,
+        "settledAt": 0.16666666666666666,
+        "pocketPair": false
+      },
+      {
+        "kind": "down",
+        "mirror": true,
+        "normal": false,
+        "initial": [
+          {
+            "x": 15.5,
+            "y": 10
+          },
+          {
+            "x": 17.5,
+            "y": 10
+          },
+          {
+            "x": 16.5,
+            "y": 11
+          }
+        ],
+        "final": [
+          {
+            "x": 14,
+            "y": 11
+          },
+          {
+            "x": 18,
+            "y": 11
+          },
+          {
+            "x": 16,
+            "y": 11
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999991,
+        "maxStep": 0.07481899652898033,
+        "settledAt": 0.16666666666666666,
+        "pocketPair": false
+      },
+      {
+        "kind": "down",
+        "mirror": false,
+        "normal": true,
+        "initial": [
+          {
+            "x": 0.5,
+            "y": 10
+          },
+          {
+            "x": 2.5,
+            "y": 10
+          },
+          {
+            "x": 1.5,
+            "y": 11
+          }
+        ],
+        "final": [
+          {
+            "x": 0,
+            "y": 11
+          },
+          {
+            "x": 4,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 11
+          }
+        ],
+        "upward": 0,
+        "minDistance": 0.9999999999999997,
+        "maxStep": 0.07481899652898075,
+        "settledAt": 0.16666666666666666,
+        "pocketPair": false
+      }
+    ],
+    "clockError": 5.329070518200751e-15
+  },
+  "validation": "30/60/120/240 Hz replay invariants: no upward step, no board-ball overlap, mirrored endpoints, normal/hard floor parity; separate rigid-release, even-row, garbage and pile regressions pass."
+}

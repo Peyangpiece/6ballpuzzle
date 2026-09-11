@@ -43,6 +43,7 @@ function legacyPile(seg){
 function splitKind(seg){
   const k=String(seg?.kind||"");
   return (
+    k==="FLOOR_CONTACT_SPLIT" ||
     k==="REFERENCE_FIRST_CONTACT_PAIR" ||
     k==="REFERENCE_FIRST_CONTACT_SOLO" ||
     /^REFERENCE_INVERTED_HARD_SPLIT_/.test(k) ||

@@ -3,27 +3,7 @@ const vm=require("vm");
 const path=require("path");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
-/* The legacy smoke/oracle deliberately stops at the v3 resolver. Load every
-   planner wrapper that follows it in index.html so this audit exercises the
-   effective production authority rather than stopping at the nominal v21
-   layer before later wrappers can alter its decision. */
-for(const file of[
-  "app-collapse-timing-authoritative-v2.js",
-  "app-runtime-performance-v3.js",
-  "app-rigidity-final-authority-v1.js",
-  "app-reference-upconvex-authority-v1.js",
-  "app-reference-first-contact-sweep-v3.js",
-  "app-reference-inverted-flat-split-v1.js",
-  "app-rigidity-nintendo-authority-v1.js",
-  "app-rigidity-release-bounce-authority-v1.js"
-]){
-  vm.runInContext(
-    fs.readFileSync(path.join(__dirname,"../public",file),"utf8"),
-    ctx,
-    {filename:file}
-  );
-}
-
+// The shared harness already loads the complete production runtime once.
 const cases=fs.readFileSync(
   path.join(__dirname,"oracles/v1303-plan-group-10000.jsonl"),
   "utf8"

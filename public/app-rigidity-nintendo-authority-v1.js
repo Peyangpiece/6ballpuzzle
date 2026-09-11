@@ -138,6 +138,33 @@ function candidatePairs(board,members,ind,actual,base){const combos=[[0,1,2],[0,
  for(const[a,b,s]of combos){const pair=[members[a],members[b]],solo=members[s],pp=pairPlan(board,pair);if(!pp?.length)continue;const baseSolo=(base||[]).find(p=>id(p)===id(solo)&&Number(p.groupSize)===0&&vec(p));const soloMotion=(actual[s]&&planTargetsSafe(board,members,[actual[s]]))?actual[s]:(baseSolo||null);const va=vec(ind[a]),vb=vec(ind[b]),vs=vec(ind[s]);let score=0;if(va&&vb&&va.key===vb.key)score+=100;if(!ind[s])score+=35;if(vs&&(va?.key!==vs.key||vb?.key!==vs.key))score+=25;const basePairIds=new Set((base||[]).filter(p=>Number(p.groupSize)===2).map(id));if(basePairIds.has(id(pair[0]))&&basePairIds.has(id(pair[1])))score+=12;if(distancePreserved(pair,pp.filter(vec)))score+=10;if(!best||score>best.score)best={type:"pair",pairIds:new Set(pair.map(id)),soloId:id(solo),pairPlan:pp.filter(vec),soloMotion,score,reason:"kinematic-partition"};}
  return best||special;
 }
+// An outer slope contact stays rigid. A later lower ball lodging between
+// two settled supports is a different event: it pins that member while the
+// top and opposite lower ball can continue as a rigid pair (Aug 14 capture).
+function pinnedLowerPair(board,members,actual,contact){
+ if(!contact.current||contact.busy||members.length!==3)return null;
+ const sorted=[...members].sort((a,b)=>a.y-b.y||a.x-b.x);
+ const top=sorted[0],lower=sorted.slice(1);
+ if(lower[0].y!==lower[1].y||top.y!==lower[0].y-1)return null;
+ const own=new Set(members.map(id));
+ for(const solo of lower){
+  if(actual[members.indexOf(solo)])continue;
+  const support=hexPhysSupportInfo(board,solo.x,solo.y,own);
+  if(!support?.left?.ball||!support?.right?.ball)continue;
+  if(own.has(support.left.ball.id)||own.has(support.right.ball.id))continue;
+  if(contact.live){
+   const touching=new Set(contact.contacts.filter(c=>id(c.member)===id(solo)&&c.kind==="ball").map(c=>c.support.id));
+   if(!touching.has(support.left.ball.id)||!touching.has(support.right.ball.id))continue;
+  }
+  const pair=members.filter(m=>id(m)!==id(solo));
+  const pp=pairPlan(board,pair);
+  if(!pp?.length||!distancePreserved(pair,pp))continue;
+  return {type:"pair",pairIds:new Set(pair.map(id)),soloId:id(solo),
+    pairPlan:pp.map(p=>({...p,pinnedLowerSplit:true})),soloMotion:null,
+    reason:"lower-pocket-pinned-pair"};
+ }
+ return null;
+}
 function stableAccumulated(board,members,actual=null){const game=gameByBoard.get(board);if(game&&members.some(m=>liveBusy(game,m.ball)))return false;const a=actual||actualMotions(board,members);return a.every(p=>!p);}
 function commitPairSplit(members,candidate,gid){const pair=members.filter(m=>candidate.pairIds.has(id(m))),solo=members.find(m=>id(m)===candidate.soloId);if(pair.length!==2||!solo)return[];clear(solo);commitGroup(pair,2,gid);const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,bundleId:gid||Number(p.bundleId)||0,groupSize:2}));let soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p))||null;if(soloStep)soloStep={...soloStep,bundleId:0,groupSize:0};return soloStep?[...pairSteps,soloStep]:pairSteps;}
 hexPhysPlanGroup=function(board,members,preview=false){
@@ -158,6 +185,13 @@ hexPhysPlanGroup=function(board,members,preview=false){
  }
  const whole=wholeRigid(board,members,ind,base);if(whole){if(!preview)commitGroup(members,members.length,gid);return whole;}
  if(upwardTriplet(members)){
+  const pinned=pinnedLowerPair(board,members,actual,contact);
+  if(pinned){
+   if(preview)return pinned.pairPlan.map(p=>({...p,bundleId:gid,groupSize:2}));
+   const out=commitPairSplit(members,pinned,gid);
+   window.__sixBallLastNintendoRigidityDecision={reason:pinned.reason,pairIds:[...pinned.pairIds],soloId:pinned.soloId,at:Date.now()};
+   return out;
+  }
   if(!preview)commitGroup(members,3,gid);
   window.__sixBallLastNintendoRigidityDecision={reason:"reject-upward-split-without-authorized-inner-contact",ids:members.map(id),contactCount:contact.contacts.length,at:Date.now()};
   return[];

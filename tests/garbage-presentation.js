@@ -1,10 +1,6 @@
 const fs=require("fs");
 const vm=require("vm");
-const runtime=[
-  "app-01.js","app-02.js","app-03.js","app-04.js","app-05.js","app-06.js",
-  "app-07.js","app-pile-arc.js","app-08.js","app-09.js","app-10.js","app-14.js",
-  "app-17.js","app-garbage-normal-physics.js","app-garbage-presentation.js"
-].map(name=>fs.readFileSync(`${__dirname}/../public/${name}`,"utf8")).join("\n");
+const {ctx}=require('./v1303-plan-group-smoke.js');
 const checks=String.raw`
 function expect(v,m){if(!v)throw new Error(m);}
 expect(window.__hexGarbageSpawnEffectPreserved===true,"garbage spawn effect layer missing");
@@ -40,10 +36,4 @@ expect(starts[0].ids.length===6&&starts[1].ids.length===6,"PYRAMID shape members
 expect(firstMoved,"spawn effect held ordinary falling balls still");
 console.log("garbage visual-only presentation + 0.500 s cadence PASS",JSON.stringify({starts,delta}));
 `;
-vm.runInNewContext(runtime+checks,{
- React:{useRef(){return{current:null}},useEffect(){},useState(v){return[v,()=>{}]},useCallback(f){return f},createElement(){}},
- ReactDOM:{createRoot(){return{render(){}}}},window:{},navigator:{},console,
- Image:function(){this.complete=false;this.naturalWidth=0;},Math,Map,Set,WeakMap,Array,Number,Object,String,Boolean,JSON,Date,
- setTimeout(){return 0},clearTimeout(){},performance:{now(){return 0}},localStorage:{getItem(){return null},setItem(){}},
- document:{getElementById(){return null}},ResizeObserver:function(){this.observe=()=>{};this.disconnect=()=>{};}
-},{timeout:120000});
+vm.runInContext(checks,ctx,{timeout:120000});

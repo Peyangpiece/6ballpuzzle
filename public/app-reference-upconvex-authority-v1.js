@@ -295,12 +295,15 @@ cells=pieceCells(g.piece);releaseFrac=signedHardDropContactOffset(g,cells,splitO
 invalid=cells.some(([x,y])=>!valid(x,y)||g.board[y][x]!==null);
 if(invalid){die(g,cells.map(([x,y,c])=>[x,y,c]),"LIMIT");return;}
 }
+const floorSplit=floorContactSplit(g,cells,splitOffset,releaseFrac,splitRot);
+if(floorSplit)cells=floorSplit.cells;
 const made=[];
 for(let role=0;role<cells.length;role++){
 const[x,y,c]=cells[role],ball=mkBall(g,c);
 ball.impactOffsetX=splitOffset;ball.subCellBias=Math.abs(splitOffset)>1e-5?Math.sign(splitOffset):0;ball.momentumX=ball.subCellBias;
 g.board[y][x]=ball;noteBoardCell(g.board,y,ball);made.push({ball,role,x,y});
-setVis(g,ball,x+splitOffset,y+releaseFrac,releaseVy);
+const origin=floorSplit?.origins[role]||[x+splitOffset,y+releaseFrac];
+setVis(g,ball,origin[0],origin[1],releaseVy);
 const vv=g.vis.get(ball.id);vv.motionSpeed=releaseVy;vv.justReleased=true;vv.neutralInstantDrop=true;
 }
 const gid=made.length?HEX_PHYS_GROUP_SEQ++:0,orientation=((splitRot&1)===0)?"down":"up";
@@ -308,7 +311,8 @@ for(const m of made){
 m.ball.motionGroupId=gid;m.ball.motionGroupRole=m.role;m.ball.motionGroupOrientation=orientation;m.ball.motionGroupSize=3;m.ball.rigid=true;
 m.ball.visualTripletId=gid;m.ball.visualTripletOrientation=orientation;m.ball.visualTripletRole=m.role;
 }
-const immediateMoved=settlePass(g.board);if(immediateMoved)g.ver++;
+const aligned=queueFloorContactSplit(g,made,floorSplit);
+const immediateMoved=aligned||settlePass(g.board);if(immediateMoved)g.ver++;
 for(const m of made){
 const seg=m.ball.fallPath?.[0],v=g.vis.get(m.ball.id);
 if(seg?.from&&v)seg.from=[v.x,v.y];
