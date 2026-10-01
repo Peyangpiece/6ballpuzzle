@@ -1,0 +1,126 @@
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+OK  app-collapse-vertical-merge-v1.js
+OK  app-pile-motion-authority-v2.js
+OK  app-runtime-performance-v3.js
+OK  app-runtime-performance-v4.js
+OK  app-rigidity-final-authority-v1.js
+OK  app-reference-upconvex-authority-v1.js
+OK  app-reference-first-contact-sweep-v3.js
+OK  app-reference-inverted-flat-split-v1.js
+OK  app-rigidity-nintendo-authority-v1.js
+OK  app-rigidity-release-bounce-authority-v1.js
+OK  app-motion-smoothness-authority-v1.js
+OK  app-no-upward-bounce-split-authority-v1.js
+OK  app-even-row-split-continuity-v1.js
+OK  app-split-visual-smoothness-v1.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": []
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+reference video motion PASS {"fps":120,"replays":[{"kind":"up","mirror":false,"normal":false,"initial":[{"x":6.3,"y":8.391721554986532},{"x":7.3,"y":9.391721554986532},{"x":5.3,"y":9.391721554986532}],"final":[{"x":5,"y":10},{"x":7,"y":10},{"x":4,"y":11}],"upward":0,"minDistance":0.9999999999999998,"maxStep":0.05235394896964441,"settledAt":0.25833333333333336,"pocketPair":true},{"kind":"up","mirror":true,"normal":false,"initial":[{"x":11.7,"y":8.391721554986532},{"x":12.7,"y":9.391721554986532},{"x":10.7,"y":9.391721554986532}],"final":[{"x":13,"y":10},{"x":14,"y":11},{"x":11,"y":10}],"upward":0,"minDistance":0.9999999999999998,"maxStep":0.05235394896964441,"settledAt":0.25833333333333336,"pocketPair":true},{"kind":"down","mirror":false,"normal":false,"initial":[{"x":0.5,"y":10},{"x":2.5,"y":10},{"x":1.5,"y":11}],"final":[{"x":0,"y":11},{"x":4,"y":11},{"x":2,"y":11}],"upward":0,"minDistance":0.9999999999999997,"maxStep":0.07481899652898075,"settledAt":0.16666666666666666,"pocketPair":false},{"kind":"down","mirror":true,"normal":false,"initial":[{"x":15.5,"y":10},{"x":17.5,"y":10},{"x":16.5,"y":11}],"final":[{"x":14,"y":11},{"x":18,"y":11},{"x":16,"y":11}],"upward":0,"minDistance":0.9999999999999991,"maxStep":0.07481899652898033,"settledAt":0.16666666666666666,"pocketPair":false},{"kind":"down","mirror":false,"normal":true,"initial":[{"x":0.5,"y":10},{"x":2.5,"y":10},{"x":1.5,"y":11}],"final":[{"x":0,"y":11},{"x":4,"y":11},{"x":2,"y":11}],"upward":0,"minDistance":0.9999999999999997,"maxStep":0.07481899652898075,"settledAt":0.16666666666666666,"pocketPair":false}],"clockError":5.329070518200751e-15}

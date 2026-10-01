@@ -1,0 +1,1 @@
+garbage lower-diagonal before final settle PASS {"from":[2,1],"to":[1,2],"frozen":[8,1],"kind":"ROLL_LEFT","pivot":[3,2],"topPivot":null}

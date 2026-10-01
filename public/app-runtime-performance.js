@@ -113,22 +113,15 @@
             let dy=0;
             const deepest=Math.max(...pts.map(p=>p.py));
             if(deepest+dy>floorCenter)dy=floorCenter-deepest;
-            for(let pass=0;pass<4;pass++){
-                let changed=false;
-                for(const gp of pts){
-                    const gx=gp.px,gy=gp.py+dy;
-                    for(const q of colliders){
-                        const [bpX,bpY]=pos(q.x,q.y);
-                        const ddx=Math.abs(gx-bpX);if(ddx>=D-1e-6)continue;
-                        const vert=Math.sqrt(Math.max(0,D*D-ddx*ddx));
-                        const ceiling=bpY-vert;
-                        if(gy>ceiling+1e-6){dy-=gy-ceiling;changed=true;}
-                    }
-                }
-                if(!changed)break;
+            // Each obstacle limits the same rigid translation. Accumulating
+            // penetrations with a stale gy over-corrects multi-ball contacts.
+            for(const gp of pts)for(const q of colliders){
+                const [bpX,bpY]=pos(q.x,q.y);
+                const ddx=Math.abs(gp.px-bpX);if(ddx>=D-1e-6)continue;
+                const vert=Math.sqrt(Math.max(0,D*D-ddx*ddx));
+                dy=Math.min(dy,bpY-vert-gp.py);
             }
-            const finalDeepest=Math.max(...pts.map(p=>p.py+dy));
-            if(finalDeepest>floorCenter)dy-=finalDeepest-floorCenter;
+            if(!Number.isFinite(dy))dy=0;
             return pts.map(p=>[p.px,p.py+dy,p.sc]);
         };
     }

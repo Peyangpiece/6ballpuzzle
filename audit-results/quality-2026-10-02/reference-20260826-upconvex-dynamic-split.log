@@ -1,0 +1,127 @@
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+OK  app-collapse-vertical-merge-v1.js
+OK  app-pile-motion-authority-v2.js
+OK  app-runtime-performance-v3.js
+OK  app-runtime-performance-v4.js
+OK  app-rigidity-final-authority-v1.js
+OK  app-reference-upconvex-authority-v1.js
+OK  app-reference-first-contact-sweep-v3.js
+OK  app-reference-inverted-flat-split-v1.js
+OK  app-rigidity-nintendo-authority-v1.js
+OK  app-rigidity-release-bounce-authority-v1.js
+OK  app-motion-smoothness-authority-v1.js
+OK  app-no-upward-bounce-split-authority-v1.js
+OK  app-even-row-split-continuity-v1.js
+OK  app-split-visual-smoothness-v1.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": []
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+FIRST_CONTACT_DIAGNOSTIC {"outerRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1,"leftDistance":1.349073756323204,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":1}]},"sweep":{},"rigid3":true},"innerRight":{"count":3,"pair":[1,2],"soloId":3,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.1832159566199232,"choice":{},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.7000000000000002,"outward":1,"soloId":3,"pairIds":[1,2],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":5,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":2,"from":[4.6,3.8984858905427795],"to":[4,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1790870999981},"rigid3":false},"innerLeft":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.1832159566199232,"leftDistance":0.9999999999999999,"choice":{},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.2999999999999998,"outward":-1,"soloId":2,"pairIds":[1,3],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":7,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":3,"from":[7.4,3.8984858905427795],"to":[8,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1790870999984},"rigid3":false},"boundaryRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.2247448713915892,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"boundaryLeft":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.2247448713915892,"leftDistance":0.9999999999999999,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"preContact":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.0662934366931398,"leftDistance":1.239750657646475,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":0,"contacts":[]},"sweep":{},"rigid3":true},"outerAllowed":false,"innerRequired":true,"innerMin":0.25,"innerMax":0.75,"boundariesSplit":false,"bilateralRequired":false,"signedContact":true,"cohortTiming":true,"renderedSweep":true}
+2026-08-26 Nintendo-reference UP-convex v3 PASS {"dynamic":{"momentumLeft":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"maxPairDistanceError":6.661338147750939e-16,"rigid3":false,"choice":{}},"momentumRight":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"maxPairDistanceError":6.661338147750939e-16,"rigid3":false,"choice":{}},"airborne":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"maxPairDistanceError":0,"rigid3":true,"choice":{}},"version":"reference-upconvex-authority-v1","version2":"reference-upconvex-authority-v2","sweepVersion":"reference-first-contact-sweep-v3","contactAlwaysSolo":true,"kinematic":false,"v21":"final-rigidity-authority-v21"},"firstContact":{"outerRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1,"leftDistance":1.349073756323204,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":1}]},"sweep":{},"rigid3":true},"innerRight":{"count":3,"pair":[1,2],"soloId":3,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.1832159566199232,"choice":{},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.7000000000000002,"outward":1,"soloId":3,"pairIds":[1,2],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":5,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":2,"from":[4.6,3.8984858905427795],"to":[4,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1790870999981},"rigid3":false},"innerLeft":{"count":3,"pair":[1,3],"soloId":2,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.1832159566199232,"leftDistance":0.9999999999999999,"choice":{},"diag":{"phase":"planned","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}],"hitFraction":0.2999999999999998,"outward":-1,"soloId":2,"pairIds":[1,3],"supportId":4,"plan":[{"id":1,"x":6,"y":3,"tx":7,"ty":4,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":3,"x":7,"y":4,"tx":8,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_PAIR","groupSize":2},{"id":2,"x":5,"y":4,"tx":4,"ty":5,"kind":"REFERENCE_FIRST_CONTACT_SOLO","groupSize":0}]},"sweep":{"ballId":3,"from":[7.4,3.8984858905427795],"to":[8,5],"minDistance":1,"minT":1,"closestId":4,"closestCell":[6,5],"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1790870999984},"rigid3":false},"boundaryRight":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":0.9999999999999999,"leftDistance":1.2247448713915892,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":3,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"boundaryLeft":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.2247448713915892,"leftDistance":0.9999999999999999,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":1,"contacts":[{"lowerId":2,"supportId":4,"x":6,"y":5,"dist":0.9999999999999999}]},"sweep":{},"rigid3":true},"preContact":{"count":0,"pair":[],"soloId":null,"topId":1,"leftId":2,"rightId":3,"rightDistance":1.0662934366931398,"leftDistance":1.239750657646475,"choice":{},"diag":{"phase":"contacts","hasGame":true,"contactCount":0,"contacts":[]},"sweep":{},"rigid3":true},"outerAllowed":false,"innerRequired":true,"innerMin":0.25,"innerMax":0.75,"boundariesSplit":false,"bilateralRequired":false,"signedContact":true,"cohortTiming":true,"renderedSweep":true},"lockContact":{"rd":1.0000010000000004,"firstFrom":[6.6,3.8984846800877735],"rightV":{"x":6.6,"y":3.8984846800877735},"rightRigid":false,"rightSize":0,"leftRigid":true,"leftSize":2,"topRigid":true,"topSize":2,"maxReleaseVy":3.788971974109861,"maxReleaseSpeed":3.788971974109861,"neutralReleased":true,"impactVelocityAdded":false,"normalPostContactVelocity":3.788971974109861,"signed":{"releaseFrac":-0.10151531991222633,"splitOffset":-0.40000000000000036,"immediateMoved":true,"at":1790870999995},"choice":{"reason":"reference-first-contact","pairIds":[2,4],"soloId":3,"contactCount":1,"at":1790870999993},"sweep":{"ballId":4,"from":[4.6,3.8984846800877735],"to":[4,5],"minDistance":null,"minT":0,"closestId":0,"closestCell":null,"threshold":0.9995,"tangentBulge":0.16,"samples":96,"hit":false,"at":1790870999994}},"timing":{"pair":[0,1.9999999999999998],"solo":[3.7320508075688776,1.4226497308103743],"pairTarget":[0,2],"soloTarget":[4,2]}}

@@ -63,6 +63,38 @@ const files = [
   "app-split-visual-smoothness-v1.js"
 ];
 
+// Fail before testing a stale or reordered subset of the published runtime.
+const shell = fs.readFileSync(path.join(PUBLIC, "index.html"), "utf8");
+const manifest = /var files=(\[[\s\S]*?\]);/.exec(shell);
+if (!manifest) throw new Error("Production runtime manifest is missing");
+const publishedFiles = JSON.parse(manifest[1]);
+const selected = new Set(files);
+const separatelyTested = new Set([
+  "app-clear-all-ball-fx.js", "app-gameover-garbage-fade.js", "app-15.js",
+  "app-google-login.js", "app-online-v2.js", "app-menu-ui.js", "app-brand-bgm.js",
+  "app-bgm-local.js", "app-audio-volume-control.js", "app-menu-volume-fix.js",
+  "app-rotate-sfx.js", "app-instant-drop-sfx.js", "app-16.js",
+  "app-ai-superstrong-authoritative-v2.js", "app-position-lock-sfx.js",
+  "controls-v7.js", "app-switch-gamepad-authoritative-v1.js"
+]);
+if (new Set(publishedFiles).size !== publishedFiles.length) {
+  throw new Error("Duplicate production runtime layer");
+}
+for (const file of publishedFiles) {
+  if (!selected.has(file) && !separatelyTested.has(file)) {
+    throw new Error("New production layer requires test coverage: " + file);
+  }
+}
+const publishedPhysics = publishedFiles.filter(file => selected.has(file));
+if (JSON.stringify(publishedPhysics) !== JSON.stringify(files)) {
+  throw new Error("Physics test load order differs from production");
+}
+for (const file of publishedFiles) {
+  if (!fs.existsSync(path.join(PUBLIC, file))) {
+    throw new Error("Missing production script: " + file);
+  }
+}
+
 const ctx = {
   React: {
     useRef: initial => ({ current: initial }),

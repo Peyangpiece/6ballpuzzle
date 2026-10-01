@@ -1,0 +1,127 @@
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+OK  app-collapse-vertical-merge-v1.js
+OK  app-pile-motion-authority-v2.js
+OK  app-runtime-performance-v3.js
+OK  app-runtime-performance-v4.js
+OK  app-rigidity-final-authority-v1.js
+OK  app-reference-upconvex-authority-v1.js
+OK  app-reference-first-contact-sweep-v3.js
+OK  app-reference-inverted-flat-split-v1.js
+OK  app-rigidity-nintendo-authority-v1.js
+OK  app-rigidity-release-bounce-authority-v1.js
+OK  app-motion-smoothness-authority-v1.js
+OK  app-no-upward-bounce-split-authority-v1.js
+OK  app-even-row-split-continuity-v1.js
+OK  app-split-visual-smoothness-v1.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": []
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+RIGIDITY_RELEASE_BOUNCE {"flags":{"version":"rigidity-release-bounce-authority-v1","busy":true,"resolverBusy":true,"settleBusy":true,"rebase":true,"pinned":true,"pair":true,"upOuterBlocked":true,"upPinnedBreaks":false},"bounce":{"first":true,"second":false,"sigSame":true,"lensSame":true,"paths":[{"id":1,"len":1,"from":[7,2.34],"to":[7,4],"rebased":true},{"id":2,"len":1,"from":[9,2.34],"to":[9,4],"rebased":true},{"id":3,"len":1,"from":[8,3.34],"to":[8,5],"rebased":true}],"afterFirstMeta":[{"id":1,"gid":930001,"size":3,"rigid":true,"path":1},{"id":2,"gid":930001,"size":3,"rigid":true,"path":1},{"id":3,"gid":930001,"size":3,"rigid":true,"path":1}],"groupsAfterFirst":[{"group":930001,"ids":[1,2,3],"sizes":[3,3,3]}],"noBounceDecision":null,"originMatch":true,"allRebased":true,"rigid":[{"id":1,"size":3,"rigid":true},{"id":2,"size":3,"rigid":true},{"id":3,"size":3,"rigid":true}]},"stable":{"actual":[false,false,false],"preview":[],"previewMeta":[[3,true],[3,true],[3,true]],"commit":[],"after":[{"id":1,"size":0,"gid":0,"rigid":false},{"id":2,"size":0,"gid":0,"rigid":false},{"id":3,"size":0,"gid":0,"rigid":false}]},"differential":{"actual":[null,null,null],"external":[{"floor":false},{"floor":false},{"floor":false}],"preview":[],"commit":[],"after":[{"id":1,"size":0,"rigid":false},{"id":2,"size":0,"rigid":false},{"id":3,"size":0,"rigid":false}]},"pair":{"plan":[{"id":2,"size":2,"to":[8,11],"pivot":[10,11],"kind":"NINTENDO_PAIR_PIVOT"}],"after":[{"id":1,"size":2,"rigid":true},{"id":2,"size":2,"rigid":true}]}}
+Nintendo rigidity release + no-bounce v1 PASS

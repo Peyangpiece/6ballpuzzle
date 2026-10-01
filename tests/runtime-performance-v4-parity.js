@@ -1,6 +1,9 @@
 const fs=require("fs");
 const vm=require("vm");
 const path=require("path");
+// Keep the earlier adapter honest too; a later override must not hide drift.
+require("./runtime-performance-guards.js");
+require("./landing-shadow-contact-parity.js");
 const {ctx}=require("./v1303-plan-group-smoke.js");
 
 const PUBLIC=path.join(__dirname,"../public");

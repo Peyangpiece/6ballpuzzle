@@ -1,0 +1,126 @@
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+OK  app-collapse-vertical-merge-v1.js
+OK  app-pile-motion-authority-v2.js
+OK  app-runtime-performance-v3.js
+OK  app-runtime-performance-v4.js
+OK  app-rigidity-final-authority-v1.js
+OK  app-reference-upconvex-authority-v1.js
+OK  app-reference-first-contact-sweep-v3.js
+OK  app-reference-inverted-flat-split-v1.js
+OK  app-rigidity-nintendo-authority-v1.js
+OK  app-rigidity-release-bounce-authority-v1.js
+OK  app-motion-smoothness-authority-v1.js
+OK  app-no-upward-bounce-split-authority-v1.js
+OK  app-even-row-split-continuity-v1.js
+OK  app-split-visual-smoothness-v1.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": []
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+garbage chain-free dense settle PASS [{"type":1,"done":172,"spawned":18,"maxGlobalStall":33,"minDistance":0.9999997244741909},{"type":2,"done":172,"spawned":18,"maxGlobalStall":33,"minDistance":0.999999722388039},{"type":3,"done":170,"spawned":18,"maxGlobalStall":34,"minDistance":0.9999998184758989},{"type":4,"done":170,"spawned":18,"maxGlobalStall":24,"minDistance":0.9999999525614301}]

@@ -45,7 +45,6 @@ const canonicalLandingShadowVisualCells=landingShadowVisualCells;
 const canonicalResolveVisualContacts=resolveVisualContacts;
 const canonicalRigidShadowPixelPlacement=rigidShadowPixelPlacement;
 const canonicalDrawBall=drawBall;
-const canonicalHexGarbageBoardBallById=hexGarbageBoardBallById;
 const shadowBefore=canonicalLandingShadowVisualCells(g);
 const activeCells=pieceCells(g.piece);
 const safeBefore=canonicalSafeActiveFallOffset(g,activeCells,.37,dispOff(g.piece.rot),1.7);
@@ -60,7 +59,6 @@ expect(window.__hexRuntimePerformanceVersion==="runtime-perf-v2","runtime perfor
 expect(window.__hexStaticBoardContactPassSkipped===true&&window.__hexActiveCollisionColliderCache===true&&window.__hexLandingShadowColliderCache===true,"runtime performance markers missing");
 expect(window.__hexRigidShadowVisualColliderCache===true,"rigid shadow cache marker missing");
 expect(window.__hexDefaultBallDrawFastPath===true,"default ball draw fast path marker missing");
-expect(window.__hexGarbageBoardIdLookupCache===true,"garbage id lookup cache marker missing");
 expect(window.__hexPerformanceBehaviorParityRequired===true,"behavior parity marker missing");
 
 const shadowAfter=landingShadowVisualCells(g);
@@ -86,14 +84,6 @@ resolveVisualContacts(g);
 expect(delegatedContacts===0,"static board delegated to the full visual contact solver");
 expect((g._perfStaticContactSkips||0)===1,"static contact skip was not recorded");
 
-// Garbage obstacle lookup must return exactly the same ball object as the
-// canonical lattice scan, while repeated queries reuse one id map per version.
-for(const b of balls)expect(hexGarbageBoardBallById(g,b.id)===canonicalHexGarbageBoardBallById(g,b.id),"garbage id cache returned a different ball");
-expect(hexGarbageBoardBallById(g,999999)===canonicalHexGarbageBoardBallById(g,999999),"garbage id cache changed missing-id result");
-const idMap1=g._perfLogicalBallById?.map;
-for(const b of balls)hexGarbageBoardBallById(g,b.id);
-expect(idMap1&&idMap1===g._perfLogicalBallById?.map,"garbage id map was rebuilt without a board change");
-
 // Image-ready default balls must issue the exact same drawImage rectangle but
 // without save/restore stack churn. Non-default opacity must still delegate.
 {
@@ -109,14 +99,12 @@ expect(idMap1&&idMap1===g._perfLogicalBallById?.map,"garbage id map was rebuilt 
 }
 
 // A board version change must invalidate all logical caches while retaining
-// exact canonical geometry and lookup identity.
+// exact canonical geometry.
 const added=put(g,12,11,2);
 const canonicalChanged=canonicalLandingShadowVisualCells(g);
 const changed=landingShadowVisualCells(g);
 expect(sameCells(canonicalChanged,changed),"cache invalidation changed landing shadow geometry");
 expect(g._perfStaticLogicalColliders?.items!==cached1,"board change did not invalidate the logical collider cache");
-expect(hexGarbageBoardBallById(g,added.id)===added,"board-id cache did not observe a newly added ball");
-expect(g._perfLogicalBallById?.map!==idMap1,"board version change did not invalidate id cache");
 
 // The moment any board ball is moving, every motion-sensitive optimized wrapper
 // must fall back to the canonical motion-aware routines.
@@ -137,7 +125,6 @@ expect(delegatedContacts===1,"moving board failed to delegate to full visual con
 console.log("runtime performance v2 parity guards PASS",JSON.stringify({
   staticContactSkips:g._perfStaticContactSkips||0,
   colliders:g._perfStaticLogicalColliders?.items?.length||0,
-  idCache:g._perfLogicalBallById?.map?.size||0,
   drawFastPath:true,
   rigidShadowCache:true
 }));

@@ -1,0 +1,127 @@
+===== LOAD V1303 PHYSICS RUNTIME =====
+OK  app-01.js
+OK  app-02.js
+OK  app-03.js
+OK  app-04.js
+OK  app-05.js
+OK  app-06.js
+OK  app-07.js
+OK  app-pile-arc.js
+OK  app-clear-gap-collapse.js
+OK  app-floor-gap-invariant.js
+OK  app-clear-vacancy-priority.js
+OK  app-release-parity-settle.js
+OK  app-08.js
+OK  app-09.js
+OK  app-10.js
+OK  app-14.js
+OK  app-17.js
+OK  app-garbage-normal-physics.js
+OK  app-garbage-presentation.js
+OK  app-garbage-zero-rigidity.js
+OK  app-garbage-deep-settle.js
+OK  app-garbage-simultaneous-motion.js
+OK  app-garbage-render-overlap-guard.js
+OK  app-runtime-performance.js
+OK  app-physics-safety-invariants.js
+OK  app-mass-motion-safety.js
+OK  app-gravity-priority-v1.js
+OK  app-garbage-performance-v1.js
+OK  app-post-clear-two-stage-v1.js
+OK  app-garbage-continuous-v1.js
+OK  app-contact-separation-v1.js
+OK  app-floor-bridge-collapse-v1.js
+OK  app-lattice-finalize-v2.js
+OK  app-coherent-collapse-v1.js
+OK  app-wall-boundary-authoritative-v1.js
+OK  app-slope-upconvex-authoritative-v3.js
+OK  app-intentional-hexagon-stability-v1.js
+OK  app-rigidity-resolver-authoritative-v3.js
+OK  app-collapse-vertical-merge-v1.js
+OK  app-pile-motion-authority-v2.js
+OK  app-runtime-performance-v3.js
+OK  app-runtime-performance-v4.js
+OK  app-rigidity-final-authority-v1.js
+OK  app-reference-upconvex-authority-v1.js
+OK  app-reference-first-contact-sweep-v3.js
+OK  app-reference-inverted-flat-split-v1.js
+OK  app-rigidity-nintendo-authority-v1.js
+OK  app-rigidity-release-bounce-authority-v1.js
+OK  app-motion-smoothness-authority-v1.js
+OK  app-no-upward-bounce-split-authority-v1.js
+OK  app-even-row-split-continuity-v1.js
+OK  app-split-visual-smoothness-v1.js
+
+===== FINAL FUNCTION CHECK =====
+hexPhysPlanGroup function
+hexPhysNaturalMotion function
+hexPhysResolveEvent function
+hexPhysApplyEvent function
+settlePass function
+
+===== VERSION MARKERS =====
+rigidityResolver: true
+gravityPriority: gravity-priority-v6-ai-fastpath
+
+===== CANONICAL SMOKE CASES =====
+{
+  "freeFall": [
+    {
+      "id": 100,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 101,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    },
+    {
+      "id": 102,
+      "dx": 0,
+      "dy": 2,
+      "kind": "GROUP_TRANSLATE",
+      "bundleId": 500,
+      "groupSize": 3
+    }
+  ],
+  "slope": [
+    {
+      "id": 110,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 111,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    },
+    {
+      "id": 112,
+      "dx": -1,
+      "dy": 1,
+      "kind": "GROUP_SLOPE_TRANSLATE",
+      "bundleId": 501,
+      "groupSize": 3
+    }
+  ],
+  "upConvex": []
+}
+
+=======================================
+ SUCCESS: V1303 FINAL PLANNER LOADED 
+=======================================
+NINTENDO_20260814_INVERTED_FLAT_SPLIT {"authority":"reference-inverted-flat-split-v1","normalTiming":true,"hardDuration":0,"preDiag":{"scanMin":0,"groupSizes":[[[5671,9,8,"down"],[5672,11,8,"down"],[5673,10,9,"down"]]],"support":{"floor":false,"count":2,"leftId":5791,"rightId":5792},"targets":{"left":{"valid":true,"occupied":null},"right":{"valid":true,"occupied":null}},"pathHits":{"left":false,"right":false},"minStationary":{"left":{"dist":0.9999999999999993,"id":5791,"cell":[9,10],"t":1},"right":{"dist":0.9999999999999993,"id":5792,"cell":[11,10],"t":1}},"directPreview":[{"id":5671,"from":[9,8],"to":[8,9],"kind":"INVERTED_FLAT_SPLIT_LEFT","pivot":[10,9],"groupSize":0,"bundleId":0},{"id":5672,"from":[11,8],"to":[12,9],"kind":"INVERTED_FLAT_SPLIT_RIGHT","pivot":[10,9],"groupSize":0,"bundleId":0}]},"firstMoved":true,"before":[{"id":5671,"gid":826567,"size":3,"rigid":true},{"id":5672,"gid":826567,"size":3,"rigid":true},{"id":5673,"gid":826567,"size":3,"rigid":true}],"afterFirst":[{"id":5671,"gid":0,"size":0,"rigid":false,"path":[{"kind":"INVERTED_FLAT_SPLIT_LEFT","from":[9,8],"to":[8,9],"pivot":[10,9],"motionSeq":1,"bundleId":0,"groupSize":0}]},{"id":5672,"gid":0,"size":0,"rigid":false,"path":[{"kind":"INVERTED_FLAT_SPLIT_RIGHT","from":[11,8],"to":[12,9],"pivot":[10,9],"motionSeq":1,"bundleId":0,"groupSize":0}]},{"id":5673,"gid":0,"size":0,"rigid":false,"path":[]}],"moving":[{"id":5671,"seg":{"kind":"INVERTED_FLAT_SPLIT_LEFT","from":[9,8],"to":[8,9],"pivot":[10,9],"motionSeq":1,"bundleId":0,"groupSize":0},"duration":0.16666666666666663,"endState":{"vy":7.255197456936871,"speed":6.283185307179586}},{"id":5672,"seg":{"kind":"INVERTED_FLAT_SPLIT_RIGHT","from":[11,8],"to":[12,9],"pivot":[10,9],"motionSeq":1,"bundleId":0,"groupSize":0},"duration":0.16666666666666666,"endState":{"vy":7.255197456936871,"speed":6.283185307179586}}],"occupied":[[5671,8,9],[5673,10,9],[5672,12,9],[5791,9,10],[5792,11,10],[5801,8,11],[5802,10,11],[5803,12,11]],"maxRadiusError":7.771561172376096e-16,"maxAngularProgressError":9.992007221626409e-16,"maxMirrorError":1.7763568394002505e-15,"samples":[{"u":0,"pL":[9,8],"pR":[11,8],"dL":0,"dR":0},{"u":0.25,"pL":[8.585786437626904,8.183503419072274],"pR":[11.414213562373096,8.183503419072274],"dL":-0.26179938779914913,"dR":0.26179938779914946},{"u":0.5,"pL":[8.267949192431123,8.422649730810374],"pR":[11.732050807568877,8.422649730810374],"dL":-0.5235987755982983,"dR":0.5235987755982984},{"u":0.75,"pL":[8.068148347421863,8.701141509277315],"pR":[11.931851652578137,8.701141509277315],"dL":-0.7853981633974478,"dR":0.7853981633974481},{"u":1,"pL":[8,9],"pR":[12,9],"dL":-1.0471975511965974,"dR":1.0471975511965976}],"choice":null,"reference":{"duration":0.16666666666666666}}
+inverted flat-split normal-slope timing PASS {"duration":0.16666666666666663,"firstMoved":true,"maxRadiusError":7.771561172376096e-16,"maxAngularProgressError":9.992007221626409e-16,"maxMirrorError":1.7763568394002505e-15}
