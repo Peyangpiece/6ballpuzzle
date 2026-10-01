@@ -121,7 +121,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 }
 
 =======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
+ SUCCESS: V1303 FINAL PLANNER LOADED
 =======================================
 NINTENDO_F126_F131_SOLO_PIVOT_ARC {"choice":{"reason":"reference-first-contact","pairIds":[5,7],"soloId":6,"contactCount":1,"at":1790871000204},"soloId":6,"seg":{"kind":"REFERENCE_FIRST_CONTACT_SOLO","from":[7.6,8.898484680087773],"to":[9,10],"pivot":[7,10],"groupSize":0},"startRadius":1.000001000000001,"maxRadiusError":8.881784197001252e-16,"minDx":0.00011131986380874537,"minDy":0.003716169784548029,"samples":[{"u":0,"p":[7.6,8.898484680087773],"radius":1.000001000000001},{"u":0.2,"p":[8.058834933214811,9.020395218432794],"radius":1.0000010000000015},{"u":0.4,"p":[8.450138559282209,9.204783853515929],"radius":1.000001000000001},{"u":0.6,"p":[8.748953970821345,9.439890484532338],"radius":1.000001000000001},{"u":0.8,"p":[8.936223055274708,9.710720273652711],"radius":1.0000010000000013},{"u":1,"p":[9.000002000000002,10],"radius":1.000001000000001}],"timing":{"fps":30.02001334222815,"frames":5,"duration":0.16655555555555557}}
 2026-08-26 Nintendo F126-F131 solo pivot arc PASS {"startRadius":1.000001000000001,"maxRadiusError":8.881784197001252e-16,"minDx":0.00011131986380874537,"minDy":0.003716169784548029,"timing":{"fps":30.02001334222815,"frames":5,"duration":0.16655555555555557}}

@@ -121,6 +121,6 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 }
 
 =======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
+ SUCCESS: V1303 FINAL PLANNER LOADED
 =======================================
 garbage visual-only presentation + 0.500 s cadence PASS {"starts":[{"seq":0,"t":0.008333333333333333,"ids":[1,2,3,4,5,6]},{"seq":1,"t":0.5000000000000007,"ids":[7,8,9,10,11,12]}],"delta":0.4916666666666673}

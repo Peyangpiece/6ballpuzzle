@@ -121,6 +121,6 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 }
 
 =======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
+ SUCCESS: V1303 FINAL PLANNER LOADED
 =======================================
 even-row strict-inner split continuity PASS {"pair":{"kind":"GROUP_SLOPE_TRANSLATE","groupSize":2,"upward":0,"finalY":9.42,"strict":true,"token":true,"classified":true,"semantic":true},"solo":{"kind":"ROLL_RIGHT","groupSize":0,"upward":0,"finalY":9.42,"strict":true,"token":true,"classified":true,"semantic":true},"normal":{"token":false,"strict":false,"classified":false},"flags":{"loaded":true,"survives":true,"noLift":true,"parityUnified":true}}

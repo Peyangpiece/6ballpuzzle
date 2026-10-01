@@ -24,7 +24,7 @@ async function worker(){
       child.on("close",code=>{clearTimeout(timer);resolve({...job,code,timedOut,seconds:Math.round((Date.now()-started)/100)/10,output});});
     });
     const label=path.basename(job.file,".js")+(job.fps?"-"+job.fps+"fps":"");
-    fs.writeFileSync(path.join(out,label+".log"),result.output);
+    fs.writeFileSync(path.join(out,label+".log"),result.output.replace(/[ \t]+$/gm,""));
     results.push({...result,output:undefined,log:label+".log"});
     console.log((result.code===0?"PASS":"FAIL")+" "+label+" "+result.seconds+"s");
   }

@@ -121,6 +121,6 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 }
 
 =======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
+ SUCCESS: V1303 FINAL PLANNER LOADED
 =======================================
 garbage chain-free dense settle PASS [{"type":1,"done":172,"spawned":18,"maxGlobalStall":33,"minDistance":0.9999997244741909},{"type":2,"done":172,"spawned":18,"maxGlobalStall":33,"minDistance":0.999999722388039},{"type":3,"done":170,"spawned":18,"maxGlobalStall":34,"minDistance":0.9999998184758989},{"type":4,"done":170,"spawned":18,"maxGlobalStall":24,"minDistance":0.9999999525614301}]

@@ -121,6 +121,6 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 }
 
 =======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
+ SUCCESS: V1303 FINAL PLANNER LOADED
 =======================================
 final rigidity production audit PASS 12000/12000 sameDirection=3471 oppositeSplits=0 activeCentralSplits=0 positionFinalSplits=0 inverseLegacy=6088 rejectedOutsideBand=2063 releasedFixed=2750

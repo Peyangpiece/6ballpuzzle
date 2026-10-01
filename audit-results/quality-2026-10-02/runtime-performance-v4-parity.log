@@ -122,7 +122,7 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 }
 
 =======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
+ SUCCESS: V1303 FINAL PLANNER LOADED
 =======================================
 published landing shadow contact parity PASS {"cases":240,"renderedOffsets":true,"allRotations":true}
 runtime performance v4 parity PASS {"contactCases":320,"staticCases":120,"fastFrames":7,"fallbacks":313,"workspaceCache":true,"numericBuckets":true,"pairArrays":false,"columnIndex":true}

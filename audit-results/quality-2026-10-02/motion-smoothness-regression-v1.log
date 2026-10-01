@@ -121,6 +121,6 @@ gravityPriority: gravity-priority-v6-ai-fastpath
 }
 
 =======================================
- SUCCESS: V1303 FINAL PLANNER LOADED 
+ SUCCESS: V1303 FINAL PLANNER LOADED
 =======================================
 ordinary smoothness + legacy pile/garbage regression PASS {"early":[0,0.68359375,0.9375,0.99609375,1],"late":[0,0.00390625,0.0625,0.31640625,1],"ordinaryHalf":[[1,1],[0.5,0.5]],"pileHalf":[[0.5,0.5],[0.5,0.5]],"garbageHalf":[[0.5,0.5],[0.5,0.5]],"flags":{"smooth":true,"natural":true,"rigid":true,"pileLegacy":true,"garbageLegacy":true,"noBouncePileExclusion":true,"scope":"ordinary-non-pile-only"}}
