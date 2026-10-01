@@ -7,6 +7,23 @@
 if(typeof window==="undefined"||window.__sixBallMotionSmoothnessAuthorityV1)return;
 window.__sixBallMotionSmoothnessAuthorityV1=true;
 
+// Ordinary contact chains must not lose an entire display frame at every
+// segment boundary on 30/60 Hz screens. Advance their existing 120 Hz physics
+// clock in bounded substeps; legacy accumulated/garbage animation is unchanged.
+if(typeof updateVisuals==="function"){
+  const baseUpdateVisuals=updateVisuals;
+  updateVisuals=function(g,dt){
+    if(!(dt>PHYSICS_FRAME+1e-9)||!g?.board)return baseUpdateVisuals(g,dt);
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+      const b=valid(x,y)?g.board[y][x]:null;
+      if(b&&(b.isGarbage||(b.fallPath||[]).some(s=>s.pileFlow||s.pileGravityFall)))return baseUpdateVisuals(g,dt);
+    }
+    let remaining=dt,result;
+    while(remaining>1e-9){const step=Math.min(PHYSICS_FRAME,remaining);result=baseUpdateVisuals(g,step);remaining-=step;}
+    return result;
+  };
+}
+
 if(typeof liveBatchPointAt==="function"){
   const baseLiveBatchPointAt=liveBatchPointAt;
 

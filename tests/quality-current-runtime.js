@@ -5,11 +5,11 @@ const workflow=fs.readFileSync(path.join(root,".github/workflows/validate.yml"),
 const scripts=[...new Set([...workflow.matchAll(/node (tests\/[\w.-]+\.js)/g)].map(m=>m[1]))];
 scripts.push("tests/ai-superhuman-authoritative-v3.js","tests/landscape-startup.js");
 const jobs=scripts.map(file=>({file}));
-for(const fps of [30,60,120,240])for(const file of ["tests/no-upward-bounce-split-continuity-v1.js","tests/reference-video-motion.js"]){
+for(const fps of [30,60,120,240])for(const file of ["tests/no-upward-bounce-split-continuity-v1.js","tests/reference-video-motion.js","tests/reference-capture-motion-parity.js"]){
   jobs.push({file,fps});
 }
 const results=[];
-const out=path.join(root,"audit-results","quality-2026-10-02");
+const out=process.env.REVIEW_OUTPUT||path.join(root,"audit-results","quality-2026-10-02");
 fs.mkdirSync(out,{recursive:true});
 let cursor=0;
 async function worker(){

@@ -317,6 +317,10 @@ cell.visualSyncSplitStage === 0 &&
 if (liveBatchMember) {
 } else if (reached && Array.isArray(cell.fallPath) && cell.fallPath.length && !syncBoundaryBlocked) {
 cell.fallPath.shift();
+// Clear this batch's transit marker before probing the next physical event.
+// A stale marker made a completed support look airborne until the next display
+// frame and postponed pocket release by 1/30 s on slower screens.
+if(!cell.fallPath.length)g._visualMovingIds.delete(cell.id);
 if (cell.visualSyncSplitGroup && cell.visualSyncSplitStage === 0) cell.visualSyncSplitStage = 1;
 const nextSeg=cell.fallPath.length
 ? (cell.fallPath[0].to ? cell.fallPath[0] : {from:[done.tx,done.ty],to:cell.fallPath[0],pivot:null})
@@ -380,10 +384,12 @@ m.v.y=m.cell.isGarbage||ordinarySplitSegmentNoLift(m.cell,m.seg)
 for(const m of liveBatch.members){
 const {cell,v,seg}=m;
 const completedState=g._liveBatchClock.states?.get(cell.id)?.endState;
+if(completedState&&seg.groupSize>=2)v.constraintExitMomentum={speed:completedState.speed,time:g.pileFlowClock};
 if(!Array.isArray(cell.fallPath)||!cell.fallPath.length)continue;
 const cur=cell.fallPath[0];
 if(!cur?.to || cur.motionSeq!==liveBatch.seq)continue;
 cell.fallPath.shift();
+if(!cell.fallPath.length)g._visualMovingIds.delete(cell.id);
 if(cell.visualSyncSplitGroup && cell.visualSyncSplitStage===0) cell.visualSyncSplitStage=1;
 delete v._segKey;
 delete v._segP;

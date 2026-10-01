@@ -41,7 +41,7 @@ check(16,"pointer release preserves fractional X",SOURCE_CONTROLS.includes("Poin
 {const g=active(17),r=g.piece.rot;check(17,"rotation advances sixty degrees",rotate(g,1)&&g.piece.rot===(r+1)%6);}
 {const g=active(18);rotate(g,-1);check(18,"counter rotation advances minus sixty",g.piece.rot===5);}
 check(19,"rotation capture duration",close(ROTATE_VISUAL_TIME,.10));
-check(20,"held fast fall multiplier",close(FAST_DROP_MULTIPLIER,5.8));
+check(20,"measured held fast fall speed",close(FAST_DROP_MULTIPLIER*REFERENCE_FALL_PX_PER_SEC,1035));
 
 // 021-030: hard drop and active-to-pile hand-off.
 check(21,"mobile instant drop has no travel animation",REFERENCE_INSTANT_DROP_MAX_FRAMES===1&&SOURCE_CONTROLS.includes("hardDrop(g)")&&!SOURCE_CONTROLS.includes("commitCurrentColumn(g)")&&!SOURCE_CONTROLS.includes("g.piece={...target}"));

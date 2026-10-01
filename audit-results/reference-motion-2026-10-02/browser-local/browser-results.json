@@ -1,0 +1,19 @@
+{
+  "url": "http://127.0.0.1:8018",
+  "mounted": {
+    "mounted": true,
+    "canvases": 1,
+    "bootError": "",
+    "playerState": "RESOLVING",
+    "opponentNextId": 19,
+    "playerBalls": 47
+  },
+  "errors": [],
+  "assetFailures": [],
+  "inputSequences": 24,
+  "viewports": [
+    "1280x720",
+    "390x844",
+    "844x390"
+  ]
+}

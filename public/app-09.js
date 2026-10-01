@@ -548,12 +548,18 @@ function stepAI(g, dt) {
 const VW = 1280, VH = 720;
 // Measurements from the 1920x1080 reference footage, normalized to 1280x720.
 // Both players use the same floor-wide 10/9 alternating playfield and scale.
-const ME = { D: 63.4 / 1.5, X: 165, Y: 166 };
-const FOE = { D: 63.4 / 1.5, X: 671, Y: 166 };
+// Source F47-F54: floor centres ~875.5 px, horizontal pitch ~64.4 px,
+// neon bottom ~917.5 px. The frame includes a gutter below the actual floor.
+const REFERENCE_HORIZONTAL_PITCH=64.4/1.5;
+const REFERENCE_FLOOR_GUTTER=7;
+const ME = { D: 63.4 / 1.5, DX:REFERENCE_HORIZONTAL_PITCH, X: 165, Y: 159.9 };
+const FOE = { D: 63.4 / 1.5, DX:REFERENCE_HORIZONTAL_PITCH, X: 671, Y: 159.9 };
 ME.BW = 444;
-ME.BH = ME.D * BOARD_FLOOR_N;
+ME.gridBH = ME.D * BOARD_FLOOR_N;
+ME.BH = ME.gridBH + REFERENCE_FLOOR_GUTTER;
 FOE.BW = 444;
-FOE.BH = FOE.D * BOARD_FLOOR_N;
+FOE.gridBH = FOE.D * BOARD_FLOOR_N;
+FOE.BH = FOE.gridBH + REFERENCE_FLOOR_GUTTER;
 const DROP_ZONE_Y = 648;
 const NEON = ["#2FE3F5", "#FF3EA5"];
 const STARS = (() => {

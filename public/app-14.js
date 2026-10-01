@@ -33,8 +33,9 @@ function drawHardDropImpacts(ctx,g,pos,D){
 function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     const { D, X, Y, BW, BH } = L;
     // Centre the lattice when the neon frame contains a small side gutter.
-    const ox = X + (BW - (W2 - 1) * D * 0.5) / 2, oy = Y + D / 2;
-    const pos = (x, y) => [ox + x * D * 0.5, oy + y * D * HEX_ROW_H];
+    const gridDX=L.DX||D;
+    const ox = X + (BW - (W2 - 1) * gridDX * 0.5) / 2, oy = Y + D / 2;
+    const pos = (x, y) => [ox + x * gridDX * 0.5, oy + y * D * HEX_ROW_H];
     const renderPileMemo=renderLead>1e-7?new Map():null;
     ctx.save();
     ctx.save();
@@ -127,7 +128,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     drawFormationEffects(ctx,g,pos,D);
     if (g.state === "PLAYING" && g.piece) {
         const shadowCells = landingShadowVisualCells(g);
-        if (shadowCells) {const safeShadowPx=rigidShadowPixelPlacement(g,shadowCells,pos,D,X,Y,BW,BH);for(const [spx,spy,sc] of safeShadowPx) drawLandingShadowBall(ctx,spx,spy,D,sc);}
+        if (shadowCells) {const safeShadowPx=rigidShadowPixelPlacement(g,shadowCells,pos,D,X,Y,BW,L.gridBH||BH);for(const [spx,spy,sc] of safeShadowPx) drawLandingShadowBall(ctx,spx,spy,D,sc);}
     }
     if ((g.state === "PLAYING" || g.state === "NET") && g.piece) {
         const dx = g.pieceVX - g.piece.x;const pulse = 0.75 + 0.25 * Math.sin(t * 7);const cells = pieceCells(g.piece);let dOff = dispOff(g.piece.rot),frac;

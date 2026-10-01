@@ -1,7 +1,7 @@
 // Run with Playwright available through NODE_PATH. No account actions are made.
 const {chromium}=require("playwright");
 const fs=require("fs"),path=require("path"),assert=require("assert");
-const output=path.join(__dirname,"../audit-results/quality-2026-10-02");
+const output=process.env.REVIEW_OUTPUT||path.join(__dirname,"../audit-results/quality-2026-10-02");
 const url=process.env.REVIEW_URL||"http://127.0.0.1:8018";
 (async()=>{
   fs.mkdirSync(output,{recursive:true});

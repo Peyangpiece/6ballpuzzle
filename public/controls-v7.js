@@ -154,7 +154,7 @@
         /* freeX is a real-valued doubled-x coordinate. updateVisuals copies it
            to pieceVX every frame, so the piece follows the finger continuously
            instead of jumping one lattice column at a time. */
-        const targetX=rec.dragBaseX+(dx/ME.D)*2;
+        const targetX=rec.dragBaseX+(dx/(ME.DX||ME.D))*2;
         setFreeX(g,targetX);
     }
     window.__hexSingleSlideV7=true;

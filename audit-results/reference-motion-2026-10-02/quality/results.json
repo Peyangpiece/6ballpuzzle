@@ -1,0 +1,313 @@
+{
+  "date": "2026-10-02",
+  "passed": 42,
+  "total": 42,
+  "results": [
+    {
+      "file": "tests/ai-superhuman-authoritative-v3.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.8,
+      "log": "ai-superhuman-authoritative-v3.log"
+    },
+    {
+      "file": "tests/clear-all-ball-fx.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "clear-all-ball-fx.log"
+    },
+    {
+      "file": "tests/even-row-strict-inner-split-continuity-v1.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "even-row-strict-inner-split-continuity-v1.log"
+    },
+    {
+      "file": "tests/gameover-garbage-fade.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "gameover-garbage-fade.log"
+    },
+    {
+      "file": "tests/garbage-chain-settle.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 1.9,
+      "log": "garbage-chain-settle.log"
+    },
+    {
+      "file": "tests/garbage-diagonal-settle.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "garbage-diagonal-settle.log"
+    },
+    {
+      "file": "tests/garbage-normal-physics.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.2,
+      "log": "garbage-normal-physics.log"
+    },
+    {
+      "file": "tests/garbage-post-clear-collapse.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "garbage-post-clear-collapse.log"
+    },
+    {
+      "file": "tests/garbage-presentation.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "garbage-presentation.log"
+    },
+    {
+      "file": "tests/garbage-render-overlap-guard.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "garbage-render-overlap-guard.log"
+    },
+    {
+      "file": "tests/garbage-zero-rigidity.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "garbage-zero-rigidity.log"
+    },
+    {
+      "file": "tests/landscape-startup.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "landscape-startup.log"
+    },
+    {
+      "file": "tests/motion-smoothness-regression-v1.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "motion-smoothness-regression-v1.log"
+    },
+    {
+      "file": "tests/no-upward-bounce-split-continuity-v1.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "no-upward-bounce-split-continuity-v1.log"
+    },
+    {
+      "file": "tests/no-upward-bounce-split-continuity-v1.js",
+      "fps": 120,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "no-upward-bounce-split-continuity-v1-120fps.log"
+    },
+    {
+      "file": "tests/no-upward-bounce-split-continuity-v1.js",
+      "fps": 240,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "no-upward-bounce-split-continuity-v1-240fps.log"
+    },
+    {
+      "file": "tests/no-upward-bounce-split-continuity-v1.js",
+      "fps": 30,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "no-upward-bounce-split-continuity-v1-30fps.log"
+    },
+    {
+      "file": "tests/no-upward-bounce-split-continuity-v1.js",
+      "fps": 60,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "no-upward-bounce-split-continuity-v1-60fps.log"
+    },
+    {
+      "file": "tests/pile-arc-motion.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "pile-arc-motion.log"
+    },
+    {
+      "file": "tests/reference-20260814-inverted-flat-split-diagnostic.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-20260814-inverted-flat-split-diagnostic.log"
+    },
+    {
+      "file": "tests/reference-20260826-rendered-pair-rigidity.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-20260826-rendered-pair-rigidity.log"
+    },
+    {
+      "file": "tests/reference-20260826-solo-continuity-diagnostic.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-20260826-solo-continuity-diagnostic.log"
+    },
+    {
+      "file": "tests/reference-20260826-solo-pivot-arc.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-20260826-solo-pivot-arc.log"
+    },
+    {
+      "file": "tests/reference-20260826-upconvex-dynamic-split.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-20260826-upconvex-dynamic-split.log"
+    },
+    {
+      "file": "tests/reference-capture-motion-parity.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-capture-motion-parity.log"
+    },
+    {
+      "file": "tests/reference-capture-motion-parity.js",
+      "fps": 120,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-capture-motion-parity-120fps.log"
+    },
+    {
+      "file": "tests/reference-capture-motion-parity.js",
+      "fps": 240,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-capture-motion-parity-240fps.log"
+    },
+    {
+      "file": "tests/reference-capture-motion-parity.js",
+      "fps": 30,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-capture-motion-parity-30fps.log"
+    },
+    {
+      "file": "tests/reference-capture-motion-parity.js",
+      "fps": 60,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-capture-motion-parity-60fps.log"
+    },
+    {
+      "file": "tests/reference-rigidity-release-bounce-v1.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-rigidity-release-bounce-v1.log"
+    },
+    {
+      "file": "tests/reference-rigidity-state-machine-v1.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "reference-rigidity-state-machine-v1.log"
+    },
+    {
+      "file": "tests/reference-video-motion.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.2,
+      "log": "reference-video-motion.log"
+    },
+    {
+      "file": "tests/reference-video-motion.js",
+      "fps": 120,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.2,
+      "log": "reference-video-motion-120fps.log"
+    },
+    {
+      "file": "tests/reference-video-motion.js",
+      "fps": 240,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.3,
+      "log": "reference-video-motion-240fps.log"
+    },
+    {
+      "file": "tests/reference-video-motion.js",
+      "fps": 30,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.2,
+      "log": "reference-video-motion-30fps.log"
+    },
+    {
+      "file": "tests/reference-video-motion.js",
+      "fps": 60,
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.2,
+      "log": "reference-video-motion-60fps.log"
+    },
+    {
+      "file": "tests/runtime-performance-v4-parity.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 1.8,
+      "log": "runtime-performance-v4-parity.log"
+    },
+    {
+      "file": "tests/split-visual-state-integrity.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "split-visual-state-integrity.log"
+    },
+    {
+      "file": "tests/v1303-current-oracle-suite.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 47.3,
+      "log": "v1303-current-oracle-suite.log"
+    },
+    {
+      "file": "tests/v1303-plan-group-smoke.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0,
+      "log": "v1303-plan-group-smoke.log"
+    },
+    {
+      "file": "tests/v1303-upconvex-live-pocket-v24.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 75.7,
+      "log": "v1303-upconvex-live-pocket-v24.log"
+    },
+    {
+      "file": "tests/v1303-upconvex-production-guard.js",
+      "code": 0,
+      "timedOut": false,
+      "seconds": 0.1,
+      "log": "v1303-upconvex-production-guard.log"
+    }
+  ]
+}

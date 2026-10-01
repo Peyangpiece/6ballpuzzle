@@ -140,8 +140,9 @@ function candidatePairs(board,members,ind,actual,base){const combos=[[0,1,2],[0,
 }
 // An outer slope contact stays rigid. A later lower ball lodging between
 // two settled supports is a different event: it pins that member while the
-// top and opposite lower ball can continue as a rigid pair (Aug 14 capture).
-function pinnedLowerPair(board,members,actual,contact){
+// remaining members roll about their own settled supports. The Aug 14 capture
+// shows their distance increasing, so retaining a pair here is not physical.
+function pinnedLowerRelease(board,members,actual,contact){
  if(!contact.current||contact.busy||members.length!==3)return null;
  const sorted=[...members].sort((a,b)=>a.y-b.y||a.x-b.x);
  const top=sorted[0],lower=sorted.slice(1);
@@ -156,12 +157,17 @@ function pinnedLowerPair(board,members,actual,contact){
    const touching=new Set(contact.contacts.filter(c=>id(c.member)===id(solo)&&c.kind==="ball").map(c=>c.support.id));
    if(!touching.has(support.left.ball.id)||!touching.has(support.right.ball.id))continue;
   }
-  const pair=members.filter(m=>id(m)!==id(solo));
-  const pp=pairPlan(board,pair);
-  if(!pp?.length||!distancePreserved(pair,pp))continue;
-  return {type:"pair",pairIds:new Set(pair.map(id)),soloId:id(solo),
-    pairPlan:pp.map(p=>({...p,pinnedLowerSplit:true})),soloMotion:null,
-    reason:"lower-pocket-pinned-pair"};
+  const moving=members.filter(m=>id(m)!==id(solo)),movingIds=new Set(moving.map(id));
+  // Probe both departing members together. Treating the other moving member as
+  // a settled support makes the upper ball wait for a fictitious stationary ball.
+  const plan=moving.map(m=>hexPhysNaturalMotion(board,m.x,m.y,movingIds)).filter(Boolean);
+  if(!plan.length||!planTargetsSafe(board,members,plan))continue;
+  const game=gameByBoard.get(board);
+  const exitSpeed=p=>{const v=game?.vis?.get(id(p)),exit=v?.constraintExitMomentum;
+    return exit&&game.pileFlowClock-exit.time<=2*GAME_FRAME?Number(exit.speed)||0:Number(v?.motionSpeed)||0;};
+  return {type:"full",soloId:id(solo),plan:plan.map(p=>({...p,pinnedLowerSplit:true,incomingMotionSpeed:exitSpeed(p),
+    releasedSupportImpact:id(p)===id(top),bundleId:0,groupSize:0})),
+    reason:"lower-pocket-independent-release"};
  }
  return null;
 }
@@ -185,12 +191,12 @@ hexPhysPlanGroup=function(board,members,preview=false){
  }
  const whole=wholeRigid(board,members,ind,base);if(whole){if(!preview)commitGroup(members,members.length,gid);return whole;}
  if(upwardTriplet(members)){
-  const pinned=pinnedLowerPair(board,members,actual,contact);
+  const pinned=pinnedLowerRelease(board,members,actual,contact);
   if(pinned){
-   if(preview)return pinned.pairPlan.map(p=>({...p,bundleId:gid,groupSize:2}));
-   const out=commitPairSplit(members,pinned,gid);
-   window.__sixBallLastNintendoRigidityDecision={reason:pinned.reason,pairIds:[...pinned.pairIds],soloId:pinned.soloId,at:Date.now()};
-   return out;
+   if(preview)return pinned.plan;
+   for(const m of members)clear(m);
+   window.__sixBallLastNintendoRigidityDecision={reason:pinned.reason,ids:members.map(id),soloId:pinned.soloId,at:Date.now()};
+   return pinned.plan;
   }
   if(!preview)commitGroup(members,3,gid);
   window.__sixBallLastNintendoRigidityDecision={reason:"reject-upward-split-without-authorized-inner-contact",ids:members.map(id),contactCount:contact.contacts.length,at:Date.now()};

@@ -309,19 +309,60 @@ function prepareContinuousPileFlow(g,reason="pile_flow"){
 }
 
 function hexMotionPhysicalDist(seg){if(!seg?.from||!seg?.to)return 0;return Math.hypot((seg.to[0]-seg.from[0])*0.5,(seg.to[1]-seg.from[1])*HEX_ROW_H);}
-function hexMotionDuration(seg,state={vy:0,speed:0}){
+// Once a lower member lodges, the departing members have separate supports.
+// Integrate their rolling clocks from incoming momentum and gravitational
+// potential, rather than restarting both with the same five-frame animation.
+function releasedPivotClock(seg,state){
+    if(!seg?.pinnedLowerSplit||!seg.pivot||!seg.from||!seg.to)return null;
+    if(seg.releasedPivotClock)return seg.releasedPivotClock;
+    const [px,py]=seg.pivot,H=HEX_ROW_H;
+    const dx=(seg.from[0]-px)*.5,dy=(seg.from[1]-py)*H,r=Math.hypot(dx,dy);
+    const a0=Math.atan2(dy,dx),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5);
+    let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
+    let v0=Math.max(SLIDE_SPEED,Number(seg.incomingMotionSpeed)||Number(state?.speed)||0);
+    // An upper member meeting the newly stationary lower member loses the
+    // normal component of its inherited horizontal velocity.
+    if(seg.releasedSupportImpact)v0*=Math.abs(dy)/Math.max(1e-9,r);
+    const points=[{t:0,q:0}],speed=q=>Math.sqrt(Math.max(.0001,v0*v0+2*GRAV*r*(Math.sin(a0+da*q)-Math.sin(a0))));
+    let elapsed=0;for(let i=1;i<=96;i++){const q=i/96;elapsed+=r*Math.abs(da)/96/speed((i-.5)/96);points.push({t:elapsed,q});}
+    // Use the two distinct, measured reference clocks, not the old shared
+    // five-frame pair clock. Energy integration supplies the within-roll shape.
+    const frames=seg.releasedSupportImpact?REFERENCE_PINNED_UPPER_ROLL_FRAMES:REFERENCE_PINNED_LOWER_ROLL_FRAMES;
+    const duration=Math.abs(da)/(Math.PI/3)*frames/REFERENCE_VIDEO_FPS,rate=elapsed/Math.max(PHYSICS_FRAME,duration);
+    for(const p of points)p.t/=rate;
+    return {points,duration:Math.max(PHYSICS_FRAME,duration),speed:speed(1)*rate,vy:Math.max(0,speed(1)*rate*Math.abs(Math.cos(a1)))};
+}
+function hexMotionDurationCanonical(seg,state={vy:0,speed:0}){
+    const released=releasedPivotClock(seg,state);
+    if(released){seg.releasedPivotClock=released;state.speed=released.speed;state.vy=released.vy;return released.duration;}
     if(seg?.floorContact){state.speed=SLIDE_SPEED;state.vy=0;return SLOPE_NORMAL_DURATION;}
     if(!seg?.from||!seg?.to)return 1/120;const H=HEX_ROW_H;
     if(seg.topPivot){const [px,py]=seg.topPivot,startY=cellCenterYNorm(seg.from[1]),supportY=cellCenterYNorm(py),contactY=supportY-1,fallDist=Math.max(0,contactY-startY),v0=Math.max(0,state.vy||0),fallT=fallDist>1e-9?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallDist)))/Math.max(.0001,GRAV):0,tx=latticeRealX(seg.to[0]),ty=cellCenterYNorm(seg.to[1]),sx=latticeRealX(px),sy=cellCenterYNorm(py);let da=Math.atan2(ty-sy,tx-sx)+Math.PI/2;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const arcT=Math.abs(da)/Math.max(.0001,SLIDE_SPEED);state.speed=SLIDE_SPEED;state.vy=Math.max(0,SLIDE_SPEED*Math.abs(Math.cos(-Math.PI/2+da))/H);return Math.max(1/120,fallT+arcT);}
     if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;state.speed=SLIDE_SPEED;state.vy=Math.max(0,SLIDE_SPEED*Math.abs(Math.cos(a1))/H);return Math.max(1/120,Math.abs(da)/Math.max(.0001,SLIDE_SPEED));}
     const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];if(Math.abs(dx)<1e-9&&dy>0){const dist=dy*H,v0=Math.max(0,state.vy||0),t=(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*dist)))/Math.max(.0001,GRAV);state.vy=v0+GRAV*t;state.speed=Math.max(state.speed||0,state.vy);return Math.max(1/120,t);}const dist=hexMotionPhysicalDist(seg),speed=Math.max(SLIDE_SPEED,state.speed||0);state.speed=speed;state.vy=Math.max(0,dy*H/Math.max(1e-9,dist/speed));return Math.max(1/120,dist/speed);
 }
+function hexMotionDuration(seg,state={vy:0,speed:0}){
+    const duration=hexMotionDurationCanonical(seg,state);
+    // The reference UP pocket landing has a 4-frame rigid 60-degree slide,
+    // whereas an independently rolling solo uses 5. Do not globally speed up
+    // gravity, pile collapse, floor splitting or the separately captured split.
+    if(!seg?.pileFlow&&!seg?.pileGravityFall&&!seg?.topPivot&&
+       Number(seg?.groupSize)>=2&&
+       /^(GROUP_SLOPE_TRANSLATE|RIGID_SMOOTH_SLOPE)$/.test(String(seg?.kind||""))){
+        const ratio=REFERENCE_SLOPE_HARD_FRAMES/REFERENCE_SLIDE_FRAMES;
+        state.speed=(state.speed||0)/ratio;state.vy=(state.vy||0)/ratio;
+        return Math.max(PHYSICS_FRAME,duration*ratio);
+    }
+    return duration;
+}
 function liveSegDuration(seg){return hexMotionDuration(seg,{vy:0,speed:0});}
 function liveSegPoint(seg,t,startState=null,duration=null){
     if(seg?.floorContact){const c=seg.floorContact;return floorContactPoint(c.fromX,c.toX,c.side,t);}
     t=Math.max(0,Math.min(1,t));if(!seg?.from||!seg?.to)return[0,0];const H=HEX_ROW_H;
     if(seg.topPivot){const [px,py]=seg.topPivot,sx=latticeRealX(seg.from[0]),sy=cellCenterYNorm(seg.from[1]),cx=latticeRealX(px),cy=cellCenterYNorm(py),contactY=cy-1,fallDist=Math.max(0,contactY-sy),v0=Math.max(0,startState?.vy||0),fallT=fallDist>1e-9?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallDist)))/Math.max(.0001,GRAV):0,tx=latticeRealX(seg.to[0]),ty=cellCenterYNorm(seg.to[1]);let da=Math.atan2(ty-cy,tx-cx)+Math.PI/2;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const arcT=Math.abs(da)/Math.max(.0001,SLIDE_SPEED),naturalTotal=Math.max(1e-9,fallT+arcT),total=Number.isFinite(duration)?Math.max(1e-9,duration):naturalTotal,elapsed=t*total;if(elapsed<=fallT&&fallT>1e-9){const q=Math.max(0,Math.min(1,(v0*elapsed+.5*GRAV*elapsed*elapsed)/Math.max(1e-9,fallDist)));return[(sx+(cx-sx)*q)/.5,(sy+(contactY-sy)*q-BOARD_TOP_CENTER_N)/H];}const q=arcT<=1e-9?1:Math.max(0,Math.min(1,(elapsed-fallT)/arcT)),a=-Math.PI/2+da*q;return[(cx+Math.cos(a))/.5,(cy+Math.sin(a)-BOARD_TOP_CENTER_N)/H];}
-    if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5),radius=Math.hypot((seg.from[0]-px)*.5,(seg.from[1]-py)*H);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const a=a0+da*t;return[px+Math.cos(a)*radius/.5,py+Math.sin(a)*radius/H];}
+    if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5),radius=Math.hypot((seg.from[0]-px)*.5,(seg.from[1]-py)*H);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
+        if(seg.releasedPivotClock){const c=seg.releasedPivotClock,e=t*c.duration,j=c.points.findIndex(p=>p.t>=e);if(j>0){const p=c.points[j-1],q=c.points[j];t=p.q+(q.q-p.q)*(e-p.t)/Math.max(1e-9,q.t-p.t);}}
+        const a=a0+da*t;return[px+Math.cos(a)*radius/.5,py+Math.sin(a)*radius/H];}
     const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];let q=t;if(Math.abs(dx)<1e-9&&dy>0){if(startState&&Number.isFinite(duration)){const dist=Math.max(1e-9,dy*H),elapsed=t*Math.max(0,duration);q=Math.max(0,Math.min(1,((Math.max(0,startState.vy||0)*elapsed)+.5*GRAV*elapsed*elapsed)/dist));}else q=t*t;}return[seg.from[0]+dx*q,seg.from[1]+dy*q];
 }
 
