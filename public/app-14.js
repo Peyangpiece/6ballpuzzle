@@ -80,7 +80,9 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
             if (!pack || pack.landed || !pack._started) continue;
             for (let i=0;i<pack.pat.length;i++) {
                 const [dx,dy]=pack.pat[i];
-                const [px,py]=pos(pack.ax+dx, pack.y+dy);
+                const [px,rawY]=pos(pack.ax+dx, pack.y+dy);
+                const death=g.state==="GAMEOVER"?gameOverBallVisualState(g.stateT,pack.y+dy):null;
+                const py=rawY+(death?D*death.offset:0);
                 drawGarbageBubbleBall(ctx,px,py,D,pack.colors[i],Math.max(0,pack.bubbleT||0));
             }
         }
@@ -106,8 +108,8 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
             let [px, py] = pos(drawVX, drawVY);
             let deathAlpha=1;
             if(g.state==="GAMEOVER"){
-                const delay=Math.max(0,(ROWS-1-y)*.075),dk=Math.max(0,Math.min(1,(g.stateT-.48-delay)/1.85));
-                deathAlpha=1-dk;py+=D*1.45*dk*dk;ctx.filter="grayscale(1) brightness(.82) contrast(.92)";
+                const death=gameOverBallVisualState(g.stateT,y);
+                deathAlpha=death.alpha;py+=D*death.offset;ctx.filter="grayscale(1) brightness(.82) contrast(.92)";
             }
             if(cell.isGarbage&&Number.isFinite(v.garbageBubbleT))drawGarbageBubbleBall(ctx,px,py,D,cell.c,v.garbageBubbleT);
             else drawBall(ctx, px, py, D, cell.c, { alpha:alpha*deathAlpha, scale, sq: v.sq, ring });

@@ -1,0 +1,15 @@
+{
+  "source":"20260814-01KZY8PZF49A2D5YJSP88J8GZ0-EA113C87-B23F-4DD9-9286-3A6F18930280.mp4",
+  "sha256":"f3fb289358e2f8a226938fc176d6d36d96a49e0a29f3b683ba376c884b31f12c",
+  "fps":30.03369962712921,
+  "lossFrame":716,
+  "lossFrameUncertainty":1,
+  "upperRow":0,
+  "upperOriginY":269.5,
+  "samples":[[760,274.5],[765,333.5],[770,430.5],[775,562.5],[780,703.5],[785,842.5]],
+  "floorOriginY":874.5,
+  "floorSamples":[[745,874.5],[750,897.5]],
+  "rmsTolerancePx":4,
+  "maxTolerancePx":6,
+  "method":"Source Hough circle centres at x approximately1275 for row0 and1307 for floor. Loss anchor inferred from greyscale transition; not controller input telemetry."
+}

@@ -1,11 +1,9 @@
 /* Game-over garbage rendering parity.
  *
  * Settled garbage is ordinary accumulated pile by the time a result is decided.
- * The board renderer already computes the same row-staggered GAMEOVER sink/fade
- * for every cell, but garbage that still retained a finite garbageBubbleT took
- * the bubble renderer branch. That branch draws at alpha=1 and therefore ignored
- * the already-computed death fade, leaving former garbage visible after every
- * ordinary ball had disappeared.
+ * Use the board renderer's physical sink presentation for former garbage too.
+ * The full reference capture shows balls leaving through the bottom clip, not
+ * disappearing via a garbage-specific or short-distance alpha fade.
  *
  * Keep the gameplay/physics and the existing result timing untouched. During
  * GAMEOVER only, route those former-garbage bubble draws through drawBall with
@@ -21,11 +19,9 @@
     const baseDrawGarbageBubbleBall=drawGarbageBubbleBall;
     let renderState=null;
 
-    function clamp01(v){return Math.max(0,Math.min(1,v));}
     function rowDeathAlpha(g,y){
-        const delay=Math.max(0,(ROWS-1-y)*.075);
-        const dk=clamp01(((g?.stateT||0)-.48-delay)/1.85);
-        return 1-dk;
+        return typeof gameOverBallVisualState==="function"
+            ?gameOverBallVisualState(g?.stateT||0,y).alpha:1;
     }
     function activeGarbageBubbleCount(g){
         let n=0;
@@ -68,10 +64,10 @@
 
         // An unfinished airborne packet should not normally coexist with a
         // decided result, but if it does, it must disappear too. Use the same
-        // result fade window without changing its trajectory.
+        // physical sink already applied by drawSide, without a separate fade.
         if(st.activeRemaining>0){
             st.activeRemaining--;
-            const alpha=1-clamp01(((st.g.stateT||0)-.48)/1.85);
+            const alpha=rowDeathAlpha(st.g,ROWS-1);
             return drawBall(ctx,cx,cy,d,ci,{alpha});
         }
 
@@ -79,7 +75,7 @@
         // so this reproduces drawSide's exact per-row stagger rather than adding
         // a garbage-specific timing curve.
         const y=st.boardRows[st.boardIndex++];
-        const alpha=Number.isFinite(y)?rowDeathAlpha(st.g,y):1-clamp01(((st.g.stateT||0)-.48)/1.85);
+        const alpha=rowDeathAlpha(st.g,Number.isFinite(y)?y:ROWS-1);
         return drawBall(ctx,cx,cy,d,ci,{alpha});
     };
 

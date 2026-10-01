@@ -30,7 +30,7 @@ expect(window.__hexGameoverGarbageFade===true,"game-over garbage fade adapter no
 drawSide({},g,{D:40},0,0,"","",true,0);
 expect(bubbleCalls===0,"GAMEOVER still used opaque garbage bubble renderer");
 expect(drawCalls.length===1,"GAMEOVER did not route former garbage through ordinary ball draw");
-expect(drawCalls[0].o.alpha===0,"floor-row former garbage did not fully fade at ordinary death endpoint");
+expect(drawCalls[0].o.alpha===1,"former garbage fades before physically leaving the field clip");
 
 // Outside GAMEOVER, preserve the original garbage presentation exactly.
 drawCalls.length=0;

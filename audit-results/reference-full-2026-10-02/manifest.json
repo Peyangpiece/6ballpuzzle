@@ -1,0 +1,372 @@
+[
+  {
+    "clip": 0,
+    "source": "20260814-01KZY859WCA6E05B8W8KVXV08J-F7FDFCD7-C1D0-4B86-BB37-69ECBCBB54A8.mp4",
+    "sha256": "bc2aadab713388f69973083aa658737251ab964971edcfde284dbb452a9d0a31",
+    "fps": 30.03333700407452,
+    "decodedFrames": 900,
+    "expectedFrames": 900,
+    "motionWindows": [
+      {
+        "start": 0,
+        "end": 45
+      },
+      {
+        "start": 44,
+        "end": 64
+      },
+      {
+        "start": 64,
+        "end": 75
+      },
+      {
+        "start": 81,
+        "end": 102
+      },
+      {
+        "start": 121,
+        "end": 138
+      },
+      {
+        "start": 149,
+        "end": 177
+      },
+      {
+        "start": 198,
+        "end": 224
+      },
+      {
+        "start": 226,
+        "end": 293
+      },
+      {
+        "start": 299,
+        "end": 314
+      },
+      {
+        "start": 317,
+        "end": 373
+      },
+      {
+        "start": 373,
+        "end": 409
+      },
+      {
+        "start": 415,
+        "end": 507
+      },
+      {
+        "start": 509,
+        "end": 536
+      },
+      {
+        "start": 540,
+        "end": 553
+      },
+      {
+        "start": 554,
+        "end": 613
+      },
+      {
+        "start": 622,
+        "end": 741
+      },
+      {
+        "start": 746,
+        "end": 792
+      },
+      {
+        "start": 793,
+        "end": 867
+      },
+      {
+        "start": 866,
+        "end": 899
+      }
+    ],
+    "status": "all frames measured; not yet reconstructed or compared to engine"
+  },
+  {
+    "clip": 1,
+    "source": "20260814-01KZY8BWFNHVZZ5BF80ERVQGJ1-6A3B5C4B-FBDF-4B10-8E92-93112D279793.mp4",
+    "sha256": "b323dcc8b1d073d65426f3820165d21f8cdba5bb01e9d30c9b23d69cd6a1b3ea",
+    "fps": 30.033541924426014,
+    "decodedFrames": 896,
+    "expectedFrames": 896,
+    "motionWindows": [
+      {
+        "start": 5,
+        "end": 43
+      },
+      {
+        "start": 47,
+        "end": 338
+      },
+      {
+        "start": 337,
+        "end": 895
+      }
+    ],
+    "status": "all frames measured; not yet reconstructed or compared to engine"
+  },
+  {
+    "clip": 2,
+    "source": "20260814-01KZY8HMCZ13A6JT55BAQRAW1S-0C80C14A-9296-46EA-A240-FDF9DB68923A.mp4",
+    "sha256": "369c142784f0c5d71fe8486bb429dcc174b655a5ac9005e041001f282948cadc",
+    "fps": 30.03358990585982,
+    "decodedFrames": 898,
+    "expectedFrames": 898,
+    "motionWindows": [
+      {
+        "start": 0,
+        "end": 15
+      },
+      {
+        "start": 34,
+        "end": 47
+      },
+      {
+        "start": 52,
+        "end": 84
+      },
+      {
+        "start": 102,
+        "end": 112
+      },
+      {
+        "start": 114,
+        "end": 147
+      },
+      {
+        "start": 146,
+        "end": 156
+      },
+      {
+        "start": 171,
+        "end": 195
+      },
+      {
+        "start": 207,
+        "end": 282
+      },
+      {
+        "start": 289,
+        "end": 299
+      },
+      {
+        "start": 307,
+        "end": 367
+      },
+      {
+        "start": 370,
+        "end": 380
+      },
+      {
+        "start": 385,
+        "end": 398
+      },
+      {
+        "start": 401,
+        "end": 412
+      },
+      {
+        "start": 411,
+        "end": 430
+      },
+      {
+        "start": 449,
+        "end": 489
+      },
+      {
+        "start": 506,
+        "end": 519
+      },
+      {
+        "start": 529,
+        "end": 551
+      },
+      {
+        "start": 552,
+        "end": 595
+      },
+      {
+        "start": 596,
+        "end": 618
+      },
+      {
+        "start": 617,
+        "end": 722
+      },
+      {
+        "start": 722,
+        "end": 863
+      },
+      {
+        "start": 863,
+        "end": 897
+      }
+    ],
+    "status": "all frames measured; not yet reconstructed or compared to engine"
+  },
+  {
+    "clip": 3,
+    "source": "20260814-01KZY8JCG2T23AE4A41AKS6268-A42695F2-7126-4770-9797-0A2C3BD44C09.mp4",
+    "sha256": "bb48a9a1b2780976c22b130a218b5d9725f51e654afcd94b86e6786c935dfa43",
+    "fps": 30.00013404885634,
+    "decodedFrames": 746,
+    "expectedFrames": 746,
+    "motionWindows": [
+      {
+        "start": 1,
+        "end": 78
+      },
+      {
+        "start": 77,
+        "end": 149
+      },
+      {
+        "start": 149,
+        "end": 167
+      },
+      {
+        "start": 166,
+        "end": 246
+      },
+      {
+        "start": 249,
+        "end": 289
+      },
+      {
+        "start": 290,
+        "end": 560
+      },
+      {
+        "start": 559,
+        "end": 738
+      },
+      {
+        "start": 737,
+        "end": 745
+      }
+    ],
+    "status": "all frames measured; not yet reconstructed or compared to engine"
+  },
+  {
+    "clip": 4,
+    "source": "20260814-01KZY8MSZ2RXFE9EG6MBEA382N-8F028AFD-9829-4EDC-A36C-7BD532B11D85.mp4",
+    "sha256": "9a7b504b4ec60c467fa4cc8008e75156d114bad64a86d179e10b0ddd9ceb7794",
+    "fps": 30.0262913411593,
+    "decodedFrames": 887,
+    "expectedFrames": 887,
+    "motionWindows": [
+      {
+        "start": 2,
+        "end": 12
+      },
+      {
+        "start": 204,
+        "end": 214
+      },
+      {
+        "start": 264,
+        "end": 274
+      },
+      {
+        "start": 544,
+        "end": 566
+      },
+      {
+        "start": 578,
+        "end": 592
+      },
+      {
+        "start": 605,
+        "end": 645
+      },
+      {
+        "start": 652,
+        "end": 663
+      },
+      {
+        "start": 676,
+        "end": 730
+      },
+      {
+        "start": 731,
+        "end": 741
+      },
+      {
+        "start": 741,
+        "end": 751
+      },
+      {
+        "start": 755,
+        "end": 776
+      },
+      {
+        "start": 786,
+        "end": 807
+      },
+      {
+        "start": 813,
+        "end": 842
+      }
+    ],
+    "status": "all frames measured; not yet reconstructed or compared to engine"
+  },
+  {
+    "clip": 5,
+    "source": "20260814-01KZY8PZF49A2D5YJSP88J8GZ0-EA113C87-B23F-4DD9-9286-3A6F18930280.mp4",
+    "sha256": "f3fb289358e2f8a226938fc176d6d36d96a49e0a29f3b683ba376c884b31f12c",
+    "fps": 30.03369962712921,
+    "decodedFrames": 893,
+    "expectedFrames": 893,
+    "motionWindows": [
+      {
+        "start": 0,
+        "end": 216
+      },
+      {
+        "start": 216,
+        "end": 441
+      },
+      {
+        "start": 448,
+        "end": 459
+      },
+      {
+        "start": 467,
+        "end": 727
+      },
+      {
+        "start": 734,
+        "end": 746
+      },
+      {
+        "start": 751,
+        "end": 762
+      },
+      {
+        "start": 775,
+        "end": 796
+      },
+      {
+        "start": 801,
+        "end": 811
+      },
+      {
+        "start": 812,
+        "end": 822
+      },
+      {
+        "start": 834,
+        "end": 844
+      },
+      {
+        "start": 874,
+        "end": 884
+      }
+    ],
+    "status": "all frames measured; not yet reconstructed or compared to engine"
+  }
+]
