@@ -884,7 +884,7 @@
                 /*
                  * Normal/small clears keep previous behaviour.
                  */
-                if(n<LARGE_CLEAR_MIN){
+                if(n<LARGE_CLEAR_MIN||reason==="clear_support_loss"){
 
                     return previousPrepare(
                         g,

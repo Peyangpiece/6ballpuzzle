@@ -87,6 +87,11 @@
     function normalize(g,source="pile_motion"){
         const entries=boardEntries(g);
         if(!entries.length)return false;
+        // The ordinary clear scheduler owns its causal per-ball clocks.
+        // A common compressed deadline destroys those contact-tested timings.
+        if(entries.every(({scheduled})=>scheduled.every(seg=>
+            seg.pileFlowReason==="clear_support_loss"
+        )))return false;
 
         const clock=Math.max(0,Number(g.pileFlowClock)||0);
         const token=batchToken(entries);

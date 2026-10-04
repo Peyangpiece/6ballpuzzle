@@ -59,8 +59,10 @@ function pileGravityPoint(seg,t){
     const q=pileGravityProgress(seg,t),qx=pileGravityLateralProgress(seg,q);
     return[seg.from[0]+(seg.to[0]-seg.from[0])*qx,seg.from[1]+(seg.to[1]-seg.from[1])*q];
 }
-function enforcePileGravitySegment(seg,reason="pile_flow"){
+function enforcePileGravitySegment(seg,reason="pile_flow",ball=null){
     if(!seg?.from||!seg?.to||seg.to[1]<=seg.from[1])return false;
+    // Contact with a real support retains its circle/tangent geometry.
+    if(reason==="clear_support_loss"&&!ball?.isGarbage&&(seg.pivot||seg.topPivot))return false;
     if(!seg.pileGravityFall){
         const originalPivot=Array.isArray(seg.pivot)?seg.pivot:null;
         if(originalPivot){
@@ -99,7 +101,7 @@ function pileFlowPoint(seg,t){
 function pileFlowNominalDuration(seg,state){
     const H=HEX_ROW_H,dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];
     if(seg.pileGravityFall&&dy>0){
-        const v0=Math.max(0,state.vy||RELEASE_INITIAL_VY),duration=(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*dy)))/GRAV;
+        const v0=Math.max(0,seg.pileFlowReason==="clear_support_loss"&&Number.isFinite(state.vy)?state.vy:(state.vy||RELEASE_INITIAL_VY)),duration=(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*dy)))/GRAV;
         seg.pileGravityV0=v0;seg.pileGravityDuration=Math.max(1/120,duration);
         state.vy=v0+GRAV*duration;state.speed=Math.max(state.speed||0,state.vy*H);
         return seg.pileGravityDuration;
@@ -152,7 +154,7 @@ function pileFlowWaveSafe(g,waveSegs,start,duration){
 function preparePileFlowDurations(g,fresh){
     const stateByBall=new Map();
     for(const q of fresh){
-        if(!stateByBall.has(q.ball.id)){const v=g.vis.get(q.ball.id);stateByBall.set(q.ball.id,{vy:Math.max(0,v?.vy||RELEASE_INITIAL_VY),speed:Math.max(0,v?.motionSpeed||0)});}
+        if(!stateByBall.has(q.ball.id)){const v=g.vis.get(q.ball.id);stateByBall.set(q.ball.id,{vy:Math.max(0,q.seg.pileFlowReason==="clear_support_loss"&&Number.isFinite(v?.vy)?v.vy:(v?.vy||RELEASE_INITIAL_VY)),speed:Math.max(0,v?.motionSpeed||0)});}
         q.seg._pileNominalDuration=pileFlowNominalDuration(q.seg,stateByBall.get(q.ball.id));
     }
 }
@@ -261,7 +263,7 @@ function markPileFlowPaths(g,reason="pile_flow"){
         const ball=valid(x,y)?g.board[y][x]:null;if(!ball||!Array.isArray(ball.fallPath)||!ball.fallPath.length)continue;if(ball.slopeRigidGroupId)continue;
         normalizePileBallPhysics(ball);if(ball.isGarbage)ball.isGarbage=true;
         const already=ball.fallPath.some(seg=>seg?.pileFlow);let isFirst=!already;
-        for(const seg of ball.fallPath){if(!seg||!seg.to||seg.pileFlow)continue;repairPileFlowSegmentGeometry(g,ball,seg,reason);enforcePileGravitySegment(seg,reason);const seq=Number(seg.motionSeq)||0;seg.pileFlowOriginalSeq=seq;seg.motionSeq=0;seg.pileFlow=true;seg.pileFlowEntry=isFirst;seg.pileFlowReason=reason;seg._pileFlowBall=ball;fresh.push({ball,seg,seq});isFirst=false;}
+        for(const seg of ball.fallPath){if(!seg||!seg.to||seg.pileFlow)continue;repairPileFlowSegmentGeometry(g,ball,seg,reason);enforcePileGravitySegment(seg,reason,ball);const seq=Number(seg.motionSeq)||0;seg.pileFlowOriginalSeq=seq;seg.motionSeq=0;seg.pileFlow=true;seg.pileFlowEntry=isFirst;seg.pileFlowReason=reason;seg._pileFlowBall=ball;fresh.push({ball,seg,seq});isFirst=false;}
     }
     if(!fresh.length)return{balls:0,segments:0};
     g._pileFlowBallById=new Map();for(let yy=0;yy<ROWS;yy++)for(let xx=0;xx<W2;xx++){const bb=valid(xx,yy)?g.board[yy][xx]:null;if(bb)g._pileFlowBallById.set(bb.id,bb);}

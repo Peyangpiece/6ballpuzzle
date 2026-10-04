@@ -202,6 +202,10 @@ if(baseApplyEvent){
   if(moved&&game)for(const p of accepted||[]){
    const ball=p?.ball,o=origins.get(ball?.id);if(!o||!Array.isArray(ball.fallPath))continue;
    const seg=ball.fallPath[o.before];if(!seg?.from||!seg?.to)continue;
+   // During a compiled collapse the visual centre still precedes every
+   // queued move. Only the first segment may start at that centre; later
+   // segments must start at their predecessor's destination.
+   if(o.before>0)continue;
    const dx=(Number(seg.from[0])-o.x)*.5,dy=(Number(seg.from[1])-o.y)*HEX_ROW_H;
    if(Math.hypot(dx,dy)<=1e-7)continue;
    if(Number(seg.to[1])+1e-7<o.y)continue;

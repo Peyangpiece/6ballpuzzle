@@ -25,8 +25,23 @@ const out=process.env.REVIEW_OUTPUT||path.join(__dirname,'../audit-results/refer
    await p.evaluate(t=>{const{g,cv}=window.__clearReview;g.stateT=t;const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);drawSide(ctx,g,{D:63.4,DX:64.4,X:20,Y:100,BW:644,BH:636},0,t,'','','',0);},time);
    await p.locator('#clear-review-canvas').screenshot({path:path.join(out,`clear-${time.toFixed(3)}.png`)});
   }
+  const playback=await p.evaluate(()=>{
+   const{g,cv}=window.__clearReview;g.stateT=0;
+   let movingFrames=0;for(let i=0;i<480;i++){
+    stepEngine(g,1/120);
+    for(const v of g.vis.values())if(!Number.isFinite(v.x)||!Number.isFinite(v.y))throw Error('Non-finite collapse position');
+    if(g.board.some(row=>row.some(b=>b?.fallPath?.length)))movingFrames++;
+   }
+   const pending=g.board.flat().filter(b=>b?.fallPath?.length).length;
+   const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+   drawSide(ctx,g,{D:63.4,DX:64.4,X:20,Y:100,BW:644,BH:636},0,4,'','','',0);
+   return{movingFrames,pending,state:g.state,phase:g.phase};
+  });
+  assert(playback.movingFrames>0,'Collapse never animated');
+  assert.equal(playback.pending,0,'Collapse left unfinished paths after four seconds');
+  await p.locator('#clear-review-canvas').screenshot({path:path.join(out,'collapse-finished.png')});
   assert.deepEqual(errors,[]);
-  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({seeded,errors,scope:'Production canvas rendering of reconstructed ordinary-clear board; not full source-frame parity'},null,2));
+  fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({seeded,playback,errors,scope:'Production canvas rendering and four-second collapse playback of reconstructed ordinary-clear board; not full source-frame parity'},null,2));
   console.log('Production ordinary-clear Chrome rendering PASS');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
