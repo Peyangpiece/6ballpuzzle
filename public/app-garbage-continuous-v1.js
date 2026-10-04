@@ -31,6 +31,21 @@
 
     window.__sixBallGarbageContinuousV1=true;
 
+    // Measured incoming pyramid flight, capture 2 frames 615..631.
+    // Units are lattice rows/second, NOT ball diameters/second. The original
+    // accelerates first, then caps its speed; an epoch rescale is not gravity.
+    const FLIGHT_ACCEL=23.26,FLIGHT_LIMIT=15.10;
+    function flightDistance(v,t){
+        v=Math.max(0,Math.min(FLIGHT_LIMIT,v));
+        const a=Math.min(t,(FLIGHT_LIMIT-v)/FLIGHT_ACCEL);
+        return v*a+.5*FLIGHT_ACCEL*a*a+FLIGHT_LIMIT*Math.max(0,t-a);
+    }
+    function flightTime(v,d){
+        v=Math.max(0,Math.min(FLIGHT_LIMIT,v));
+        const a=(FLIGHT_LIMIT-v)/FLIGHT_ACCEL,reach=v*a+.5*FLIGHT_ACCEL*a*a;
+        return d<=reach?(-v+Math.sqrt(v*v+2*FLIGHT_ACCEL*d))/FLIGHT_ACCEL:a+(d-reach)/FLIGHT_LIMIT;
+    }
+
 
     const MAX_COMPILE_STEPS=
         (ROWS-BOARD_MIN_ROW)*
@@ -231,14 +246,8 @@
                     dy>0
                 ){
 
-                    const T=
-                        Math.max(
-                            1/120,
-                            Number(
-                                seg._pileNominalDuration
-                            )||
-                            1/120
-                        );
+                    const T=Math.max(1/240,flightTime(vy,dy));
+                    seg._pileNominalDuration=T;
 
 
                     seg.__garbageV0=
@@ -248,9 +257,7 @@
                         T;
 
 
-                    vy=
-                        vy+
-                        GRAV*T;
+                    vy=Math.min(FLIGHT_LIMIT,vy+FLIGHT_ACCEL*T);
 
 
                     seg.__garbageV1=
@@ -539,10 +546,7 @@
                                 dy,
                                 Math.max(
                                     0,
-                                    v0*t+
-                                    .5*
-                                    GRAV*
-                                    t*t
+                                    flightDistance(v0,t)
                                 )
                             );
 
@@ -611,20 +615,8 @@
             steps++
         ){
 
-            if(
-                !hasLegalGravityMove(
-                    g.board
-                )
-            ){
-                break;
-            }
-
-
-            const q=
-                settlePass(
-                    g.board,
-                    false
-                );
+            if(!hasLegalGravityMove(g.board))break;
+            const q=settlePass(g.board,false);
 
 
             if(!q)
@@ -654,6 +646,30 @@
                 g,
                 "garbage_continuous_gravity"
             );
+            // Vertical merging runs outside the scheduler. Previously it
+            // extended `to` but retained the FIRST cell's end time: playback
+            // jumped directly to the pile while its duration still said fall.
+            // Close the clock over the actual merged endpoints, per ball.
+            for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+                const ball=valid(x,y)?g.board[y][x]:null;
+                if(!ball?.isGarbage||ball.garbagePhaseFrozen)continue;
+                const path=ball.fallPath||[],vis=g.vis.get(ball.id);
+                let end=g.pileFlowClock||0,vy=Number.isFinite(vis?.vy)?vis.vy:6.58;
+                for(let i=0;i<path.length;i++){
+                    const seg=path[i];
+                    if(!seg?.pileFlow||!seg.from||!seg.to)continue;
+                    const token=seg.from.join(',')+'>'+seg.to.join(',');
+                    if(seg.__referenceGarbageClock===token){end=seg.pileFlowEnd;vy=seg.__garbageV1??vy;continue;}
+                    if(i===0&&vis)seg.from=[vis.x,vis.y];
+                    const dy=seg.to[1]-seg.from[1],vertical=Math.abs(seg.to[0]-seg.from[0])<1e-9&&dy>0;
+                    const duration=vertical?flightTime(vy,dy):Math.max(1/240,seg.pileFlowDuration||1/120);
+                    seg.pileFlowStart=end;seg.pileFlowDuration=duration;seg.pileFlowEnd=end+duration;
+                    seg.__garbageV0=vy;seg.__garbageContinuous=true;
+                    if(vertical)vy=Math.min(FLIGHT_LIMIT,vy+FLIGHT_ACCEL*duration);
+                    seg.__garbageV1=vy;seg.__referenceGarbageClock=seg.from.join(',')+'>'+seg.to.join(',');
+                    end=seg.pileFlowEnd;
+                }
+            }
         }
 
 
@@ -703,7 +719,7 @@
 
             /*
              * This still handles:
-             * - 0.5 sec spawn timing
+             * - measured 0.45 sec spawn timing
              * - shape planning
              * - batch bookkeeping
              * - blocked spawn handling
@@ -743,6 +759,11 @@
              * rather than waiting one visible cell at a time.
              */
             compileGarbageGravity(g);
+
+            // Compilation can finish a support path or insert a new receiver
+            // after this frame's contact pass. Normalize those contacts now,
+            // rather than leaving a one-frame overlapping settled pair.
+            resolveVisualContacts(g);
 
 
             g.__garbageContinuousCompiledVersion=
@@ -1083,30 +1104,15 @@
             }
 
 
-            /*
-             * Same destination already travelled to by another
-             * ball during this compile/update.
-             *
-             * The same ball may continue its own multi-step path.
-             */
-            if(
-                ctx.targets.has(target) &&
-                ctx.targets.get(target)!==id
-            ){
-                ctx.rejected++;
-                continue;
-            }
+            // A previously visited cell is not still occupied. A follower
+            // must be allowed to traverse it later in its own trajectory.
 
 
             /*
              * Prevent head-on edge swaps.
              */
             if(
-                localEdges.has(reverse) ||
-                (
-                    ctx.edges.has(reverse) &&
-                    ctx.edges.get(reverse)!==id
-                )
+                localEdges.has(reverse)
             ){
                 ctx.rejected++;
                 continue;
@@ -1114,17 +1120,13 @@
 
 
             /*
-             * Prevent two different trajectories crossing at
-             * the same geometric midpoint during one compile.
+             * Prevent simultaneous moves crossing at the same midpoint.
+             * Sequential visits in later events are not collisions.
              */
             if(
                 (
                     localMidpoints.has(midpoint) &&
                     localMidpoints.get(midpoint)!==id
-                ) ||
-                (
-                    ctx.midpoints.has(midpoint) &&
-                    ctx.midpoints.get(midpoint)!==id
                 )
             ){
                 ctx.rejected++;

@@ -11,7 +11,9 @@
     window.__hexGarbageNormalPhysics=true;
     window.__hexGarbageRuntimeVersion="normal-v4-perf";
 
-    const NORMAL_GARBAGE_INTERVAL=0.5;
+    // Capture 2: successive pyramid packets are about 13.5 frames apart at
+    // 30fps, even while their predecessors are still airborne.
+    const NORMAL_GARBAGE_INTERVAL=0.45;
     const NORMAL_GARBAGE_SETTLE_TOL=0.06;
 
     // GARBAGE does not remove board balls; it only adds incoming balls. Cache the
@@ -170,10 +172,12 @@
         hexPhysClearGroupBall(ball);
         g.board[y][x]=ball;
         noteBoardCell(g.board,y,ball);
-        setVis(g,ball,x,y,RELEASE_INITIAL_VY);
+        // The reference packet enters from above the visible board. Its
+        // logical reservation must not place its visual centre one row lower.
+        setVis(g,ball,x,y-1,6.58);
         window.__hexInvalidateGarbagePhaseBallCache(g);
         const v=g.vis.get(ball.id);
-        if(v){v.motionSpeed=RELEASE_INITIAL_VY;v.justReleased=true;}
+        if(v){v.motionSpeed=6.58*HEX_ROW_H;v.justReleased=true;}
         return ball;
     }
 
@@ -259,10 +263,16 @@
         if(Array.isArray(g.activeGarbagePacks))g.activeGarbagePacks.length=0;
         else g.activeGarbagePacks=[];
 
-        if(pendingFallPathCount(g)!==0||!nearlySettled(g,NORMAL_GARBAGE_SETTLE_TOL))return;
-        if(startOneOrdinaryGravityBatch(g))return;
+        const idle=pendingFallPathCount(g)===0&&nearlySettled(g,NORMAL_GARBAGE_SETTLE_TOL);
+        if(idle)startOneOrdinaryGravityBatch(g);
 
-        for(const plan of g.garbagePlans)if(plan._started&&!plan.landed)plan.landed=true;
+        const cache=window.__hexGetGarbagePhaseBallCache(g);
+        for(const plan of g.garbagePlans)if(plan._started&&!plan.landed){
+            plan.landed=plan.ballIds.every(id=>{
+                const b=cache.byId.get(id),v=g.vis.get(id);
+                return b&&v&&!b.fallPath?.length&&Math.abs(v.vy||0)<NORMAL_GARBAGE_SETTLE_TOL;
+            });
+        }
 
         const next=g.garbagePlans.find(p=>!p._started);
         if(next&&g.garbageClock+1e-9>=g.garbageNextBallAt){
@@ -273,7 +283,7 @@
             return;
         }
 
-        if(g.garbagePlans.every(p=>p._started&&p.landed)&&g.garbLeft>0&&g.garbageClock+1e-9>=g.garbageNextBallAt){
+        if(g.garbagePlans.every(p=>p._started)&&g.garbLeft>0&&g.garbageClock+1e-9>=g.garbageNextBallAt){
             const placed=spawnSingleNormalGarbage(g);
             if(placed>0){
                 g.garbLeft--;

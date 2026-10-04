@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "type": "PYRAMID",
+      "frame": 480,
+      "pending": 0,
+      "done": true,
+      "starts": [
+        0,
+        0.45000000000000057,
+        0.8999999999999992,
+        1.3499999999999976
+      ]
+    },
+    {
+      "type": "HEXAGON",
+      "frame": 480,
+      "pending": 0,
+      "done": true,
+      "starts": [
+        0,
+        0.45000000000000057,
+        0.8999999999999992,
+        1.3499999999999976,
+        1.799999999999996,
+        2.2499999999999947
+      ]
+    },
+    {
+      "type": "STRAIGHT",
+      "frame": 480,
+      "pending": 0,
+      "done": true,
+      "starts": [
+        0
+      ]
+    }
+  ],
+  "errors": [],
+  "scope": "Actual production renderer and garbage playback; source vertical-motion comparison is a separate measured test"
+}

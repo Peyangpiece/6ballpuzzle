@@ -161,6 +161,7 @@ function repairTrueOverlapHorizontally(items,a,b,minDist){
 
 resolveVisualContacts=function(g){
   if(!g?.board||!g?.vis)return baseResolveVisualContacts(g);
+  if(g.phase==="GARBAGE")return baseResolveVisualContacts(g);
 
   const before=boardItems(g);
   const snap=new Map(before.map(q=>[

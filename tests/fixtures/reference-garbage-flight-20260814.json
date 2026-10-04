@@ -1,0 +1,10 @@
+{
+  "source": "20260814-01KZY8HMCZ13A6JT55BAQRAW1S-0C80C14A-9296-46EA-A240-FDF9DB68923A.mp4",
+  "sha256": "369c142784f0c5d71fe8486bb429dcc174b655a5ac9005e041001f282948cadc",
+  "fps": 30.0262913411593,
+  "launchFrame": 611.1,
+  "method": "Right-board first incoming pyramid, lower-left green. Hough centres visually checked against every frame 610..635. Launch phase inferred, not directly recorded input. Vertical flight only; horizontal spawn lane and contact/settling are not certified by this fixture.",
+  "samples": [[615,274.5],[616,291.5],[617,311.5],[618,332.5],[619,355.5],[620,379.5],[621,405.5],[622,430.5],[623,460.5],[624,489.5],[625,512.5],[626,546.5],[627,571.5],[628,599.5],[629,627.5],[630,651.5],[631,682.5]],
+  "packetIntervalSeconds": 0.45,
+  "packetIntervalUncertaintyFrames": 1
+}

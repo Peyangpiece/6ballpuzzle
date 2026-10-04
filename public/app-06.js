@@ -5,7 +5,7 @@
  * GARBAGE entry points were defined twice and then overwritten later at load
  * time. This file now contains only helpers still used by the current runtime.
  */
-const HEX_GARBAGE_SHAPE_INTERVAL=0.5;
+const HEX_GARBAGE_SHAPE_INTERVAL=0.45;
 const HEX_GARBAGE_BUBBLE_DURATION=0.34;
 const HEX_GARBAGE_BUBBLE_POP_DURATION=0.14;
 const HEX_GARBAGE_FLIGHT_V0=RELEASE_INITIAL_VY;

@@ -155,6 +155,10 @@
 
     if(baseResolveVisualContactsV4){
         resolveVisualContacts=function(g){
+            // GARBAGE has one-sided, frozen/finished receiving supports.
+            // The generic fast solver can move those supports horizontally
+            // and bypass their canonical lattice restoration.
+            if(g?.phase==="GARBAGE")return baseResolveVisualContactsV4(g);
             const movingIds=g?._visualMovingIds;
             if(!(movingIds instanceof Set)||movingIds.size===0){
                 return baseResolveVisualContactsV4(g);

@@ -150,6 +150,8 @@
         resolveVisualContacts =
             function(g){
 
+                if(g?.phase==="GARBAGE")return baseResolveVisualContactsV3(g);
+
                 const movingIds =
                     g?._visualMovingIds;
 

@@ -89,6 +89,7 @@
         if(!entries.length)return false;
         // The ordinary clear scheduler owns its causal per-ball clocks.
         // A common compressed deadline destroys those contact-tested timings.
+        if(g.phase==="GARBAGE")return false;
         if(entries.every(({scheduled})=>scheduled.every(seg=>
             seg.pileFlowReason==="clear_support_loss"
         )))return false;
