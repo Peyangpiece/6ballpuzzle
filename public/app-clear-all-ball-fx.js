@@ -37,39 +37,50 @@
         const hold=Math.max(.001,Number(g?.holdT)||.4);
         const ratio=typeof CLEAR_SUPPORT_RELEASE_RATIO==="number"?CLEAR_SUPPORT_RELEASE_RATIO:.55;
         const releaseAt=hold*ratio;
-        const age=(Number(g?.stateT)||0)-releaseAt;
-        const pre=.12,post=.30;
-        const strength=age<0?Math.max(0,1+age/pre):Math.max(0,1-age/post);
-        const expand=age<=0?0:Math.min(1,age/post);
-        return{strength,expand,releaseAt,age};
+        // Clip 3 F605-F609: shrinking hollow rings, then six-point sparks.
+        // The former overlay grew a filled white disc for .42s instead.
+        const rawAge=(Number(g?.stateT)||0)-(releaseAt-.16);
+        const age=Math.abs(rawAge)<1e-9?0:rawAge;
+        const ringDuration=4/30,starDuration=3/30;
+        const ringStrength=age>=0&&age<ringDuration?1:0;
+        const ringProgress=Math.max(0,Math.min(1,age/ringDuration));
+        const starAge=age-ringDuration;
+        const starStrength=starAge>=0?Math.max(0,1-starAge/starDuration):0;
+        return{strength:Math.max(ringStrength,starStrength),ringStrength,starStrength,
+            radius:.46-.20*ringProgress,releaseAt,age};
     }
 
     function drawEveryClearFlash(ctx,g,L){
         const cells=clearFxCells(g);if(!cells.length)return;
         const st=flashState(g);if(st.strength<=0)return;
         const {D,X,Y,BW,BH}=L;
-        const ox=X+(BW-(W2-1)*D*.5)/2,oy=Y+D/2;
-        const pos=(x,y)=>[ox+x*D*.5,oy+y*D*HEX_ROW_H];
+        const gridDX=L.DX||D;
+        const ox=X+(BW-(W2-1)*gridDX*.5)/2,oy=Y+D/2;
+        const pos=(x,y)=>[ox+x*gridDX*.5,oy+y*D*HEX_ROW_H];
 
         ctx.save();
         ctx.beginPath();ctx.rect(X,Y-D*2.7,BW,BH+D*2.7);ctx.clip();
         ctx.globalCompositeOperation="screen";
         for(const cell of cells){
             const [px,py]=pos(cell.x,cell.y),col=COLORS[cell.c]||COLORS[0];
-            const radius=D*(.50+.15*st.expand);
+            const radius=D*st.radius;
             ctx.save();
             ctx.shadowColor=col?.glow||"#FFFFFF";
-            ctx.shadowBlur=D*(.55+.42*st.strength);
-            ctx.globalAlpha=Math.min(1,st.strength*1.45);
+            ctx.shadowBlur=D*.23;
+            ctx.globalAlpha=st.strength;
             ctx.strokeStyle="#FFFFFF";
-            ctx.lineWidth=Math.max(1,D*(.055+.075*st.strength));
-            ctx.beginPath();ctx.arc(px,py,radius,0,TAU);ctx.stroke();
-
-            // A small white core makes the actual disappearance frame read the
-            // same even when the underlying ball has already become a ghost.
-            ctx.globalAlpha=.18*st.strength;
-            ctx.fillStyle="#FFFFFF";
-            ctx.beginPath();ctx.arc(px,py,D*(.34+.08*st.expand),0,TAU);ctx.fill();
+            ctx.lineWidth=Math.max(1,D*.042);
+            if(st.ringStrength>0){ctx.beginPath();ctx.arc(px,py,radius,0,TAU);ctx.stroke();}
+            if(st.starStrength>0){
+                const r=D*(.16+.08*st.starStrength);
+                ctx.beginPath();
+                for(let i=0;i<12;i++){
+                    const a=i*TAU/12-Math.PI/2,rr=i%2?r*.42:r;
+                    const sx=px+Math.cos(a)*rr,sy=py+Math.sin(a)*rr;
+                    if(i===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);
+                }
+                ctx.closePath();ctx.fillStyle="#FFFFFF";ctx.fill();
+            }
             ctx.restore();
         }
         ctx.restore();

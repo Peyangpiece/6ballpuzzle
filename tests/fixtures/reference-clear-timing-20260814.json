@@ -1,0 +1,13 @@
+{
+ "method":"Manual full-frame inspection of first visible matched-cell highlight and first supported-ball descent. These are visual phase anchors, not input telemetry or exact logical trigger times.",
+ "frameTolerance":3,
+ "scenes":[
+  {"clip":1,"source":"20260814-01KZY8BWFNHVZZ5BF80ERVQGJ1-6A3B5C4B-FBDF-4B10-8E92-93112D279793.mp4","fps":30.033541924426014,"technique":"STRAIGHT","highlightFrame":564,"releaseFrame":625},
+  {"clip":2,"source":"20260814-01KZY8HMCZ13A6JT55BAQRAW1S-0C80C14A-9296-46EA-A240-FDF9DB68923A.mp4","fps":30.03358990585982,"technique":"PYRAMID","highlightFrame":414,"releaseFrame":470},
+  {"clip":3,"source":"20260814-01KZY8JCG2T23AE4A41AKS6268-A42695F2-7126-4770-9797-0A2C3BD44C09.mp4","fps":30.00013404885634,"technique":"HEXAGON","highlightFrame":467,"releaseFrame":528},
+  {"clip":5,"source":"20260814-01KZY8PZF49A2D5YJSP88J8GZ0-EA113C87-B23F-4DD9-9286-3A6F18930280.mp4","fps":30.03369962712921,"technique":"HEXAGON","highlightFrame":278,"releaseFrame":338},
+  {"clip":3,"fps":30.00013404885634,"technique":null,"highlightFrame":599,"releaseFrame":611}
+ ],
+ "plainShrink":{"clip":3,"startFrame":599,"bodyGoneFrame":605,"fps":30.00013404885634},
+ "ordinaryBoard":{"clip":3,"frame":598,"cells":[[1,10,2],[9,10,3],[13,10,3],[12,11,3],[14,11,2],[11,8,2],[11,10,3],[16,11,2],[18,11,0],[6,9,4],[10,9,3],[5,10,0],[10,11,3],[7,10,2],[15,10,1],[0,11,0],[12,9,2],[3,10,0],[6,11,3],[4,11,0],[8,11,2]]}
+}

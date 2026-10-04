@@ -2059,11 +2059,12 @@
         }=L;
 
 
+        const gridDX=L.DX||D;
         const ox=
             X+
             (
                 BW-
-                (W2-1)*D*.5
+                (W2-1)*gridDX*.5
             )/2;
 
         const oy=
@@ -2071,7 +2072,7 @@
 
 
         const pos=(x,y)=>[
-            ox+x*D*.5,
+            ox+x*gridDX*.5,
             oy+y*D*HEX_ROW_H
         ];
 
@@ -2247,7 +2248,8 @@
 
                 const cv=
                     clearVisualState(
-                        progress
+                        progress,
+                        clear.hold
                     );
 
 
@@ -2289,7 +2291,7 @@
 
                             sq:0,
 
-                            ring:1
+                            ring:0
                         }
                     );
                 }

@@ -84,6 +84,8 @@ jobs:
           node tests/reference-rigidity-state-machine-v1.js
           node tests/reference-rigidity-release-bounce-v1.js
           node tests/reference-gameover-motion-parity.js
+          node tests/reference-clear-timing-parity.js
+          node tests/online-clear-render-parity.js
           node tests/motion-smoothness-regression-v1.js
           node tests/no-upward-bounce-split-continuity-v1.js
           node tests/even-row-strict-inner-split-continuity-v1.js

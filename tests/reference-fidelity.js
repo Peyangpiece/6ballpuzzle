@@ -49,7 +49,7 @@ check(30,"clear support release phase",close(CLEAR_SUPPORT_RELEASE_RATIO,.90));
 check(31,"bubble growth duration",close(HEX_GARBAGE_BUBBLE_DURATION,.34));
 check(32,"garbage shape cadence",close(HEX_GARBAGE_SHAPE_INTERVAL,.5));
 check(33,"garbage path avoids full solver",!/settleAll\s*\(/.test(reserveGarbagePlan.toString())&&!/settleAll\s*\(/.test(materializeGarbagePack.toString()));
-check(34,"pyramid hold timing",close(WAZA.PYRAMID.hold,1.25));
+check(34,"pyramid hold timing",close(WAZA.PYRAMID.hold,2.10));
 check(35,"capture-length formation afterimages",close(WAZA.STRAIGHT.fx,4.35)&&close(WAZA.PYRAMID.fx,4.05)&&close(WAZA.HEXAGON.fx,4.15));
 check(36,"straight broad light blade",SOURCE_APP10.includes("D*1.34"));
 check(37,"formation particle edges",SOURCE_APP10.includes("stable sparkling edge particles"));

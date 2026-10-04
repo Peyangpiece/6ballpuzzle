@@ -103,7 +103,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
             let alpha = 1, scale = 1, ring = 0;
             if (g.clearing && g.clearing.ids.has(cell.id)) {
                 const k = Math.min(1, g.stateT / g.holdT);
-                const cv = clearVisualState(k);scale = cv.scale;alpha = cv.alpha;ring = 1;
+                const cv = clearVisualState(k,g.holdT);scale = cv.scale;alpha = cv.alpha;ring = 0;
             }
             let [px, py] = pos(drawVX, drawVY);
             let deathAlpha=1;
@@ -117,7 +117,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         }
     if (g.clearing && g.clearing.committed && Array.isArray(g.clearing.ghosts)) {
         const k = Math.min(1, g.stateT / Math.max(0.001, g.holdT));
-        const cv = clearVisualState(k);
+        const cv = clearVisualState(k,g.holdT);
         for (const gh of g.clearing.ghosts) {const [px,py] = pos(gh.x, gh.y);drawBall(ctx, px, py, D, gh.c, {alpha:cv.alpha, scale:cv.scale, sq:0, ring:1});}
     }
     for (const s of g.fx.sparks) {

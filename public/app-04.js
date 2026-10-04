@@ -181,6 +181,14 @@ function safeActiveFallOffset(g,cells,dx,dOff,desired){
 }
 const CLEAR_SUPPORT_RELEASE_RATIO=.90;
 const LEGACY_VISUAL_SUBSTEPS=4,MAX_PHYSICS_CATCHUP_STEPS=8;
-const clearVisualState=k=>{k=Math.max(0,Math.min(1,k));const scale=Math.max(.04,1+Math.sin(Math.min(1,k/.5)*Math.PI*.5)*.3-Math.max(0,(k-.6)/.4)*1.1),alpha=k<.62?1:Math.max(0,1-(k-.62)/.38);return{scale,alpha};};
+// The ordinary clear in clip 3 (F599-F605) shrinks immediately, then leaves
+// a ring. Technique clears retain their bodies during the earlier highlight.
+// Do not stretch this six-frame shrink across the entire technique hold.
+const clearVisualState=(k,hold=.4)=>{
+ hold=Math.max(.001,Number(hold)||.4);k=Math.max(0,Math.min(1,k));
+ const age=k*hold,shrinkAge=Math.max(0,age-Math.max(0,hold*CLEAR_SUPPORT_RELEASE_RATIO-.36));
+ const scale=Math.max(0,1-shrinkAge/(6/30));
+ return{scale,alpha:scale>0?1:0};
+};
 const GARBAGE_VISUAL_MAX=4.2,SETTLE_VISUAL_WATCHDOG=1.25,SPAWN_X=9;
 const makeSet=g=>[0,1,2].map(()=>Math.floor(g.rng()*COLORS.length));

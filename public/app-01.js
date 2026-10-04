@@ -32,9 +32,12 @@ const WAZA={
  // sparkling afterimage.  The six 30 fps captures keep these trails visible
  // for roughly four seconds; tying them to the shorter clear hold cut them
  // off one to two seconds too early.
- STRAIGHT:{jp:"ストレート",garbage:19,packs:1,hold:1.0,tint:"#FFE66D",fx:4.35},
- PYRAMID:{jp:"ピラミッド",garbage:24,packs:4,hold:1.25,tint:"#57FF7D",fx:4.05},
- HEXAGON:{jp:"ヘキサゴン",garbage:36,packs:6,hold:1.35,tint:"#3DEBFF",fx:4.15}
+ // Measured first-highlight to support-release windows in the complete
+ // captures: roughly 2.0s for straight/hexagon and 1.87s for pyramid.
+ // Support releases at 90% of hold; long glyph trails remain independent.
+ STRAIGHT:{jp:"ストレート",garbage:19,packs:1,hold:2.25,tint:"#FFE66D",fx:4.35},
+ PYRAMID:{jp:"ピラミッド",garbage:24,packs:4,hold:2.10,tint:"#57FF7D",fx:4.05},
+ HEXAGON:{jp:"ヘキサゴン",garbage:36,packs:6,hold:2.25,tint:"#3DEBFF",fx:4.15}
 };
 const GARBAGE_SHAPES={
  // Nine balls on the upper row, ten on the lower row. This matches the
