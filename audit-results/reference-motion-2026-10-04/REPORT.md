@@ -20,3 +20,13 @@ The inherited engineering tolerance (RMS 8, maximum 17) is unchanged. Passing it
 `tests/reference-floor-slide-clock.js` checks 1,809 samples over centred and positive/negative offsets: mirrored positions, monotonically downward motion, contact distances >= one diameter, continuous clocks near zero offset, and measured 4/5-frame completion. The production runtime suite also includes source trajectory comparisons at 30/60/120/240 Hz. `tests/quality-split-browser-review.js` replays the reconstructed upward scene, its mirror and the inverted scene with production rendering and checks completed paths.
 
 The remaining post-clear benchmark also remains mismatched (RMS 17.06, max 39.32 from the previous correction). No complete-match or goal-completion claim is justified.
+
+## Third scene: one upper already pinned, clip 0 frames 200–206
+
+The pre-contact 12-ball board was reconstructed from frames 198–199. Frame 199 contains ghost guides and was excluded as a rendered-ball contact sample. The incoming DOWN piece is red/blue/blue, its red member resting in the pocket, its lower blue on the floor, and its right blue rolling to the next floor cell.
+
+The previous lock hand-off placed the logical piece at `[[14,9],[16,9],[15,10]]`, although its rendered contact was approximately `[[13,10],[15,10],[14,11]]`. A 0.001633-row safety margin (about 0.09 source pixels) prevented recognition of floor contact. The fallback then created a right roll whose pivot was nearly its own rendered centre and whose logical destination was wrong. This case also behaved differently after mirroring.
+
+Floor contact now accepts the existing subpixel contact margin, recognizes a genuinely stationary external floor support and an aligned upper pocket, preserves that upper and the lower centre at rest, and rolls only the free upper around the real lower centre. A moving external support is explicitly rejected as a fixed pocket. The full 49-point path sweep remains required before the hand-off is accepted. The one-sided roll finishes in the observed four source frames.
+
+Seven source-centre samples now give RMS 2.899 px, maximum 4.570 px at 120 Hz; mirrored replay differs by less than 2e-15 lattice units. The new scene regression uses tighter engineering limits of RMS 3.5 / maximum 6, not an exact-equality claim. It passes at 30/60/120/240 Hz. The full current-runtime review passes 52/52, and real Chrome replays upward, mirrored upward, inverted floor, one-sided pocket and mirrored one-sided pocket with completed paths. This still does not establish equivalence outside the reconstructed scenes.

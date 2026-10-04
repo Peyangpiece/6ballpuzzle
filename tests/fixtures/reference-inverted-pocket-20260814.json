@@ -1,0 +1,9 @@
+{
+  "source": "20260814-01KZY859WCA6E05B8W8KVXV08J-F7FDFCD7-C1D0-4B86-BB37-69ECBCBB54A8.mp4",
+  "sha256": "bc2aadab713388f69973083aa658737251ab964971edcfde284dbb452a9d0a31",
+  "contactFrame": 200,
+  "fps": 30.03333700407452,
+  "method": "Manually reconstructed pre-contact board at frame 199; 199 ghost sphere excluded. Measured right-blue circle centres from the fully decoded source. Input/contact phase inferred from first actual rendered piece at 200.",
+  "board": [[2,11,1],[4,11,2],[6,11,0],[8,11,4],[10,11,1],[12,11,2],[3,10,4],[5,10,4],[7,10,3],[9,10,0],[11,10,0],[6,9,4]],
+  "samples": [[200,773.5,818.5],[201,785.5,830.5],[202,795.5,842.5],[203,803.5,863.5],[204,804.5,874.5],[205,803.5,874.5],[206,805.5,876.5]]
+}

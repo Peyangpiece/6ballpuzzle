@@ -87,6 +87,7 @@ jobs:
           node tests/reference-clear-timing-parity.js
           node tests/post-clear-causal-paths.js
           node tests/reference-floor-slide-clock.js
+          node tests/reference-inverted-pocket-motion.js
           node tests/online-clear-render-parity.js
           node tests/motion-smoothness-regression-v1.js
           node tests/no-upward-bounce-split-continuity-v1.js
@@ -101,6 +102,7 @@ jobs:
             TEST_FPS="$fps" node tests/no-upward-bounce-split-continuity-v1.js
             TEST_FPS="$fps" node tests/reference-video-motion.js
             TEST_FPS="$fps" node tests/reference-capture-motion-parity.js
+            TEST_FPS="$fps" node tests/reference-inverted-pocket-motion.js
           done
 
       - name: Run clear disappearance FX regression

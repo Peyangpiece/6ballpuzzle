@@ -9,17 +9,17 @@ const out=process.env.REVIEW_OUTPUT||path.join(__dirname,'../audit-results/refer
   await p.goto(process.env.REVIEW_URL||'http://127.0.0.1:8018/',{waitUntil:'domcontentloaded',timeout:60000});
   await p.waitForFunction(()=>window.__hexdropMounted,{timeout:60000});
   const results=[];
-  for(const kind of['up','up-mirror','down']){
-   await p.evaluate(kind=>{
-    const g=createEngine(140826);g.state='PLAYING';const down=kind==='down',mirror=kind==='up-mirror';
-    const cells=down?[[6,11,2],[8,11,4],[7,10,4]]:[[6,11,0],[8,11,4],[10,11,1],[12,11,2],[9,10,0],[11,10,0]];
+  for(const kind of['up','up-mirror','down','down-pocket','down-pocket-mirror']){
+   await p.evaluate(({kind,pocketCells})=>{
+    const g=createEngine(140826);g.state='PLAYING';const pocket=kind.startsWith('down-pocket'),down=kind.startsWith('down'),mirror=kind.endsWith('mirror');
+    const cells=pocket?pocketCells:down?[[6,11,2],[8,11,4],[7,10,4]]:[[6,11,0],[8,11,4],[10,11,1],[12,11,2],[9,10,0],[11,10,0]];
     for(const[x,y,c]of cells){const b=mkBall(g,c),xx=mirror?18-x:x;g.board[y][xx]=b;noteBoardCell(g.board,y,b);setVis(g,b,xx,y,0);}
-    const first=g.nextId,free=down?.67:5.3;
-    g.piece={x:6,y:1,rot:down?0:1,colors:down?[0,2,2]:mirror?[4,2,3]:[4,3,2]};
+    const first=g.nextId,free=pocket?13:down?.67:5.3;
+    g.piece={x:6,y:1,rot:down?0:1,colors:pocket?(mirror?[1,0,1]:[0,1,1]):down?[0,2,2]:mirror?[4,2,3]:[4,3,2]};
     setFreeX(g,mirror?16-free:free);g.pieceVX=g.freeX;hardDrop(g);
     let cv=document.getElementById('split-review-canvas');if(!cv){cv=document.createElement('canvas');cv.id='split-review-canvas';cv.width=700;cv.height=820;cv.style='position:fixed;top:0;left:0;z-index:9999;background:#060512';document.body.appendChild(cv);}
     window.__splitReview={g,cv,time:0,ids:[first,first+1,first+2]};
-   },kind);
+   },{kind,pocketCells:require('./fixtures/reference-inverted-pocket-20260814.json').board});
    for(const frame of[0,4,8,12,16,20,28]){
     await p.evaluate(frame=>{
      const r=window.__splitReview;while(r.time<frame/120-1e-9){stepEngine(r.g,1/120);r.time+=1/120;}

@@ -132,9 +132,10 @@ function floorContactRollClock(fromX,toX,side){
  if(floorContactClockCache.size>=128)floorContactClockCache.clear();
  floorContactClockCache.set(key,clock);return clock;
 }
-function floorContactPoint(fromX,toX,side,t){
+function floorContactPoint(fromX,toX,side,t,pocket=false){
  const q=Math.max(0,Math.min(1,t)),cx=fromX+(toX-fromX)*Math.min(1,2*q);
  if(!side)return [cx,ROWS-1];
+ if(pocket){const angle=(side<0?-2*Math.PI/3:-Math.PI/3)+side*q*Math.PI/3;return[cx+2*Math.cos(angle),ROWS-1+Math.sin(angle)/HEX_ROW_H];}
  const{duration,a0,da,total,points}=floorContactRollClock(fromX,toX,side);
  const elapsed=Math.min(1,q*SLOPE_NORMAL_DURATION/duration)*total;
  const j=points.findIndex(p=>p.t>=elapsed);let roll=1;
@@ -147,13 +148,20 @@ function floorContactSplit(g,cells,offset,fraction,rotation){
  const origins=cells.map(([x,y])=>[x+offset,y+fraction]);
  const order=cells.map((_,i)=>i).sort((a,b)=>origins[b][1]-origins[a][1]);
  const bottom=order[0],tops=order.slice(1).sort((a,b)=>origins[a][0]-origins[b][0]);
- if(Math.abs(origins[bottom][1]-(ROWS-1))>1e-5)return null;
+ // Contact sweeps stop within a subpixel safety margin of a real support.
+ // Do not reinterpret that margin as a whole extra logical row in the air.
+ if(Math.abs(origins[bottom][1]-(ROWS-1))>.002)return null;
  const fromX=origins[bottom][0],toX=Math.max(2,Math.min(W2-3,Math.round(fromX/2)*2));
  const sides=[];sides[bottom]=0;sides[tops[0]]=-1;sides[tops[1]]=1;
- const targets=sides.map(side=>[toX+2*side,ROWS-1]);
+ const pinned=sides.map((side,i)=>{
+  if(!side)return false;const x=toX+2*side,support=g.board[ROWS-1]?.[x],v=support&&g.vis.get(support.id);
+  return !!(support&&!support.fallPath?.length&&v&&!v.pileFlow&&Math.abs(v.x-x)<.002&&Math.abs(v.y-(ROWS-1))<.002&&Math.abs(origins[i][0]-(toX+side))<.002&&Math.abs(origins[i][1]-(ROWS-2))<.002);
+ });
+ const pocket=pinned.some(Boolean);
+ const targets=sides.map((side,i)=>pinned[i]?[toX+side,ROWS-2]:[toX+2*side,ROWS-1]);
  if(targets.some(([x,y])=>!valid(x,y)||g.board[y][x]))return null;
  for(let k=0;k<=48;k++){
-  const points=sides.map(side=>floorContactPoint(fromX,toX,side,k/48));
+  const points=sides.map((side,i)=>pinned[i]?targets[i]:floorContactPoint(fromX,toX,side,k/48,pocket));
   for(let i=0;i<points.length;i++){
    const [x,y]=points[i];if(x<0||x>W2-1)return null;
    for(let j=i+1;j<points.length;j++)if(Math.hypot((x-points[j][0])*.5,(y-points[j][1])*HEX_ROW_H)<.9995)return null;
@@ -164,18 +172,19 @@ function floorContactSplit(g,cells,offset,fraction,rotation){
    }
   }
  }
- return {origins,fromX,toX,sides,cells:targets.map(([x,y],i)=>[x,y,cells[i][2]])};
+ return {origins,fromX,toX,sides,pinned,pocket,cells:targets.map(([x,y],i)=>[x,y,cells[i][2]])};
 }
 function queueFloorContactSplit(g,made,split){
  if(!split)return false;
  const seq=HEX_PHYS_EVENT_SEQ++;
  for(const m of made){
   hexPhysClearGroupBall(m.ball);
+  if(split.pocket&&(split.pinned[m.role]||!split.sides[m.role])){setVis(g,m.ball,m.x,m.y,0);const v=g.vis.get(m.ball.id);v.justReleased=false;v.motionSpeed=0;continue;}
   const [sx,sy]=split.origins[m.role];
   hexPhysAppendSegment(m.ball,{x:sx,y:sy,tx:m.x,ty:m.y,
    kind:"FLOOR_CONTACT_SPLIT",groupSize:0,bundleId:0},seq);
   const seg=m.ball.fallPath[m.ball.fallPath.length-1];
-  seg.floorContact={fromX:split.fromX,toX:split.toX,side:split.sides[m.role]};
+  seg.floorContact={fromX:split.fromX,toX:split.toX,side:split.sides[m.role],pocket:split.pocket};
  }
  return true;
 }

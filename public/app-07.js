@@ -337,7 +337,7 @@ function releasedPivotClock(seg,state){
 function hexMotionDurationCanonical(seg,state={vy:0,speed:0}){
     const released=releasedPivotClock(seg,state);
     if(released){seg.releasedPivotClock=released;state.speed=released.speed;state.vy=released.vy;return released.duration;}
-    if(seg?.floorContact){state.speed=SLIDE_SPEED;state.vy=0;return SLOPE_NORMAL_DURATION;}
+    if(seg?.floorContact){const duration=seg.floorContact.pocket?4/REFERENCE_VIDEO_FPS:SLOPE_NORMAL_DURATION;state.speed=(Math.PI/3)/duration;state.vy=0;return duration;}
     if(!seg?.from||!seg?.to)return 1/120;const H=HEX_ROW_H;
     if(seg.topPivot){const [px,py]=seg.topPivot,startY=cellCenterYNorm(seg.from[1]),supportY=cellCenterYNorm(py),contactY=supportY-1,fallDist=Math.max(0,contactY-startY),v0=Math.max(0,state.vy||0),fallT=fallDist>1e-9?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallDist)))/Math.max(.0001,GRAV):0,tx=latticeRealX(seg.to[0]),ty=cellCenterYNorm(seg.to[1]),sx=latticeRealX(px),sy=cellCenterYNorm(py);let da=Math.atan2(ty-sy,tx-sx)+Math.PI/2;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const arcT=Math.abs(da)/Math.max(.0001,SLIDE_SPEED);state.speed=SLIDE_SPEED;state.vy=Math.max(0,SLIDE_SPEED*Math.abs(Math.cos(-Math.PI/2+da))/H);return Math.max(1/120,fallT+arcT);}
     if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;state.speed=SLIDE_SPEED;state.vy=Math.max(0,SLIDE_SPEED*Math.abs(Math.cos(a1))/H);return Math.max(1/120,Math.abs(da)/Math.max(.0001,SLIDE_SPEED));}
@@ -359,7 +359,7 @@ function hexMotionDuration(seg,state={vy:0,speed:0}){
 }
 function liveSegDuration(seg){return hexMotionDuration(seg,{vy:0,speed:0});}
 function liveSegPoint(seg,t,startState=null,duration=null){
-    if(seg?.floorContact){const c=seg.floorContact;return floorContactPoint(c.fromX,c.toX,c.side,t);}
+    if(seg?.floorContact){const c=seg.floorContact;return floorContactPoint(c.fromX,c.toX,c.side,t,c.pocket);}
     t=Math.max(0,Math.min(1,t));if(!seg?.from||!seg?.to)return[0,0];const H=HEX_ROW_H;
     if(seg.topPivot){const [px,py]=seg.topPivot,sx=latticeRealX(seg.from[0]),sy=cellCenterYNorm(seg.from[1]),cx=latticeRealX(px),cy=cellCenterYNorm(py),contactY=cy-1,fallDist=Math.max(0,contactY-sy),v0=Math.max(0,startState?.vy||0),fallT=fallDist>1e-9?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallDist)))/Math.max(.0001,GRAV):0,tx=latticeRealX(seg.to[0]),ty=cellCenterYNorm(seg.to[1]);let da=Math.atan2(ty-cy,tx-cx)+Math.PI/2;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const arcT=Math.abs(da)/Math.max(.0001,SLIDE_SPEED),naturalTotal=Math.max(1e-9,fallT+arcT),total=Number.isFinite(duration)?Math.max(1e-9,duration):naturalTotal,elapsed=t*total;if(elapsed<=fallT&&fallT>1e-9){const q=Math.max(0,Math.min(1,(v0*elapsed+.5*GRAV*elapsed*elapsed)/Math.max(1e-9,fallDist)));return[(sx+(cx-sx)*q)/.5,(sy+(contactY-sy)*q-BOARD_TOP_CENTER_N)/H];}const q=arcT<=1e-9?1:Math.max(0,Math.min(1,(elapsed-fallT)/arcT)),a=-Math.PI/2+da*q;return[(cx+Math.cos(a))/.5,(cy+Math.sin(a)-BOARD_TOP_CENTER_N)/H];}
     if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5),radius=Math.hypot((seg.from[0]-px)*.5,(seg.from[1]-py)*H);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
