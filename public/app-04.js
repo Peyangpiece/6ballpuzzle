@@ -149,9 +149,10 @@ function gameOverBallVisualState(time,row){
 const SLIDE_60_DURATION=REFERENCE_SLIDE_FRAMES/REFERENCE_VIDEO_FPS;
 const SLIDE_SPEED=(Math.PI/3)/SLIDE_60_DURATION;
 const REFERENCE_SLOPE_HARD_FRAMES=4,SLOPE_HARD_DURATION=REFERENCE_SLOPE_HARD_FRAMES/REFERENCE_VIDEO_FPS,SLOPE_NORMAL_DURATION=SLIDE_60_DURATION;
-// Aug 14 source: after the lower pocket pins, the departing lower member
-// finishes a 60-degree roll in 3 frames; the upper member takes 4 frames.
-const REFERENCE_PINNED_LOWER_ROLL_FRAMES=3,REFERENCE_PINNED_UPPER_ROLL_FRAMES=4;
+// Aug 14 circle-centre fitting, after the lower pocket pins: use continuous
+// 2.5/3.5-frame roll clocks rather than rounding observed endpoints to 3/4.
+// These calibrate the measured scene; they are not an all-scene parity proof.
+const REFERENCE_PINNED_LOWER_ROLL_FRAMES=2.5,REFERENCE_PINNED_UPPER_ROLL_FRAMES=3.5;
 const LANDING_ALIGN_DURATION=4/60;
 const PIECE_SNAP_SPEED=14.0,CONTACT_LOCK_DELAY=LANDING_ALIGN_DURATION,ROTATE_VISUAL_TIME=.10;
 const smoothRotationT=t=>t*t*(3-2*t);

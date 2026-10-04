@@ -113,10 +113,33 @@ function hardDrop(g){
 
 // Floor contact is continuous even when the lower centre lies between
 // lattice columns. Both uppers roll outward while that centre seats itself.
+const floorContactClockCache=new Map();
+function floorContactRollClock(fromX,toX,side){
+ const key=String(toX-fromX)+":"+side;
+ if(floorContactClockCache.has(key))return floorContactClockCache.get(key);
+ const seatingVelocity=(toX-fromX)*.5/(SLOPE_NORMAL_DURATION*.5);
+ const v0=Math.max(.1,SLIDE_SPEED-side*seatingVelocity*Math.sqrt(3)/2);
+ // The measured off-centre floor landing finishes the leading roll in
+ // four source frames, versus five on the other side. Interpolate to the
+ // centred case rather than switching clocks for an infinitesimal offset.
+ const lead=side*seatingVelocity<0?Math.min(1,Math.abs(toX-fromX)/.33):0;
+ const duration=SLOPE_NORMAL_DURATION*(1-.2*lead);
+ const a0=side<0?-2*Math.PI/3:-Math.PI/3,da=side*Math.PI/3;
+ const speed=u=>Math.sqrt(v0*v0+2*GRAV*(Math.sin(a0+da*u)-Math.sin(a0)));
+ const points=[{t:0,q:0}];let total=0;
+ for(let i=1;i<=96;i++){total+=Math.abs(da)/96/speed((i-.5)/96);points.push({t:total,q:i/96});}
+ const clock={duration,a0,da,total,points};
+ if(floorContactClockCache.size>=128)floorContactClockCache.clear();
+ floorContactClockCache.set(key,clock);return clock;
+}
 function floorContactPoint(fromX,toX,side,t){
  const q=Math.max(0,Math.min(1,t)),cx=fromX+(toX-fromX)*Math.min(1,2*q);
  if(!side)return [cx,ROWS-1];
- const angle=side<0?-2*Math.PI/3-q*Math.PI/3:-Math.PI/3+q*Math.PI/3;
+ const{duration,a0,da,total,points}=floorContactRollClock(fromX,toX,side);
+ const elapsed=Math.min(1,q*SLOPE_NORMAL_DURATION/duration)*total;
+ const j=points.findIndex(p=>p.t>=elapsed);let roll=1;
+ if(j===0)roll=0;else if(j>0){const a=points[j-1],b=points[j];roll=a.q+(b.q-a.q)*(elapsed-a.t)/(b.t-a.t);}
+ const angle=a0+da*roll;
  return [cx+2*Math.cos(angle),ROWS-1+Math.sin(angle)/HEX_ROW_H];
 }
 function floorContactSplit(g,cells,offset,fraction,rotation){
