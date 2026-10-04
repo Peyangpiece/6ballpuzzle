@@ -18,7 +18,9 @@ function expect(v,m){if(!v)throw new Error(m);}
 function rng(seed){let s=seed>>>0;return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 function ball(id,c){return{id,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0,rigid:false};}
 function build(spec,seed){
-  const g=createEngine(seed);g.state="RESOLVING";g.phase="SETTLE";g.ver=seed;
+  // Synthetic moving-ID contacts have no authored paths. SETTLE now treats
+  // that as a finished batch; isolate the generic solver/cache probe instead.
+  const g=createEngine(seed);g.state="RESOLVING";g.phase="CHECK";g.ver=seed;
   g._visualMovingIds=new Set(spec.moving);
   for(const q of spec.cells){
     const b=ball(q.id,q.c);g.board[q.y][q.x]=b;noteBoardCell(g.board,q.y,b);

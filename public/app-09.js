@@ -82,7 +82,7 @@ function stepEngine(g, dt) {
                 if(hasLegalGravityMove(g.board)){
                     const moved=settlePass(g.board);
                     if(moved){g.ver++;g.balanceWait=0;}
-                }
+                }else queueResidualRestDescent(g);
                 g.stateT=0;
                 return;
             }

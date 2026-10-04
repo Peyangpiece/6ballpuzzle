@@ -688,4 +688,26 @@ function nearlySettled(g, tol) {
         }
     return true;
 }
+// A contact-clamped batch may finish slightly above its reserved rest cells.
+// Once the logical board has no further move, that residual descent is still
+// real visual motion; waiting for nearlySettled alone cannot finish it.
+function queueResidualRestDescent(g){
+    if(pendingFallPathCount(g)||hasLegalGravityMove(g.board))return 0;
+    const entries=[];
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+        const ball=valid(x,y)?g.board[y][x]:null,v=ball&&g.vis.get(ball.id);
+        if(!v||v.y>y+1e-7)continue; // Never repair by lifting a ball.
+        if(Math.abs(v.x-x)<1e-7&&Math.abs(v.y-y)<1e-7)continue;
+        if(y-v.y>1||Math.abs(v.x-x)>1)continue;
+        entries.push({ball,v,x,y});
+    }
+    if(!entries.length)return 0;
+    const seq=HEX_PHYS_EVENT_SEQ++;
+    for(const q of entries){
+        hexPhysClearGroupBall(q.ball);
+        hexPhysAppendSegment(q.ball,{x:q.v.x,y:q.v.y,tx:q.x,ty:q.y,
+            kind:"SETTLE_REST_COMPLETION",groupSize:0,bundleId:0},seq);
+    }
+    return entries.length;
+}
 const SETTLE_TOL = 0.34;

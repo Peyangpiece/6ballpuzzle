@@ -63,7 +63,7 @@ function boardItems(g){
     const v=ball&&g.vis?.get?.(ball.id);
     if(!ordinaryBall(ball)||!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
     const seg=firstSeg(ball);
-    out.push({ball,v,x,y,seg,moving:isMoving(g,ball)});
+    out.push({ball,v,x,y,seg,moving:g.phase==="SETTLE"?!!seg:isMoving(g,ball)});
   }
   return out;
 }
@@ -116,7 +116,8 @@ function cohortItems(items,item){
     Number(q.ball?.motionGroupId)===gid &&
     Number(q.ball?.motionGroupSize)===size
   );
-  return cohort.length===size?cohort:[item];
+  // A pinned/finished support is not part of a movable correction cohort.
+  return cohort.length===size&&cohort.every(q=>q.moving)?cohort:[item];
 }
 function canShiftCohort(cohort,dx){
   return cohort.every(q=>{
@@ -162,6 +163,7 @@ function repairTrueOverlapHorizontally(items,a,b,minDist){
 resolveVisualContacts=function(g){
   if(!g?.board||!g?.vis)return baseResolveVisualContacts(g);
   if(g.phase==="GARBAGE")return baseResolveVisualContacts(g);
+  if(g.phase==="SETTLE"&&pendingFallPathCount(g)===0)return;
 
   const before=boardItems(g);
   const snap=new Map(before.map(q=>[
@@ -170,6 +172,7 @@ resolveVisualContacts=function(g){
       x:Number(q.v.x),y:Number(q.v.y),
       split:splitKind(q.seg)&&!legacyPile(q.seg),
       pile:legacyPile(q.seg),
+      resting:g.phase==="SETTLE"&&!q.seg,
       moving:q.moving
     }
   ]));
@@ -184,6 +187,7 @@ resolveVisualContacts=function(g){
    * upward.  This also keeps pair and solo on the same continuous clock. */
   for(const q of after){
     const s=snap.get(q.ball.id);
+    if(s?.resting){q.v.x=s.x;q.v.y=s.y;continue;}
     if(!s||s.pile||!s.moving)continue;
     if(s.split){
       if(Math.abs(Number(q.v.x)-s.x)>EPS||Math.abs(Number(q.v.y)-s.y)>EPS){
