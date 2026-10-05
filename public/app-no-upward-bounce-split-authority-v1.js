@@ -10,10 +10,11 @@
  * Rules here:
  *  - reference split trajectories remain authoritative after they pass the
  *    physics sweep; the generic overlap pass may not distort them;
- *  - ordinary resolving balls never move upward as a render-only correction;
+ *  - prefer horizontal correction, but true penetration takes precedence over
+ *    the no-lift presentation policy when horizontal constraints conflict;
  *  - if restoring the previous Y would leave a true (< HEX_MIN_DIST) overlap,
  *    separation is repaired horizontally, preserving a rigid cohort by moving
- *    the whole cohort together;
+ *    the whole cohort together; use the contact normal if that is insufficient;
  *  - pileFlow / garbage keep their legacy presentation path unchanged.
  */
 (function(){
@@ -26,6 +27,12 @@ if(
 window.__sixBallNoUpwardBounceSplitAuthorityV1=true;
 
 const baseResolveVisualContacts=resolveVisualContacts;
+const baseContactStepEngine=stepEngine;
+stepEngine=function(g,dt){
+  const result=baseContactStepEngine(g,dt);
+  if(g?.state==="RESOLVING"&&g.phase==="SETTLE")resolveVisualContacts(g);
+  return result;
+};
 const EPS=1e-9;
 const SAFE_EPS=1e-7;
 
@@ -63,7 +70,8 @@ function boardItems(g){
     const v=ball&&g.vis?.get?.(ball.id);
     if(!ordinaryBall(ball)||!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;
     const seg=firstSeg(ball);
-    out.push({ball,v,x,y,seg,moving:g.phase==="SETTLE"?!!seg:isMoving(g,ball)});
+    const atRest=Math.hypot((v.x-x)*.5,(v.y-y)*HEX_ROW_H)<1e-7;
+    out.push({ball,v,x,y,seg,atRest,moving:g.phase==="SETTLE"?(!!seg||!atRest):isMoving(g,ball)});
   }
   return out;
 }
@@ -117,7 +125,7 @@ function cohortItems(items,item){
     Number(q.ball?.motionGroupSize)===size
   );
   // A pinned/finished support is not part of a movable correction cohort.
-  return cohort.length===size&&cohort.every(q=>q.moving)?cohort:[item];
+  return cohort.length===size&&cohort.every(q=>q.seg)?cohort:[item];
 }
 function canShiftCohort(cohort,dx){
   return cohort.every(q=>{
@@ -141,11 +149,11 @@ function repairTrueOverlapHorizontally(items,a,b,minDist){
   const required=Math.sqrt(Math.max(0,minDist*minDist-dy*dy));
   const logicalSign=Math.sign(Number(a.x)-Number(b.x));
   const visualSign=Math.sign(dxReal);
-  const preferred=visualSign||logicalSign||((Number(a.ball.id)||0)<(Number(b.ball.id)||0)?-1:1);
+  const preferred=logicalSign||visualSign||((Number(a.ball.id)||0)<(Number(b.ball.id)||0)?-1:1);
 
   const aC=cohortItems(items,a),bC=cohortItems(items,b);
   const candidates=[];
-  for(const sign of [preferred,-preferred]){
+  for(const sign of [preferred]){
     const targetReal=sign*required;
     const da=2*(targetReal-dxReal);
     const db=-da;
@@ -163,16 +171,30 @@ function repairTrueOverlapHorizontally(items,a,b,minDist){
 resolveVisualContacts=function(g){
   if(!g?.board||!g?.vis)return baseResolveVisualContacts(g);
   if(g.phase==="GARBAGE")return baseResolveVisualContacts(g);
-  if(g.phase==="SETTLE"&&pendingFallPathCount(g)===0)return;
 
   const before=boardItems(g);
+  const translatedGroups=new Map();
+  for(const q of before){
+    if(!/^GROUP_(SLOPE_)?TRANSLATE$/.test(String(q.seg?.kind||"")))continue;
+    const gid=Number(q.ball.motionGroupId);if(!gid)continue;
+    if(!translatedGroups.has(gid))translatedGroups.set(gid,[]);
+    translatedGroups.get(gid).push(q);
+  }
+  for(const members of translatedGroups.values()){
+    if(members.length!==Number(members[0].ball.motionGroupSize))continue;
+    const ox=Math.max(-Math.min(...members.map(q=>q.x)),Math.min(
+      W2-1-Math.max(...members.map(q=>q.x)),members.reduce((n,q)=>n+q.v.x-q.x,0)/members.length));
+    const oy=Math.min((FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H-Math.max(...members.map(q=>q.y)),
+      members.reduce((n,q)=>n+q.v.y-q.y,0)/members.length);
+    for(const q of members){q.v.x=q.x+ox;q.v.y=q.y+oy;}
+  }
   const snap=new Map(before.map(q=>[
     q.ball.id,
     {
       x:Number(q.v.x),y:Number(q.v.y),
-      split:splitKind(q.seg)&&!legacyPile(q.seg),
+      split:(splitKind(q.seg)||Number(q.seg?.groupSize)>=2)&&!legacyPile(q.seg),
       pile:legacyPile(q.seg),
-      resting:g.phase==="SETTLE"&&!q.seg,
+      resting:g.phase==="SETTLE"&&!q.seg&&q.atRest,
       moving:q.moving
     }
   ]));
@@ -221,6 +243,7 @@ resolveVisualContacts=function(g){
       const a=after[i],b=after[j];
       if(!a.moving&&!b.moving)continue;
       if(
+        a.moving && b.moving &&
         Number(a.ball?.motionGroupId)>0 &&
         Number(a.ball?.motionGroupId)===Number(b.ball?.motionGroupId)
       )continue;
@@ -233,6 +256,36 @@ resolveVisualContacts=function(g){
         horizontalRepairs++;
         changed=true;
       }
+    }
+    if(!changed)break;
+  }
+
+  // A rigid cohort can be trapped between horizontal constraints. In that
+  // case preserving Y is not physically possible: separate along the real
+  // contact normal rather than accepting penetration or moving fixed supports.
+  for(let pass=0;pass<128;pass++){
+    let changed=false;
+    for(let i=0;i<after.length;i++)for(let j=i+1;j<after.length;j++){
+      const a=after[i],b=after[j];
+      if(!a.moving&&!b.moving)continue;
+      const ac=cohortItems(after,a),bc=cohortItems(after,b);
+      if(ac.includes(b)||bc.includes(a))continue;
+      const dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H,d=Math.hypot(dx,dy);
+      if(d>=minDist-SAFE_EPS)continue;
+      const nx=d>EPS?dx/d:Math.sign(a.x-b.x)||1;
+      const ny=d>EPS?dy/d:0;
+      const need=minDist-d+SAFE_EPS;
+      const chosen=a.moving&&!b.moving?ac:(!a.moving&&b.moving?bc:(pass%2?bc:ac));
+      const sign=chosen===ac?1:-1;
+      const shiftX=Math.max(-Math.min(...chosen.map(q=>q.v.x)),
+        Math.min(W2-1-Math.max(...chosen.map(q=>q.v.x)),sign*nx*need*2));
+      const floorMax=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H;
+      const shiftY=Math.min(floorMax-Math.max(...chosen.map(q=>q.v.y)),sign*ny*need/HEX_ROW_H);
+      for(const q of chosen){
+        q.v.x+=shiftX;
+        q.v.y+=shiftY;
+      }
+      changed=true;
     }
     if(!changed)break;
   }
@@ -261,12 +314,13 @@ if(typeof liveBatchPointAt==="function"){
 }
 
 window.__sixBallNoUpwardBounceVersion="no-upward-bounce-split-authority-v1";
-window.__sixBallOrdinaryVisualCorrectionsNeverMoveUp=true;
+window.__sixBallOrdinaryVisualCorrectionsNeverMoveUp=false;
 window.__sixBallOrdinaryIntegratorNeverMovesUp=true;
-window.__sixBallOrdinaryContactCorrectionIsHorizontalOnly=true;
+window.__sixBallOrdinaryContactCorrectionIsHorizontalOnly=false;
 window.__sixBallEvenRowUpTriangleLandingNeverLifts=true;
 window.__sixBallReferenceSplitPathBeatsGenericContactCorrection=true;
 window.__sixBallSplitHasNoResolverPause=true;
-window.__sixBallTrueOverlapRepairIsHorizontal=true;
+window.__sixBallTrueOverlapRepairIsHorizontal=false;
+window.__sixBallTrueOverlapContactNormalFallback=true;
 window.__sixBallPileAndGarbageBouncePolicyUnchanged=true;
 })();

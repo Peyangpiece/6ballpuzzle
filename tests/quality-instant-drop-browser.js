@@ -15,7 +15,18 @@ const out=process.env.REVIEW_OUTPUT||path.join(__dirname,'../audit-results/insta
     for(let turn=0;turn<35&&g.state==='PLAYING';turn++){
      const rot=Math.floor(g.rng()*6),x=1+g.rng()*16;
      g.piece.rot=rot;setFreeX(g,x);g.pieceVX=g.freeX;hardDrop(g);
-     for(let frame=0;frame<1200&&g.state==='RESOLVING';frame++)stepEngine(g,1/120);
+     for(let frame=0;frame<1200&&g.state==='RESOLVING';frame++){
+      stepEngine(g,1/120);
+      const balls=[];
+      for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+       const b=g.board[y][x],v=b&&g.vis.get(b.id);if(b&&v)balls.push(v);
+      }
+      for(let i=0;i<balls.length;i++)for(let j=i+1;j<balls.length;j++){
+       const a=balls[i],b=balls[j];
+       if(Math.hypot((a.x-b.x)*.5,(a.y-b.y)*HEX_ROW_H)<.9994)
+        throw Error('Ball penetration '+JSON.stringify({seed,turn,frame}));
+      }
+     }
      if(g.state==='RESOLVING')throw Error('Immediate drop stalled '+JSON.stringify({seed,turn,phase:g.phase,pending:pendingFallPathCount(g)}));
      if(g.state==='PLAYING'&&!g.piece)throw Error('Next piece missing');
      turns++;

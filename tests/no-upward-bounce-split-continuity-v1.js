@@ -161,7 +161,9 @@ const result=vm.runInContext(`
 `,ctx);
 
 console.log("NO_UPWARD_BOUNCE_SPLIT_CONTINUITY",JSON.stringify(result));
-expect(Object.values(result.flags).every(Boolean),"no-upward/split-continuity flags incomplete");
+expect(Object.entries(result.flags).every(([key,value])=>
+  ["upward","horizontalOnly","horizontal"].includes(key)?value===false:!!value),
+  "contact-normal fallback and split-continuity policy flags incomplete");
 expect(result.contact.after[1]>=result.contact.before[1]-1e-10,"render contact solver still moved an ordinary ball upward");
 expect(result.contact.distance>=0.9995-2e-7,"no-upward correction left a true overlap");
 expect(result.contact.diag&&result.contact.diag.upwardPrevented>=1,"upward correction was not intercepted");
