@@ -1,3 +1,7 @@
+// Garbage pipeline entry points.  They are installed later by
+// app-garbage-normal-physics.js and wrapped by the garbage/collapse layers;
+// declaring them here keeps the shared global scope explicit (and strict-mode safe).
+var prepareGarbageBatch, updateGarbagePacks, garbageBatchDone, garbageVisualsDone, finishGarbageVisuals;
 function visualSubstepCount(g){
     // Scheduled pile/garbage motion is analytic absolute-time motion and needs no
     // numerical substepping. Legacy contact paths retain four substeps for the
@@ -331,7 +335,10 @@ function stepEngine(g, dt) {
                 // 既に0.5秒間隔で開始済みなのに接触確定だけが詰まったセットを、1セットだけ救済する。
                 const stuckPlan=g.garbagePlans.find(p=>!p.landed && p._started);
                 if (stuckPlan) {
-                    if(materializeGarbagePack(g,stuckPlan)||g.garbBlocked)stuckPlan.landed=true;
+                    // materializeGarbagePack belonged to the removed legacy garbage runtime; without it the
+                    // watchdog only unblocks the set when the pile is already blocked.
+                    const materialize=typeof globalThis!=="undefined"&&typeof globalThis.materializeGarbagePack==="function"?globalThis.materializeGarbagePack:null;
+                    if((materialize&&materialize(g,stuckPlan))||g.garbBlocked)stuckPlan.landed=true;
                 }
                 if (g.garbLeft>0 && g.garbageClock + 1e-9 >= g.garbageNextBallAt) {
                     // 旧数値互換おじゃまの救済も1回につき1球だけ投入する。

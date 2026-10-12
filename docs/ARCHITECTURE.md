@@ -53,6 +53,8 @@ public/index.html
   伴うため、本リポジトリでは「読込順を単一定義にし、生成ドキュメントと契約テストで固定する」方針を取っています。
 - 通常消去後の崩落シーンは本家映像との誤差が基準（RMS 8px / 最大 17px）を満たしていません
   （`audit-results/reference-clear-2026-10-04/CAUSAL-COLLAPSE.md`）。CI ゲートからは意図的に外されています。
-- レーティングは最終的にクライアントが計算して書き込みます。ルールで「1 試合につき 1 回、±32 以内、
-  実在する終了済み試合に限る」まで制約していますが、完全なサーバー権威にするには Cloud Functions 等の
-  裁定が必要です（[OPERATIONS.md](OPERATIONS.md) 参照）。
+- レーティングは既定でクライアントが計算して書き込みます。ルールで「1 試合につき 1 回、±32 以内、
+  実在する終了済み試合に限る」まで制約し、`config/ratingAuthority = "server"` に切り替えると
+  `firebase/functions/` の Cloud Function が裁定します（[OPERATIONS.md](OPERATIONS.md) 参照）。
+- 旧おじゃまランタイムの関数 `materializeGarbagePack` は削除済みで、app-09 の監視タイマー経路は
+  `typeof` ガード付きで残っています。`npm run lint` が連結ランタイムの未定義参照を検出します。

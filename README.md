@@ -21,6 +21,7 @@ STRAIGHT / PYRAMID / HEXAGON の「技」でおじゃま球を相手に送りま
 ```bash
 npm ci                 # esbuild / tailwindcss / playwright
 npm run check          # 全ランタイムスクリプトの構文チェック
+npm run lint           # 読込順に連結したランタイム全体へ ESLint（未定義参照・重複キー等）
 npm run build:css      # Tailwind を public/tailwind.css に事前生成（クラスを変えたら実行してコミット）
 npm run serve          # public/ を http://127.0.0.1:8018 で配信（開発用: 個別スクリプトをそのまま読込）
 npm test               # 配信ゲート: 構造・物理・本家映像比較・ビルド契約の全回帰（並列実行）
@@ -46,7 +47,7 @@ npm run docs:layers    # docs/ARCHITECTURE.generated.md を再生成
 | `tools/` | ビルド・配信サーバー・レイヤーマップ生成・本家映像解析スクリプト |
 | `tests/` | 回帰テスト。`tests/run-ci.js` の `GATE` が配信ゲートの定義 |
 | `tests/fixtures/` | 本家映像から抽出した球中心座標（フレーム比較用） |
-| `firebase/` | Realtime Database のセキュリティルールとエミュレータ設定 |
+| `firebase/` | Realtime Database のセキュリティルール、エミュレータ設定、レート裁定の Cloud Functions |
 | `audit-results/` | 過去の監査ログ・レポート（配信物ではない） |
 | `docs/` | 設計・運用・アセット出所・履歴 |
 
@@ -54,8 +55,8 @@ npm run docs:layers    # docs/ARCHITECTURE.generated.md を再生成
 
 `main` への push と Pull Request で `.github/workflows/validate.yml` が走ります。
 
-1. 構文チェック、事前生成 CSS の鮮度、配信シェルの不変条件
-2. `npm test`（Node 回帰 40 本 + FPS 掃引 20 本。本家映像との位置誤差、ビルド契約、オンライン入力の検証を含む）
+1. 構文チェック、連結ランタイムの静的検査、事前生成 CSS の鮮度、配信シェルの不変条件
+2. `npm test`（Node 回帰 42 本 + FPS 掃引 20 本。本家映像との位置誤差、ビルド契約、オンライン入力・レート裁定の検証を含む）
 3. 本番ビルドと Playwright による実ブラウザ煙テスト
 4. Firebase ルールの契約テスト（エミュレータ）
 5. `main` のみ: Cloudflare へデプロイし、配信された `deploy-sha.txt` がコミット SHA と一致することを確認

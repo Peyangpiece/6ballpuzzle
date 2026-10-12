@@ -3,20 +3,24 @@
     ".read": false,
     ".write": false,
 
+    "config": {
+      ".read": "auth != null"
+    },
+
     "users": {
       "$uid": {
         ".read": "auth != null",
         ".write": "auth != null && auth.uid == $uid",
         ".validate": "newData.hasChildren(['name', 'rating', 'wins', 'losses'])",
         "name":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24" },
-        "wins":      { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)" },
-        "losses":    { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)" },
+        "wins":      { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() == data.val() || (root.child('config/ratingAuthority').val() != 'server' && newData.val() == data.val() + 1))" },
+        "losses":    { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() == data.val() || (root.child('config/ratingAuthority').val() != 'server' && newData.val() == data.val() + 1))" },
         "updatedAt": { ".validate": "newData.isNumber()" },
         "lastMatch": {
-          ".validate": "newData.isString() && newData.val() != data.val() && root.child('matches/' + newData.val() + '/result').exists() && (root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid || root.child('matches/' + newData.val() + '/players/1/uid').val() == $uid)"
+          ".validate": "root.child('config/ratingAuthority').val() != 'server' && newData.isString() && newData.val() != data.val() && root.child('matches/' + newData.val() + '/result').exists() && (root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid || root.child('matches/' + newData.val() + '/players/1/uid').val() == $uid)"
         },
         "rating": {
-          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4000 && (!data.exists() ? newData.val() == 1000 : (newData.val() == data.val() || (newData.parent().child('lastMatch').val() != data.parent().child('lastMatch').val() && newData.val() - data.val() <= 32 && data.val() - newData.val() <= 32)))"
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4000 && (!data.exists() ? newData.val() == 1000 : (newData.val() == data.val() || (root.child('config/ratingAuthority').val() != 'server' && newData.parent().child('lastMatch').val() != data.parent().child('lastMatch').val() && newData.val() - data.val() <= 32 && data.val() - newData.val() <= 32)))"
         },
         "$other": { ".validate": false }
       }

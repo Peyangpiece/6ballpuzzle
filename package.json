@@ -12,11 +12,16 @@
     "test:rules": "node tests/firebase-rules.js",
     "serve": "node tools/serve.js public",
     "serve:dist": "node tools/serve.js dist",
-    "docs:layers": "node tools/layer-map.js > docs/ARCHITECTURE.generated.md"
+    "docs:layers": "node tools/layer-map.js > docs/ARCHITECTURE.generated.md",
+    "lint": "node tools/lint.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "esbuild": "0.25.10",
+    "eslint": "9.37.0",
+    "globals": "16.4.0",
     "playwright": "1.56.1",
     "tailwindcss": "3.4.17"
   }

@@ -15,7 +15,33 @@ const Net = {
         const snap = await F.get(F.ref(this.db, "users/" + this.uid));
         if (snap.exists()) this.profile = { ...this.profile, ...snap.val() };
         else await F.set(F.ref(this.db, "users/" + this.uid), { ...this.profile, updatedAt: F.serverTimestamp() });
+        // Who settles ratings: "client" (default, rules-bounded) or "server"
+        // (Cloud Function in firebase/functions; clients only wait and read back).
+        try { const cfg = await F.get(F.ref(this.db, "config/ratingAuthority")); this.ratingAuthority = cfg.exists() && cfg.val() === "server" ? "server" : "client"; }
+        catch (_) { this.ratingAuthority = "client"; }
         return this.uid;
+    },
+    ratingAuthority: "client",
+    async reloadProfile() {
+        if (!this.fb || !this.uid) return this.profile;
+        const F = this.fb;const snap = await F.get(F.ref(this.db, "users/" + this.uid)).catch(() => null);
+        if (snap && snap.exists()) this.profile = { ...this.profile, ...snap.val() };
+        return this.profile;
+    },
+    // Server mode: wait for matches/{mid}/settlement/{uid} written by the Cloud
+    // Function, then mirror the authoritative profile.  Falls back to a plain
+    // profile reload if the function has not answered within the timeout.
+    awaitServerRating(matchId, timeoutMs = 10000) {
+        const F = this.fb, self = this;const before = Number(this.profile.rating) || 1000;
+        const ref = F.ref(this.db, "matches/" + matchId + "/settlement/" + this.uid);
+        return new Promise((resolve) => {
+            let done = false;
+            const finish = async (val) => {if (done) return;done = true;clearTimeout(timer);try { F.off(ref); } catch (_) { }
+                if (val && Number.isFinite(Number(val.rating))) {self.profile.rating = Number(val.rating);self.profile.wins = Number(val.wins) || 0;self.profile.losses = Number(val.losses) || 0;resolve(Number(val.delta) || 0);return;}
+                await self.reloadProfile();resolve((Number(self.profile.rating) || before) - before);};
+            const timer = setTimeout(() => finish(null), timeoutMs);
+            F.onValue(ref, (s) => { const v = s.val(); if (v) finish(v); }, () => finish(null));
+        });
     },
     bands(b, spread) {const out = [b];for (let d = 1; d <= spread; d++) {if (b - d >= 0) out.push(b - d);if (b + d <= 19) out.push(b + d);}return out;},
     async claim(band) {
@@ -74,5 +100,5 @@ const Net = {
             leave() {finished = true;if (discTimer) clearTimeout(discTimer);if (timer) clearTimeout(timer);for (const r of refs) F.off(r);F.set(connRef, false).catch(() => { });}}
         ;return handle;
     },
-    async applyRating(win, foeRating, ranked, matchId = null) {const delta = ranked === false ? 0 : eloDelta(this.profile.rating, foeRating, win);this.profile.rating = Math.max(0, this.profile.rating + delta);this.profile.wins += win ? 1 : 0;this.profile.losses += win ? 0 : 1;if (this.fb && this.uid) {const F = this.fb;const patch = {rating: this.profile.rating, wins: this.profile.wins,losses: this.profile.losses, updatedAt: F.serverTimestamp()};if (typeof matchId === "string" && matchId) patch.lastMatch = matchId;await F.update(F.ref(this.db, "users/" + this.uid), patch).catch(() => { });await F.set(F.ref(this.db, "leaderboard/" + this.uid), { name: this.profile.name, rating: this.profile.rating }).catch(() => { });}return delta;}
+    async applyRating(win, foeRating, ranked, matchId = null) {if (this.ratingAuthority === "server" && this.fb && this.uid && typeof matchId === "string" && matchId) return this.awaitServerRating(matchId);const delta = ranked === false ? 0 : eloDelta(this.profile.rating, foeRating, win);this.profile.rating = Math.max(0, this.profile.rating + delta);this.profile.wins += win ? 1 : 0;this.profile.losses += win ? 0 : 1;if (this.fb && this.uid) {const F = this.fb;const patch = {rating: this.profile.rating, wins: this.profile.wins,losses: this.profile.losses, updatedAt: F.serverTimestamp()};if (typeof matchId === "string" && matchId) patch.lastMatch = matchId;await F.update(F.ref(this.db, "users/" + this.uid), patch).catch(() => { });await F.set(F.ref(this.db, "leaderboard/" + this.uid), { name: this.profile.name, rating: this.profile.rating }).catch(() => { });}return delta;}
 };

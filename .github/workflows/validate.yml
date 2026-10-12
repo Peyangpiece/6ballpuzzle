@@ -28,6 +28,9 @@ jobs:
       - name: Syntax-check every runtime script
         run: npm run check
 
+      - name: Static defect scan of the concatenated runtime (ESLint no-undef)
+        run: npm run lint
+
       - name: Precompiled Tailwind CSS is up to date
         shell: bash
         run: |

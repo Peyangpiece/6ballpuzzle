@@ -45,10 +45,27 @@ npx firebase emulators:exec --config firebase/firebase.json --only database --pr
 | `matches/$id` | 参加者のみ読取。作成は参加者本人のみ、上書き不可。`state/$i` `result/$i` `players/$i/connected` は該当プレイヤーのみ。`attacks/$i` は相手だけが追加でき、n は 0〜120、shapes は既知の技名のみ |
 | `lobby` `pairings` `rooms` | なりすまし不可。ルームの参加は実在する試合（ホスト=players/0、参加者=players/1）に限る |
 
-残る前提: レート計算自体はクライアントが行います。偽の試合を自作して +32 ずつ稼ぐ経路は塞がっていません。
-完全に塞ぐには `matches/$id/result` をトリガーに Cloud Functions で Elo を計算し、
-`users/$uid/rating` をサーバー専用書込にする必要があります（クライアントの `Net.applyRating` を
-読取専用にする変更とセットで行います）。
+### レート裁定をサーバー権威にする（推奨）
+
+既定ではクライアントがレートを計算し、ルールがその振れ幅と回数を制限します（偽の試合を自作して
++32 ずつ稼ぐ経路は残ります）。これを塞ぐ Cloud Function を `firebase/functions/` に用意しています。
+
+1. Firebase プロジェクトを Blaze プランにし、Functions を有効化する。
+2. デプロイ: `cd firebase/functions && npm install && npx firebase deploy --only functions --config ../firebase.json --project ballpuzzle-8cc87`
+3. データベースに `config/ratingAuthority = "server"` を書く（コンソールまたは admin SDK。クライアントからは書けません）。
+
+この瞬間から:
+
+- ルールがクライアントによる `rating` / `wins` / `losses` / `lastMatch` の変更を拒否します（ニックネーム変更は可）。
+- 関数 `settleMatchResult` が `matches/{mid}/result/{i}` の作成をトリガーに、両者のレートをトランザクションで更新し、
+  `leaderboard` を書き、`matches/{mid}/settlement/{uid}` に結果（delta, rating, wins, losses）を残します。
+  `settlement/state` の claim により 2 件目の result や再試行で二重計上されません。
+- クライアント（`Net.awaitServerRating`）は自分の settlement を最大 10 秒待ってプロフィールを反映し、
+  来なければ `users/{uid}` を再読込します。
+
+`config/ratingAuthority` を削除すれば即座にクライアント裁定へ戻ります（ロールバック手順）。
+裁定ロジックの純粋部分は `firebase/functions/settle.js` にあり、`tests/rating-settlement.js` が
+クライアントの Elo 式との一致と境界条件を検証します。
 
 ## ブランチ保護（推奨設定）
 

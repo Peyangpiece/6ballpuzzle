@@ -19,12 +19,12 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 11 | `app-clear-vacancy-priority.js` | clear / collapse corrections | 331 |  | Post-clear vacancy conservation. |
 | 12 | `app-release-parity-settle.js` | clear / collapse corrections | 60 |  | Parity-safe active-piece hand-off. |
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 714 |  |  |
-| 14 | `app-09.js` | core: engine, assets, net, app shell | 575 |  |  |
+| 14 | `app-09.js` | core: engine, assets, net, app shell | 582 |  | Garbage pipeline entry points.  They are installed later by |
 | 15 | `app-10.js` | core: engine, assets, net, app shell | 437 |  | ボール描画 |
 | 16 | `app-14.js` | core: engine, assets, net, app shell | 331 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
-| 19 | `app-15.js` | core: engine, assets, net, app shell | 79 |  |  |
+| 19 | `app-15.js` | core: engine, assets, net, app shell | 105 |  |  |
 | 20 | `app-google-login.js` | online | 316 |  |  |
 | 21 | `app-online-v2.js` | online | 2310 |  |  |
 | 22 | `app-menu-ui.js` | menu / audio | 225 |  | HEXDROP immersive menu system. |
@@ -42,7 +42,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 34 | `app-garbage-deep-settle.js` | garbage (おじゃま) pipeline | 133 |  | Garbage full-gravity finalization invariant. |
 | 35 | `app-garbage-simultaneous-motion.js` | garbage (おじゃま) pipeline | 118 |  | Garbage contact resolution after unit-local ordinary timelines. |
 | 36 | `app-garbage-render-overlap-guard.js` | garbage (おじゃま) pipeline | 107 |  | Render-only garbage overlap guard. |
-| 37 | `app-ai-superstrong-authoritative-v2.js` | AI opponent | 2251 |  | 6ball SUPERHUMAN AUTHORITATIVE v3 |
+| 37 | `app-ai-superstrong-authoritative-v2.js` | AI opponent | 2250 |  | 6ball SUPERHUMAN AUTHORITATIVE v3 |
 | 38 | `app-runtime-performance.js` | performance | 161 |  | Main-thread runtime performance guards. |
 | 39 | `app-physics-safety-invariants.js` | safety invariants | 727 |  |  |
 | 40 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |

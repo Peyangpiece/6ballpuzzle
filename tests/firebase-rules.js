@@ -86,6 +86,22 @@ async function deny(label, p) { try { await assertFails(p); passed++; console.lo
   await deny("B cannot delete A's room", B.ref("rooms/123456").set(null));
   await ok("A deletes own room", A.ref("rooms/123456").set(null));
 
+  console.log("server rating authority (config/ratingAuthority = 'server')");
+  await deny("clients cannot write config", A.ref("config/ratingAuthority").set("client"));
+  await env.withSecurityRulesDisabled(ctx => ctx.database().ref("config/ratingAuthority").set("server"));
+  await ok("signed-in clients read the authority flag", A.ref("config/ratingAuthority").get());
+  const mid4 = "m4";
+  await ok("A creates match m4", A.ref("matches/" + mid4).set({ meta: { seed: 4, ranked: true, createdAt: Date.now() }, players: { 0: { uid: "uidA", name: "Alice", rating: 1016, connected: false }, 1: { uid: "uidB", name: "Bob", rating: 984, connected: false } } }));
+  await ok("A reports m4 result", A.ref("matches/" + mid4 + "/result/0").set({ win: true, reason: "foe-dead", ts: Date.now() }));
+  await deny("server mode: client cannot move its rating even for a real match", A.ref("users/uidA").update({ rating: 1032, wins: 2, losses: 0, lastMatch: mid4, updatedAt: Date.now() }));
+  await deny("server mode: client cannot bump wins", A.ref("users/uidA").update({ wins: 2, updatedAt: Date.now() }));
+  await deny("server mode: client cannot write a settlement", A.ref("matches/" + mid4 + "/settlement/uidA").set({ delta: 16, rating: 1032, wins: 2, losses: 0 }));
+  await ok("server mode: nickname edits still work", A.ref("users/uidA").update({ name: "Alice2", updatedAt: Date.now() }));
+  await ok("server mode: leaderboard mirror with the stored rating still works", A.ref("leaderboard/uidA").set({ name: "Alice2", rating: 1016 }));
+  await env.withSecurityRulesDisabled(ctx => ctx.database().ref("matches/" + mid4 + "/settlement/uidA").set({ delta: 16, rating: 1032, wins: 2, losses: 0 }));
+  await ok("server mode: player reads own settlement", A.ref("matches/" + mid4 + "/settlement/uidA").get());
+  await deny("server mode: outsider cannot read a settlement", C.ref("matches/" + mid4 + "/settlement/uidA").get());
+
   await env.cleanup();
   console.log(`\nfirebase rules: ${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);

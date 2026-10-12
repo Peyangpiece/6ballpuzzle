@@ -11,8 +11,9 @@
 
 ## 既知の限界
 
-- レート計算はクライアントが行います。ルールで振れ幅と回数を制限していますが、完全なサーバー権威ではありません
-  （[docs/OPERATIONS.md](docs/OPERATIONS.md) の Cloud Functions 案）。
+- 既定ではレート計算をクライアントが行います。ルールで振れ幅と回数を制限していますが、完全なサーバー権威では
+  ありません。`firebase/functions/` をデプロイして `config/ratingAuthority = "server"` にすると
+  サーバー裁定に切り替わります（[docs/OPERATIONS.md](docs/OPERATIONS.md)）。
 - 匿名ログインが有効なため、アカウントの使い捨てによるリーダーボードの汚染は防げません。
   必要なら `leaderboard/$uid` の書込を `auth.token.firebase.sign_in_provider != 'anonymous'` に限定してください。
 
