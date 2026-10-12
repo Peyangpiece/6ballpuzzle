@@ -26,6 +26,6 @@ const result=vm.runInContext(`(()=>{
   }
  }
  return{worst,detail,turns};
-})()`,ctx,{timeout:240000});
+})()`,ctx,{timeout:Number(process.env.TEST_VM_TIMEOUT_MS)||240000});
 console.log(JSON.stringify(result));
 assert(result.worst>=.9994,'Balls must not penetrate each other');

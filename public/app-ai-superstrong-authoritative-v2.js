@@ -1801,11 +1801,10 @@
     function sceneBusy(
         current
     ){
-
         try{
-
+            // Optional hook: a host may expose its engine list on the global scope.
+            const engines=typeof globalThis!=="undefined"?globalThis.engines:undefined;
             if(
-                typeof engines!=="undefined" &&
                 engines &&
                 typeof engines[
                     Symbol.iterator

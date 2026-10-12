@@ -4,7 +4,7 @@ const fs=require('fs'),path=require('path'),assert=require('assert');
 const output=process.env.REVIEW_OUTPUT||path.join(__dirname,'../audit-results/reference-full-2026-10-02/browser-gameover');
 (async()=>{
  fs.mkdirSync(output,{recursive:true});
- const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||undefined});
  try{
   const page=await browser.newPage({viewport:{width:1280,height:720}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
