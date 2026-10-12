@@ -24,8 +24,28 @@ npm run build && npm run serve:dist   # http://127.0.0.1:8018
 
 ## Firebase Realtime Database ルール
 
-ルールは `firebase/database.rules.json` にあり、`tests/firebase-rules.js` が 54 件のシナリオで契約を検証します。
-**ルールはリポジトリから自動反映されません。** 変更後は次のいずれかで本番へ反映してください。
+ルールは `firebase/database.rules.json` にあり、`tests/firebase-rules.js` が 65 件のシナリオで契約を検証します。
+
+### 自動反映（推奨）: GitHub Actions `Deploy Firebase Database Rules`
+
+`.github/workflows/firebase-rules.yml` が、`firebase/` 配下の変更が `main` に入ったとき、または
+Actions タブの「Run workflow」で、エミュレータ契約テスト → `firebase deploy --only database` →
+本番ルールをダウンロードしてリポジトリのファイルと一致するか検証、の順に実行します。
+
+必要な準備（1 回だけ、プロジェクト所有者が行う）:
+
+1. [Google Cloud Console → IAM → サービスアカウント](https://console.cloud.google.com/iam-admin/serviceaccounts?project=ballpuzzle-8cc87)
+   でサービスアカウントを作成し、ロール **Firebase Realtime Database 管理者**（`roles/firebasedatabase.admin`）を付与する。
+2. そのサービスアカウントの JSON キーを作成する。
+3. GitHub → リポジトリ → Settings → Secrets and variables → Actions → New repository secret で
+   名前 `FIREBASE_SERVICE_ACCOUNT`、値に JSON の中身全体を登録する。
+4. Actions → Deploy Firebase Database Rules → Run workflow（`main`）を実行する。
+   `contract` → `deploy` の 2 ジョブが緑になれば反映完了です。`deploy` の最終ステップが
+   「Live rules verified」を出力します。
+
+シークレットが未登録の場合、`deploy` ジョブは最初のステップで明示的に失敗します（ルールには触れません）。
+
+### 手動反映
 
 ```bash
 # firebase-tools でデプロイ（プロジェクト ballpuzzle-8cc87 のオーナー権限が必要）
@@ -34,6 +54,10 @@ npx firebase deploy --only database --config firebase/firebase.json --project ba
 ```
 
 または Firebase コンソール → Realtime Database → ルール に `database.rules.json` の内容を貼り付けます。
+
+Claude Code のクラウド環境から反映させたい場合は、環境設定（セッション画面のクラウド環境メニュー → Edit）の
+Network secrets / 環境変数に `FIREBASE_SERVICE_ACCOUNT`（上記 JSON）を登録してください。新しいセッションで
+`GOOGLE_APPLICATION_CREDENTIALS` に書き出して同じコマンドを実行できます。チャットにキーを貼らないでください。
 
 ローカルで契約テストを走らせる（Java 11+ が必要）:
 
