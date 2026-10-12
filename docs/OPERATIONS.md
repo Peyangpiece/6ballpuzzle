@@ -2,19 +2,19 @@
 
 ## デプロイ
 
-- `main` への push で `.github/workflows/validate.yml` が validate → rules → deploy を実行します。
-  Pull Request では validate と rules のみ走り、デプロイしません。
-- deploy ジョブは `npm ci` の後に `wrangler deploy` を実行します。`wrangler.jsonc` の `build.command`
-  （`npm run build`）が先に走って `dist/` を生成し、`dist/deploy-sha.txt` にコミット SHA を書きます。
-  配信された `/deploy-sha.txt` が一致するまで最大 60 秒待って検証します。
-- このリポジトリには Cloudflare 側の Git 連携（Workers Builds）も接続されており、push ごとに Cloudflare が
-  `npx wrangler deploy` を実行します。同じ `build.command` が走るため、GitHub Actions と Workers Builds の
-  どちらが後に完了しても配信内容は同一です（`deploy-sha.txt` は `GITHUB_SHA` / `WORKERS_CI_COMMIT_SHA` /
-  `git rev-parse HEAD` の順で決まります）。Node のバージョンは `.node-version`（22）で固定しています。
-  二重デプロイを避けたい場合は Cloudflare ダッシュボードで Git 連携を外すか、Actions の deploy ジョブを削除してください。
-- 必要なシークレット: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`（GitHub リポジトリの Secrets）。
+- **本番へのデプロイは Cloudflare 側の Git 連携（Workers Builds）が行います。** `main` への push ごとに Cloudflare が
+  リポジトリを取得し `npx wrangler deploy` を実行します。`wrangler.jsonc` の `build.command`（`npm run build`）が
+  先に走って `dist/` を生成し、`dist/deploy-sha.txt` にコミット SHA を書きます。Node のバージョンは
+  `.node-version`（22）で固定しています。
+- GitHub Actions（`.github/workflows/validate.yml`）は `main` への push と Pull Request で validate と rules を実行し、
+  `main` では加えて `verify-production` ジョブが「本番の `/deploy-sha.txt` がそのコミットになるまで最大 25 分待つ」
+  検証を行います。Actions 自身はデプロイしません（以前は両方がデプロイしており、古いコミットのビルドが後から
+  上書きする競合が実際に起きたため、デプロイ元を 1 つにしました）。
+- Cloudflare の Git 連携を外す場合は、`validate.yml` の `verify-production` を `cloudflare/wrangler-action` による
+  デプロイに戻してください（`CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` のシークレットは残っています）。
 - `dist/_headers` でキャッシュ方針を配信します。ハッシュ付き `/js/* /css/* /vendor/*` は 1 年 immutable、
   `/index.html` と `/deploy-sha.txt` は no-cache、`/assets/*` は 1 日です。
+- Pull Request ごとに Cloudflare がプレビュー URL を PR コメントに投稿します（本番と同じビルド手順）。
 
 手元から配信物を確認する:
 

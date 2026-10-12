@@ -95,49 +95,31 @@ jobs:
           npm install --no-save --legacy-peer-deps firebase-tools@14.19.0 @firebase/rules-unit-testing@4.0.1 firebase@11.10.0
           npx firebase emulators:exec --config firebase/firebase.json --only database --project demo-6ball "node tests/firebase-rules.js"
 
-  deploy:
+  # Production is deployed by Cloudflare Workers Builds (the Git integration on
+  # the Cloudflare side runs `npx wrangler deploy`, which builds dist/ through
+  # wrangler.jsonc build.command).  Deploying from here as well created a race
+  # in which an older commit could overwrite a newer one, so this job only
+  # verifies that production serves this exact commit within the time budget.
+  verify-production:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: [validate, rules]
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: 6ball-deploy
-      cancel-in-progress: false
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22'
-          cache: npm
-      - run: npm ci
-
-      # `wrangler deploy` runs the custom build from wrangler.jsonc (npm run build),
-      # which also stamps dist/deploy-sha.txt from GITHUB_SHA.  Cloudflare Workers
-      # Builds (Git integration) runs the identical command, so both paths ship
-      # byte-identical output.
-      - name: Deploy 6ballpuzzle to Cloudflare
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: '4.123.0'
-          command: deploy
-
-      - name: Verify Cloudflare production commit
+      - name: Wait for Cloudflare Workers Builds to serve this commit
         shell: bash
         run: |
           set -euo pipefail
           expected="$GITHUB_SHA"
           url="https://6ballpuzzle.hrk-6888.workers.dev/deploy-sha.txt"
           observed=""
-          for attempt in $(seq 1 30); do
+          for attempt in $(seq 1 150); do
             observed="$(curl -fsS "${url}?run=${GITHUB_RUN_ID}-${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
             if [ "$observed" = "$expected" ]; then
               echo "Cloudflare production verified: $observed"
               exit 0
             fi
-            sleep 2
+            sleep 10
           done
-          echo "Expected: $expected"
-          echo "Observed: $observed"
+          echo "::error::Production still serves ${observed:-nothing} instead of ${expected} after 25 minutes. Check the Cloudflare Workers Builds log for 6ballpuzzle, or deploy manually with 'npx wrangler deploy'."
           exit 1
