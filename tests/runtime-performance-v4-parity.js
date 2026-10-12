@@ -131,6 +131,6 @@ return{
   contactCases,staticCases,fastFrames,fallbacks,
   workspaceCache:true,numericBuckets:true,pairArrays:false,columnIndex:true
 };
-})()`,ctx,{timeout:120000});
+})()`,ctx,{timeout:Number(process.env.TEST_VM_TIMEOUT_MS)||120000});
 
 console.log("runtime performance v4 parity PASS",JSON.stringify(result));

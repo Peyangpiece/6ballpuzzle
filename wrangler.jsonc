@@ -1,5 +1,6 @@
 {
+  // Production serves the built bundle in dist/ (npm run build). public/ is the dev tree.
   "name": "6ballpuzzle",
   "compatibility_date": "2026-08-16",
-  "assets": { "directory": "./public" }
+  "assets": { "directory": "./dist" }
 }

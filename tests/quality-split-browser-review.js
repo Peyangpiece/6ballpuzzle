@@ -2,7 +2,7 @@ const{chromium}=require('playwright'),fs=require('fs'),path=require('path'),asse
 const out=process.env.REVIEW_OUTPUT||path.join(__dirname,'../audit-results/reference-motion-2026-10-04/browser-split');
 (async()=>{
  fs.mkdirSync(out,{recursive:true});
- const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||undefined});
  try{
   const p=await browser.newPage({viewport:{width:1280,height:900}}),errors=[];
   p.on('pageerror',e=>errors.push(e.message));

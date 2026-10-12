@@ -5,8 +5,24 @@
   if(typeof window==="undefined"||window.__sixBallLocalBgmInstalled)return;
   window.__sixBallLocalBgmInstalled=true;
 
-  const HASH="2625608e666158082464c1d4052c228d5fd964d592ccc275947708fcf6ee2b5f";
-  const SRC="/assets/6ball-battle-bgm.mp3?v="+HASH.slice(0,16);
+  // The battle BGM ships as Opus (5.7 MB) with an AAC fallback (9.2 MB)
+  // instead of the former 21.6 MB MP3.  The browser picks the first format
+  // it can decode; both are re-encodes of the same 15-minute source.
+  const SOURCES=[
+    {src:"/assets/6ball-battle-bgm.ogg?v=1a8a07a1867c",type:'audio/ogg; codecs="opus"'},
+    {src:"/assets/6ball-battle-bgm.m4a?v=b54f4700e776",type:'audio/mp4; codecs="mp4a.40.2"'}
+  ];
+  function pickSource(){
+    try{
+      const probe=document.createElement("audio");
+      if(typeof probe.canPlayType==="function"){
+        for(const s of SOURCES){if(probe.canPlayType(s.type))return s;}
+      }
+    }catch(_){}
+    return SOURCES[SOURCES.length-1];
+  }
+  const PICKED=pickSource();
+  const SRC=PICKED.src;
   const BGM_OUTPUT_SCALE=0.10;
 
   const legacy=window.Bgm;
@@ -21,6 +37,7 @@
 
   const Bgm={
     audio:null,
+    warmed:false,
     wanted:false,
     primed:false,
     lastError:"",
@@ -32,7 +49,10 @@
       if(this.audio)return this.audio;
       if(typeof Audio==="undefined")return null;
       const a=new Audio();
-      a.preload="auto";
+      // Lazy: nothing is downloaded at page load.  The first menu gesture
+      // (prime) switches to preload="auto" so the file streams in before the
+      // match screen appears.
+      a.preload="none";
       a.loop=true;
       a.playsInline=true;
       a.setAttribute("playsinline","");
@@ -47,8 +67,16 @@
         this.lastError=e?`media-${e.code}`:"media-error";
         window.__sixBallGameplayBgmLastError=this.lastError;
       });
-      try{a.load();}catch(_){}
       this.audio=a;
+      return a;
+    },
+    warm(){
+      const a=this.init();
+      if(!a||this.warmed)return a;
+      this.warmed=true;
+      a.preload="auto";
+      try{a.load();}catch(_){}
+      window.__sixBallGameplayBgmWarmed=true;
       return a;
     },
     setVolume(v){
@@ -58,7 +86,7 @@
       if(this.audio&&this.wanted&&!this.audio.muted)this.audio.volume=this.effectiveVolume();
     },
     prime(){
-      const a=this.init();
+      const a=this.warm();
       if(!a)return Promise.resolve(false);
       a.muted=true;
       a.volume=0;
@@ -85,7 +113,7 @@
       }
     },
     activate(restart=false){
-      const a=this.init();
+      const a=this.warm();
       if(!a)return;
       this.wanted=true;
       if(restart){try{a.currentTime=0;}catch(_){}}
@@ -126,10 +154,11 @@
 
   window.Bgm=Bgm;
   window.__sixBallGameplayBgmSource=SRC;
-  window.__sixBallGameplayBgmUploadedSha256=HASH;
+  window.__sixBallGameplayBgmSourceType=PICKED.type;
+  window.__sixBallGameplayBgmLazy=true;
   window.__sixBallGameplayBgmSameOrigin=true;
   window.__sixBallGameplayBgmOutputScale=BGM_OUTPUT_SCALE;
-  window.__sixBallGameplayBgmVersion="6ball-audio-coexist-v2";
+  window.__sixBallGameplayBgmVersion="6ball-audio-lazy-opus-v3";
   window.__sixBallGameplayBgmReady=false;
   window.__sixBallGameplayBgmPlaying=false;
 

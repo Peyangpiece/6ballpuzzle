@@ -22,7 +22,7 @@ const result=vm.runInContext(`(()=>{
   }
  }
  return{seeds:dropSeeds,turns,phases};
-})()`,ctx,{timeout:240000});
+})()`,ctx,{timeout:Number(process.env.TEST_VM_TIMEOUT_MS)||240000});
 console.log('Instant drop progress',JSON.stringify(result));
 assert(!result.failure,'Instant drop must finish resolving and allow next piece');
 if(ctx.dropSeeds>=8){assert(result.phases.CLEAR>0);assert(result.phases.GARBAGE>0);}

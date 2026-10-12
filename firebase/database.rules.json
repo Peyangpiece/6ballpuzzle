@@ -1,0 +1,108 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['name', 'rating', 'wins', 'losses'])",
+        "name":      { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24" },
+        "wins":      { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)" },
+        "losses":    { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || newData.val() == data.val() || newData.val() == data.val() + 1)" },
+        "updatedAt": { ".validate": "newData.isNumber()" },
+        "lastMatch": {
+          ".validate": "newData.isString() && newData.val() != data.val() && root.child('matches/' + newData.val() + '/result').exists() && (root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid || root.child('matches/' + newData.val() + '/players/1/uid').val() == $uid)"
+        },
+        "rating": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 4000 && (!data.exists() ? newData.val() == 1000 : (newData.val() == data.val() || (newData.parent().child('lastMatch').val() != data.parent().child('lastMatch').val() && newData.val() - data.val() <= 32 && data.val() - newData.val() <= 32)))"
+        },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "leaderboard": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid",
+        ".validate": "newData.hasChildren(['name', 'rating']) && newData.child('rating').val() == root.child('users/' + $uid + '/rating').val()",
+        "name":   { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24" },
+        "rating": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    },
+
+    "lobby": {
+      "$band": {
+        "waiting": {
+          ".read": "auth != null",
+          ".write": "auth != null && $band.matches(/^[0-9]{1,2}$/) && (!newData.exists() || newData.child('uid').val() == auth.uid)",
+          ".validate": "newData.hasChildren(['uid', 'name', 'rating', 'ts']) && newData.child('ts').isNumber()"
+        }
+      }
+    },
+
+    "pairings": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && (!newData.exists() ? auth.uid == $uid : (newData.isString() && root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid && root.child('matches/' + newData.val() + '/players/1/uid').val() == auth.uid))"
+      }
+    },
+
+    "rooms": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && $code.matches(/^[0-9]{6}$/) && (!newData.exists() ? data.child('hostUid').val() == auth.uid : (!data.exists() || now - data.child('createdAt').val() > 1800000 ? newData.child('hostUid').val() == auth.uid && !newData.child('matchId').exists() : (data.child('hostUid').val() == newData.child('hostUid').val() && !data.child('matchId').exists() && newData.child('matchId').isString() && root.child('matches/' + newData.child('matchId').val() + '/players/0/uid').val() == data.child('hostUid').val() && root.child('matches/' + newData.child('matchId').val() + '/players/1/uid').val() == auth.uid)))",
+        ".validate": "newData.hasChildren(['hostUid', 'hostName', 'hostRating', 'createdAt']) && newData.child('createdAt').isNumber()"
+      }
+    },
+
+    "matches": {
+      "$mid": {
+        ".read": "auth != null && (data.child('players/0/uid').val() == auth.uid || data.child('players/1/uid').val() == auth.uid)",
+        ".write": "auth != null && !data.exists() && (newData.child('players/0/uid').val() == auth.uid || newData.child('players/1/uid').val() == auth.uid) && newData.child('players/0/uid').val() != newData.child('players/1/uid').val()",
+        ".validate": "newData.hasChildren(['meta', 'players'])",
+        "meta": {
+          ".validate": "newData.hasChildren(['seed', 'createdAt']) && newData.child('seed').isNumber()",
+          "ranked": { ".validate": "newData.isBoolean()" }
+        },
+        "players": {
+          "$i": {
+            ".validate": "($i == '0' || $i == '1') && newData.hasChildren(['uid', 'name', 'rating'])",
+            "uid":       { ".validate": "newData.isString()" },
+            "name":      { ".validate": "newData.isString() && newData.val().length <= 24" },
+            "rating":    { ".validate": "newData.isNumber()" },
+            "connected": {
+              ".write": "auth != null && data.parent().child('uid').val() == auth.uid",
+              ".validate": "newData.isBoolean()"
+            }
+          }
+        },
+        "state": {
+          "$i": {
+            ".write": "auth != null && root.child('matches/' + $mid + '/players/' + $i + '/uid').val() == auth.uid",
+            ".validate": "newData.hasChildren(['ts']) && newData.child('ts').isNumber()"
+          }
+        },
+        "attacks": {
+          "$target": {
+            "$push": {
+              ".write": "auth != null && !data.exists() && root.child('matches/' + $mid + '/players/' + ($target == '0' ? '1' : '0') + '/uid').val() == auth.uid",
+              ".validate": "newData.hasChildren(['n', 'ts']) && newData.child('n').isNumber() && newData.child('n').val() >= 0 && newData.child('n').val() <= 120 && newData.child('ts').isNumber()",
+              "shapes": {
+                "$k": { ".validate": "newData.isString() && (newData.val() == 'STRAIGHT' || newData.val() == 'PYRAMID' || newData.val() == 'HEXAGON')" }
+              }
+            }
+          }
+        },
+        "result": {
+          "$i": {
+            ".write": "auth != null && !data.exists() && root.child('matches/' + $mid + '/players/' + $i + '/uid').val() == auth.uid",
+            ".validate": "newData.hasChildren(['win', 'reason', 'ts']) && newData.child('win').isBoolean() && newData.child('reason').isString() && newData.child('ts').isNumber()"
+          }
+        }
+      }
+    }
+  }
+}

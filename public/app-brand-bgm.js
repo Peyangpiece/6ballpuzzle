@@ -43,38 +43,12 @@
         };
     }
 
-    // Rebuild the exact uploaded tap sound from text chunks already shipped in
-    // /public. This avoids relying on the truncated repository MP3 and produces
-    // the same 32,256 bytes verified by the deployment SHA-256 gate.
-    const MENU_CONFIRM_SHA256="97f2bcc23284ca8403ae6d6d06dbf4d40a9f6a8ca877eabdd747a85b3e89047e";
-    function readMenuChunkSync(name){
-        if(typeof XMLHttpRequest==="undefined")return"";
-        const x=new XMLHttpRequest();
-        x.open("GET","/assets/menu-confirm-42.b64."+name+"?v="+MENU_CONFIRM_SHA256.slice(0,16),false);
-        try{x.send(null);}catch(_){return"";}
-        if(x.status<200||x.status>=300)return"";
-        return String(x.responseText||"").replace(/[\r\n\t ]/g,"");
-    }
-    function buildMenuConfirmSource(){
-        try{
-            const p00=readMenuChunkSync("00"),p01=readMenuChunkSync("01"),p02=readMenuChunkSync("02"),tail=readMenuChunkSync("tail");
-            if(!p00||!p01||p02.length<5376||tail.length<5376)throw new Error("menu-audio-chunk-missing");
-            const b64=p00+p01+p02.slice(0,5376)+tail.slice(0,5376).repeat(5);
-            const raw=atob(b64);
-            if(raw.length!==32256)throw new Error("menu-audio-size-"+raw.length);
-            const bytes=new Uint8Array(raw.length);
-            for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i)&255;
-            const src=URL.createObjectURL(new Blob([bytes],{type:"audio/mpeg"}));
-            window.__sixBallMenuClickByteLength=raw.length;
-            window.__sixBallMenuClickSourceKind="rebuilt-exact-upload";
-            return src;
-        }catch(err){
-            window.__sixBallMenuClickBuildError=err&&err.message?String(err.message):"build-error";
-            window.__sixBallMenuClickSourceKind="asset-fallback";
-            return "/assets/menu-confirm-42.mp3?v="+MENU_CONFIRM_SHA256.slice(0,16);
-        }
-    }
-    const MENU_CONFIRM_SRC=buildMenuConfirmSource();
+    // Menu tap sound: one valid same-origin MP3 (see assets/.menu-click-source.txt).
+    // The former synchronous-XHR rebuild from text chunks never matched its
+    // expected byte length and always fell back to a truncated file.
+    const MENU_CONFIRM_SHA256="e61f3795412ba4368f466bf4a35b7d2320d97eda3b315d8c56ee09b4a937dbc8";
+    const MENU_CONFIRM_SRC="/assets/menu-confirm-42.mp3?v=e61f3795412b";
+    window.__sixBallMenuClickSourceKind="same-origin-asset";
     const MenuClick={
         pool:null,
         cursor:0,
@@ -118,11 +92,12 @@
     window.__sixBallMenuClickUploadedSha256=MENU_CONFIRM_SHA256;
     window.__sixBallMenuClickAllButtons=true;
     window.__sixBallMenuClickPointerDown=true;
-    window.__sixBallMenuClickRebuiltFromTextChunks=true;
-    window.__sixBallMenuClickVersion="menu42-v4-exact-rebuilt";
+    window.__sixBallMenuClickVersion="menu42-v5-asset";
 
-    const CYBER44_SRC="https://maou.audio/sound/bgm/maou_bgm_cyber44.mp3";
-    const UPLOADED_SHA256="4dedd2b97b80aca8ab47e9b797ad0e8a400c1e941a43b1c2b53aca40ea9cc532";
+    // Legacy gameplay-BGM adapter. app-bgm-local.js (loaded next) replaces it
+    // with the same-origin lazy player; this object never fetches anything.
+    const CYBER44_SRC="";
+    const UPLOADED_SHA256="";
     const Bgm={
         audio:null,wanted:false,primed:false,primePromise:null,lastError:"",volume:Number.isFinite(window.__hexBgmVolume)?window.__hexBgmVolume:.70,
         init(){if(this.audio)return this.audio;if(typeof Audio==="undefined")return null;const a=new Audio();a.preload="auto";a.loop=true;a.playsInline=true;a.setAttribute("playsinline","");a.volume=0;a.muted=true;a.src=CYBER44_SRC;a.addEventListener("error",()=>{const err=a.error;this.lastError=err?`media-${err.code}`:"media-error";window.__sixBallGameplayBgmLastError=this.lastError;});this.audio=a;return a;},
