@@ -11,9 +11,10 @@
 
 ## 既知の限界
 
-- 既定ではレート計算をクライアントが行います。ルールで振れ幅と回数を制限していますが、完全なサーバー権威では
-  ありません。`firebase/functions/` をデプロイして `config/ratingAuthority = "server"` にすると
-  サーバー裁定に切り替わります（[docs/OPERATIONS.md](docs/OPERATIONS.md)）。
+- レートはクライアントが計算して書きますが、ルールが「両者が参加した試合の結果と記録された相手レートから
+  Elo（K=32）で求めた値」との完全一致を検証するため、恣意的な値は書けません。残るのは多重アカウントによる
+  実対戦（サーバー裁定でも防げない）と、矛盾する結果を書いて相手のレート確定を妨げる嫌がらせです。
+  Blaze プランに移行する場合は `firebase/functions/` でサーバー裁定に切り替えられます（[docs/OPERATIONS.md](docs/OPERATIONS.md)）。
 - 匿名ログインが有効なため、アカウントの使い捨てによるリーダーボードの汚染は防げません。
   必要なら `leaderboard/$uid` の書込を `auth.token.firebase.sign_in_provider != 'anonymous'` に限定してください。
 

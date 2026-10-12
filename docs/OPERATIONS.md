@@ -70,15 +70,20 @@ npx firebase emulators:exec --config firebase/firebase.json --only database --pr
 
 | パス | 保証 |
 | --- | --- |
-| `users/$uid` | 本人のみ書込。初期レート 1000。レート変更は `lastMatch` が新しい終了済み試合（本人が参加）を指すときだけ、±32 以内。勝敗は +1 ずつ |
+| `users/$uid` | 本人のみ書込。初期レート 1000。レート変更は `lastMatch` が新しい終了済み試合（本人が参加、両者の `joinedAt` あり）を指すときだけ。`lastResult`（win / loss）は試合の `result` から導いた勝敗と一致しなければならず、新しいレートは **試合に記録された相手レートと現在の自分のレートから Elo（K=32）で計算した値と完全一致** が必要（ルール内に区間テーブルを埋め込み、`tools/elo-rules-table.js` で生成）。未ランク戦はレート不変。勝敗数は結果どおりに +1 |
 | `leaderboard/$uid` | 本人のみ。レートは `users/$uid/rating` と一致 |
-| `matches/$id` | 参加者のみ読取。作成は参加者本人のみ、上書き不可。`state/$i` `result/$i` `players/$i/connected` は該当プレイヤーのみ。`attacks/$i` は相手だけが追加でき、n は 0〜120、shapes は既知の技名のみ |
+| `matches/$id` | 参加者のみ読取。作成は参加者本人のみ、上書き不可。`players/$i/rating` は作成時点の `users/<uid>/rating` と一致必須。`players/$i/joinedAt` は本人が 1 回だけ書ける参加証明。`result/$i` は両者の `joinedAt` が揃ってから該当プレイヤーのみ。`state/$i` `players/$i/connected` は該当プレイヤーのみ。`attacks/$i` は相手だけが追加でき、n は 0〜120、shapes は既知の技名のみ |
 | `lobby` `pairings` `rooms` | なりすまし不可。ルームの参加は実在する試合（ホスト=players/0、参加者=players/1）に限る |
 
-### レート裁定をサーバー権威にする（推奨）
+これにより Cloud Functions なしでも、レートは「両者が実際に参加した試合の結果から機械的に決まる値」以外に書けません。
+残る理論上の抜け道は、攻撃者が自分で 2 つのアカウントを用意して実際に対戦する多重アカウントだけで、これは
+サーバー裁定でも防げない種類のものです。両者が矛盾する結果（双方が勝利を主張）を書いた試合はどちらのレートも
+確定しません（不正な利得は不可能、嫌がらせとしての確定妨害は可能）。
 
-既定ではクライアントがレートを計算し、ルールがその振れ幅と回数を制限します（偽の試合を自作して
-+32 ずつ稼ぐ経路は残ります）。これを塞ぐ Cloud Function を `firebase/functions/` に用意しています。
+### レート裁定をサーバー権威にする（任意、Blaze プランが必要）
+
+既定のクライアント裁定はルールで Elo 値まで厳密に検証されるため、通常は不要です。将来 Blaze プランに
+移行して Functions を使う場合の構成を `firebase/functions/` に用意しています。
 
 1. Firebase プロジェクトを Blaze プランにし、Functions を有効化する。
 2. デプロイ: `cd firebase/functions && npm install && npx firebase deploy --only functions --config ../firebase.json --project ballpuzzle-8cc87`

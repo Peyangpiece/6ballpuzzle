@@ -20,6 +20,7 @@ assert.deepStrictEqual(sanitizeAttackShapes("HEXAGON"), []);
 assert.strictEqual(sanitizeAttackShapes(new Array(50).fill("STRAIGHT")).length, 8);
 const net = fs.readFileSync(path.join(__dirname, "../public/app-15.js"), "utf8");
 assert(net.includes("async applyRating(win, foeRating, ranked, matchId = null)"), "applyRating must accept the match id");
-assert(net.includes("patch.lastMatch = matchId;"), "applyRating must record lastMatch for the rules replay guard");
+assert(net.includes("patch.lastMatch = matchId; patch.lastResult = win ? \"win\" : \"loss\";"), "applyRating must record lastMatch and lastResult for the rules");
+assert(net.includes('"/players/" + myIndex + "/joinedAt"'), "join must record the write-once joinedAt proof of participation");
 assert(src.includes("Net.applyRating(win,match.opponent?.rating||r,match.ranked,match.matchId)"), "App must pass the match id to applyRating");
 console.log("online attack sanitization PASS");

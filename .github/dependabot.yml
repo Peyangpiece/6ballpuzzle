@@ -4,7 +4,15 @@ updates:
     directory: /
     schedule: { interval: weekly }
     groups:
-      dev-tooling: { patterns: ["*"] }
+      dev-tooling:
+        patterns: ["*"]
+        exclude-patterns: ["tailwindcss"]
+    ignore:
+      # Tailwind 4 moved the CLI to @tailwindcss/cli and changed the config
+      # model; the precompiled-CSS pipeline (tailwind.config.js, npm run
+      # build:css) is written for 3.x.  Upgrade deliberately, not via a bot.
+      - dependency-name: tailwindcss
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: npm
     directory: /firebase/functions
     schedule: { interval: weekly }
