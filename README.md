@@ -59,7 +59,7 @@ npm run docs:layers    # docs/ARCHITECTURE.generated.md を再生成
 2. `npm test`（Node 回帰 42 本 + FPS 掃引 20 本。本家映像との位置誤差、ビルド契約、オンライン入力・レート裁定の検証を含む）
 3. 本番ビルドと Playwright による実ブラウザ煙テスト
 4. Firebase ルールの契約テスト（エミュレータ）
-5. `main` のみ: Cloudflare へデプロイし、配信された `deploy-sha.txt` がコミット SHA と一致することを確認
+5. `main` のみ: Cloudflare Workers Builds（Git 連携）がデプロイした本番の `deploy-sha.txt` がコミット SHA と一致するまで待って確認
 
 ## ドキュメント
 
