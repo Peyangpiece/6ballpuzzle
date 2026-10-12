@@ -2,5 +2,8 @@
   // Production serves the built bundle in dist/ (npm run build). public/ is the dev tree.
   "name": "6ballpuzzle",
   "compatibility_date": "2026-08-16",
+  // `wrangler deploy` runs this first, so Cloudflare Workers Builds (Git integration)
+  // and the GitHub Actions deploy both ship the same freshly built dist/.
+  "build": { "command": "npm run build", "watch_dir": "public" },
   "assets": { "directory": "./dist" }
 }

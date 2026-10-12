@@ -4,8 +4,14 @@
 
 - `main` への push で `.github/workflows/validate.yml` が validate → rules → deploy を実行します。
   Pull Request では validate と rules のみ走り、デプロイしません。
-- deploy ジョブは validate がアップロードした `dist/` をそのまま Cloudflare Workers（静的アセット）へ
-  `wrangler deploy` し、配信された `/deploy-sha.txt` がコミット SHA と一致するまで最大 60 秒待って検証します。
+- deploy ジョブは `npm ci` の後に `wrangler deploy` を実行します。`wrangler.jsonc` の `build.command`
+  （`npm run build`）が先に走って `dist/` を生成し、`dist/deploy-sha.txt` にコミット SHA を書きます。
+  配信された `/deploy-sha.txt` が一致するまで最大 60 秒待って検証します。
+- このリポジトリには Cloudflare 側の Git 連携（Workers Builds）も接続されており、push ごとに Cloudflare が
+  `npx wrangler deploy` を実行します。同じ `build.command` が走るため、GitHub Actions と Workers Builds の
+  どちらが後に完了しても配信内容は同一です（`deploy-sha.txt` は `GITHUB_SHA` / `WORKERS_CI_COMMIT_SHA` /
+  `git rev-parse HEAD` の順で決まります）。Node のバージョンは `.node-version`（22）で固定しています。
+  二重デプロイを避けたい場合は Cloudflare ダッシュボードで Git 連携を外すか、Actions の deploy ジョブを削除してください。
 - 必要なシークレット: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`（GitHub リポジトリの Secrets）。
 - `dist/_headers` でキャッシュ方針を配信します。ハッシュ付き `/js/* /css/* /vendor/*` は 1 年 immutable、
   `/index.html` と `/deploy-sha.txt` は no-cache、`/assets/*` は 1 日です。

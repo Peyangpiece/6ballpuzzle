@@ -18,6 +18,7 @@ for (const key of ["bundle", "css", "react", "reactDom"]) {
   assert(/\.[0-9a-f]{12}\./.test(manifest[key]), `${key} must be content-hashed`);
 }
 assert(fs.existsSync(path.join(out, manifest.bundle + ".map")), "source map must ship");
+assert(/^[0-9a-f]{40}\n$/.test(fs.readFileSync(path.join(out, "deploy-sha.txt"), "utf8")), "deploy-sha.txt must hold the commit sha");
 assert(!fs.readdirSync(out).some(f => /^(app-|controls-)/.test(f)), "individual runtime scripts must not ship");
 const headers = fs.readFileSync(path.join(out, "_headers"), "utf8");
 assert(/\/js\/\*\n\s+Cache-Control: public, max-age=31536000, immutable/.test(headers), "hashed js must be immutable-cached");

@@ -121,8 +121,11 @@ async function main() {
     "/assets/*", "  Cache-Control: public, max-age=86400", "",
     "/*", "  X-Content-Type-Options: nosniff", "  Referrer-Policy: strict-origin-when-cross-origin", ""
   ].join("\n"));
+  // Deployment stamp: the verify step compares this with the pushed commit.
+  const sha = process.env.GITHUB_SHA || process.env.WORKERS_CI_COMMIT_SHA || (() => { try { return require("child_process").execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, stdio: "pipe" }).toString().trim(); } catch (_) { return "unknown"; } })();
+  fs.writeFileSync(path.join(DIST, "deploy-sha.txt"), sha + "\n");
   const manifest = {
-    builtAt: new Date().toISOString(),
+    builtAt: new Date().toISOString(), commit: sha,
     bundle: `/js/${bundleName}`, css: `/css/${cssName}`,
     react: `/vendor/${reactName}`, reactDom: `/vendor/${reactDomName}`,
     files, rawBytes: Buffer.byteLength(concat), minBytes: Buffer.byteLength(bundleCode)
