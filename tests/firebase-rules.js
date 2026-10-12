@@ -7,6 +7,8 @@ const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@fir
 const host = process.env.FIREBASE_DATABASE_EMULATOR_HOST || "127.0.0.1:9000";
 const [emuHost, emuPort] = host.split(":");
 const rules = fs.readFileSync(path.join(__dirname, "..", "firebase", "database.rules.json"), "utf8");
+const clientSrc = fs.readFileSync(path.join(__dirname, "..", "public", "app-14.js"), "utf8");
+const eloDelta = new Function(/const eloDelta = \(mine, foe, win\) => [^;]*;/.exec(clientSrc)[0] + "return eloDelta;")();
 let passed = 0, failed = 0;
 async function ok(label, p) { try { await assertSucceeds(p); passed++; console.log("  ok   " + label); } catch (e) { failed++; console.log("  FAIL " + label + " :: " + (e && e.message || e).split("\n")[0]); } }
 async function deny(label, p) { try { await assertFails(p); passed++; console.log("  ok   " + label + " (denied)"); } catch (e) { failed++; console.log("  FAIL " + label + " :: expected denial"); } }
@@ -33,7 +35,14 @@ async function deny(label, p) { try { await assertFails(p); passed++; console.lo
   const mid = "m1";
   const match = { meta: { seed: 123, ranked: true, createdAt: Date.now() }, players: { 0: { uid: "uidA", name: "Alice", rating: 1000, connected: false }, 1: { uid: "uidB", name: "Bob", rating: 1000, connected: false } } };
   await deny("C cannot create a match between A and B", C.ref("matches/" + mid).set(match));
+  await deny("match must record the opponent's true rating", B.ref("matches/" + mid).set({ ...match, players: { 0: { ...match.players[0], rating: 1900 }, 1: match.players[1] } }));
+  await deny("match must record the creator's true rating", B.ref("matches/" + mid).set({ ...match, players: { 0: match.players[0], 1: { ...match.players[1], rating: 100 } } }));
   await ok("B (a player) creates the match", B.ref("matches/" + mid).set(match));
+  await ok("A records joinedAt", A.ref("matches/" + mid + "/players/0/joinedAt").set(Date.now()));
+  await deny("joinedAt is write-once", A.ref("matches/" + mid + "/players/0/joinedAt").set(Date.now() + 1));
+  await deny("A cannot forge B's joinedAt", A.ref("matches/" + mid + "/players/1/joinedAt").set(Date.now()));
+  await deny("no result before both players joined", A.ref("matches/" + mid + "/result/0").set({ win: true, reason: "foe-dead", ts: Date.now() }));
+  await ok("B records joinedAt", B.ref("matches/" + mid + "/players/1/joinedAt").set(Date.now()));
   await deny("match cannot be overwritten", A.ref("matches/" + mid).set(match));
   await deny("C cannot read the match", C.ref("matches/" + mid).get());
   await ok("A reads the match", A.ref("matches/" + mid).get());
@@ -51,12 +60,18 @@ async function deny(label, p) { try { await assertFails(p); passed++; console.lo
   await deny("result is write-once", A.ref("matches/" + mid + "/result/0").set({ win: true, reason: "again", ts: Date.now() }));
 
   console.log("rating");
-  await ok("A applies +16 after match m1", A.ref("users/uidA").update({ rating: 1016, wins: 1, losses: 0, lastMatch: mid, updatedAt: Date.now() }));
-  await deny("same match cannot be applied twice", A.ref("users/uidA").update({ rating: 1032, wins: 2, losses: 0, lastMatch: mid, updatedAt: Date.now() }));
-  await deny("rating jump beyond K-factor", A.ref("users/uidA").update({ rating: 1500, wins: 1, losses: 0, lastMatch: "m-none", updatedAt: Date.now() }));
-  await deny("lastMatch must reference a finished match with A", C.ref("users/uidC").set(profile("uidC")).then(() => C.ref("users/uidC").update({ rating: 1016, wins: 1, losses: 0, lastMatch: mid, updatedAt: Date.now() })));
-  await deny("wins cannot jump", B.ref("users/uidB").update({ rating: 984, wins: 0, losses: 5, lastMatch: mid, updatedAt: Date.now() }));
-  await ok("B applies -16 after match m1", B.ref("users/uidB").update({ rating: 984, wins: 0, losses: 1, lastMatch: mid, updatedAt: Date.now() }));
+  await deny("rating without lastResult", A.ref("users/uidA").update({ rating: 1016, wins: 1, losses: 0, lastMatch: mid, updatedAt: Date.now() }));
+  await deny("rating with the wrong delta (+15)", A.ref("users/uidA").update({ rating: 1015, wins: 1, losses: 0, lastMatch: mid, lastResult: "win", updatedAt: Date.now() }));
+  await deny("rating with the wrong delta (+17)", A.ref("users/uidA").update({ rating: 1017, wins: 1, losses: 0, lastMatch: mid, lastResult: "win", updatedAt: Date.now() }));
+  await deny("winner cannot claim a loss", A.ref("users/uidA").update({ rating: 984, wins: 0, losses: 1, lastMatch: mid, lastResult: "loss", updatedAt: Date.now() }));
+  await deny("wins must follow the outcome", A.ref("users/uidA").update({ rating: 1016, wins: 0, losses: 0, lastMatch: mid, lastResult: "win", updatedAt: Date.now() }));
+  await ok("A applies the exact +16 after match m1", A.ref("users/uidA").update({ rating: 1016, wins: 1, losses: 0, lastMatch: mid, lastResult: "win", updatedAt: Date.now() }));
+  await deny("same match cannot be applied twice", A.ref("users/uidA").update({ rating: 1032, wins: 2, losses: 0, lastMatch: mid, lastResult: "win", updatedAt: Date.now() }));
+  await deny("rating change without a real match", A.ref("users/uidA").update({ rating: 1500, wins: 1, losses: 0, lastMatch: "m-none", lastResult: "win", updatedAt: Date.now() }));
+  await deny("lastMatch must reference a finished match with A", C.ref("users/uidC").set(profile("uidC")).then(() => C.ref("users/uidC").update({ rating: 1016, wins: 1, losses: 0, lastMatch: mid, lastResult: "win", updatedAt: Date.now() })));
+  await deny("loser cannot claim a win", B.ref("users/uidB").update({ rating: 1016, wins: 1, losses: 0, lastMatch: mid, lastResult: "win", updatedAt: Date.now() }));
+  await deny("losses cannot jump", B.ref("users/uidB").update({ rating: 984, wins: 0, losses: 5, lastMatch: mid, lastResult: "loss", updatedAt: Date.now() }));
+  await ok("B applies the exact -16 after match m1", B.ref("users/uidB").update({ rating: 984, wins: 0, losses: 1, lastMatch: mid, lastResult: "loss", updatedAt: Date.now() }));
 
   console.log("leaderboard");
   await ok("A publishes own leaderboard entry", A.ref("leaderboard/uidA").set({ name: "Alice", rating: 1016 }));
@@ -86,15 +101,57 @@ async function deny(label, p) { try { await assertFails(p); passed++; console.lo
   await deny("B cannot delete A's room", B.ref("rooms/123456").set(null));
   await ok("A deletes own room", A.ref("rooms/123456").set(null));
 
+  console.log("unranked room match, contradictory results, Elo parity sweep");
+  const admin = fn => env.withSecurityRulesDisabled(ctx => fn(ctx.database()));
+  await admin(db => db.ref("users/uidB/lastMatch").set(null));
+  await ok("B joins room match m3", B.ref("matches/" + mid3 + "/players/1/joinedAt").set(Date.now()));
+  await ok("A joins room match m3", A.ref("matches/" + mid3 + "/players/0/joinedAt").set(Date.now()));
+  await ok("B reports m3 loss", B.ref("matches/" + mid3 + "/result/1").set({ win: false, reason: "dead", ts: Date.now() }));
+  await deny("unranked: rating must not move", A.ref("users/uidA").update({ rating: 1032, wins: 2, losses: 0, lastMatch: mid3, lastResult: "win", updatedAt: Date.now() }));
+  await ok("unranked: win counted, rating unchanged", A.ref("users/uidA").update({ rating: 1016, wins: 2, losses: 0, lastMatch: mid3, lastResult: "win", updatedAt: Date.now() }));
+  await ok("unranked: loss counted for B", B.ref("users/uidB").update({ rating: 984, wins: 0, losses: 2, lastMatch: mid3, lastResult: "loss", updatedAt: Date.now() }));
+  const mid5 = "m5";
+  await ok("A creates m5", A.ref("matches/" + mid5).set({ meta: { seed: 5, ranked: true, createdAt: Date.now() }, players: { 0: { uid: "uidA", name: "Alice", rating: 1016, connected: false }, 1: { uid: "uidB", name: "Bob", rating: 984, connected: false } } }));
+  await ok("A joins m5", A.ref("matches/" + mid5 + "/players/0/joinedAt").set(Date.now()));
+  await ok("B joins m5", B.ref("matches/" + mid5 + "/players/1/joinedAt").set(Date.now()));
+  await ok("A claims m5 win", A.ref("matches/" + mid5 + "/result/0").set({ win: true, reason: "foe-dead", ts: Date.now() }));
+  await ok("B also claims m5 win (contradiction)", B.ref("matches/" + mid5 + "/result/1").set({ win: true, reason: "foe-dead", ts: Date.now() }));
+  await deny("contradictory results settle nobody (B)", B.ref("users/uidB").update({ rating: 984 + eloDelta(984, 1016, true), wins: 1, losses: 2, lastMatch: mid5, lastResult: "win", updatedAt: Date.now() }));
+  await deny("contradictory results settle nobody (A)", A.ref("users/uidA").update({ rating: 1016 + eloDelta(1016, 984, true), wins: 3, losses: 0, lastMatch: mid5, lastResult: "win", updatedAt: Date.now() }));
+  let seed = 20261012; const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  let sweepOk = 0, sweepDenied = 0;
+  for (let i = 0; i < 40; i++) {
+    const m = Math.floor(rnd() * 4001), f = Math.floor(rnd() * 4001), w = rnd() < 0.5;
+    const X = "sx" + i, Y = "sy" + i, mid = "sweep" + i;
+    await admin(async db => {
+      await db.ref("users/" + X).set({ name: X, rating: m, wins: 0, losses: 0, updatedAt: 1 });
+      await db.ref("users/" + Y).set({ name: Y, rating: f, wins: 0, losses: 0, updatedAt: 1 });
+      await db.ref("matches/" + mid).set({ meta: { seed: i, ranked: true, createdAt: 1 }, players: { 0: { uid: X, name: X, rating: m, connected: true, joinedAt: 1 }, 1: { uid: Y, name: Y, rating: f, connected: true, joinedAt: 1 } }, result: { 0: { win: w, reason: "t", ts: 1 } } });
+    });
+    const cx = env.authenticatedContext(X).database(), cy = env.authenticatedContext(Y).database();
+    const dx = eloDelta(m, f, w), dy = eloDelta(f, m, !w);
+    const rx = Math.max(0, m + dx), ry = Math.max(0, f + dy);
+    const wrongX = rx + (rx < 4000 ? 1 : -1), wrongY = ry + (ry < 4000 ? 1 : -1);
+    try { await assertFails(cx.ref("users/" + X).update({ rating: wrongX, wins: w ? 1 : 0, losses: w ? 0 : 1, lastMatch: mid, lastResult: w ? "win" : "loss", updatedAt: 2 })); sweepDenied++; } catch (e) { failed++; console.log(`  FAIL sweep ${i} accepted wrong X rating ${wrongX} (m=${m} f=${f} w=${w})`); }
+    try { await assertSucceeds(cx.ref("users/" + X).update({ rating: rx, wins: w ? 1 : 0, losses: w ? 0 : 1, lastMatch: mid, lastResult: w ? "win" : "loss", updatedAt: 2 })); sweepOk++; } catch (e) { failed++; console.log(`  FAIL sweep ${i} rejected correct X rating ${rx} (m=${m} f=${f} w=${w})`); }
+    try { await assertFails(cy.ref("users/" + Y).update({ rating: wrongY, wins: w ? 0 : 1, losses: w ? 1 : 0, lastMatch: mid, lastResult: w ? "loss" : "win", updatedAt: 2 })); sweepDenied++; } catch (e) { failed++; console.log(`  FAIL sweep ${i} accepted wrong Y rating ${wrongY}`); }
+    try { await assertSucceeds(cy.ref("users/" + Y).update({ rating: ry, wins: w ? 0 : 1, losses: w ? 1 : 0, lastMatch: mid, lastResult: w ? "loss" : "win", updatedAt: 2 })); sweepOk++; } catch (e) { failed++; console.log(`  FAIL sweep ${i} rejected correct Y rating ${ry} (m=${m} f=${f} w=${w})`); }
+  }
+  passed += sweepOk + sweepDenied;
+  console.log(`  ok   Elo parity sweep: ${sweepOk} exact settlements accepted, ${sweepDenied} off-by-one settlements denied`);
+
   console.log("server rating authority (config/ratingAuthority = 'server')");
   await deny("clients cannot write config", A.ref("config/ratingAuthority").set("client"));
   await env.withSecurityRulesDisabled(ctx => ctx.database().ref("config/ratingAuthority").set("server"));
   await ok("signed-in clients read the authority flag", A.ref("config/ratingAuthority").get());
   const mid4 = "m4";
   await ok("A creates match m4", A.ref("matches/" + mid4).set({ meta: { seed: 4, ranked: true, createdAt: Date.now() }, players: { 0: { uid: "uidA", name: "Alice", rating: 1016, connected: false }, 1: { uid: "uidB", name: "Bob", rating: 984, connected: false } } }));
+  await ok("A joins m4", A.ref("matches/" + mid4 + "/players/0/joinedAt").set(Date.now()));
+  await ok("B joins m4", B.ref("matches/" + mid4 + "/players/1/joinedAt").set(Date.now()));
   await ok("A reports m4 result", A.ref("matches/" + mid4 + "/result/0").set({ win: true, reason: "foe-dead", ts: Date.now() }));
-  await deny("server mode: client cannot move its rating even for a real match", A.ref("users/uidA").update({ rating: 1032, wins: 2, losses: 0, lastMatch: mid4, updatedAt: Date.now() }));
-  await deny("server mode: client cannot bump wins", A.ref("users/uidA").update({ wins: 2, updatedAt: Date.now() }));
+  await deny("server mode: client cannot move its rating even for a real match", A.ref("users/uidA").update({ rating: 1032, wins: 2, losses: 0, lastMatch: mid4, lastResult: "win", updatedAt: Date.now() }));
+  await deny("server mode: client cannot bump wins", A.ref("users/uidA").update({ wins: 3, updatedAt: Date.now() }));
+  await deny("server mode: client cannot bump wins even with a new match", A.ref("users/uidA").update({ wins: 3, lastMatch: mid4, lastResult: "win", updatedAt: Date.now() }));
   await deny("server mode: client cannot write a settlement", A.ref("matches/" + mid4 + "/settlement/uidA").set({ delta: 16, rating: 1032, wins: 2, losses: 0 }));
   await ok("server mode: nickname edits still work", A.ref("users/uidA").update({ name: "Alice2", updatedAt: Date.now() }));
   await ok("server mode: leaderboard mirror with the stored rating still works", A.ref("leaderboard/uidA").set({ name: "Alice2", rating: 1016 }));
