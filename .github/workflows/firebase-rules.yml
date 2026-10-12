@@ -1,0 +1,105 @@
+name: Deploy Firebase Database Rules
+
+# Deploys firebase/database.rules.json to the production Realtime Database
+# (project ballpuzzle-8cc87) after the emulator contract test passes.
+#
+# Required secret: FIREBASE_SERVICE_ACCOUNT = the JSON key of a service account
+# in project ballpuzzle-8cc87 with the "Firebase Realtime Database Admin"
+# role (roles/firebasedatabase.admin).  See docs/OPERATIONS.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - firebase/database.rules.json
+      - firebase/firebase.json
+      - .github/workflows/firebase-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-rules
+  cancel-in-progress: false
+
+env:
+  FIREBASE_PROJECT: ballpuzzle-8cc87
+  DATABASE_URL: https://ballpuzzle-8cc87-default-rtdb.asia-southeast1.firebasedatabase.app
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Realtime Database rules contract (emulator)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --legacy-peer-deps firebase-tools@14.19.0 @firebase/rules-unit-testing@4.0.1 firebase@11.10.0
+          npx firebase emulators:exec --config firebase/firebase.json --only database --project demo-6ball "node tests/firebase-rules.js"
+
+  deploy:
+    needs: contract
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: firebase-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require the deploy credential
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT}" ]; then
+            echo "::error::Secret FIREBASE_SERVICE_ACCOUNT is not set. Add the service-account JSON (role: Firebase Realtime Database Admin) under Settings > Secrets and variables > Actions, then re-run this workflow."
+            exit 1
+          fi
+          printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${RUNNER_TEMP}/firebase-sa.json"
+          python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d.get("type")=="service_account" and d.get("project_id")=="ballpuzzle-8cc87", "secret is not a service-account key for ballpuzzle-8cc87"; print("service account:", d["client_email"])' "${RUNNER_TEMP}/firebase-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=${RUNNER_TEMP}/firebase-sa.json" >> "$GITHUB_ENV"
+
+      - name: Deploy rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save firebase-tools@14.19.0
+          npx firebase deploy --only database --config firebase/firebase.json --project "$FIREBASE_PROJECT" --non-interactive --force
+
+      - name: Verify the live rules equal the repository rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS" --quiet
+          token="$(gcloud auth print-access-token)"
+          curl -fsS -H "Authorization: Bearer ${token}" "${DATABASE_URL}/.settings/rules.json" > "${RUNNER_TEMP}/live-rules.json"
+          python3 - "${RUNNER_TEMP}/live-rules.json" firebase/database.rules.json <<'EOF'
+          import json, re, sys
+          def load(p):
+              s = open(p, encoding="utf-8").read()
+              s = re.sub(r'(?m)^\s*//.*$', '', s)  # the server may echo comments back
+              return json.loads(s)
+          live, repo = load(sys.argv[1]), load(sys.argv[2])
+          if live != repo:
+              print("::error::Live rules differ from firebase/database.rules.json")
+              sys.exit(1)
+          print("Live rules verified: identical to the repository file")
+          EOF
+
+      - name: Scrub credential
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/firebase-sa.json"
