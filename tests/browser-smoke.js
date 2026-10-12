@@ -15,7 +15,16 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
 
 (async () => {
   const server = spawn(process.execPath, [path.join(root, "tools/serve.js"), distDir], { env: { ...process.env, PORT: String(port) }, stdio: "pipe" });
-  await new Promise(r => server.stdout.once("data", r));
+  // Fail loudly if the static server cannot start (for example when the port
+  // is taken); an unresolved promise here would otherwise end the process
+  // silently with exit code 0.
+  await new Promise((resolve, reject) => {
+    let err = "";
+    server.stdout.once("data", resolve);
+    server.stderr.on("data", d => { err += d; });
+    server.once("exit", code => reject(new Error(`static server exited with code ${code} before becoming ready on port ${port}: ${err.trim()}`)));
+    setTimeout(() => reject(new Error("static server did not start within 15 s")), 15000).unref();
+  });
   const url = `http://127.0.0.1:${port}/`;
   const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_PATH || undefined });
   try {
