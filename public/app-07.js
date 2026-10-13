@@ -100,7 +100,12 @@ function enforcePileGravitySegment(seg,reason="pile_flow",ball=null){
             // A same-row support is avoided by falling first; a lower support
             // is avoided by separating laterally early. Neither is a circle.
             seg.pileGravityLateralMode=originalPivot[1]===seg.from[1]?"late":"early";
-        }else seg.pileGravityLateralMode="linear";
+        }else{
+            // With nothing to roll round, an ordinary ball released by a clear
+            // drops first and shifts onto its lattice cell at the end
+            // (2026-10-13 capture, yellow [11,10] -> [10,11]).
+            seg.pileGravityLateralMode=reason==="clear_support_loss"&&!ball?.isGarbage?"late":"linear";
+        }
     }
     seg.pileGravityFall=true;
     seg.pileGravityReason=reason;
@@ -111,13 +116,16 @@ function enforcePileGravitySegment(seg,reason="pile_flow",ball=null){
     return true;
 }
 
-// A ball that lands on a resting ball at the end of a support-loss fall keeps
-// its speed and rolls round that ball under gravity (clip 3, F622-F626), rather
-// than restarting a fixed five-frame roll.  The profile maps the segment's time
-// fraction to its angle fraction; speed^2 = v0^2 + 2 g (drop along the arc).
+// An ordinary ball rolling round a resting ball after a clear accelerates under
+// gravity from its current speed: a ball landing from a fall keeps its speed
+// (clip 3, F622-F626) and a ball released at rest starts slowly (2026-10-13
+// capture, green [6,9] round red [5,10]), rather than a fixed five-frame roll.
+// The profile maps the segment's time fraction to its angle fraction;
+// speed^2 = v0^2 + 2 g (drop along the arc).
 function clearSupportLossRollProfile(a0,da,v0,g){
-    const N=48,speed=u=>Math.sqrt(Math.max(1e-6,v0*v0+2*g*(Math.sin(a0+da*u)-Math.sin(a0)))),times=[0];
-    for(let i=1;i<=N;i++){const u0=(i-1)/N,u1=i/N;times.push(times[i-1]+Math.abs(da)/N*.5*(1/speed(u0)+1/speed(u1)));}
+    // Midpoint rule: finite for a roll that starts from rest (v0=0).
+    const N=96,speed=u=>Math.sqrt(Math.max(1e-6,v0*v0+2*g*(Math.sin(a0+da*u)-Math.sin(a0)))),times=[0];
+    for(let i=1;i<=N;i++)times.push(times[i-1]+Math.abs(da)/N/speed((i-.5)/N));
     const duration=times[N];return{duration,times:times.map(t=>t/Math.max(1e-9,duration))};
 }
 function pileRollProgress(seg,t){
@@ -128,6 +136,8 @@ function pileRollProgress(seg,t){
 }
 function pileFlowPoint(seg,t){
     t=Math.max(0,Math.min(1,t));
+    // A carried ball moves along its support's path, translated (no overlap by construction).
+    if(seg.pileCarriedSeg){const c=seg.pileCarriedSeg,p=pileFlowPoint(c,t);return[seg.from[0]+p[0]-c.from[0],seg.from[1]+p[1]-c.from[1]];}
     if(seg.pileGravityFall)return pileGravityPoint(seg,t);
     const H=HEX_ROW_H;
     const qStraight=seg.pileFlowEntry?t*t*(2-t):t;
@@ -146,12 +156,10 @@ function pileFlowPoint(seg,t){
 
 function pileFlowNominalDuration(seg,state){
     const H=HEX_ROW_H,dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];
-    // Only the segment immediately after a support-loss fall inherits its landing.
-    const landedFromClearFall=!!state.clearSupportLossFall;delete state.clearSupportLossFall;
     if(seg.pileGravityFall&&dy>0&&seg.pileFlowReason==="clear_support_loss"&&!seg._pileFlowBall?.isGarbage){
         const a=CLEAR_SUPPORT_LOSS_GRAV/H,vmax=CLEAR_SUPPORT_LOSS_TERMINAL_VY/H,v0=Math.min(vmax,Math.max(0,Number.isFinite(state.vy)?state.vy:0)),duration=clearSupportLossFallDuration(dy,v0,a,vmax);
         seg.pileGravityTerminal={a,vmax};seg.pileGravityV0=v0;seg.pileGravityDuration=Math.max(1/120,duration);
-        state.vy=Math.min(vmax,v0+a*duration);state.speed=Math.max(state.speed||0,state.vy*H);state.clearSupportLossFall=true;
+        state.vy=Math.min(vmax,v0+a*duration);state.speed=Math.max(state.speed||0,state.vy*H);
         return seg.pileGravityDuration;
     }
     if(seg.pileGravityFall&&dy>0){
@@ -170,7 +178,7 @@ function pileFlowNominalDuration(seg,state){
     if(seg.pivot){
         const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*0.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*0.5);let da=a1-a0;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
         const radius=Math.hypot((seg.from[0]-px)*0.5,(seg.from[1]-py)*H);
-        if(landedFromClearFall&&seg.pileFlowReason==="clear_support_loss"&&Math.abs(radius-1)<PILE_FLOW_CONTACT_EPS&&Math.sin(a0+da)>Math.sin(a0)){
+        if(seg.pileFlowReason==="clear_support_loss"&&!seg._pileFlowBall?.isGarbage&&Math.abs(radius-1)<PILE_FLOW_CONTACT_EPS&&Math.sin(a0+da)>Math.sin(a0)){
             const v0=Math.max(0,state.vy||0)*H,profile=clearSupportLossRollProfile(a0,da,v0,CLEAR_SUPPORT_LOSS_GRAV);
             seg.pileRollProfile=profile;
             const v1=Math.sqrt(Math.max(0,v0*v0+2*CLEAR_SUPPORT_LOSS_GRAV*(Math.sin(a1)-Math.sin(a0))));
@@ -269,18 +277,35 @@ function pileFlowAttachCausalSupports(g,ball,seg,start,duration){
     seg.followSupportIds=ids;seg.movingSupportId=ids[0];seg.pileFlowInferredSupport=true;return true;
 }
 
-// A ball whose first fall begins while it rests on another ball that is itself
-// starting a support-loss fall follows that support CLEAR_SUPPORT_LOSS_STACK_DELAY later.
-function clearSupportLossStackStart(g,ball,seg){
-    if(!seg?.pileGravityTerminal||!seg.pileFlowEntry||!seg.from)return 0;
-    let start=0;
+// A ball resting on a ball that starts a support-loss move follows it
+// CLEAR_SUPPORT_LOSS_STACK_DELAY later (clip 3 F611/F613).  When both leave
+// along the same lattice vector the upper ball is carried: it moves along its
+// support's path, translated, on the support's clock (2026-10-13 capture,
+// yellow [7,8] riding green [6,9] into [8,9]).  Returns the earliest start, or NaN
+// while a support's own clock is not scheduled yet.
+function clearSupportLossStackSupports(g,ball,seg){
+    const out=[];
+    if(!seg?.pileFlowEntry||seg.pileFlowReason!=="clear_support_loss"||ball?.isGarbage||!seg.from)return out;
     // The board is already settled to destinations, so match on path origins.
     for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
-        const other=valid(x,y)?g.board[y][x]:null;if(!other||other===ball||!Array.isArray(other.fallPath))continue;
-        const first=other.fallPath[0];if(!first?.pileGravityTerminal||!first.pileFlowEntry||!Number.isFinite(first.pileFlowStart)||!first.from)continue;
+        const other=valid(x,y)?g.board[y][x]:null;if(!other||other===ball||other.isGarbage||!Array.isArray(other.fallPath))continue;
+        const first=other.fallPath[0];if(!first?.pileFlowEntry||first.pileFlowReason!=="clear_support_loss"||!first.from)continue;
         if(first.from[1]<=seg.from[1]||Math.abs(pileFlowPhysicalDist(seg.from,first.from)-1)>PILE_FLOW_CONTACT_EPS)continue;
-        start=Math.max(start,first.pileFlowStart+CLEAR_SUPPORT_LOSS_STACK_DELAY);
+        out.push(first);
     }
+    return out;
+}
+function clearSupportLossStackStart(g,ball,seg){
+    const supports=clearSupportLossStackSupports(g,ball,seg);if(!supports.length)return 0;
+    if(supports.some(s=>!Number.isFinite(s.pileFlowStart)))return NaN;
+    let start=0,carrier=null;
+    for(const s of supports){
+        start=Math.max(start,s.pileFlowStart+CLEAR_SUPPORT_LOSS_STACK_DELAY);
+        const same=seg.pileGravityTerminal&&seg.to[0]-seg.from[0]===s.to[0]-s.from[0]&&seg.to[1]-seg.from[1]===s.to[1]-s.from[1];
+        if(same&&(!carrier||s.pileFlowStart>carrier.pileFlowStart))carrier=s;
+    }
+    if(carrier){seg.pileCarriedSeg=carrier;seg._pileNominalDuration=carrier.pileFlowDuration;}
+    else delete seg.pileCarriedSeg;
     return start;
 }
 function scheduleFreshPileFlowPerBall(g,fresh){
@@ -292,8 +317,8 @@ function scheduleFreshPileFlowPerBall(g,fresh){
         // continuous path and attach to it without introducing a staged wait.
         pending.sort((a,b)=>(b.seg.from?.[1]||0)-(a.seg.from?.[1]||0)||(a.seg.from?.[0]||0)-(b.seg.from?.[0]||0));
         while(pending.length){
-            const {ball,seg}=pending.shift(),duration=Math.max(1/120,seg._pileNominalDuration||1/120);let earliest=pileFlowPreviousEnd(ball,seg,g.pileFlowClock||0);
-            earliest=Math.max(earliest,clearSupportLossStackStart(g,ball,seg));
+            const {ball,seg}=pending.shift(),stack=clearSupportLossStackStart(g,ball,seg),duration=Math.max(1/120,seg._pileNominalDuration||1/120);let earliest=pileFlowPreviousEnd(ball,seg,g.pileFlowClock||0);
+            if(Number.isFinite(stack))earliest=Math.max(earliest,stack);
             pileFlowAttachCausalSupports(g,ball,seg,earliest,duration);
             const priorEnds=pileFlowPriorEnds(g,seg),fallback=Math.max(earliest,...priorEnds,earliest);let start=earliest,safe=false;
             while(start<=fallback+PILE_FLOW_SCHEDULE_STEP+1e-9){if(pileFlowWaveSafe(g,[seg],start,duration)){safe=true;break;}start+=PILE_FLOW_SCHEDULE_STEP;}
