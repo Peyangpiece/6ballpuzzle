@@ -12,7 +12,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 4 | `app-04.js` | core: constants, physics planner, resolver, renderer | 196 |  | Canonical motion-group cleanup. No legacy rigidity metadata exists here. / |
 | 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 277 |  |  |
 | 6 | `app-06.js` | core: constants, physics planner, resolver, renderer | 48 |  | Shared garbage presentation constants and visual collision helpers. |
-| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 399 |  | Pile/garbage collapse overlap-scheduler constants. |
+| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 477 |  | Pile/garbage collapse overlap-scheduler constants. |
 | 8 | `app-pile-arc.js` | clear / collapse corrections | 132 |  | Accumulated-pile gravity binding (legacy filename). |
 | 9 | `app-clear-gap-collapse.js` | clear / collapse corrections | 257 |  | Post-clear accumulated-pile compaction invariant. |
 | 10 | `app-floor-gap-invariant.js` | clear / collapse corrections | 40 |  | Floor-side no-gap invariant. |
@@ -46,7 +46,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 38 | `app-runtime-performance.js` | performance | 161 |  | Main-thread runtime performance guards. |
 | 39 | `app-physics-safety-invariants.js` | safety invariants | 727 |  |  |
 | 40 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |
-| 41 | `app-mass-motion-safety.js` | safety invariants | 924 |  |  |
+| 41 | `app-mass-motion-safety.js` | safety invariants | 933 |  |  |
 | 42 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4193 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
 | 43 | `app-garbage-performance-v1.js` | garbage (おじゃま) pipeline | 211 |  | 6ball GARBAGE PERFORMANCE v1 |
 | 44 | `app-post-clear-two-stage-v1.js` | collapse scheduling authorities | 1123 |  | 6ball POST-CLEAR TWO-STAGE GRAVITY v1 |

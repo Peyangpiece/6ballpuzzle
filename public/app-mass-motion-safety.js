@@ -627,6 +627,15 @@
             );
 
           if(
+            typeof clearSupportLossStackStart==="function"
+          ){
+            earliest=Math.max(
+              earliest,
+              clearSupportLossStackStart(g,ball,seg)
+            );
+          }
+
+          if(
             typeof pileFlowAttachCausalSupports==="function"
           ){
             pileFlowAttachCausalSupports(
