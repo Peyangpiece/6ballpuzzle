@@ -136,8 +136,15 @@ function pileRollProgress(seg,t){
 }
 function pileFlowPoint(seg,t){
     t=Math.max(0,Math.min(1,t));
-    // A carried ball moves along its support's path, translated (no overlap by construction).
-    if(seg.pileCarriedSeg){const c=seg.pileCarriedSeg,p=pileFlowPoint(c,t);return[seg.from[0]+p[0]-c.from[0],seg.from[1]+p[1]-c.from[1]];}
+    // A carried ball drops along its own path but cannot sink into the
+    // support it rides: it is held at contact distance from the support's
+    // current position, so it settles onto the support and rolls off last.
+    if(seg.pileCarriedSeg&&seg.pileGravityFall){
+        const c=seg.pileCarriedSeg,H=HEX_ROW_H,own=pileGravityPoint(seg,t);
+        const lag=Number.isFinite(seg.pileFlowStart)&&Number.isFinite(c.pileFlowStart)&&c.pileFlowDuration>0?(seg.pileFlowStart-c.pileFlowStart)/c.pileFlowDuration:0;
+        const o=pileFlowPoint(c,Math.min(1,t+lag)),dx=(own[0]-o[0])*.5,dy=(own[1]-o[1])*H,d=Math.hypot(dx,dy);
+        return d<1&&d>1e-9?[o[0]+dx/d/.5,o[1]+dy/d/H]:own;
+    }
     if(seg.pileGravityFall)return pileGravityPoint(seg,t);
     const H=HEX_ROW_H;
     const qStraight=seg.pileFlowEntry?t*t*(2-t):t;
@@ -279,8 +286,8 @@ function pileFlowAttachCausalSupports(g,ball,seg,start,duration){
 
 // A ball resting on a ball that starts a support-loss move follows it
 // CLEAR_SUPPORT_LOSS_STACK_DELAY later (clip 3 F611/F613).  When both leave
-// along the same lattice vector the upper ball is carried: it moves along its
-// support's path, translated, on the support's clock (2026-10-13 capture,
+// along the same lattice vector the upper ball is carried: it runs on its
+// support's clock and rides it (see pileFlowPoint) (2026-10-13 capture,
 // yellow [7,8] riding green [6,9] into [8,9]).  Returns the earliest start, or NaN
 // while a support's own clock is not scheduled yet.
 function clearSupportLossStackSupports(g,ball,seg){

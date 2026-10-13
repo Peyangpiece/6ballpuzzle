@@ -4,8 +4,8 @@
 // can only roll right into [7,10]; yellow [7,8] rides green into [8,9].
 //
 // Gate: every released ball ends in the captured cell, and the 144 measured
-// centres stay within RMS 8 source px.  The maximum is reported; the
-// RMS 8 / max 17 comparison lives in reference-clear-20261013-diagnostic.js.
+// centres stay within the reference motion limits (RMS 8 / max 17 source px)
+// at the fixture's anchor frame.
 const vm=require('vm');
 const{ctx}=require('./v1303-plan-group-smoke.js');
 const fixture=require('./fixtures/reference-clear-20261013.json');
@@ -56,4 +56,4 @@ for(const[role,cell]of Object.entries(fixture.finalCells)){
 }
 const c=compare(result);
 console.log('2026-10-13 ordinary clear collapse',JSON.stringify({finals:result.finals,rms:+c.rms.toFixed(3),max:+c.max.toFixed(3),worst:c.worst,samples:c.count}));
-if(c.rms>8)throw new Error(`RMS ${c.rms.toFixed(2)} px exceeds 8 px`);
+if(c.rms>8||c.max>17)throw new Error(`source comparison RMS ${c.rms.toFixed(2)} / max ${c.max.toFixed(2)} px exceeds RMS 8 / max 17`);
