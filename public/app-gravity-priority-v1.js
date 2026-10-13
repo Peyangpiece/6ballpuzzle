@@ -286,6 +286,22 @@
     }
 
 
+    /*
+     * A same-row neighbour whose only gravity move is a roll into one of
+     * this ball's two candidate cells claims that cell (it rolls round its
+     * own lower support and cannot go elsewhere).  The tied ball yields and
+     * takes the other side.  Nintendo 2026-10-13 capture, ordinary clear at
+     * F46: purple [8,9] over red [8,11] went right while green [6,9], held
+     * by red [5,10], rolled right into [7,10].
+     */
+    function claimedByRollingNeighbour(b,x,y,dir,ignore){
+        const target=[x+dir,y+1],nx=x+2*dir;
+        if(!emptyAt(b,target[0],target[1],ignore))return false;
+        const neighbour=realBallAt(b,nx,y,ignore);
+        if(!independentOrdinaryBall(neighbour))return false;
+        return !!realBallAt(b,nx+dir,y+1,ignore);
+    }
+
     function preferredGravityDir(
         b,
         x,
@@ -293,6 +309,14 @@
         ball,
         ignore
     ){
+
+        const leftClaimed=claimedByRollingNeighbour(b,x,y,-1,ignore);
+        const rightClaimed=claimedByRollingNeighbour(b,x,y,1,ignore);
+        if(leftClaimed!==rightClaimed){
+            const dir=leftClaimed?1:-1;
+            if(emptyAt(b,x+dir,y+1,ignore)&&horizontalTargetAllowed(ball,x,x+dir))
+                return dir;
+        }
 
         const ls=
             targetSupportScore(

@@ -72,11 +72,21 @@ function hexPhysBundleTargetsFree(bundle,b,accepted){
     }
     return true;
 }
+// Two touching balls on one row that both move the same horizontal way
+// travel together: the leading ball moves away from the trailing one
+// (Nintendo 2026-10-13 capture: green [6,9] rolled into [7,10] while
+// purple [8,9] moved on to [9,10]).  Their abstract unit-time sweeps would
+// otherwise be compared as if the trailing ball caught up.
+function hexPhysSameRowConvoy(p,q){
+    if(!p?.ball||!q?.ball||p.ball.isGarbage||q.ball.isGarbage||p.y!==q.y||Math.abs(p.x-q.x)!==2)return false;
+    const dp=Math.sign(p.tx-p.x),dq=Math.sign(q.tx-q.x);
+    return dp!==0&&dp===dq&&p.ty>p.y&&q.ty>q.y;
+}
 function hexPhysBundleSafe(bundle,b,accepted){
     const movingIds=new Set([...bundle,...accepted].map(p=>p.ball.id));
     for(const p of bundle)if(hexPhysPathHitsStationary(p,b,movingIds))return false;
     for(const p of bundle)for(const q of accepted){
-        const linked=(p.followSupportIds||[]).includes(q.ball.id)||(q.followSupportIds||[]).includes(p.ball.id);
+        const linked=(p.followSupportIds||[]).includes(q.ball.id)||(q.followSupportIds||[]).includes(p.ball.id)||hexPhysSameRowConvoy(p,q);
         if(!linked&&proposalsSweepOverlap(p,q))return false;
     }
     for(let i=0;i<bundle.length;i++)for(let j=i+1;j<bundle.length;j++){
@@ -100,11 +110,18 @@ function hexPhysResolveEvent(b,preview=false){
     if(!proposals.length)return [];
 
     const accepted=[];
-    for(const bundle of hexPhysCandidateBundles(proposals)){
-        if(!hexPhysBundleTargetsFree(bundle,b,accepted))continue;
-        if(!hexPhysBundleSafe(bundle,b,accepted))continue;
-        accepted.push(...bundle);
-        if(preview)return accepted.slice(0,1);
+    // A bundle checked before a neighbour was accepted treats that neighbour
+    // as stationary.  Once the neighbour is accepted it moves in the same
+    // event, so re-check the rejected bundles until nothing more is accepted.
+    let pending=hexPhysCandidateBundles(proposals);
+    for(let changed=true;changed&&pending.length;){
+        changed=false;const rejected=[];
+        for(const bundle of pending){
+            if(!hexPhysBundleTargetsFree(bundle,b,accepted)||!hexPhysBundleSafe(bundle,b,accepted)){rejected.push(bundle);continue;}
+            accepted.push(...bundle);changed=true;
+            if(preview)return accepted.slice(0,1);
+        }
+        pending=rejected;
     }
     return accepted;
 }

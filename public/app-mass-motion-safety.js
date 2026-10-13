@@ -606,11 +606,31 @@
             (b.seg.from?.[0]||0)
         );
 
+        /*
+         * A segment that is unsafe only because a neighbour in this same
+         * wave has no schedule yet (and so is treated as stationary) is
+         * retried once after the rest of the wave is scheduled.
+         */
+        const deferred=new Set();
+
         while(pending.length){
+          const entry=pending.shift();
           const {
             ball,
             seg
-          }=pending.shift();
+          }=entry;
+
+          const stackStart=
+            typeof clearSupportLossStackStart==="function"
+              ?clearSupportLossStackStart(g,ball,seg)
+              :0;
+
+          /* Its support's clock is not scheduled yet: wait for it. */
+          if(Number.isNaN(stackStart)&&!deferred.has(entry)&&pending.length){
+            deferred.add(entry);
+            pending.push(entry);
+            continue;
+          }
 
           const duration=
             Math.max(
@@ -626,12 +646,10 @@
               g.pileFlowClock||0
             );
 
-          if(
-            typeof clearSupportLossStackStart==="function"
-          ){
+          if(Number.isFinite(stackStart)){
             earliest=Math.max(
               earliest,
-              clearSupportLossStackStart(g,ball,seg)
+              stackStart
             );
           }
 
@@ -725,6 +743,15 @@
            * The legacy/live-batch path still has
            * collision clamping.
            */
+          if(!safe&&!deferred.has(entry)&&pending.length){
+            deferred.add(entry);
+            delete seg.pileFlowStart;
+            delete seg.pileFlowDuration;
+            delete seg.pileFlowEnd;
+            pending.push(entry);
+            continue;
+          }
+
           if(!safe){
             returnSegmentToLegacy(
               seg
