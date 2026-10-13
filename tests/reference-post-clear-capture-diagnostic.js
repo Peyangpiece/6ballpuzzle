@@ -1,5 +1,5 @@
-// An intentionally failing source comparison, not a production CI gate.
-// Keep the observed gap visible while post-clear pile timing is investigated.
+// Source comparison for ordinary-clear support loss (clip 3, two green balls).
+// Part of the CI gate: exits 1 unless RMS <= 8 px and max <= 17 px.
 const vm=require('vm'),fs=require('fs'),path=require('path');
 const{ctx}=require('./v1303-plan-group-smoke.js');
 ctx.referenceClearBoard=require('./fixtures/reference-clear-timing-20260814.json').ordinaryBoard.cells;

@@ -56,7 +56,7 @@ npm run docs:layers    # docs/ARCHITECTURE.generated.md を再生成
 `main` への push と Pull Request で `.github/workflows/validate.yml` が走ります。
 
 1. 構文チェック、連結ランタイムの静的検査、事前生成 CSS の鮮度、配信シェルの不変条件
-2. `npm test`（Node 回帰 42 本 + FPS 掃引 20 本。本家映像との位置誤差、ビルド契約、オンライン入力・レート裁定の検証を含む）
+2. `npm test`（Node 回帰 44 本 + FPS 掃引 20 本。本家映像との位置誤差、ビルド契約、オンライン入力・レート裁定の検証を含む）
 3. 本番ビルドと Playwright による実ブラウザ煙テスト
 4. Firebase ルールの契約テスト（エミュレータ）
 5. `main` のみ: Cloudflare Workers Builds（Git 連携）がデプロイした本番の `deploy-sha.txt` がコミット SHA と一致するまで待って確認
