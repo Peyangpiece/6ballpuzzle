@@ -9,14 +9,16 @@ const PILE_FLOW_SUPPORT_MOVE_EPS = 0.004;
 
 // Ordinary-clear support loss (Nintendo clip 3, F599 six-yellow clear, two
 // green balls, 14 circle centres; tests/reference-post-clear-capture-diagnostic.js).
-// Both balls start from rest, accelerate at ~4.1 source px/frame^2 and reach a
-// terminal speed of ~13.75 source px/frame (63.4 px diameter, 30 fps).  The ball
-// resting on a falling ball starts two source frames after its support.  The
-// release instant itself is unchanged (reference-clear-timing-parity owns it).
+// Both balls start from rest, accelerate at ~3.9 source px/frame^2 and reach a
+// terminal speed of ~14.0 source px/frame (63.4 px diameter, 30 fps).  The ball
+// resting on a falling ball starts 1.9 source frames after its support.  The
+// three values are a joint least-squares fit of the fall and the landing roll
+// that follows it, since the fall's end sets when the roll begins.  The release
+// instant itself is unchanged (reference-clear-timing-parity owns it).
 // Fitted to one scene; constants are in ball diameters and seconds.
-const CLEAR_SUPPORT_LOSS_GRAV=4.1*30*30/63.4;
-const CLEAR_SUPPORT_LOSS_TERMINAL_VY=13.75*30/63.4;
-const CLEAR_SUPPORT_LOSS_STACK_DELAY=2/30;
+const CLEAR_SUPPORT_LOSS_GRAV=3.9*30*30/63.4;
+const CLEAR_SUPPORT_LOSS_TERMINAL_VY=14.0*30/63.4;
+const CLEAR_SUPPORT_LOSS_STACK_DELAY=1.9/30;
 
 // A geometric six-ball ring is not automatically an intentional HEXAGON.
 // The old global hole exception froze any mixed-colour ring after a PYRAMID
