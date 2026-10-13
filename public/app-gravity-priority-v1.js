@@ -302,6 +302,68 @@
         return !!realBallAt(b,nx+dir,y+1,ignore);
     }
 
+    /*
+     * Ordinary-clear release intent.  Nintendo decides every released
+     * ball's direction from the board at the moment of the clear, while
+     * this runtime settles one move per pass.  Record, on the post-clear
+     * board, which lower cell opens first for each ball (see
+     * estimateClearRelease); a later symmetric fork uses the earlier side (2026-10-13 STRAIGHT
+     * capture: red [6,9] went left past the leaving red [7,10]; blue
+     * [12,9] went left because falling yellow [14,9] blocked the right).
+     */
+    function releasedNow(b,x,y){
+        if(y>=ROWS-1)return false;
+        return emptyAt(b,x-1,y+1,null)||emptyAt(b,x+1,y+1,null);
+    }
+    function fallsStraightNow(b,x,y){
+        return y<ROWS-2&&emptyAt(b,x-1,y+1,null)&&emptyAt(b,x+1,y+1,null)&&emptyAt(b,x,y+2,null);
+    }
+    // Estimated start time (in moves) of every ordinary ball after a clear,
+    // relaxed to a fixed point.  A lower side opens when its cell is empty
+    // and unobstructed (0), when its occupant has started (occupant + 1), or
+    // late (2) while a released same-row neighbour falls or rolls into the
+    // roll path.  Returns each ball's opening time for both sides.
+    function estimateClearRelease(b){
+        const balls=[];
+        for(let y=boardScanMin(b);y<ROWS-1;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?b[y][x]:null;
+            if(ball&&typeof ball==="object"&&independentOrdinaryBall(ball))balls.push({ball,x,y});
+        }
+        const key=(x,y)=>x+","+y,at=new Map(balls.map(e=>[key(e.x,e.y),e]));
+        const start=new Map(balls.map(e=>[e,fallsStraightNow(b,e.x,e.y)?0:Infinity]));
+        function open(e,s){
+            const tx=e.x+s,ty=e.y+1;if(!valid(tx,ty))return Infinity;
+            if(realBallAt(b,tx,ty,null)){const o=at.get(key(tx,ty));return o?start.get(o)+1:Infinity;}
+            const n=at.get(key(e.x+2*s,e.y));
+            if(!n||!releasedNow(b,n.x,n.y))return 0;
+            if(fallsStraightNow(b,n.x,n.y))return 2;
+            const awayEmpty=emptyAt(b,n.x+s,n.y+1,null),towardEmpty=emptyAt(b,n.x-s,n.y+1,null);
+            return awayEmpty&&!towardEmpty?0:2;
+        }
+        for(let it=0;it<8;it++){
+            let changed=false;
+            for(const e of balls){
+                if(start.get(e)===0&&fallsStraightNow(b,e.x,e.y))continue;
+                const v=Math.min(open(e,-1),open(e,1));
+                if(v!==start.get(e)){start.set(e,v);changed=true;}
+            }
+            if(!changed)break;
+        }
+        return balls.map(e=>({e,l:open(e,-1),r:open(e,1)}));
+    }
+    window.__sixBallMarkClearReleaseIntents=function(b){
+        for(const {e,l,r} of estimateClearRelease(b)){
+            if(l!==r&&Math.min(l,r)<Infinity)e.ball._clearIntentDir=l<r?-1:1;
+            else delete e.ball._clearIntentDir;
+        }
+    };
+    window.__sixBallClearClearReleaseIntents=function(b){
+        for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){
+            const ball=valid(x,y)?b[y][x]:null;
+            if(ball&&typeof ball==="object")delete ball._clearIntentDir;
+        }
+    };
+
     function preferredGravityDir(
         b,
         x,
@@ -309,6 +371,12 @@
         ball,
         ignore
     ){
+
+        if(ball?._clearIntentDir){
+            const dir=ball._clearIntentDir;
+            if(emptyAt(b,x+dir,y+1,ignore)&&horizontalTargetAllowed(ball,x,x+dir))
+                return dir;
+        }
 
         const leftClaimed=claimedByRollingNeighbour(b,x,y,-1,ignore);
         const rightClaimed=claimedByRollingNeighbour(b,x,y,1,ignore);
