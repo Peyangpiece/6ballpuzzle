@@ -1,7 +1,9 @@
 const assert=require('assert/strict'),vm=require('vm');
 const{ctx}=require('./v1303-plan-group-smoke.js');
 const fixture=require('./fixtures/reference-clear-timing-20260814.json');
-ctx.clearTimingReference=fixture;
+// 2026-10-13 technique captures (HEXAGON, STRAIGHT, PYRAMID) share the same release check.
+const technique20261013=require('./fixtures/reference-clear-timing-20261013.json');
+ctx.clearTimingReference={...fixture,scenes:[...fixture.scenes,...technique20261013.scenes]};
 const result=vm.runInContext(`(()=>{
  const rows=clearTimingReference.scenes.map(s=>{
   const hold=s.technique?WAZA[s.technique].hold:.4;

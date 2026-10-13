@@ -1,0 +1,30 @@
+{
+ "method": "Player board. highlightFrame: first frame in which the technique colour's mean brightness rises (sampled at its lattice centres). releaseFrame: first frame with a visibly lowered supported ball, checked by eye. Not input telemetry.",
+ "frameTolerance": 3,
+ "scenes": [
+  {
+   "source": "20261013-01M4TSCEJNQ86Q3PS9FWS4ABTG-DD8AC434-8B36-4A99-B68C-1B3A655CAD9A.MOV",
+   "sha256": "3874d78777a59ece53404b15a9de15b0c62b9867483238dcd0c9c2e29379193b",
+   "fps": 30,
+   "technique": "HEXAGON",
+   "highlightFrame": 52,
+   "releaseFrame": 111
+  },
+  {
+   "source": "20261013-01M4TSK94NKNRGD9C68W5TN588-87357E49-93AE-48C3-A674-48E7A18E934C.MOV",
+   "sha256": "5d2ad06f9d0f3930534c40a7cd2021445f79cb20d61e3ac05d36ac42d9d35f52",
+   "fps": 30,
+   "technique": "STRAIGHT",
+   "highlightFrame": 52,
+   "releaseFrame": 111
+  },
+  {
+   "source": "20261013-01M4TSRBXAR7GQVRDE36EBFRB1-DD352668-676F-44DF-B80F-8645C76F8AA5.MOV",
+   "sha256": "e0402da46a26c9b6bd527a6887cf9f16e59e93c076b613eec655d107d48d03fb",
+   "fps": 30,
+   "technique": "PYRAMID",
+   "highlightFrame": 93,
+   "releaseFrame": 148
+  }
+ ]
+}
