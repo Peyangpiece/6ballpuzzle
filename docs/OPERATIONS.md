@@ -117,4 +117,8 @@ GitHub → Settings → Branches → `main`:
 - 直前のデプロイへ戻す: 対象コミットで `workflow_dispatch` を実行するか、`git revert` を `main` に push します。
 - 本番が動いているかの確認: `curl https://6ballpuzzle.hrk-6888.workers.dev/deploy-sha.txt` と
   `npm run test:browser`（`DIST_DIR` を使わず本番 URL を見るには `tests/quality-browser-review.js` を `REVIEW_URL` 付きで実行）。
+- `main` への push に Cloudflare がビルドを作らないことがあります（2026-10-13、#20 のマージ `a1db2d0` で発生。
+  ダッシュボードの Deployments に該当コミットの `main` ビルドが無く、`verify-production` は 25 分待って失敗）。
+  ダッシュボードで `main` の最新コミットを手動ビルドするか、`main` へ次の push を行えばビルドが走ります。
+  本番の `/deploy-sha.txt` が新しいコミットになったら、失敗した `verify-production` を再実行してください。
 - Firebase 側の障害はオンライン対戦のみに影響し、AI 対戦は動き続けます。
