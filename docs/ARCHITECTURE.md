@@ -69,6 +69,13 @@ public/index.html
   - 消去後の転がりはすべて重力で加速（静止からも可）。支えの球と同じ向きに動く球は、支えの時計に 1.9 フレーム
     遅れで乗り、自分の「落ちてから横へ」の経路を支えに食い込まない位置（接触距離）で進む。転がる相手の無い
     斜め落下は「落ちてから横へ」（`app-07.js`）
+- 2026-10-13 の技 3 場面（HEXAGON / STRAIGHT / PYRAMID）: 光ってから落ち始めるまでは本家と 2 フレーム以内
+  （`tests/reference-clear-timing-parity.js`）。最初の崩れが止まった時点の盤面は PYRAMID が全セル一致、
+  STRAIGHT が 2 セル、HEXAGON が 5 セル違います（`tests/reference-technique-collapse-20261013.js`、この差は
+  減らす方向にしか変えられない上限）。本家は消去の瞬間の盤面で各球の向きを決めるため、消去直後に各球の
+  「先に空く側」を推定して左右が同条件のときに使います（`app-gravity-priority-v1.js`
+  `__sixBallMarkClearReleaseIntents`、`app-09.js` から呼び出し）。残る差は、崩れの途中で両側から同時に
+  入って穴の上で止まる 2 球（HEXAGON の [15,10]）と、壁際の紫の向き（STRAIGHT の [17,6]）です。
 - レーティングはクライアントが計算して書き込みますが、ルールが Elo の区間テーブル（`tools/elo-rules-table.js`
   が生成、`tests/rules-elo-table.js` が同期を検証）で値を厳密に検証します。`config/ratingAuthority = "server"`
   に切り替えると `firebase/functions/` の Cloud Function が裁定します（[OPERATIONS.md](OPERATIONS.md) 参照）。

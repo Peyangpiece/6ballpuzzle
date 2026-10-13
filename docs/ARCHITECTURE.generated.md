@@ -19,7 +19,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 11 | `app-clear-vacancy-priority.js` | clear / collapse corrections | 331 |  | Post-clear vacancy conservation. |
 | 12 | `app-release-parity-settle.js` | clear / collapse corrections | 60 |  | Parity-safe active-piece hand-off. |
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 714 |  |  |
-| 14 | `app-09.js` | core: engine, assets, net, app shell | 582 |  | Garbage pipeline entry points.  They are installed later by |
+| 14 | `app-09.js` | core: engine, assets, net, app shell | 586 |  | Garbage pipeline entry points.  They are installed later by |
 | 15 | `app-10.js` | core: engine, assets, net, app shell | 437 |  | ボール描画 |
 | 16 | `app-14.js` | core: engine, assets, net, app shell | 331 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
@@ -47,7 +47,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 39 | `app-physics-safety-invariants.js` | safety invariants | 727 |  |  |
 | 40 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |
 | 41 | `app-mass-motion-safety.js` | safety invariants | 960 |  |  |
-| 42 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4217 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
+| 42 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4285 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
 | 43 | `app-garbage-performance-v1.js` | garbage (おじゃま) pipeline | 211 |  | 6ball GARBAGE PERFORMANCE v1 |
 | 44 | `app-post-clear-two-stage-v1.js` | collapse scheduling authorities | 1123 |  | 6ball POST-CLEAR TWO-STAGE GRAVITY v1 |
 | 45 | `app-garbage-continuous-v1.js` | garbage (おじゃま) pipeline | 1994 |  | 6ball GARBAGE CONTINUOUS GRAVITY v1 |
