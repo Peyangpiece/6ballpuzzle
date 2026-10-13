@@ -51,11 +51,12 @@ public/index.html
 - **層の積層構造そのもの**。69 本中 50 本超が上書き層で、`window.__hex*` のグローバルが 100 以上あります。
   振る舞いの最終決定箇所はファイル名と読込順でしか追えません。コアへの統合は大規模な物理回帰のリスクを
   伴うため、本リポジトリでは「読込順を単一定義にし、生成ドキュメントと契約テストで固定する」方針を取っています。
-- 通常消去後の支持喪失落下は、本家映像 clip 3 の緑 2 球・14 点に対し RMS 4.54px / 最大 10.90px で基準
-  （RMS 8px / 最大 17px）内です（`tests/reference-post-clear-capture-diagnostic.js`、CI ゲート）。
-  落下モデル（静止から加速、終端速度、落下中の球に乗る球は 2 フレーム遅れて開始）は `app-07.js` の
-  `CLEAR_SUPPORT_LOSS_*` 定数で、この 1 場面への当てはめです。残差の大半は着地直前の転がり区間
-  （622〜626 フレーム）で、他の消去場面での一致は未検証です。
+- 通常消去後の支持喪失落下と着地直前の転がりは、本家映像 clip 3 の緑 2 球・14 点に対し RMS 2.48px / 最大 5.64px で
+  基準（RMS 8px / 最大 17px）内です（`tests/reference-post-clear-capture-diagnostic.js`、CI ゲート）。
+  落下は静止から加速して終端速度で頭打ち、落下中の球に乗る球は 2 フレーム遅れて開始（`app-07.js` の
+  `CLEAR_SUPPORT_LOSS_*`）。落下直後に静止球へ当たって転がる区間は、落下速度を保ったまま同じ重力で
+  円弧上を加速します（`clearSupportLossRollProfile`）。いずれもこの 1 場面への当てはめで、他の消去場面での
+  一致は未検証です。
 - レーティングはクライアントが計算して書き込みますが、ルールが Elo の区間テーブル（`tools/elo-rules-table.js`
   が生成、`tests/rules-elo-table.js` が同期を検証）で値を厳密に検証します。`config/ratingAuthority = "server"`
   に切り替えると `firebase/functions/` の Cloud Function が裁定します（[OPERATIONS.md](OPERATIONS.md) 参照）。

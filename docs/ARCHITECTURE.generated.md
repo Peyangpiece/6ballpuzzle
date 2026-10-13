@@ -12,7 +12,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 4 | `app-04.js` | core: constants, physics planner, resolver, renderer | 196 |  | Canonical motion-group cleanup. No legacy rigidity metadata exists here. / |
 | 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 277 |  |  |
 | 6 | `app-06.js` | core: constants, physics planner, resolver, renderer | 48 |  | Shared garbage presentation constants and visual collision helpers. |
-| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 449 |  | Pile/garbage collapse overlap-scheduler constants. |
+| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 475 |  | Pile/garbage collapse overlap-scheduler constants. |
 | 8 | `app-pile-arc.js` | clear / collapse corrections | 132 |  | Accumulated-pile gravity binding (legacy filename). |
 | 9 | `app-clear-gap-collapse.js` | clear / collapse corrections | 257 |  | Post-clear accumulated-pile compaction invariant. |
 | 10 | `app-floor-gap-invariant.js` | clear / collapse corrections | 40 |  | Floor-side no-gap invariant. |
