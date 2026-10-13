@@ -294,9 +294,13 @@ function stepEngine(g, dt) {
                 // Reference-style accumulated-pile collapse:
                 // compile the entire legal contact trajectory now, then let
                 // each ball play it continuously with its own momentum.
+                if(typeof window!=="undefined"&&typeof window.__sixBallMarkClearReleaseIntents==="function")
+                    window.__sixBallMarkClearReleaseIntents(g.board);
                 const clearFlow=prepareContinuousPileFlow(
                     g,"clear_support_loss"
                 );
+                if(typeof window!=="undefined"&&typeof window.__sixBallClearClearReleaseIntents==="function")
+                    window.__sixBallClearClearReleaseIntents(g.board);
                 physicsSafetyCheck(
                     g,clearFlow.moved,"POST_CLEAR_CONTINUOUS_FLOW"
                 );
