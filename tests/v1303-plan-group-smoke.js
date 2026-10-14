@@ -75,7 +75,7 @@ const separatelyTested = new Set([
   "app-bgm-local.js", "app-audio-volume-control.js", "app-menu-volume-fix.js",
   "app-rotate-sfx.js", "app-instant-drop-sfx.js", "app-16.js",
   "app-ai-superstrong-authoritative-v2.js", "app-position-lock-sfx.js",
-  "controls-v7.js", "app-switch-gamepad-authoritative-v1.js"
+  "controls-v7.js", "app-switch-gamepad-authoritative-v1.js", "app-ui-ux-v1.js"
 ]);
 if (new Set(publishedFiles).size !== publishedFiles.length) {
   throw new Error("Duplicate production runtime layer");

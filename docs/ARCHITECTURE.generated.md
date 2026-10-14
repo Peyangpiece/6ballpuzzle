@@ -21,10 +21,10 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 714 |  |  |
 | 14 | `app-09.js` | core: engine, assets, net, app shell | 586 |  | Garbage pipeline entry points.  They are installed later by |
 | 15 | `app-10.js` | core: engine, assets, net, app shell | 437 |  | ボール描画 |
-| 16 | `app-14.js` | core: engine, assets, net, app shell | 331 |  |  |
+| 16 | `app-14.js` | core: engine, assets, net, app shell | 392 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
-| 19 | `app-15.js` | core: engine, assets, net, app shell | 105 |  |  |
+| 19 | `app-15.js` | core: engine, assets, net, app shell | 119 |  |  |
 | 20 | `app-google-login.js` | online | 316 |  |  |
 | 21 | `app-online-v2.js` | online | 2310 |  |  |
 | 22 | `app-menu-ui.js` | menu / audio | 225 |  | HEXDROP immersive menu system. |
@@ -34,8 +34,8 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 26 | `app-menu-volume-fix.js` | menu / audio | 78 |  | 6ball menu click volume hotfix. |
 | 27 | `app-rotate-sfx.js` | menu / audio | 137 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
 | 28 | `app-instant-drop-sfx.js` | menu / audio | 140 |  | 6ball instant-drop landing v10 |
-| 29 | `app-16.js` | core: engine, assets, net, app shell | 698 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
-| 30 | `app-17.js` | core: engine, assets, net, app shell | 62 |  |  |
+| 29 | `app-16.js` | core: engine, assets, net, app shell | 647 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
+| 30 | `app-17.js` | core: engine, assets, net, app shell | 129 |  |  |
 | 31 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 346 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
 | 32 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |
 | 33 | `app-garbage-zero-rigidity.js` | garbage (おじゃま) pipeline | 118 | hexPhysPlanGroup | Post-split garbage rigidity invariant. |
@@ -73,5 +73,6 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 65 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 327 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
 | 66 | `app-even-row-split-continuity-v1.js` | rigidity / split authorities (Nintendo reference) | 72 |  | Even/narrow-row strict-inner split continuity authority v1. |
 | 67 | `app-split-visual-smoothness-v1.js` | rigidity / split authorities (Nintendo reference) | 15 |  | Retired split display follower. |
-| 68 | `controls-v7.js` | input | 337 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
-| 69 | `app-switch-gamepad-authoritative-v1.js` | input | 642 |  |  |
+| 68 | `controls-v7.js` | input | 341 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
+| 69 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
+| 70 | `app-ui-ux-v1.js` | other | 70 |  | UI/UX layer v1 (no physics). |
