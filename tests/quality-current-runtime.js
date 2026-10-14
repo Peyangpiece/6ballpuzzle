@@ -3,7 +3,7 @@ const fs=require("fs"),path=require("path"),{spawn}=require("child_process");
 const root=path.join(__dirname,"..");
 const gate=require("./run-ci.js");
 const scripts=[...new Set(gate.GATE)];
-scripts.push("tests/ai-superhuman-authoritative-v3.js","tests/landscape-startup.js");
+scripts.push("tests/ai-core.js","tests/landscape-startup.js");
 const jobs=scripts.map(file=>({file}));
 for(const fps of [30,60,120,240])for(const file of ["tests/no-upward-bounce-split-continuity-v1.js","tests/reference-video-motion.js","tests/reference-capture-motion-parity.js","tests/reference-inverted-pocket-motion.js","tests/reference-garbage-flight.js"]){
   jobs.push({file,fps});

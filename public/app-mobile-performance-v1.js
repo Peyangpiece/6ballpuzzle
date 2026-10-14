@@ -8,13 +8,8 @@
  *    canvas instead and draws only what changes (twinkling stars, attack wash).
  *    Without the marker (tests, other canvases) the original drawing is used.
  *
- * 2. Level-5 AI thinking is thinned to a search slice on every other physics
- *    step (it ran on every 120 Hz step). Skipped steps still advance the
- *    planner's clock, so decisions are made within the same game time; the
- *    search gets half the slices on every device. The planner helpers were made
- *    allocation-free at the same time (app-01 cloneHexGrid, app-garbage-normal-
- *    physics referenceHexagonRingBalls), which wins part of it back. Outside the
- *    app (headless tests, no frame counter) the AI is unchanged.
+ * 2. CPU thinking runs in a Web Worker (app-ai-core.js, ai-worker.js), so the
+ *    search no longer costs main-thread frame time.
  */
 (function installBackgroundLayer(){
     if(typeof window==="undefined"||typeof drawBackground!=="function"||window.__sixBallBgLayerV1)return;
@@ -42,28 +37,6 @@
         if(url)return url;
         try{const cv=getStaticBackgroundCanvas();if(cv)url=cv.toDataURL("image/png");}catch(_){url=null;}
         return url;
-    };
-})();
-
-(function thinSuperStrongThinking(){
-    if(typeof window==="undefined"||typeof stepAI!=="function"||window.__sixBallAiThinningV1)return;
-    window.__sixBallAiThinningV1=true;
-    const baseStepAI=stepAI;
-    stepAI=function(g,dt){
-        const ai=g&&g.ai;
-        if(!ai||!Number.isFinite(window.__sixBallRenderFrame)||Math.max(1,Math.min(5,Number(ai.level)||1))!==5)return baseStepAI(g,dt);
-        const planning=!ai.target&&!(ai.thinkT>0)&&!!g.piece&&g.state==="PLAYING"&&!!ai._focusedPlannerV2;
-        if(planning){
-            ai._aiStepParity=!ai._aiStepParity;
-            if(!ai._aiStepParity){
-                // Every other physics step: no search slice, but the planner's
-                // step clock still advances so decisions keep the same timing.
-                ai._focusedPlannerV2.frames++;
-                ai._aiSkippedSlices=(ai._aiSkippedSlices||0)+1;
-                return;
-            }
-        }
-        return baseStepAI(g,dt);
     };
 })();
 

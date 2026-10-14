@@ -76,14 +76,14 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert.strictEqual(shapes.size, 5, "each colour needs a distinct symbol");
   const tiny = fakeCtx(); cs.draw(tiny, 10, 10, 8, 0, {}); assert(!tiny.ops.includes("fill"), "no symbol on tiny previews");
 
-  // --- Mobile performance: background as a CSS layer, level-5 thinking thinned.
+  // --- Mobile performance: the static background is a CSS layer.
   const perfLog = [];
   const cp = vm.createContext({
     window: {}, console, VW: 1280, VH: 720, STARS: [{ x: 1, y: 2, s: 2, a: 1, p: 0 }],
-    drawBackground: () => perfLog.push("base-bg"), stepAI: () => perfLog.push("base-ai"),
+    drawBackground: () => perfLog.push("base-bg"),
     getStaticBackgroundCanvas: () => ({ toDataURL: () => "data:image/png;base64,AAA" })
   });
-  vm.runInContext(read("app-mobile-performance-v1.js") + "\nthis.bg = drawBackground; this.ai = stepAI;", cp);
+  vm.runInContext(read("app-mobile-performance-v1.js") + "\nthis.bg = drawBackground;", cp);
   const bgCtx = marked => { const ops = []; return { ops, canvas: { __sixBallBgLayer: marked }, globalAlpha: 1, clearRect: () => ops.push("clear"), fillRect: () => ops.push("fill") }; };
   const plain = bgCtx(false); cp.bg(plain, 0);
   assert.deepStrictEqual(perfLog, ["base-bg"], "an unmarked canvas keeps the full background");
@@ -91,22 +91,6 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert.strictEqual(perfLog.length, 1, "a marked canvas must not redraw the static background");
   assert.deepStrictEqual(layered.ops, ["clear", "fill"], "a marked canvas is cleared and gets only the stars");
   assert.strictEqual(cp.window.__sixBallStaticBackgroundUrl(), "data:image/png;base64,AAA");
-  perfLog.length = 0;
-  const planner = { frames: 0 };
-  const aiGame = () => ({ state: "PLAYING", piece: {}, ai: { level: 5, _focusedPlannerV2: planner } });
-  const g5 = aiGame();
-  for (let i = 0; i < 4; i++) cp.ai(g5, 1 / 120);
-  assert.strictEqual(perfLog.length, 4, "without the app's frame counter (headless) the AI is unchanged");
-  cp.window.__sixBallRenderFrame = 1; perfLog.length = 0;
-  for (let i = 0; i < 4; i++) cp.ai(g5, 1 / 120);
-  assert.strictEqual(perfLog.length, 2, "in the app, level 5 searches on every other physics step");
-  assert.strictEqual(planner.frames, 2, "skipped steps still advance the planner clock");
-  const g3 = aiGame(); g3.ai.level = 3; perfLog.length = 0;
-  for (let i = 0; i < 4; i++) cp.ai(g3, 1 / 120);
-  assert.strictEqual(perfLog.length, 4, "levels 1-4 are not thinned");
-  const moving = aiGame(); moving.ai.target = {}; perfLog.length = 0;
-  for (let i = 0; i < 4; i++) cp.ai(moving, 1 / 120);
-  assert.strictEqual(perfLog.length, 4, "executing a chosen move is not thinned");
   assert(/backgroundImage: `url\(\$\{bgLayerUrl\}\)`/.test(app16) && /cv\.__sixBallBgLayer = !!bgLayerUrl/.test(app16), "the App shows the static background behind the canvas");
 
   // --- Source contracts for the audited defects.

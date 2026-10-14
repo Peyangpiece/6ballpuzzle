@@ -149,11 +149,46 @@
 
     function isRingBall(
         board,
-        ball
+        ball,
+        x,
+        y
     ){
 
         if(!ball)
             return false;
+
+
+        // Same answer as ringInfo(board).ids.has(ball.id) for the ball at
+        // (x,y), but only the six centres it can belong to are examined
+        // instead of rescanning the board on every motion query.
+        if(
+            Number.isInteger(x) &&
+            Number.isInteger(y) &&
+            valid(x,y) &&
+            board[y][x]===ball
+        ){
+
+            for(const [dx,dy] of RING_OFFSETS){
+
+                const cx=x-dx,cy=y-dy;
+
+                if(
+                    cy<1 || cy>=ROWS-1 ||
+                    cx<2 || cx>=W2-2 ||
+                    !valid(cx,cy) ||
+                    board[cy][cx]!==null
+                ){
+                    continue;
+                }
+
+                try{
+                    if(isBalancedHexagonCenterHole(board,cx,cy))
+                        return true;
+                }catch(e){}
+            }
+
+            return false;
+        }
 
 
         return ringInfo(board)
@@ -199,7 +234,9 @@
                     ball &&
                     isRingBall(
                         board,
-                        ball
+                        ball,
+                        x,
+                        y
                     )
                 ){
 

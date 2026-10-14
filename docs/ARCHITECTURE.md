@@ -36,6 +36,17 @@ public/index.html
 性能層は `app-runtime-performance.js` → `-v3.js` → `-v4.js` の順に積層しており、v4 のヘッダに
 あるとおり v4 は v3 の上で動作する前提です（v3 を外すと v4 のパリティテストが失敗します）。
 
+### CPU AI
+
+- `app-ai-core.js` が全レベル共通の予測と判断（`aiDecide`）を持ちます。予測は本番と同じ物理コードで行い、
+  着地した 3 球を剛体として置き、球の id と転がり方向（同点時の向きの決定に使われる）も写して
+  `settleAll()` と消去規則を回します。
+- 判断は Web Worker（`public/ai-worker.js`）で時間予算内に行い、メインスレッドは結果を受け取って操作するだけです。
+  Worker が使えない環境（テスト・旧ブラウザ）では同じ関数を短い予算で同期実行します。
+- Worker が読む層は `ai-worker.js` の `AI_WORKER_FILES` に列挙し（index.html の物理層＋AI、同じ順）、
+  本番では `tools/build.js` が `js/ai-worker.<hash>.min.js` に 1 本化します。物理層を足したら
+  この配列にも足してください（`tests/ai-core.js` が一致を検査し、予測が実エンジンと 9 割以上一致することも確認します）。
+
 ## 3. 変更時の作法
 
 1. 物理・タイミングの変更は必ず `npm test` を通す。`tests/reference-*` は本家映像のフレーム計測

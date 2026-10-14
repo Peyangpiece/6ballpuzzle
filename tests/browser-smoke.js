@@ -82,6 +82,10 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
     }
     await page.waitForTimeout(1500);
     if (shots) await page.screenshot({ path: path.join(shots, "dist-match.png") });
+    // The CPU decides in the AI Web Worker; a broken worker would silently fall
+    // back to a much shallower main-thread search.
+    const aiAnswers = await page.evaluate(() => window.__sixBallAiWorkerAnswers | 0);
+    assert(aiAnswers >= 1, "the CPU AI worker never answered");
     const state = await page.evaluate(() => ({
       canvases: document.querySelectorAll("canvas").length,
       bootError: (document.getElementById("bootMsg") || {}).textContent || "",

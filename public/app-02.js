@@ -166,7 +166,13 @@ function proposalPointAt(p,t){
 }
 function proposalsSweepOverlap(a,b){for(let i=0;i<=32;i++){const t=i/32,pa=proposalPointAt(a,t),pb=proposalPointAt(b,t);if(Math.hypot(pa[0]-pb[0],pa[1]-pb[1])<HEX_MIN_DIST)return true;}return false;}
 function hexPhysPathHitsStationary(p,b,movingIds){
- for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q||q.id===p.ball.id||movingIds.has(q.id))continue;const pv=p.topPivot||p.pivot;if(!p.virtualPivot&&pv&&pv[0]===x&&pv[1]===y)continue;const qp=normPoint(x,y);for(let i=1;i<=32;i++){const pt=proposalPointAt(p,i/32);if(Math.hypot(pt[0]-qp[0],pt[1]-qp[1])<HEX_MIN_DIST)return true;}}
+ // The 32 path samples are computed once per call (not once per board ball);
+ // balls farther than HEX_MIN_DIST from the samples' bounding box cannot hit.
+ let pts=null,x0=0,x1=0,y0=0,y1=0;
+ for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(!q||q.id===p.ball.id||movingIds.has(q.id))continue;const pv=p.topPivot||p.pivot;if(!p.virtualPivot&&pv&&pv[0]===x&&pv[1]===y)continue;
+  if(!pts){pts=[];x0=y0=Infinity;x1=y1=-Infinity;for(let i=1;i<=32;i++){const pt=proposalPointAt(p,i/32);pts.push(pt);if(pt[0]<x0)x0=pt[0];if(pt[0]>x1)x1=pt[0];if(pt[1]<y0)y0=pt[1];if(pt[1]>y1)y1=pt[1];}}
+  const qp=normPoint(x,y);if(qp[0]<x0-HEX_MIN_DIST||qp[0]>x1+HEX_MIN_DIST||qp[1]<y0-HEX_MIN_DIST||qp[1]>y1+HEX_MIN_DIST)continue;
+  for(const pt of pts)if(Math.hypot(pt[0]-qp[0],pt[1]-qp[1])<HEX_MIN_DIST)return true;}
  return false;
 }
 function proposalHitsStationaryBall(p,b,movingOrigins){const ids=new Set();for(let y=boardScanMin(b);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?b[y][x]:null;if(q&&movingOrigins?.has(x+","+y))ids.add(q.id);}return hexPhysPathHitsStationary(p,b,ids);}
