@@ -76,6 +76,23 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert.strictEqual(shapes.size, 5, "each colour needs a distinct symbol");
   const tiny = fakeCtx(); cs.draw(tiny, 10, 10, 8, 0, {}); assert(!tiny.ops.includes("fill"), "no symbol on tiny previews");
 
+  // --- Mobile performance: the static background is a CSS layer.
+  const perfLog = [];
+  const cp = vm.createContext({
+    window: {}, console, VW: 1280, VH: 720, STARS: [{ x: 1, y: 2, s: 2, a: 1, p: 0 }],
+    drawBackground: () => perfLog.push("base-bg"),
+    getStaticBackgroundCanvas: () => ({ toDataURL: () => "data:image/png;base64,AAA" })
+  });
+  vm.runInContext(read("app-mobile-performance-v1.js") + "\nthis.bg = drawBackground;", cp);
+  const bgCtx = marked => { const ops = []; return { ops, canvas: { __sixBallBgLayer: marked }, globalAlpha: 1, clearRect: () => ops.push("clear"), fillRect: () => ops.push("fill") }; };
+  const plain = bgCtx(false); cp.bg(plain, 0);
+  assert.deepStrictEqual(perfLog, ["base-bg"], "an unmarked canvas keeps the full background");
+  const layered = bgCtx(true); cp.bg(layered, 0);
+  assert.strictEqual(perfLog.length, 1, "a marked canvas must not redraw the static background");
+  assert.deepStrictEqual(layered.ops, ["clear", "fill"], "a marked canvas is cleared and gets only the stars");
+  assert.strictEqual(cp.window.__sixBallStaticBackgroundUrl(), "data:image/png;base64,AAA");
+  assert(/backgroundImage: `url\(\$\{bgLayerUrl\}\)`/.test(app16) && /cv\.__sixBallBgLayer = !!bgLayerUrl/.test(app16), "the App shows the static background behind the canvas");
+
   // --- Source contracts for the audited defects.
   assert(!/startMatch\(\s*"FRIEND"/.test(app16), "rooms must not start a local CPU match");
   assert(/beginOnline\(match,"ROOM"\)/.test(app16), "rooms must start a networked match");

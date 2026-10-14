@@ -6,8 +6,8 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 
 | # | file | group | lines | wraps | header |
 | ---: | --- | --- | ---: | --- | --- |
-| 1 | `app-01.js` | core: constants, physics planner, resolver, renderer | 100 |  |  |
-| 2 | `app-02.js` | core: constants, physics planner, resolver, renderer | 303 |  | HEXDROP unified physics core: the only ball-motion definition. / |
+| 1 | `app-01.js` | core: constants, physics planner, resolver, renderer | 106 |  |  |
+| 2 | `app-02.js` | core: constants, physics planner, resolver, renderer | 309 |  | HEXDROP unified physics core: the only ball-motion definition. / |
 | 3 | `app-03.js` | core: constants, physics planner, resolver, renderer | 221 |  | HEXDROP unified event resolver. |
 | 4 | `app-04.js` | core: constants, physics planner, resolver, renderer | 196 |  | Canonical motion-group cleanup. No legacy rigidity metadata exists here. / |
 | 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 277 |  |  |
@@ -21,7 +21,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 714 |  |  |
 | 14 | `app-09.js` | core: engine, assets, net, app shell | 586 |  | Garbage pipeline entry points.  They are installed later by |
 | 15 | `app-10.js` | core: engine, assets, net, app shell | 437 |  | ボール描画 |
-| 16 | `app-14.js` | core: engine, assets, net, app shell | 392 |  |  |
+| 16 | `app-14.js` | core: engine, assets, net, app shell | 379 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
 | 19 | `app-15.js` | core: engine, assets, net, app shell | 119 |  |  |
@@ -29,20 +29,20 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 21 | `app-online-v2.js` | online | 2310 |  |  |
 | 22 | `app-menu-ui.js` | menu / audio | 225 |  | HEXDROP immersive menu system. |
 | 23 | `app-brand-bgm.js` | menu / audio | 146 |  | 6ball brand + menu audio + gameplay BGM adapter. |
-| 24 | `app-bgm-local.js` | menu / audio | 349 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
-| 25 | `app-audio-volume-control.js` | menu / audio | 275 |  | 6ball unified live audio controller. |
+| 24 | `app-bgm-local.js` | menu / audio | 352 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
+| 25 | `app-audio-volume-control.js` | menu / audio | 277 |  | 6ball unified live audio controller. |
 | 26 | `app-menu-volume-fix.js` | menu / audio | 78 |  | 6ball menu click volume hotfix. |
 | 27 | `app-rotate-sfx.js` | menu / audio | 137 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
 | 28 | `app-instant-drop-sfx.js` | menu / audio | 140 |  | 6ball instant-drop landing v10 |
-| 29 | `app-16.js` | core: engine, assets, net, app shell | 647 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
-| 30 | `app-17.js` | core: engine, assets, net, app shell | 129 |  |  |
-| 31 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 346 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
+| 29 | `app-16.js` | core: engine, assets, net, app shell | 706 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
+| 30 | `app-17.js` | core: engine, assets, net, app shell | 268 |  |  |
+| 31 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 351 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
 | 32 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |
 | 33 | `app-garbage-zero-rigidity.js` | garbage (おじゃま) pipeline | 118 | hexPhysPlanGroup | Post-split garbage rigidity invariant. |
 | 34 | `app-garbage-deep-settle.js` | garbage (おじゃま) pipeline | 133 |  | Garbage full-gravity finalization invariant. |
 | 35 | `app-garbage-simultaneous-motion.js` | garbage (おじゃま) pipeline | 118 |  | Garbage contact resolution after unit-local ordinary timelines. |
 | 36 | `app-garbage-render-overlap-guard.js` | garbage (おじゃま) pipeline | 107 |  | Render-only garbage overlap guard. |
-| 37 | `app-ai-superstrong-authoritative-v2.js` | AI opponent | 2250 |  | 6ball SUPERHUMAN AUTHORITATIVE v3 |
+| 37 | `app-ai-core.js` | AI opponent | 280 |  | CPU AI core v1: one engine-accurate simulation and one decision function for |
 | 38 | `app-runtime-performance.js` | performance | 161 |  | Main-thread runtime performance guards. |
 | 39 | `app-physics-safety-invariants.js` | safety invariants | 727 |  |  |
 | 40 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |
@@ -57,7 +57,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 49 | `app-coherent-collapse-v1.js` | collapse scheduling authorities | 1239 |  | 6ball COHERENT COLLAPSE v1 |
 | 50 | `app-wall-boundary-authoritative-v1.js` | rigidity / split authorities (Nintendo reference) | 414 |  | 6ball WALL BOUNDARY AUTHORITATIVE v1 |
 | 51 | `app-slope-upconvex-authoritative-v3.js` | rigidity / split authorities (Nintendo reference) | 826 | hexPhysPlanGroup | 6ball SLOPE + UP-CONVEX AUTHORITATIVE v3 |
-| 52 | `app-intentional-hexagon-stability-v1.js` | rigidity / split authorities (Nintendo reference) | 731 | hexPhysPlanGroup | 6ball INTENTIONAL HEXAGON STABILITY v1 |
+| 52 | `app-intentional-hexagon-stability-v1.js` | rigidity / split authorities (Nintendo reference) | 768 | hexPhysPlanGroup | 6ball INTENTIONAL HEXAGON STABILITY v1 |
 | 53 | `app-rigidity-resolver-authoritative-v3.js` | rigidity / split authorities (Nintendo reference) | 3803 | hexPhysPlanGroup | 6ball RIGIDITY RESOLVER AUTHORITATIVE v3 |
 | 54 | `app-collapse-vertical-merge-v1.js` | collapse scheduling authorities | 192 |  | 6ball COLLAPSE VERTICAL MERGE v1 |
 | 55 | `app-pile-motion-authority-v2.js` | collapse scheduling authorities | 205 |  | 6ball PILE MOTION AUTHORITY v2 |
@@ -75,4 +75,5 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 67 | `app-split-visual-smoothness-v1.js` | rigidity / split authorities (Nintendo reference) | 15 |  | Retired split display follower. |
 | 68 | `controls-v7.js` | input | 341 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
 | 69 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
-| 70 | `app-ui-ux-v1.js` | other | 70 |  | UI/UX layer v1 (no physics). |
+| 70 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
+| 71 | `app-mobile-performance-v1.js` | other | 44 |  | Mobile performance layer v1 (no physics changes). |

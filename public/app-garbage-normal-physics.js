@@ -74,16 +74,21 @@
     // Garbage metadata must not create a special HEXAGON-hole exemption. Mixed
     // incoming colours behave exactly like mixed ordinary balls under gravity.
     if(typeof referenceHexagonRingBalls==="function"){
+        // Called for many empty cells inside every AI simulation, so the ring
+        // is checked without allocating; the result array is built only for a
+        // complete single-colour ring (same result as before).
+        const RING_DX=[-2,2,-1,1,-1,1],RING_DY=[0,0,-1,-1,1,1];
         referenceHexagonRingBalls=function(board,cx,cy){
-            const cells=[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]],balls=[];
             if(!valid(cx,cy)||board[cy][cx]!==null)return null;
-            for(const[dx,dy]of cells){
-                const x=cx+dx,y=cy+dy;
+            for(let i=0;i<6;i++){
+                const x=cx+RING_DX[i],y=cy+RING_DY[i];
                 if(!valid(x,y)||!board[y][x])return null;
-                balls.push(board[y][x]);
             }
-            const c=getC(balls[0]);
-            return balls.every(ball=>getC(ball)===c)?balls:null;
+            const c=getC(board[cy+RING_DY[0]][cx+RING_DX[0]]);
+            for(let i=1;i<6;i++)if(getC(board[cy+RING_DY[i]][cx+RING_DX[i]])!==c)return null;
+            const balls=new Array(6);
+            for(let i=0;i<6;i++)balls[i]=board[cy+RING_DY[i]][cx+RING_DX[i]];
+            return balls;
         };
     }
 

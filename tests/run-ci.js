@@ -12,6 +12,7 @@ const GATE = [
   "tests/build-output.js",
   "tests/menu-ui-regression.js",
   "tests/ui-ux-regression.js",
+  "tests/ai-core.js",
   "tests/brand-bgm.js",
   "tests/bgm-local.js",
   "tests/landscape-startup.js",

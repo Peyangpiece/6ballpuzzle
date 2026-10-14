@@ -43,6 +43,11 @@ const precache = JSON.parse(/const PRECACHE=(\[[^\]]*\]);/.exec(sw)[1]);
 for (const key of ["bundle", "css", "react", "reactDom"]) assert(precache.includes(manifest[key]), "service worker must precache " + key);
 assert(precache.includes("/") && !precache.some(p => /bgm/.test(p)), "precache the shell, never the BGM");
 assert(/\/sw\.js\n\s+Cache-Control: no-cache/.test(headers), "sw.js must not be cached");
+// CPU AI worker: one hashed bundle, named in index.html and precached for offline AI matches.
+assert(/^\/js\/ai-worker\.[0-9a-f]{12}\.min\.js$/.test(manifest.aiWorker) && fs.existsSync(path.join(out, manifest.aiWorker)), "AI worker bundle must ship content-hashed");
+assert(html.includes(`window.__sixBallAiWorkerUrl="${manifest.aiWorker}"`), "index.html must name the AI worker bundle");
+assert(precache.includes(manifest.aiWorker), "service worker must precache the AI worker");
+assert(!fs.existsSync(path.join(out, "ai-worker.js")), "the development worker loader must not ship");
 assert(/serviceWorker\.register\("\/sw\.js"\)/.test(html), "index.html must register the service worker");
 fs.rmSync(out, { recursive: true, force: true });
 console.log(`build output PASS (${manifest.files.length} scripts, ${manifest.rawBytes} -> ${manifest.minBytes} bytes, dist ${(total / 1048576).toFixed(1)} MB)`);
