@@ -41,6 +41,22 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(/インターネット/.test(f("Firebase SDK を読み込めませんでした")));
   assert(/もう一度/.test(f("")));
 
+  // --- Playable tutorial lessons: goals and retries from engine events.
+  const ct = vm.createContext({ window: {}, React: {}, console, SPAWN_X: 9, pendingIncomingCount: g => g.pending || 0 });
+  vm.runInContext(app17 + "\nthis.L = HEX_TUTORIAL_LESSONS; this.obs = hexTutorialObserve; this.tr = hexTutorialTracker;", ct);
+  const play = (lesson, frames) => { const t = ct.tr(); let r = null; for (const f of frames) { const g = { queue: [], piece: f.piece || null, pieceVX: f.vx ?? 9, events: f.ev || [], state: f.state || "PLAYING", pending: f.pending || 0 }; r = ct.obs(g, lesson, t) || r; if (r) break; } return r; };
+  assert.strictEqual(ct.L.length, 5, "five lessons");
+  assert.strictEqual(play(0, [{ piece: {}, vx: 9, ev: [{ t: "land" }] }]), null, "dropping without moving does not pass lesson 1");
+  assert.strictEqual(play(0, [{ piece: {}, vx: 11 }, { ev: [{ t: "land" }] }]), "success", "moving then dropping passes lesson 1");
+  assert.strictEqual(play(1, [{ ev: [{ t: "rotate" }] }, { ev: [{ t: "land" }] }]), "success", "rotating then dropping passes lesson 2");
+  assert.strictEqual(play(2, [{ ev: [{ t: "land" }, { t: "clear" }] }]), "success", "a clear passes lesson 3");
+  assert(/^retry:/.test(play(3, [{ ev: [{ t: "land" }, { t: "clear" }] }])), "a clear without a technique retries lesson 4");
+  assert.strictEqual(play(3, [{ ev: [{ t: "land" }, { t: "clear" }, { t: "waza", w: "PYRAMID" }] }]), "success", "a technique passes lesson 4");
+  assert.strictEqual(play(4, [{ ev: [{ t: "land" }, { t: "garbage" }], state: "RESOLVING", pending: 6 }]), null, "lesson 5 waits for the garbage to land");
+  assert.strictEqual(play(4, [{ ev: [{ t: "land" }, { t: "garbage" }], state: "RESOLVING", pending: 6 }, { state: "PLAYING", pending: 0 }]), "success", "lesson 5 passes once the garbage has landed");
+  assert(/else if \(!tutorialRef\.current\) stepEngine\(foe, h\)/.test(app16), "the tutorial must not simulate an opponent");
+  assert(/onPractice:\(\)=>\{initUiAudio\(\);startTutorial\(0\);\}/.test(app16), "the tutorial cards lead into the playable lessons");
+
   // --- Colour symbols are drawn only when enabled, one shape per colour.
   const calls = [];
   const fakeCtx = () => {
