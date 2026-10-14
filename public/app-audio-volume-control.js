@@ -26,6 +26,8 @@
   function gameIsVisible(){
     const root=document.getElementById("root");
     if(!root)return false;
+    // The match screen has the pause button (it replaced the old "✕").
+    if(root.querySelector('button[aria-label="ポーズメニューを開く"]'))return true;
     for(const b of root.querySelectorAll("button")){
       if((b.textContent||"").trim()==="✕")return true;
     }

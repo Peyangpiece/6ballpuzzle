@@ -119,7 +119,7 @@
     window.__sixBallGameplayBgmVersion="cyber44-v3-muted-prime";
 
     let wasGame=false,observer=null;
-    function gameIsVisible(){const root=document.getElementById("root");if(!root)return false;for(const b of root.querySelectorAll("button"))if((b.textContent||"").trim()==="✕")return true;return false;}
+    function gameIsVisible(){const root=document.getElementById("root");if(!root)return false;if(root.querySelector('button[aria-label="ポーズメニューを開く"]'))return true;for(const b of root.querySelectorAll("button"))if((b.textContent||"").trim()==="✕")return true;return false;}
     function syncGameplayMusic(){const game=gameIsVisible();if(game&&!wasGame)Bgm.start(true);else if(!game&&wasGame)Bgm.stop();wasGame=game;}
     function observeRoot(){const root=document.getElementById("root");if(!root||observer)return;observer=new MutationObserver(syncGameplayMusic);observer.observe(root,{childList:true,subtree:true});syncGameplayMusic();}
 

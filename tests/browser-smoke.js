@@ -68,6 +68,12 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
     // match-screen detection broke once when the quit button changed.
     const bgmAudible = await page.evaluate(() => { const B = window.Bgm, a = B && B.audio; return !!(B && B.wanted && a && !a.paused && !a.muted && a.volume > 0); });
     assert(bgmAudible, "battle BGM is not audible during the match");
+    // Taps on the board must not silence it (each layer once treated an in-match
+    // tap as a menu tap and re-primed the BGM muted).
+    const box = await page.locator("canvas").boundingBox();
+    for (let i = 0; i < 3; i++) { await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.5); await page.waitForTimeout(250); }
+    const bgmAfterTaps = await page.evaluate(() => { const B = window.Bgm, a = B && B.audio; return !!(B && B.wanted && a && !a.paused && !a.muted && a.volume > 0); });
+    assert(bgmAfterTaps, "battle BGM went silent after tapping the board");
     for (let i = 0; i < 24; i++) {
       await page.keyboard.press(i % 2 ? "ArrowLeft" : "ArrowRight");
       await page.keyboard.press("x");
