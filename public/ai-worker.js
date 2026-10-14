@@ -59,7 +59,8 @@ var AI_WORKER_FILES=[
   "app-motion-smoothness-authority-v1.js",
   "app-no-upward-bounce-split-authority-v1.js",
   "app-even-row-split-continuity-v1.js",
-  "app-split-visual-smoothness-v1.js"
+  "app-split-visual-smoothness-v1.js",
+  "app-settle-watchdog-v1.js"
 ];
 (function(){
   // The layers are browser scripts: give them the globals they test for.
@@ -74,7 +75,7 @@ var AI_WORKER_FILES=[
   if(!self.__sixBallAiWorkerBundled){var v="?v="+Date.now().toString(36);importScripts.apply(self,AI_WORKER_FILES.map(function(f){return f+v;}));}
   self.onmessage=function(e){
     var d=e.data||{},out={id:d.id};
-    try{var r=self.__sixBallAiDecide(d.req);out.move=r.move;out.stats=r.stats;}
+    try{var r=self.__sixBallAiDecide(d.req);out.move=r.move;out.stats=r.stats;if(r.sig!==undefined)out.sig=r.sig;}
     catch(err){out.error=String(err&&err.message||err);}
     self.postMessage(out);
   };

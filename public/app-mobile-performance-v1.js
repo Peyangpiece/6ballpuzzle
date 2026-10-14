@@ -40,4 +40,35 @@
     };
 })();
 
+// 3. Defeat animation: the lost board is drawn through a grayscale canvas
+//    filter, applied to every ball draw (about 100 per frame). Filtered draws
+//    are expensive (3-4 fps in software canvases). Apply the filter once per
+//    colour to a cached copy of the ball sprite and draw that copy instead.
+(function cacheFilteredBallSprites(){
+    if(typeof window==="undefined"||typeof drawBall!=="function"||typeof document==="undefined"||window.__sixBallFilteredSpritesV1)return;
+    window.__sixBallFilteredSpritesV1=true;
+    const baseDrawBall=drawBall,cache=new Map();
+    function filtered(ci,filter){
+        const key=ci+"|"+filter;let cv=cache.get(key);
+        if(cv===undefined){
+            cv=null;
+            try{const img=BALL_IMG[ci],w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+                if(w&&h){cv=document.createElement("canvas");cv.width=w;cv.height=h;const c=cv.getContext("2d");if(c&&"filter" in c){c.filter=filter;c.drawImage(img,0,0);}else cv=null;}
+            }catch(_){cv=null;}
+            cache.set(key,cv);
+        }
+        return cv;
+    }
+    drawBall=function(ctx,cx,cy,d,ci,o={}){
+        const filter=ctx&&typeof ctx.filter==="string"?ctx.filter:"none";
+        if(filter==="none"||!(d>1.2)||(o.sq||0)!==0||(o.aura||0)!==0||(o.ring||0)!==0||typeof imgReady!=="function"||!imgReady(ci))return baseDrawBall(ctx,cx,cy,d,ci,o);
+        const sprite=filtered(ci,filter);if(!sprite)return baseDrawBall(ctx,cx,cy,d,ci,o);
+        const alpha=o.alpha===undefined?1:o.alpha,scale=o.scale===undefined?1:o.scale,s=d*scale;
+        if(alpha<=0||s<=0)return;
+        const a0=ctx.globalAlpha;ctx.filter="none";ctx.globalAlpha=a0*alpha;
+        ctx.drawImage(sprite,cx-s/2,cy-s/2,s,s);
+        ctx.globalAlpha=a0;ctx.filter=filter;
+    };
+})();
+
 if(typeof window!=="undefined")window.__sixBallMobilePerformanceVersion="mobile-performance-v1";

@@ -165,6 +165,10 @@ function drawIncomingPreviews(ctx,g,L){
         const d=soloStraight?39:23,cols=soloStraight?1:Math.min(3,shapes.length),rows=Math.ceil(shapes.length/cols),packW=soloStraight?L.BW:82,packH=soloStraight?86:58;
         const totalW=cols*packW,totalH=rows*packH,baseX=L.X+L.BW/2-totalW/2,baseY=Math.max(-8,L.Y-34-totalH-k*12);
         ctx.save();ctx.globalCompositeOperation="screen";ctx.globalAlpha=appear*fade;ctx.strokeStyle=fx.tint||"#8CFFB1";ctx.lineWidth=3;ctx.shadowColor=fx.tint||"#8CFFB1";ctx.shadowBlur=13;
+        // All rings of one preview go into a single path: one stroke (and one
+        // shadow blur) instead of one per ring, which made several incoming
+        // attacks drop software-rendered frames to a few per second.
+        ctx.beginPath();
         for(let s=0;s<shapes.length;s++){
             const pat=GARBAGE_SHAPES[shapes[s]]||GARBAGE_SHAPES.PYRAMID,c=s%cols,r=Math.floor(s/cols),ox=baseX+c*packW+packW/2,oy=baseY+r*packH+9;
             const minX=Math.min(...pat.map(p=>p[0])),maxX=Math.max(...pat.map(p=>p[0])),minY=Math.min(...pat.map(p=>p[1]));
@@ -172,8 +176,9 @@ function drawIncomingPreviews(ctx,g,L){
             // the reference capture. Sampling it down to seven rings made it
             // read as an unrelated small icon.
             const sample=soloStraight?pat:(pat.length>7?pat.filter((_,i)=>i%Math.max(1,Math.floor(pat.length/7))===0).slice(0,7):pat);
-            for(const [x,y] of sample){const px=ox+(x-(minX+maxX)/2)*d*.5,py=oy+(y-minY)*d*HEX_ROW_H;ctx.beginPath();ctx.arc(px,py,d*.42,0,TAU);ctx.stroke();}
+            for(const [x,y] of sample){const px=ox+(x-(minX+maxX)/2)*d*.5,py=oy+(y-minY)*d*HEX_ROW_H;ctx.moveTo(px+d*.42,py);ctx.arc(px,py,d*.42,0,TAU);}
         }
+        ctx.stroke();
         ctx.restore();
     }
 }

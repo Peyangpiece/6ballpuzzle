@@ -42,7 +42,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 34 | `app-garbage-deep-settle.js` | garbage (おじゃま) pipeline | 133 |  | Garbage full-gravity finalization invariant. |
 | 35 | `app-garbage-simultaneous-motion.js` | garbage (おじゃま) pipeline | 118 |  | Garbage contact resolution after unit-local ordinary timelines. |
 | 36 | `app-garbage-render-overlap-guard.js` | garbage (おじゃま) pipeline | 107 |  | Render-only garbage overlap guard. |
-| 37 | `app-ai-core.js` | AI opponent | 280 |  | CPU AI core v1: one engine-accurate simulation and one decision function for |
+| 37 | `app-ai-core.js` | AI opponent | 428 |  | CPU AI core v1: one engine-accurate simulation and one decision function for |
 | 38 | `app-runtime-performance.js` | performance | 161 |  | Main-thread runtime performance guards. |
 | 39 | `app-physics-safety-invariants.js` | safety invariants | 727 |  |  |
 | 40 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |
@@ -70,10 +70,11 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 62 | `app-rigidity-nintendo-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 230 | createEngine, hexPhysPlanGroup | Nintendo-reference rigidity authority v1. |
 | 63 | `app-rigidity-release-bounce-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 231 | createEngine, hexPhysPlanGroup, hexPhysResolveEvent | Nintendo rigidity release + no-bounce authority v1. |
 | 64 | `app-motion-smoothness-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 91 |  | Motion smoothness authority v1. |
-| 65 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 327 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
+| 65 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 334 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
 | 66 | `app-even-row-split-continuity-v1.js` | rigidity / split authorities (Nintendo reference) | 72 |  | Even/narrow-row strict-inner split continuity authority v1. |
 | 67 | `app-split-visual-smoothness-v1.js` | rigidity / split authorities (Nintendo reference) | 15 |  | Retired split display follower. |
-| 68 | `controls-v7.js` | input | 341 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
-| 69 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
-| 70 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
-| 71 | `app-mobile-performance-v1.js` | other | 44 |  | Mobile performance layer v1 (no physics changes). |
+| 68 | `app-settle-watchdog-v1.js` | other | 48 |  | Settle watchdog v1. |
+| 69 | `controls-v7.js` | input | 341 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
+| 70 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
+| 71 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
+| 72 | `app-mobile-performance-v1.js` | other | 44 |  | Mobile performance layer v1 (no physics changes). |

@@ -60,7 +60,8 @@ const files = [
   "app-motion-smoothness-authority-v1.js",
   "app-no-upward-bounce-split-authority-v1.js",
   "app-even-row-split-continuity-v1.js",
-  "app-split-visual-smoothness-v1.js"
+  "app-split-visual-smoothness-v1.js",
+  "app-settle-watchdog-v1.js"
 ];
 
 // Fail before testing a stale or reordered subset of the published runtime.
