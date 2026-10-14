@@ -263,15 +263,20 @@ resolveVisualContacts=function(g){
   // A rigid cohort can be trapped between horizontal constraints. In that
   // case preserving Y is not physically possible: separate along the real
   // contact normal rather than accepting penetration or moving fixed supports.
+  // Cohorts depend only on group fields and path segments, which this loop
+  // never changes: compute each once instead of once per pair and pass.
+  const cohortOf=new Map();
+  const cohort=q=>{let c=cohortOf.get(q);if(!c){c=cohortItems(after,q);cohortOf.set(q,c);}return c;};
+  let converged=false;
   for(let pass=0;pass<128;pass++){
     let changed=false;
     for(let i=0;i<after.length;i++)for(let j=i+1;j<after.length;j++){
       const a=after[i],b=after[j];
       if(!a.moving&&!b.moving)continue;
-      const ac=cohortItems(after,a),bc=cohortItems(after,b);
-      if(ac.includes(b)||bc.includes(a))continue;
       const dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H,d=Math.hypot(dx,dy);
       if(d>=minDist-SAFE_EPS)continue;
+      const ac=cohort(a),bc=cohort(b);
+      if(ac.includes(b)||bc.includes(a))continue;
       const nx=d>EPS?dx/d:Math.sign(a.x-b.x)||1;
       const ny=d>EPS?dy/d:0;
       const need=minDist-d+SAFE_EPS;
@@ -287,8 +292,10 @@ resolveVisualContacts=function(g){
       }
       changed=true;
     }
-    if(!changed)break;
+    if(!changed){converged=true;break;}
   }
+  // Consecutive calls whose separation did not converge (read by the settle watchdog).
+  g._contactNonConvergent=converged?0:(g._contactNonConvergent||0)+1;
 
   if(upwardPrevented||splitRestored||horizontalRepairs){
     window.__sixBallLastNoUpwardBounceVisualV1={

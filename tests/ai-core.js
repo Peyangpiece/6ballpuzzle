@@ -69,6 +69,15 @@ assert.strictEqual(tech.type, "STRAIGHT", "level 5 must complete the available S
 const decide = () => run(`JSON.stringify(__sixBallAiDecide({board:__sixBallAiBoardFrom(__g0.board),colors:__g0.piece.colors,queue:__g0.queue,level:3,nextId:__g0.nextId,seed:99,maxSims:15}).move)`);
 assert.strictEqual(decide(), decide(), "decisions must be deterministic for a fixed simulation count");
 
+// --- Planning ahead: the next piece is decided on the predicted board, and the
+//     signature lets the player use that plan only if the real board matches.
+const ahead = run(`(()=>{const g=createEngine(4243);spawn(g);const board=__sixBallAiBoardFrom(g.board);
+ const now=__sixBallAiDecide({board,colors:g.piece.colors,queue:g.queue,level:5,nextId:g.nextId,seed:2,maxSims:10});
+ const a=__sixBallAiDecide({board,colors:g.piece.colors,queue:g.queue,level:5,nextId:g.nextId,seed:2,maxSims:10,ahead:now.move});
+ const pred=__sixBallAiSimulateMove(board,{...now.move,colors:g.piece.colors},g.nextId);
+ return{move:!!a.move,sigMatches:a.sig===__sixBallAiBoardSignature(pred.b),sameAsEngine:__sixBallAiBoardSignature(g.board)===__sixBallAiBoardSignature(board)};})()`);
+assert(ahead.move && ahead.sigMatches && ahead.sameAsEngine, "ahead planning must return a move and the predicted board signature: " + JSON.stringify(ahead));
+
 // --- Every level plays a piece through the main-thread player (no Worker here: sync fallback).
 ctx.__sixBallAiSyncMaxSims = 6;
 for (let level = 1; level <= 5; level++) {

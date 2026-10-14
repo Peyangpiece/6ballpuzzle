@@ -91,6 +91,24 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert.strictEqual(perfLog.length, 1, "a marked canvas must not redraw the static background");
   assert.deepStrictEqual(layered.ops, ["clear", "fill"], "a marked canvas is cleared and gets only the stars");
   assert.strictEqual(cp.window.__sixBallStaticBackgroundUrl(), "data:image/png;base64,AAA");
+  // Defeat animation: a filtered ball draw uses a cached filtered sprite (one filter pass per colour).
+  const sprites = [];
+  const fakeCanvas = () => { const c = { width: 0, height: 0, filterDraws: 0 }; c.getContext = () => ({ set filter(v) { c.filter = v; }, get filter() { return c.filter || "none"; }, drawImage() { c.filterDraws++; } }); sprites.push(c); return c; };
+  const base = [];
+  const cf = vm.createContext({ window: {}, console, document: { createElement: fakeCanvas }, BALL_IMG: [{ naturalWidth: 64, naturalHeight: 64 }], imgReady: () => true,
+    drawBackground: () => {}, drawBall: (...a) => base.push(a) });
+  vm.runInContext(read("app-mobile-performance-v1.js") + "\nthis.draw = drawBall;", cf);
+  const drawn = [];
+  const ctx2 = { filter: "none", globalAlpha: 1, drawImage: (img, x, y, w, h) => drawn.push({ img, filter: ctx2.filter, w }) };
+  cf.draw(ctx2, 10, 10, 40, 0, {});
+  assert.strictEqual(base.length, 1, "unfiltered balls keep the normal drawing");
+  ctx2.filter = "grayscale(1)";
+  for (let i = 0; i < 5; i++) cf.draw(ctx2, 10, 10, 40, 0, {});
+  assert.strictEqual(base.length, 1, "filtered balls must not go through the per-draw filter");
+  assert.strictEqual(sprites.length, 1, "one cached sprite per colour and filter");
+  assert.strictEqual(sprites[0].filterDraws, 1, "the filter is applied to the sprite once");
+  assert(drawn.length === 5 && drawn.every(d => d.filter === "none" && d.w === 40), "cached sprite drawn without a live filter");
+  assert.strictEqual(ctx2.filter, "grayscale(1)", "the caller's filter is restored");
   assert(/backgroundImage: `url\(\$\{bgLayerUrl\}\)`/.test(app16) && /cv\.__sixBallBgLayer = !!bgLayerUrl/.test(app16), "the App shows the static background behind the canvas");
 
   // --- Source contracts for the audited defects.
