@@ -33,5 +33,16 @@ for (const a of refs) assert(fs.existsSync(path.join(out, "assets", a)), "refere
 assert(!refs.has("6ball-battle-bgm.mp3"), "the 21 MB MP3 must no longer be referenced");
 let total = 0; (function walk(d) { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else total += fs.statSync(p).size; } })(out);
 assert(total < 20 * 1024 * 1024, "dist exceeds 20 MB: " + total);
+// Installable PWA: manifest icons exist, the service worker precaches the shell but not the BGM.
+const webManifest = JSON.parse(fs.readFileSync(path.join(out, "manifest.webmanifest"), "utf8"));
+for (const size of ["192x192", "512x512"]) assert(webManifest.icons.some(i => i.sizes === size && fs.existsSync(path.join(out, i.src))), "manifest icon missing: " + size);
+assert(webManifest.icons.some(i => i.purpose === "maskable"), "a maskable icon is required for Android");
+assert(/rel="apple-touch-icon"/.test(html) && fs.existsSync(path.join(out, "icons/apple-touch-icon.png")), "iOS home-screen icon missing");
+const sw = fs.readFileSync(path.join(out, "sw.js"), "utf8");
+const precache = JSON.parse(/const PRECACHE=(\[[^\]]*\]);/.exec(sw)[1]);
+for (const key of ["bundle", "css", "react", "reactDom"]) assert(precache.includes(manifest[key]), "service worker must precache " + key);
+assert(precache.includes("/") && !precache.some(p => /bgm/.test(p)), "precache the shell, never the BGM");
+assert(/\/sw\.js\n\s+Cache-Control: no-cache/.test(headers), "sw.js must not be cached");
+assert(/serviceWorker\.register\("\/sw\.js"\)/.test(html), "index.html must register the service worker");
 fs.rmSync(out, { recursive: true, force: true });
 console.log(`build output PASS (${manifest.files.length} scripts, ${manifest.rawBytes} -> ${manifest.minBytes} bytes, dist ${(total / 1048576).toFixed(1)} MB)`);

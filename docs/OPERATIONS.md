@@ -15,6 +15,11 @@
 - `dist/_headers` でキャッシュ方針を配信します。ハッシュ付き `/js/* /css/* /vendor/*` は 1 年 immutable、
   `/index.html` と `/deploy-sha.txt` は no-cache、`/assets/*` は 1 日です。
 - Pull Request ごとに Cloudflare がプレビュー URL を PR コメントに投稿します（本番と同じビルド手順）。
+- `tools/build.js` が `dist/sw.js`（Service Worker）を生成します。アプリ本体（`/`、ハッシュ付き JS/CSS/React、アイコン、
+  効果音と球の画像）を事前キャッシュし、ページ遷移はネットワーク優先・失敗時にキャッシュを返すため、デプロイは次回の起動で
+  反映されます。BGM と Range リクエスト、Firebase など他オリジンの通信には関与しません。キャッシュ名はバンドルの内容から決まり、
+  新しい版が有効になると古いキャッシュを削除します。`/sw.js` は `no-cache` で配信します。
+- アイコンを作り直すときは `python3 tools/make-icons.py`（Pillow が必要）を実行して `public/icons/` をコミットします。
 
 手元から配信物を確認する:
 
