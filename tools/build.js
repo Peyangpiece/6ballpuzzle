@@ -114,7 +114,7 @@ async function main() {
     "/index.html", "  Cache-Control: no-cache", "",
     "/deploy-sha.txt", "  Cache-Control: no-cache", "",
     "/build.json", "  Cache-Control: no-cache", "",
-    "/manifest.webmanifest", "  Cache-Control: public, max-age=3600", "",
+    "/manifest.webmanifest", "  Cache-Control: no-cache", "",
     "/sw.js", "  Cache-Control: no-cache", "",
     "/icons/*", "  Cache-Control: public, max-age=86400", "",
     "/js/*", "  Cache-Control: public, max-age=31536000, immutable", "",

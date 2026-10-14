@@ -103,5 +103,11 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(/typeof navigator\.vibrate==="function"\)&&React\.createElement\(HexSettingToggle,\{label:"振動"/.test(app16), "the vibration setting is hidden where it cannot work");
   assert(/ctx\.font=`900 28px \$\{F\}`/.test(app14) && app14.includes('"900 30px ui-sans-serif, system-ui, sans-serif"'), "HUD text is large enough at phone scale");
   assert(!/おじゃま予告/.test(app14 + app17), "badge and tutorial texts agree on 「おじゃま」");
+  // BGM starts when the match screen is shown; it recognises that screen by the pause button.
+  const bgmSrc = read("app-bgm-local.js");
+  assert(bgmSrc.includes(`button[aria-label="ポーズメニューを開く"]`) && app16.includes('"aria-label": "ポーズメニューを開く"'), "BGM match detection must follow the in-game pause button");
+  // Icons: no SVG favicon that would win over the logo icons.
+  const indexHtml = read("index.html");
+  assert(!/rel="icon" href="data:image\/svg/.test(indexHtml) && /rel="apple-touch-icon" sizes="180x180"/.test(indexHtml), "home-screen icons must be the logo PNGs");
   console.log("ui-ux regression PASS");
 })().catch(e => { console.error("ui-ux regression FAIL:", e && e.stack || e); process.exit(1); });
