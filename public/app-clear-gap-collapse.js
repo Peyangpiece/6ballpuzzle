@@ -166,7 +166,16 @@
         if(!p||p.ty<=p.y||!valid(p.tx,p.ty))return null;
         const target=g.board[p.ty][p.tx];
         if(target&&target!==ball)return null;
-        if(hexPhysPathHitsStationary(p,g.board,new Set([ball.id])))return null;
+        const ignore=new Set([ball.id]);
+        if(ball._clearIntentDir){
+            // A ball with a release intent starts moving at the clear itself,
+            // before an earlier-played fall in this flow lands beside its path
+            // (2026-10-13 PYRAMID chain: purple [5,10] left ahead of green
+            // [3,8] dropping into [3,10]).
+            for(const e of boardEntries(g))
+                if(Array.isArray(e.ball.fallPath)&&e.ball.fallPath.length&&!e.ball._clearIntentDir)ignore.add(e.ball.id);
+        }
+        if(hexPhysPathHitsStationary(p,g.board,ignore))return null;
         p.bundleId=0;
         p.groupSize=0;
         p.clearSupportLossFallback=true;

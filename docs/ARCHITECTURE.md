@@ -76,6 +76,18 @@ public/index.html
   「先に空く側」を推定して左右が同条件のときに使います（`app-gravity-priority-v1.js`
   `__sixBallMarkClearReleaseIntents`、`app-09.js` から呼び出し）。残る差は、崩れの途中で両側から同時に
   入って穴の上で止まる 2 球（HEXAGON の [15,10]）と、壁際の紫の向き（STRAIGHT の [17,6]）です。
+- 同じ 2 本の映像の連鎖（HEXAGON 後の赤・黄・紫 20 球、PYRAMID 後の青 7 球）: 最初の崩れが止まった盤面から
+  再生すると、消える色と数が本家と一致し、縮み始めから落ち始めまでは 11 フレーム（本家 13）、止まった盤面は
+  HEXAGON 側が全セル一致、PYRAMID 側が 2 セル違いです（`tests/reference-chain-collapse-20261013.js`）。
+  このために消去直後の向きの推定へ 2 つの効果を足しました（`app-gravity-priority-v1.js`）:
+  - 荷重: 下の 2 セルが両方空いた球は、自分だけにもたれる上の球と反対側へ押される
+  - 引きずり: 支えの球が自分の下へ潜るように転がると同じ向きへ運ばれる（支えが壁際の球のとき、または
+    上に何も載っておらず左右が同時に空き、もう一方の支えが真下へ落ちるとき）
+  あわせて、向きの決まった球は消去の瞬間に動き出すものとして、この崩れで先に落とした球を経路判定の障害物から
+  外します（`app-clear-gap-collapse.js`）。残る差は PYRAMID 側の [4,9] で、本家では両側の 2 球がもたれ合って
+  穴を残しますが、ランタイムは埋めます（HEXAGON の [15,10] と同じ種類）。崩れが止まるまでの時間は HEXAGON
+  側 20 フレーム（本家 18）、PYRAMID 側 22 フレーム（本家 14）で、本家では一体で滑る 3 球の三角形を
+  ランタイムが 1 球ずつ順に動かすため長くなっています（ゲートなし）。
 - レーティングはクライアントが計算して書き込みますが、ルールが Elo の区間テーブル（`tools/elo-rules-table.js`
   が生成、`tests/rules-elo-table.js` が同期を検証）で値を厳密に検証します。`config/ratingAuthority = "server"`
   に切り替えると `firebase/functions/` の Cloud Function が裁定します（[OPERATIONS.md](OPERATIONS.md) 参照）。
