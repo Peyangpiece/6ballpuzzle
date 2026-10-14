@@ -37,6 +37,7 @@ const GATE = [
   "tests/reference-post-clear-capture-diagnostic.js",
   "tests/reference-clear-20261013-collapse.js",
   "tests/reference-technique-collapse-20261013.js",
+  "tests/reference-chain-collapse-20261013.js",
   "tests/reference-floor-slide-clock.js",
   "tests/reference-inverted-pocket-motion.js",
   "tests/reference-garbage-flight.js",

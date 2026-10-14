@@ -351,9 +351,64 @@
         }
         return balls.map(e=>({e,l:open(e,-1),r:open(e,1)}));
     }
+    // Upper neighbour on side d (-1 upper-left, +1 upper-right) that rests on
+    // this ball alone: its other lower cell is a wall or already empty.
+    function leansOnlyOnBelow(b,x,y,d){
+        const u=realBallAt(b,x+d,y-1,null);
+        if(!independentOrdinaryBall(u))return false;
+        const ax=x+2*d,ay=y;
+        return !valid(ax,ay)||emptyAt(b,ax,ay,null);
+    }
+    /*
+     * Two more effects decide a released ball's side when the opening times
+     * alone do not (Nintendo 2026-10-13 HEXAGON and PYRAMID captures, chain
+     * clears at F132 and F175):
+     *  - Load: a ball left with both lower cells empty is pushed away from an
+     *    upper neighbour that rests on it alone (purple [5,10] went left under
+     *    purple [6,9]).
+     *  - Drag: a lower support that rolls in under the ball carries it the same
+     *    way.  This holds when the support is a wall ball (purple [0,9] took
+     *    purple [1,8] right), and for an unloaded ball whose two sides open
+     *    together while the other support drops straight (green [6,7] went left
+     *    as blue [7,8] rolled under it; blue [13,6] in the HEXAGON chain).
+     */
     window.__sixBallMarkClearReleaseIntents=function(b){
-        for(const {e,l,r} of estimateClearRelease(b)){
-            if(l!==r&&Math.min(l,r)<Infinity)e.ball._clearIntentDir=l<r?-1:1;
+        const est=estimateClearRelease(b);
+        // Each released ball's own direction: -1/+1 roll, 0 straight drop,
+        // null undecided.  A tied ball drops straight once the cell two rows
+        // below is free or its occupant leaves sideways.
+        const moveDir=new Map();
+        for(const {e,l,r} of est){
+            if(Math.min(l,r)===Infinity)continue;
+            moveDir.set(e.ball,fallsStraightNow(b,e.x,e.y)?0:l<r?-1:r<l?1:null);
+        }
+        for(const {e,l,r} of est){
+            if(l!==r||l===Infinity||moveDir.get(e.ball)!==null||e.y>=ROWS-2)continue;
+            const below=realBallAt(b,e.x,e.y+2,null);
+            if(!below||(moveDir.has(below)&&moveDir.get(below)!==0))moveDir.set(e.ball,0);
+        }
+        for(const {e,l,r} of est){
+            let dir=l!==r&&Math.min(l,r)<Infinity?(l<r?-1:1):0;
+            if(Math.min(l,r)<Infinity){
+                const drag=[];let wallSupport=false,straightSupport=false;
+                for(const s of[-1,1]){
+                    const o=realBallAt(b,e.x+s,e.y+1,null);
+                    if(!o)continue;
+                    if(moveDir.get(o)===0)straightSupport=true;
+                    if(moveDir.get(o)===-s){
+                        drag.push(-s);
+                        if(e.x+s===0||e.x+s===W2-1)wallSupport=true;
+                    }
+                }
+                const unloaded=!realBallAt(b,e.x-1,e.y-1,null)&&!realBallAt(b,e.x+1,e.y-1,null);
+                if(drag.length===1&&(wallSupport||(l===r&&straightSupport&&unloaded))&&(drag[0]<0?l:r)<Infinity)
+                    dir=drag[0];
+            }
+            if(l===0&&r===0&&!emptyAt(b,e.x,e.y+2,null)){
+                const fromLeft=leansOnlyOnBelow(b,e.x,e.y,-1),fromRight=leansOnlyOnBelow(b,e.x,e.y,1);
+                if(fromLeft!==fromRight)dir=fromLeft?1:-1;
+            }
+            if(dir)e.ball._clearIntentDir=dir;
             else delete e.ball._clearIntentDir;
         }
     };
