@@ -101,6 +101,70 @@ function RoomJoin({ code, onMatched, onCancel, onError }) {
             React.createElement("button", { onClick: onCancel, className: "mt-4 rounded-xl px-5 py-2.5 text-xs font-black text-white/75", style: { border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.04)" } }, "キャンセル")));
 }
 
+// ---------------------------------------------------------------------------
+// Tutorial (HOME → チュートリアル). Step-by-step rules and controls, shown
+// outside the match so nothing covers the boards during play.
+const HEX_TUTORIAL_DONE_KEY = "hexdrop_tutorial_done";
+const HEX_BALL_SRC = ["/assets/ball-red.png", "/assets/ball-blue.png", "/assets/ball-green.png", "/assets/ball-yellow.png", "/assets/ball-purple.png"];
+// Balls on the game's lattice: x in half-ball steps, y in rows (row pitch = √3/2 · d).
+function TutBalls({ cells, d = 34, label }) {
+    const maxX = Math.max(...cells.map(c => c[0])), maxY = Math.max(...cells.map(c => c[1]));
+    return React.createElement("div", { role: "img", "aria-label": label || "", className: "relative shrink-0", style: { width: maxX * d / 2 + d, height: maxY * d * 0.866 + d } },
+        cells.map(([x, y, ci, dim], i) => React.createElement("img", { key: i, src: HEX_BALL_SRC[ci], alt: "", draggable: false, style: { position: "absolute", left: x * d / 2, top: y * d * 0.866, width: d, height: d, opacity: dim ? 0.28 : 1, filter: dim ? "grayscale(.6)" : "drop-shadow(0 0 6px rgba(255,255,255,.25))" } })));
+}
+const shapeCells = (pts, ci) => pts.map(([x, y]) => [x, y, ci]);
+function hexTutorialSteps() {
+    const kind = hexInputKind();
+    const kindName = kind === "touch" ? "タッチ" : kind === "pad" ? "コントローラー" : "キーボード";
+    return [
+        { title: "6ballへようこそ", art: React.createElement(TutBalls, { cells: [[1, 0, 0], [0, 1, 3], [2, 1, 1]], d: 54, label: "3個1組の三角ピース" }),
+          body: ["上から落ちてくる、3個1組の三角ピースを積んでいきます。", "同じ色の球をつなげて消し、技で相手を攻撃します。", "球が盤面からあふれた方の負けです。"] },
+        { title: `操作（${kindName}）`, art: null, rows: HEX_CONTROL_GUIDES[kind],
+          body: ["ほかの入力方法の操作は、ホームの「遊び方」で確認できます。"] },
+        { title: "6個つなげて消す", art: React.createElement(TutBalls, { cells: [[2, 0, 3, 1], [4, 0, 2, 1], [1, 1, 0], [3, 1, 0], [5, 1, 0], [0, 2, 0], [2, 2, 0], [4, 2, 0], [6, 2, 1, 1]], label: "つながった6個の赤い球" }),
+          body: ["同じ色の球が6個以上つながると消えます。", "となり合っていればつながりです（ななめも含みます）。", "消えた後に落ちた球がまたつながると連鎖になります。"] },
+        { title: "技を作る", art: React.createElement("div", { className: "flex flex-wrap items-end justify-center gap-5" },
+            [["ストレート", "19個", shapeCells([[0, 0], [2, 0], [4, 0], [6, 0], [8, 0], [10, 0]], 3)],
+             ["ピラミッド", "24個", shapeCells(GARBAGE_SHAPES.PYRAMID, 2)],
+             ["ヘキサゴン", "36個", shapeCells(GARBAGE_SHAPES.HEXAGON, 1)]].map(([name, n, cells]) =>
+                React.createElement("div", { key: name, className: "flex flex-col items-center gap-1.5" }, React.createElement(TutBalls, { cells, d: 24, label: name }),
+                    React.createElement("div", { className: "text-[12px] font-black text-white" }, name), React.createElement("div", { className: "text-[11px] text-white/65" }, "おじゃま ", n)))),
+          body: ["つなげた6個が一直線・三角形・六角形になると「技」です。", "技を作ると、その色の球が盤面からすべて消えます。", "相手におじゃま球を送れるのは技だけです。"] },
+        { title: "おじゃま球に注意", art: React.createElement("div", { className: "px-5 py-2 text-center", style: { background: "rgba(60,6,20,.82)", border: "2px solid #FF5A72" } },
+            React.createElement("div", { className: "text-[13px] font-black", style: { color: "rgba(255,220,228,.95)" } }, "おじゃま予告"), React.createElement("div", { className: "text-[22px] font-black", style: { color: "#FF8A9C" } }, "×24")),
+          body: ["攻撃を受けると盤面の上が赤く光り、届く数が「おじゃま予告」に出ます。", "少し後に、おじゃま球が上から降ってきます。", "先に技を決めて、相手の盤面をあふれさせましょう。"] },
+        { title: "準備完了！", art: React.createElement(TutBalls, { cells: shapeCells(GARBAGE_SHAPES.HEXAGON, 4), d: 40, label: "ヘキサゴン" }), final: true,
+          body: ["まずはいちばん弱いAIと練習してみましょう。", "対戦中は画面中央上のボタンでポーズできます" + (kind === "keys" ? "（Esc / P キーでも可）。" : kind === "pad" ? "（＋ボタンでも可）。" : "。")] }
+    ];
+}
+function HexTutorial({ onExit, onPractice, onShowHelp }) {
+    const steps = useRef(hexTutorialSteps()).current;
+    const [i, setI] = useState(0);
+    const step = steps[i], last = i === steps.length - 1;
+    useEffect(() => { if (last) { try { localStorage.setItem(HEX_TUTORIAL_DONE_KEY, "1"); } catch (_) {} } }, [last]);
+    useEffect(() => {
+        const key = (e) => { if (e.key === "ArrowRight") { e.preventDefault(); setI(v => Math.min(steps.length - 1, v + 1)); } else if (e.key === "ArrowLeft") { e.preventDefault(); setI(v => Math.max(0, v - 1)); } else if (e.key === "Escape") { e.preventDefault(); onExit(); } };
+        window.addEventListener("keydown", key); return () => window.removeEventListener("keydown", key);
+    }, []);
+    const navBtn = { minHeight: 44 };
+    return React.createElement(HexMenuShell, { title: "チュートリアル", eyebrow: `TUTORIAL  ${i + 1} / ${steps.length}`, back: onExit, wide: true },
+        React.createElement(HexPanel, { accent: "gold", className: "p-4 sm:p-5" },
+            React.createElement("div", { className: "flex items-center gap-5 flex-wrap justify-center", style: { minHeight: 150 }, "aria-live": "polite" },
+                step.art && React.createElement("div", { className: "flex justify-center shrink-0", style: { minWidth: 150 } }, step.art),
+                React.createElement("div", { className: "flex-1 min-w-[240px]" },
+                    React.createElement("div", { className: "text-lg font-black text-white mb-2" }, step.title),
+                    step.rows && React.createElement("dl", { className: "grid gap-1.5 mb-2" }, step.rows.map(([k, v]) => React.createElement("div", { key: k, className: "flex gap-3 text-[13px] leading-relaxed" }, React.createElement("dt", { className: "shrink-0 font-black text-cyan-100", style: { width: "8em" } }, k), React.createElement("dd", { className: "flex-1 min-w-0 text-white/85" }, v)))),
+                    step.body.map((t, k) => React.createElement("p", { key: k, className: "text-[13px] leading-relaxed text-white/85" }, t)),
+                    step.final && React.createElement("div", { className: "mt-3 flex flex-wrap gap-2" },
+                        React.createElement("button", { onClick: onPractice, className: "rounded-xl px-5 text-sm font-black text-[#061016]", style: { ...navBtn, background: "#FFD36A" } }, "AIと練習する（とてもよわい）"),
+                        React.createElement("button", { onClick: onShowHelp, className: "rounded-xl px-4 text-sm font-black text-white/85 border border-white/20 bg-white/5", style: navBtn }, "操作一覧を見る"))))),
+        React.createElement("div", { className: "mt-3 flex items-center justify-between gap-3" },
+            React.createElement("button", { onClick: () => setI(v => Math.max(0, v - 1)), disabled: i === 0, className: "rounded-xl px-5 text-sm font-black text-white/85 border border-white/20 bg-white/5 disabled:opacity-30", style: navBtn }, "← 前へ"),
+            React.createElement("div", { className: "flex gap-1.5", "aria-hidden": "true" }, steps.map((_, k) => React.createElement("span", { key: k, className: "block rounded-full", style: { width: k === i ? 18 : 7, height: 7, background: k === i ? "#FFD36A" : "rgba(255,255,255,.3)", transition: "width .2s ease" } }))),
+            last ? React.createElement("button", { onClick: onExit, className: "rounded-xl px-5 text-sm font-black text-white/85 border border-white/20 bg-white/5", style: navBtn }, "ホームへ")
+                : React.createElement("button", { onClick: () => setI(v => Math.min(steps.length - 1, v + 1)), className: "rounded-xl px-5 text-sm font-black text-[#061016]", style: { ...navBtn, background: "#FFD36A" } }, "次へ →")));
+}
+
 // Network packets arrive at a much lower cadence than the 120 Hz game loop.
 // Advance the opponent's airborne garbage with the same capture-derived
 // absolute free-fall law used by the authoritative engine. Snapshot values

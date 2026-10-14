@@ -69,7 +69,9 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(!/onClick:onExit[^)]*"[^"]*ヒント/.test(app14), "the exit button must not be labelled as a hint");
   assert(/\["SETTINGS","設定"/.test(app16) && /\["HELP","遊び方"/.test(app16), "settings and help must be reachable from HOME");
   assert(app16.includes("HexPauseMenu") && app14.includes("降参してメニューへ"), "leaving a match goes through the pause / quit dialog");
-  assert(app16.includes("HexControlGuide") && app14.includes("function HexControlGuide"), "the control guide must be rendered");
+  assert(!/HexControlGuide|helpRef|noteControl/.test(app16 + app14), "no control guide may cover the boards during a match");
+  assert(/setScreen\("TUTORIAL"\)/.test(app16) && /screen==="TUTORIAL"&&React\.createElement\(HexTutorial/.test(app16), "the tutorial must be reachable from HOME");
+  assert(/function HexTutorial\(/.test(app17) && /hexdrop_tutorial_done/.test(app17), "tutorial component must exist and remember completion");
   assert(/half:p\.x>=ME\.X\+ME\.BW\/2/.test(controls), "tap rotation is relative to the player's own board");
   assert(/!window\.__sixBallPaused/.test(controls), "touch input is ignored while paused");
   assert(!app14.includes('slice(0,7)'), "player names must not be cut to 7 characters");
