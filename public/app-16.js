@@ -37,6 +37,9 @@ if(typeof window!=="undefined"){
 const orbsRef = useRef([]), runRef = useRef(false), dropFlashRef = useRef(0);
 const matchRef = useRef(null), reportedRef = useRef(false);
 const sizeRef = useRef({ scale: 0, dpr: 1, rect: null });
+// Static background shown once behind the canvas (see app-mobile-performance-v1.js).
+const [bgLayerUrl] = useState(() => (typeof window !== "undefined" && typeof window.__sixBallStaticBackgroundUrl === "function" ? window.__sixBallStaticBackgroundUrl() : null));
+useEffect(() => { const cv = cvRef.current; if (cv) cv.__sixBallBgLayer = !!bgLayerUrl; }, [bgLayerUrl]);
 const [netErr, setNetErr] = useState(null);
 const [googleUser,setGoogleUser]=useState(null);
 const [googleBusy,setGoogleBusy]=useState(false);
@@ -119,7 +122,7 @@ useEffect(() => {
 let raf, last = performance.now(), acc = 0, hud = 0, T = 0, netT = 0, lastNetState = "", pausedSig = "";const FIXED = PHYSICS_FRAME;
 const drain = (g, vol) => { for (const e of g.events) Sfx.play(e, vol); g.events.length = 0; };
 const loop = (now) => {
-raf = requestAnimationFrame(loop);let dt = (now - last) / 1000;last = now;if (dt > 0.1)dt = 0.1;T += dt;dropFlashRef.current = Math.max(0, dropFlashRef.current - dt * 4);
+raf = requestAnimationFrame(loop);window.__sixBallRenderFrame = ((window.__sixBallRenderFrame | 0) + 1) | 0;let dt = (now - last) / 1000;last = now;if (dt > 0.1)dt = 0.1;T += dt;dropFlashRef.current = Math.max(0, dropFlashRef.current - dt * 4);
 const me = meRef.current, foe = foeRef.current, cv = cvRef.current;if (!me || !foe || !cv)return;const net = matchRef.current;
 // Battery: nothing is simulated or drawn behind the menus once a match has been left.
 {const scr = stateRef.current.screen;if (scr !== "GAME" && scr !== "RESULT") { pausedSig = ""; return; }}
@@ -689,7 +692,7 @@ useEffect(() => {const onPop = () => {const h = histRef.current;if (h.ignore > 0
     if (scr !== "HOME") setScreen("HOME");};
     window.addEventListener("popstate", onPop);return () => window.removeEventListener("popstate", onPop);}, []);
 return (React.createElement("div", { className: "relative w-full h-screen overflow-hidden font-sans", style: { background: "#060512" } },
-React.createElement("div", { className: "w-full h-full flex items-center justify-center" },React.createElement("div", { className: "relative", style: { width: "min(100vw, calc(100vh * 16 / 9))", aspectRatio: `${VW} / ${VH}` } },React.createElement("canvas", { ref: cvRef, className: "touch-none select-none", role: "img", "aria-label": screen === "GAME" ? `対戦画面：左があなた（${nickname||"Player"}）、右が相手（${opp?.name ?? "CPU"}）` : "", style: { width: "100%", height: "100%" } }),
+React.createElement("div", { className: "w-full h-full flex items-center justify-center" },React.createElement("div", { className: "relative", style: { width: "min(100vw, calc(100vh * 16 / 9))", aspectRatio: `${VW} / ${VH}`, ...(bgLayerUrl ? { backgroundImage: `url(${bgLayerUrl})`, backgroundSize: "100% 100%" } : null) } },React.createElement("canvas", { ref: cvRef, className: "touch-none select-none", role: "img", "aria-label": screen === "GAME" ? `対戦画面：左があなた（${nickname||"Player"}）、右が相手（${opp?.name ?? "CPU"}）` : "", style: { width: "100%", height: "100%" } }),
 screen === "GAME" && tut && React.createElement(HexTutorialPanel, { lesson: tut.lesson, tracker: tut.tracker, status: tut.status, message: tut.message, onNext: () => startTutorial(tut.lesson + 1), onRetry: () => startTutorial(tut.lesson), onExit: () => {runRef.current = false;tutorialRef.current = null;setTut(null);setScreen("HOME");}, onVsAi: () => startMatch("CPU", 1, { name: `CPU ${AI_PARAMS[1].name}`, rating: 880 + 1 * 130 }) }))),
 screen === "GAME" && React.createElement("button", { onClick: () => setPauseOpen(true), "aria-label": "ポーズメニューを開く", title: "ポーズ（Esc）", className: "absolute left-1/2 -translate-x-1/2 z-10 w-11 h-11 rounded-xl flex items-center justify-center gap-1 border border-white/25 bg-black/50", style: { top: "max(8px, env(safe-area-inset-top))" } }, React.createElement("span", { className: "block w-1 h-4 rounded-sm bg-white/80" }), React.createElement("span", { className: "block w-1 h-4 rounded-sm bg-white/80" })),
 screen === "GAME" && matchRef.current && !foeConn && React.createElement("div", { role: "status", className: "absolute left-1/2 -translate-x-1/2 z-10 rounded-xl px-4 py-2 text-[13px] font-bold text-center", style: { top: 60, color: "#ffd2e3", background: "rgba(40,6,24,.82)", border: "1px solid rgba(255,62,165,.4)" } }, "相手の接続が切れました。5秒以内に戻らなければあなたの勝ちになります。"),

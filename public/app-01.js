@@ -90,8 +90,14 @@ function refreshBoardScanMin(board){
  board._scanMin=min;return min;
 }
 function boardScanMin(board){return Math.max(BOARD_MIN_ROW,Math.min(0,Number.isFinite(board?._scanMin)?board._scanMin:0));}
-function cloneHexGrid(board,mapCell=v=>v){
+function cloneHexGrid(board,mapCell){
  const out=newBoard();
+ if(mapCell===undefined){
+  // Plain copy (the AI search clones boards constantly): same cells and
+  // _scanMin as the general path below, without a callback per cell.
+  for(let y=BOARD_MIN_ROW;y<ROWS;y++){const src=board[y],dst=out[y];for(let x=0;x<W2;x++){const v=src?.[x]??null;dst[x]=v;if(v&&y<0&&y<out._scanMin)out._scanMin=y;}}
+  return out;
+ }
  for(let y=BOARD_MIN_ROW;y<ROWS;y++)for(let x=0;x<W2;x++){const v=mapCell(board[y]?.[x]??null,x,y);out[y][x]=v;noteBoardCell(out,y,v);}
  return out;
 }
