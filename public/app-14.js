@@ -228,7 +228,7 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
 }
 // Pause / quit dialog. Offline matches are frozen while it is open; online
 // matches cannot be paused, so the dialog says that leaving is a resignation.
-function HexPauseMenu({online,ranked,onResume,onRestart,onGuide,onQuit}){
+function HexPauseMenu({online,ranked,onResume,onRestart,onQuit}){
     const resumeRef=useRef(null);
     useEffect(()=>{try{resumeRef.current&&resumeRef.current.focus({preventScroll:true});}catch(_){}},[]);
     const b="w-full rounded-xl px-4 text-sm font-black";
@@ -239,7 +239,6 @@ function HexPauseMenu({online,ranked,onResume,onRestart,onGuide,onQuit}){
             React.createElement("div",{className:"mt-4 grid gap-2"},
                 React.createElement("button",{ref:resumeRef,onClick:onResume,"data-hex-back":"1",className:b+" text-[#061016]",style:{minHeight:46,background:"#2FE3F5"}},"対戦に戻る"),
                 onRestart&&React.createElement("button",{onClick:onRestart,className:b+" text-white/90 border border-white/20 bg-white/5",style:{minHeight:44}},"最初からやり直す"),
-                React.createElement("button",{onClick:onGuide,className:b+" text-white/90 border border-white/20 bg-white/5",style:{minHeight:44}},"操作方法を表示"),
                 React.createElement("button",{onClick:onQuit,className:b,style:{minHeight:44,color:"#ffb8d6",border:"1px solid rgba(255,62,165,.45)",background:"rgba(255,62,165,.08)"}},online?"降参してメニューへ":"メニューへ戻る")),
             hexInputKind()!=="touch"&&React.createElement("div",{className:"mt-3 text-[11px] text-white/65"},"Esc / P キー、コントローラーの＋ボタンでも開閉できます")));
 }
@@ -252,18 +251,6 @@ const HEX_CONTROL_GUIDES={
     keys:[["← →","左右に移動"],["Z / X","左回り / 右回り"],["↓（押し続ける）","速く落とす"],["Space / ↑","すぐ落とす"],["Esc / P","ポーズ"]],
     pad:[["十字キー / スティック","左右に移動"],["A / X","左回り / 右回り"],["↓（押し続ける）","速く落とす"],["Y / ↑","すぐ落とす"],["＋","ポーズ"]]
 };
-// Control guide over the player's own board (x 165..609 of 1280). It fades
-// once the player has used the controls a few times; pointer events pass
-// through to the canvas.
-function HexControlGuide({alpha}){
-    const kind=hexInputKind();
-    const rows=HEX_CONTROL_GUIDES[kind];
-    return React.createElement("div",{"aria-hidden":alpha<.05?"true":"false",className:"absolute pointer-events-none flex justify-center",style:{left:`${165/12.8}%`,width:`${444/12.8}%`,top:"30%",opacity:Math.max(0,Math.min(1,alpha)),transition:"opacity .35s ease"}},
-        React.createElement("div",{className:"rounded-xl px-3 py-2",style:{background:"rgba(6,5,18,.78)",border:"1px solid rgba(47,227,245,.35)",maxWidth:"100%"}},
-            React.createElement("div",{className:"text-[11px] font-black tracking-[.14em] text-cyan-200/90 mb-1"},"操作方法"),
-            rows.map(([k,v])=>React.createElement("div",{key:k,className:"flex gap-2 text-[12px] leading-snug text-white/90"},React.createElement("span",{className:"font-black shrink-0 text-white"},k),React.createElement("span",{className:"text-white/80"},v))),
-            React.createElement("div",{className:"mt-1 text-[11px] text-white/65"},"同じ色を6個以上つなげると消えます")));
-}
 const FIREBASE_CONFIG = {apiKey:"AIzaSyAanVETIredUVH1slS8OtIMSPdOn91u2HM",authDomain:"ballpuzzle-8cc87.firebaseapp.com",databaseURL:"https://ballpuzzle-8cc87-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"ballpuzzle-8cc87",storageBucket:"ballpuzzle-8cc87.firebasestorage.app",messagingSenderId:"114162791129",appId:"1:114162791129:web:14a0fc04ca3c6f5d9f84c8"};
 const BANDW = 150, STALE_MS = 20000, WAIT_MS = 1600, SNAP_MS = 66, GRACE_MS = 5000;
 const bandOf = (r) => Math.max(0, Math.min(19, Math.floor(r / BANDW)));
