@@ -64,6 +64,10 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
     await page.locator("canvas").waitFor({ timeout: 10000 });
     await page.waitForTimeout(2500);
     assert(requests.some(u => /6ball-battle-bgm\.(ogg|m4a)/.test(u)), "battle BGM should start streaming after the menu gestures");
+    // The BGM must actually be audible in a match (not only downloaded): the
+    // match-screen detection broke once when the quit button changed.
+    const bgmAudible = await page.evaluate(() => { const B = window.Bgm, a = B && B.audio; return !!(B && B.wanted && a && !a.paused && !a.muted && a.volume > 0); });
+    assert(bgmAudible, "battle BGM is not audible during the match");
     for (let i = 0; i < 24; i++) {
       await page.keyboard.press(i % 2 ? "ArrowLeft" : "ArrowRight");
       await page.keyboard.press("x");

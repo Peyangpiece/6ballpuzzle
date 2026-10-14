@@ -166,6 +166,9 @@
   function gameIsVisible(){
     const root=document.getElementById("root");
     if(!root)return false;
+    // The match screen is the one with the pause button (it replaced the old
+    // "✕" quit button, which is still accepted for older layouts).
+    if(root.querySelector('button[aria-label="ポーズメニューを開く"]'))return true;
     for(const b of root.querySelectorAll("button")){
       if((b.textContent||"").trim()==="✕")return true;
     }
