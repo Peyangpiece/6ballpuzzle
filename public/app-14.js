@@ -155,21 +155,21 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         drawBall(ctx, ncx - nd * 0.5, ncy + nd * 0.42, nd, q[2], {});
         drawBall(ctx, ncx + nd * 0.5, ncy + nd * 0.42, nd, q[1], {});
     }
-    ctx.font = "900 17px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.94)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.fillText("つぎ", ncx, ny0 + nh + 7);ctx.restore();
+    ctx.font = "900 30px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.94)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.fillText("つぎ", ncx, ny0 + nh + 6);ctx.restore();
     const avx=side===0?44:VW-44,avy=36;
     ctx.save();ctx.beginPath();ctx.arc(avx,avy,25,0,TAU);ctx.fillStyle=side===0?"#A9F68A":"#747C89";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle="rgba(255,255,255,.88)";ctx.stroke();ctx.beginPath();ctx.arc(avx,avy-5,7,0,TAU);ctx.fillStyle="rgba(25,24,38,.72)";ctx.fill();ctx.beginPath();ctx.ellipse(avx,avy+11,13,8,0,Math.PI,TAU);ctx.fill();ctx.restore();
     // Player name (and rating) to the inner side of the avatar, above the NEXT
     // window. Long names are shortened with an ellipsis instead of cut.
-    {ctx.save();const inner=side===0?1:-1,nx=avx+inner*32,ny=17,F="ui-sans-serif,system-ui,sans-serif";
+    {ctx.save();const inner=side===0?1:-1,nx=avx+inner*32,ny=19,F="ui-sans-serif,system-ui,sans-serif";
      const fit=(str,max)=>{str=String(str||"");if(typeof ctx.measureText!=="function"||ctx.measureText(str).width<=max)return str;while(str.length>1&&ctx.measureText(str+"…").width>max)str=str.slice(0,-1);return str+"…";};
-     ctx.font=`900 17px ${F}`;ctx.textAlign=side===0?"left":"right";ctx.textBaseline="middle";ctx.lineJoin="round";ctx.lineWidth=4;ctx.strokeStyle="rgba(0,0,0,.65)";
-     const nm=fit(label,230);ctx.strokeText(nm,nx,ny);ctx.fillStyle="#FFFFFF";ctx.fillText(nm,nx,ny);
-     if(sub&&typeof ctx.measureText==="function"){const w=ctx.measureText(nm).width;ctx.font=`800 13px ${F}`;ctx.fillStyle="rgba(255,255,255,.72)";ctx.fillText(String(sub),nx+inner*(w+9),ny+1);}
+     ctx.font=`900 28px ${F}`;ctx.textAlign=side===0?"left":"right";ctx.textBaseline="middle";ctx.lineJoin="round";ctx.lineWidth=4;ctx.strokeStyle="rgba(0,0,0,.65)";
+     const nm=fit(label,270);ctx.strokeText(nm,nx,ny);ctx.fillStyle="#FFFFFF";ctx.fillText(nm,nx,ny);
+     if(sub&&typeof ctx.measureText==="function"){const w=ctx.measureText(nm).width;ctx.font=`800 22px ${F}`;ctx.fillStyle="rgba(255,255,255,.75)";ctx.fillText(String(sub),nx+inner*(w+10),ny+1);}
      ctx.restore();}
     // Queued garbage that has not started falling yet, in balls. Remote boards
     // only report a mixed counter, so the badge is limited to local engines.
     if(g.state!=="NET"){let n=Number(g.incoming)||0;for(const w of g.incomingShapes||[])n+=(GARBAGE_SHAPES[w]||[]).length;
-     if(n>0){ctx.save();const bw=116,bh=54,bx=ncx-bw/2,by=ny0+nh+34;ctx.globalAlpha=.92;ctx.fillStyle="rgba(60,6,20,.82)";ctx.fillRect(bx,by,bw,bh);ctx.lineWidth=2;ctx.strokeStyle="#FF5A72";ctx.strokeRect(bx,by,bw,bh);ctx.globalAlpha=1;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="900 13px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="rgba(255,220,228,.95)";ctx.fillText("おじゃま予告",ncx,by+15);ctx.font="900 22px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="#FF8A9C";ctx.fillText(`×${n}`,ncx,by+38);ctx.restore();}}
+     if(n>0){ctx.save();const bw=106,bh=84,bx=ncx-bw/2-4,by=ny0+nh+46;ctx.globalAlpha=.92;ctx.fillStyle="rgba(60,6,20,.82)";ctx.fillRect(bx,by,bw,bh);ctx.lineWidth=2;ctx.strokeStyle="#FF5A72";ctx.strokeRect(bx,by,bw,bh);ctx.globalAlpha=1;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="900 24px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="rgba(255,220,228,.95)";ctx.fillText("おじゃま",ncx-4,by+22);ctx.font="900 36px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="#FF8A9C";ctx.fillText(`×${n}`,ncx-4,by+59);ctx.restore();}}
     for (const t2 of g.fx.toasts) {const k = t2.life / t2.max;const size = t2.waza ? 40 : 28+t2.big*38;ctx.save();ctx.globalAlpha = Math.min(1, k * 3);ctx.font = `900 ${size * (1 + (1 - k) * 0.08)}px ui-sans-serif, system-ui, sans-serif`;ctx.textAlign = "center";ctx.textBaseline = "middle";ctx.lineJoin="round";ctx.strokeStyle="rgba(0,0,0,.68)";ctx.lineWidth=t2.waza?7:4;ctx.shadowColor = t2.tint;ctx.shadowBlur = 24;const ty=t2.waza?Y+BH+48:Y+BH*(t2.sub?0.58:0.44)-(1-k)*26;ctx.strokeText(t2.text,X+BW/2,ty);ctx.fillStyle = "#FFFFFF";ctx.fillText(t2.text, X + BW / 2,ty);ctx.restore();}
     ctx.restore();
 }

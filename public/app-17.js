@@ -131,8 +131,8 @@ function hexTutorialSteps() {
                     React.createElement("div", { className: "text-[12px] font-black text-white" }, name), React.createElement("div", { className: "text-[11px] text-white/65" }, "おじゃま ", n)))),
           body: ["つなげた6個が一直線・三角形・六角形になると「技」です。", "技を作ると、その色の球が盤面からすべて消えます。", "相手におじゃま球を送れるのは技だけです。"] },
         { title: "おじゃま球に注意", art: React.createElement("div", { className: "px-5 py-2 text-center", style: { background: "rgba(60,6,20,.82)", border: "2px solid #FF5A72" } },
-            React.createElement("div", { className: "text-[13px] font-black", style: { color: "rgba(255,220,228,.95)" } }, "おじゃま予告"), React.createElement("div", { className: "text-[22px] font-black", style: { color: "#FF8A9C" } }, "×24")),
-          body: ["攻撃を受けると盤面の上が赤く光り、届く数が「おじゃま予告」に出ます。", "少し後に、おじゃま球が上から降ってきます。", "先に技を決めて、相手の盤面をあふれさせましょう。"] },
+            React.createElement("div", { className: "text-[13px] font-black", style: { color: "rgba(255,220,228,.95)" } }, "おじゃま"), React.createElement("div", { className: "text-[22px] font-black", style: { color: "#FF8A9C" } }, "×24")),
+          body: ["攻撃を受けると盤面の上が赤く光り、届く数が「つぎ」の下の「おじゃま」に出ます。", "少し後に、おじゃま球が上から降ってきます。", "先に技を決めて、相手の盤面をあふれさせましょう。"] },
         { title: "準備完了！", art: React.createElement(TutBalls, { cells: shapeCells(GARBAGE_SHAPES.HEXAGON, 4), d: 40, label: "ヘキサゴン" }), final: true,
           body: ["次は実際に動かして覚えましょう。5つの短いレッスンがあります。", "対戦中は画面中央上のボタンでポーズできます" + (kind === "keys" ? "（Esc / P キーでも可）。" : kind === "pad" ? "（＋ボタンでも可）。" : "。")] }
     ];
@@ -194,7 +194,7 @@ const HEX_TUTORIAL_LESSONS = [
       goal: t => t.waza ? "success" : t.cleared ? "retry:おしい！三角形にならずに消えました。もう一度。" : t.landed >= 2 ? "retry:もう一度やってみよう。" : null },
     { title: "おじゃま球", queue: [[1, 2, 3], [4, 1, 2], [3, 4, 1]],
       setup: g => { g.incoming = 10; },
-      text: { all: "相手から攻撃が来ました！盤面の上が赤く光り、左の「おじゃま予告」に届く数が出ています。ピースを1つ落とすと、おじゃま球が降ってきます。" },
+      text: { all: "相手から攻撃が来ました！盤面の上が赤く光り、左の「おじゃま」に届く数が出ています。ピースを1つ落とすと、おじゃま球が降ってきます。" },
       checks: [["landed", "ピースを落とす"], ["garbageDone", "おじゃま球が降り終わる"]],
       goal: t => t.garbageDone ? "success" : null }
 ];

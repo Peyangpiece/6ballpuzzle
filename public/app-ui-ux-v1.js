@@ -66,4 +66,14 @@
     setInterval(start,1000);
 })();
 
+// Landscape phones: the on-screen keyboard covers most of the height, so a
+// focused text field is scrolled back into the visible area.
+(function keepFocusedInputVisible(){
+    if(typeof window==="undefined"||typeof document==="undefined"||!document.addEventListener||window.__sixBallFocusVisibleV1)return;
+    window.__sixBallFocusVisibleV1=true;
+    const reveal=()=>{const el=document.activeElement;if(el&&(el.tagName==="INPUT"||el.tagName==="TEXTAREA")&&el.type!=="range"){try{el.scrollIntoView({block:"center",behavior:"smooth"});}catch(_){}}};
+    document.addEventListener("focusin",()=>setTimeout(reveal,320),true);
+    if(window.visualViewport)window.visualViewport.addEventListener("resize",reveal);
+})();
+
 if(typeof window!=="undefined")window.__sixBallUiUxVersion="ui-ux-v1";

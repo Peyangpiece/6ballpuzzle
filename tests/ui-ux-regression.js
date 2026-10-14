@@ -94,5 +94,14 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(app16.includes('e.key === "ArrowDown"'), "keyboard needs a soft drop");
   assert(!/reportResult\(false, "resign"\);matchRef\.current\.leave\(\)/.test(app16), "resigning must not leave before finish() records the loss");
   assert(/matchGenRef\.current === gen\) setScreen\("RESULT"\)/.test(app16), "a stale result must not cover the menu or a newer match");
+  // --- Phone behaviour (2026-10-14 mobile audit).
+  assert(/if \(scr !== "GAME" && scr !== "RESULT"\) \{ pausedSig = ""; return; \}/.test(app16), "nothing may be simulated or drawn behind the menus");
+  assert(/if \(pausedSig === sig\) return;/.test(app16), "a paused match is drawn once, not every frame");
+  assert(/window\.innerWidth < window\.innerHeight;if \(away && stateRef\.current\.screen === "GAME" && !matchRef\.current/.test(app16), "rotating to portrait pauses an offline match");
+  assert(/history\.pushState\(\{ sixball: 1 \}/.test(app16) && /addEventListener\("popstate"/.test(app16), "the phone back button must navigate inside the app");
+  assert(/navigator\.wakeLock\.request\("screen"\)/.test(app16), "the screen stays on while playing or waiting");
+  assert(/typeof navigator\.vibrate==="function"\)&&React\.createElement\(HexSettingToggle,\{label:"振動"/.test(app16), "the vibration setting is hidden where it cannot work");
+  assert(/ctx\.font=`900 28px \$\{F\}`/.test(app14) && app14.includes('"900 30px ui-sans-serif, system-ui, sans-serif"'), "HUD text is large enough at phone scale");
+  assert(!/おじゃま予告/.test(app14 + app17), "badge and tutorial texts agree on 「おじゃま」");
   console.log("ui-ux regression PASS");
 })().catch(e => { console.error("ui-ux regression FAIL:", e && e.stack || e); process.exit(1); });

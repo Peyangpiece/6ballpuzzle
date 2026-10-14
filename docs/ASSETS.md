@@ -1,6 +1,6 @@
 # アセットの出所
 
-配信される資産は `public/assets/` と `public/vendor/` のみです。参照されないファイルは置きません
+配信される資産は `public/assets/`、`public/icons/`、`public/vendor/` のみです。参照されないファイルは置きません
 （`tests/build-output.js` がバンドルから参照される資産の存在を検証します）。
 
 | ファイル | 用途 | 出所 / ライセンス |
@@ -12,6 +12,7 @@
 | `assets/ball-position-lock-v6-buin.wav` | 位置確定音 | 所有者作成 |
 | `assets/ball-{red,blue,green,yellow,purple}.png` | メニューの球イラスト | 所有者作成 |
 | `assets/6ball-logo-source.jpg`, `6ball-logo-transparent.png` | ロゴ | 所有者作成 |
+| `icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png` | アプリのアイコン（ホーム画面・インストール） | `assets/6ball-logo-transparent.png` から `tools/make-icons.py` で生成 |
 | `vendor/react@18.3.1/*.min.js` | React / ReactDOM | MIT License (Meta Platforms, Inc.) |
 | `tailwind.css` | 生成 CSS | Tailwind CSS v3.4.17, MIT License |
 

@@ -43,6 +43,7 @@ const [googleBusy,setGoogleBusy]=useState(false);
 const [googleErr,setGoogleErr]=useState("");
 const [foeConn, setFoeConn] = useState(true);
 const [roomErr, setRoomErr] = useState("");
+const [helpAllInputs, setHelpAllInputs] = useState(false);
 const [shortHome, setShortHome] = useState(() => typeof window !== "undefined" && window.innerHeight < 500);
 const [tutorialDone, setTutorialDone] = useState(() => hexReadStored("hexdrop_tutorial_done", "0") === "1");
 const [pauseOpen, setPauseOpen] = useState(false);
@@ -58,8 +59,8 @@ useEffect(() => {window.__sixBallColorSymbols = colorSymbols;hexStoreMenuPref("h
 // running because the opponent's clock cannot be stopped.
 useEffect(() => {pausedRef.current = pauseOpen && !matchRef.current;window.__sixBallPaused = pausedRef.current;const g = meRef.current;if (pausedRef.current && g) g.fastForward = false;}, [pauseOpen]);
 useEffect(() => {window.__sixBallScreen = screen;if (screen !== "GAME") setPauseOpen(false);}, [screen]);
-useEffect(() => {const onHide = () => {if (document.hidden && stateRef.current.screen === "GAME" && !matchRef.current && runRef.current) setPauseOpen(true);};document.addEventListener("visibilitychange", onHide);return () => document.removeEventListener("visibilitychange", onHide);}, []);
-const stateRef = useRef({ mode, opp, rating, nickname, screen });stateRef.current = { mode, opp, rating, nickname, screen };
+useEffect(() => {const pauseIfAway = () => {const away = document.hidden || window.innerWidth < window.innerHeight;if (away && stateRef.current.screen === "GAME" && !matchRef.current && runRef.current) setPauseOpen(true);};document.addEventListener("visibilitychange", pauseIfAway);window.addEventListener("resize", pauseIfAway);window.addEventListener("orientationchange", pauseIfAway);return () => {document.removeEventListener("visibilitychange", pauseIfAway);window.removeEventListener("resize", pauseIfAway);window.removeEventListener("orientationchange", pauseIfAway);};}, []);
+const stateRef = useRef({ mode, opp, rating, nickname, screen, pauseOpen });stateRef.current = { mode, opp, rating, nickname, screen, pauseOpen };
 const optRef = useRef({ offset });optRef.current = { offset };
 const initUiAudio=useCallback(()=>{Sfx.init();hexApplySfxVolume(sfxVolume);},[sfxVolume]);
 const saveProfile=useCallback(()=>{const next=(profileDraft||"").trim().slice(0,12)||"Player";setNickname(next);setProfileDraft(next);Sfx.init();hexApplySfxVolume(sfxVolume);Sfx.play({t:"move"},.7);},[profileDraft,sfxVolume]);
@@ -115,11 +116,13 @@ const startTutorial = useCallback((lesson) => {matchGenRef.current++;Sfx.init();
 const finish = useCallback((win, reason = "") => {const gen = matchGenRef.current;const me=meRef.current,foe=foeRef.current;if(win&&me)me.matchFrozen=true;if(!win&&foe)foe.matchFrozen=true;Sfx.play({ t: win ? "win" : "lose" }, 1);const { mode: m, opp: o, rating: r } = stateRef.current;const match = matchRef.current;setTimeout(async () => {if (m === "ONLINE" && match) {let delta=0;try{delta=await Net.applyRating(win,match.opponent?.rating||r,match.ranked,match.matchId);const nr=Number(Net.profile.rating)||r,nw=Number(Net.profile.wins)||0,nl=Number(Net.profile.losses)||0;setRating(nr);setRecord({w:nw,l:nl});hexStoreMenuPref("hexdrop_rating",nr);hexStoreMenuPref("hexdrop_wins",nw);hexStoreMenuPref("hexdrop_losses",nl);}catch(_){}setResult({ win, delta, reason, ranked: match.ranked !== false, online: true, rating: Number(Net.profile.rating) || r });match.leave();if (matchRef.current === match) matchRef.current = null;} else if (m === "ONLINE") {setResult({ win, delta: 0, reason, online: true });} else setResult({ win, delta: 0, reason });if (stateRef.current.screen === "GAME" && matchGenRef.current === gen) setScreen("RESULT");}, RESULT_REVEAL_DELAY_MS);}, []);
 const beginOnline = useCallback((match, kind = "RANKED") => {matchGenRef.current++;tutorialRef.current = null;setTut(null);matchKindRef.current = kind;setPauseOpen(false);setRoomErr("");Sfx.init();hexApplySfxVolume(sfxVolume);setRating(Number(Net.profile.rating)||rating);setRecord({w:Number(Net.profile.wins)||0,l:Number(Net.profile.losses)||0});const seed = match.seed >>> 0;meRef.current = createEngine(seed, { offset: optRef.current.offset });const foe = createEngine(seed, { offset: optRef.current.offset });foe.ai = null;foe.piece = null;foe.state = "NET";foeRef.current = foe;orbsRef.current = [];reportedRef.current = false;matchRef.current = match;setFoeConn(true);match.events.onOpponentState = (st) => {const g = foeRef.current;if (!g)return;applySnapshot(g,st.board,st.fx);g.incoming = st.incoming || 0;applyRemoteVisualState(g,st);if(st.alive===false&&g.alive)die(g,null,"REMOTE");};match.events.onAttack = (atk) => {const n = sanitizeAttackCount(typeof atk === "number" ? atk : ((atk === null || atk === void 0 ? void 0 : atk.n) || 0));const shapes = sanitizeAttackShapes(atk === null || atk === void 0 ? void 0 : atk.shapes);if (n <= 0 && !shapes.length) return;orbsRef.current.push({ side: 1, t: 0, dur: 0.6, n, shapes,tint: shapes.includes("HEXAGON") ? "#FFD86B" : shapes.includes("PYRAMID") ? "#FF9AD5" : "#A8FFCF" });};match.events.onConnection = (c) => setFoeConn(c);match.events.onFinish = (win, reason) => { runRef.current = false; finish(win, reason); };setMode("ONLINE");setAiLevel(0);setOpp({ name: match.opponent.name, rating: match.opponent.rating });setResult(null);setScreen("GAME");runRef.current = true;}, [finish,sfxVolume,rating]);
 useEffect(() => {
-let raf, last = performance.now(), acc = 0, hud = 0, T = 0, netT = 0, lastNetState = "";const FIXED = PHYSICS_FRAME;
+let raf, last = performance.now(), acc = 0, hud = 0, T = 0, netT = 0, lastNetState = "", pausedSig = "";const FIXED = PHYSICS_FRAME;
 const drain = (g, vol) => { for (const e of g.events) Sfx.play(e, vol); g.events.length = 0; };
 const loop = (now) => {
 raf = requestAnimationFrame(loop);let dt = (now - last) / 1000;last = now;if (dt > 0.1)dt = 0.1;T += dt;dropFlashRef.current = Math.max(0, dropFlashRef.current - dt * 4);
 const me = meRef.current, foe = foeRef.current, cv = cvRef.current;if (!me || !foe || !cv)return;const net = matchRef.current;
+// Battery: nothing is simulated or drawn behind the menus once a match has been left.
+{const scr = stateRef.current.screen;if (scr !== "GAME" && scr !== "RESULT") { pausedSig = ""; return; }}
 const advance = (h) => {me.fastForwardCarry = 0;stepEngine(me, h);if (net) stepNetView(foe, h); else if (!tutorialRef.current) stepEngine(foe, h);
 if (net) {if (me.sendBuffer > 0 || me.sendShapes.length > 0) {const n = me.sendBuffer, shapes = me.sendShapes.splice(0);me.sendBuffer = 0;net.sendAttack(n, shapes);orbsRef.current.push({ side: 0, t: 0, dur: 0.6, n, shapes,tint: shapes.includes("HEXAGON") ? "#FFD86B" : shapes.includes("PYRAMID") ? "#FF9AD5" : "#A8FFCF" });}foe.sendBuffer = 0;foe.sendShapes.length = 0;} else {[me, foe].forEach((g, i) => {if (g.sendBuffer > 0 || g.sendShapes.length > 0) {const n = g.sendBuffer, shapes = g.sendShapes.splice(0);orbsRef.current.push({ side: i, t: 0, dur: 0.6, n, shapes,tint: shapes.includes("HEXAGON") ? "#FFD86B" : shapes.includes("PYRAMID") ? "#FF9AD5" : "#A8FFCF" });g.sendBuffer = 0;}});}
 orbsRef.current = orbsRef.current.filter((o) => {o.t += h;if (o.t >= o.dur) {const tgt = o.side === 0 ? foe : me;if (!(net && o.side === 0)) {if (o.shapes && o.shapes.length)tgt.incomingShapes.push(...o.shapes.filter((w) => WAZA[w]));else tgt.incoming += o.n;}tgt.fx.incomingPreviews=tgt.fx.incomingPreviews||[];tgt.fx.incomingPreviews.push({shapes:(o.shapes||[]).slice(0,6),n:o.n||0,tint:o.tint,life:3.05,max:3.05});tgt.fx.shake = Math.max(tgt.fx.shake, 0.55);return false;}return true;});};
@@ -128,12 +131,14 @@ else if (runRef.current) {acc += dt;let guard = 0;while (acc >= FIXED && guard++
 {const t = tutorialRef.current;if (t && t.status === "play") {const r = hexTutorialObserve(me, t.lesson, t.tracker);if (r === "success") {t.status = "success";t.message = t.lesson === HEX_TUTORIAL_LESSONS.length - 1 ? "チュートリアル完了！これで対戦の準備はばっちりです。" : "できました！";try { localStorage.setItem("hexdrop_tutorial_done", "1"); } catch (_) {}if (t.lesson === HEX_TUTORIAL_LESSONS.length - 1) setTutorialDone(true);setTut({ ...t, tracker: { ...t.tracker } });} else if (r && r.startsWith("retry")) {t.status = "retry";t.message = r.slice(6);setTut({ ...t, tracker: { ...t.tracker } });setTimeout(() => { if (tutorialRef.current === t) startTutorial(t.lesson); }, 1600);} else if (JSON.stringify(t.tracker) !== t._sig) {t._sig = JSON.stringify(t.tracker);setTut({ ...t, tracker: { ...t.tracker } });}}}
 drain(me, 1);drain(foe, 0.32);
 if (net) {netT += dt;if (netT >= 0.066) {netT = 0;const snap=snapshotOf(me),piece=pieceSnapshotOf(me),fx=remoteFxSnapshotOf(me),sig=snap+"|"+pendingIncomingCount(me)+"|"+me.alive+"|"+JSON.stringify(piece)+"|"+JSON.stringify(fx);if(sig!==lastNetState){lastNetState=sig;net.sendBoard(snap,pendingIncomingCount(me),me.alive,piece,fx);}}if (!me.alive && !reportedRef.current) {reportedRef.current = true;net.reportResult(false, "dead");}}
+// Paused: the frame does not change, so draw it once (again only after a resize).
+if (pausedRef.current) {const sz = sizeRef.current, sig = sz.scale + "|" + sz.dpr;if (pausedSig === sig) return;pausedSig = sig;} else pausedSig = "";
 const renderLead=runRef.current?Math.min(FIXED,Math.max(0,acc)):0;
 const scale = sizeRef.current.scale;if (scale <= 0)return;const dpr = sizeRef.current.dpr;const w = Math.round(VW * scale * dpr), h = Math.round(VH * scale * dpr);if (cv.width !== w || cv.height !== h) {cv.width = w;cv.height = h;}const ctx = cv.getContext("2d");ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0);renderScene(ctx, me, foe, orbsRef.current, T, {me: stateRef.current.nickname||"Player", meSub: net && stateRef.current.rating ? `${stateRef.current.rating}` : "",foe: stateRef.current.opp?.name ?? "CPU",foeSub: net && stateRef.current.opp?.rating ? `${stateRef.current.opp.rating}` : ""}, dropFlashRef.current, 0,renderLead);hud += dt;if (hud > 0.2) {hud = 0;force((x) => x + 1);}
 };raf = requestAnimationFrame(loop);return () => cancelAnimationFrame(raf);}, [finish]);
 useEffect(() => {const typing = (e) => {const t = e.target;return !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);};
 const softDrop = (g, on) => {if (on) {if (g.state !== "PLAYING" || !g.piece) return;if (!g.fastForward) emit(g, { t: "fast" });g.fastForward = true;} else g.fastForward = false;};
-const dn = (e) => {if (typing(e)) return;const g = meRef.current;if (!g || screen !== "GAME")return;
+const dn = (e) => {if (typing(e)) return;const g = meRef.current;if (!g || screen !== "GAME")return;if (g.state === "READY") skipIntro();
 if (e.key === "Escape" || e.key === "p" || e.key === "P") {e.preventDefault();if (!e.repeat) setPauseOpen((v) => !v);return;}
 if (pausedRef.current || pauseOpen) return;
 if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key))e.preventDefault();if (e.key === "ArrowDown") { softDrop(g, true); return; }if (e.repeat && e.key !== "ArrowLeft" && e.key !== "ArrowRight")return;if (e.key === "ArrowLeft") { move(g, -1); }else if (e.key === "ArrowRight") { move(g, 1); }else if (e.key === "ArrowUp" || e.key === " ") {dropFlashRef.current = 1;hardDrop(g);}else if (e.key === "z" || e.key === "Z") { rotate(g, -1); }else if (e.key === "x" || e.key === "X") { rotate(g, 1); }};
@@ -619,16 +624,19 @@ const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プ�
             React.createElement("div",{className:"flex items-end gap-3"},
                 React.createElement("div",{className:"flex-1"},React.createElement("div",{className:"text-[11px] font-black tracking-[.16em] text-white/60 mb-1.5"},"NICKNAME"),React.createElement("input",{value:profileDraft,maxLength:12,onChange:e=>setProfileDraft(e.target.value.slice(0,12)),placeholder:"ニックネーム",className:"w-full rounded-xl px-3 py-2.5 text-sm font-black text-white outline-none",style:{background:"rgba(0,0,0,.28)",border:"1px solid rgba(255,255,255,.13)"}})),
                 React.createElement("button",{onClick:saveProfile,className:"rounded-xl px-5 py-2.5 text-xs font-black text-[#070915] active:scale-95",style:{background:"linear-gradient(135deg,#96F8FF,#2FE3F5)",boxShadow:"0 0 18px rgba(47,227,245,.2)"}},"保存")),
-            React.createElement("div",{className:"mt-2 text-[11px] text-white/60"},"ニックネームはオンライン対戦時の表示名にも使用されます。"))));
+            React.createElement("div",{className:"mt-2 text-[11px] text-white/60"},"ニックネームはオンライン対戦時の表示名にも使用されます。")),
+    !googleUser&&React.createElement(HexPanel,{accent:"gold",className:"p-4",style:{gridColumn:"1 / -1"}},
+        React.createElement("div",{className:"text-sm font-black text-white"},"戦績のバックアップ"),
+        React.createElement("div",{className:"mt-1 text-[12px] leading-relaxed text-white/75"},"戦績とレートは、このブラウザに作られたゲスト用アカウントに保存されています。ブラウザのデータを消したり、ホーム画面に追加していないSafariでしばらく遊ばなかったりすると消えることがあります。ホームの「Googleでログイン」で引き継げるようになります。"))));
 const settings=screen==="SETTINGS"&&React.createElement(HexMenuShell,{title:"設定",eyebrow:"SYSTEM OPTION",back:()=>setScreen("HOME"),wide:true},
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:12}},
+    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:shortHome?8:12}},
         React.createElement("div",{className:"space-y-2.5"},
-            React.createElement("div",{className:"text-[11px] font-black tracking-[.18em] text-white/60 px-1"},"AUDIO"),
+            !shortHome&&React.createElement("div",{className:"text-[11px] font-black tracking-[.18em] text-white/60 px-1"},"AUDIO"),
             React.createElement(HexSettingSlider,{label:"BGM音量",caption:"ゲーム内BGMの音量",value:bgmVolume,onChange:setBgmVolume,accent:"violet"}),
             React.createElement(HexSettingSlider,{label:"効果音音量",caption:"操作・落下・技などの効果音",value:sfxVolume,onChange:setSfxVolume,accent:"cyan"})),
         React.createElement("div",{className:"space-y-2.5"},
-            React.createElement("div",{className:"text-[11px] font-black tracking-[.18em] text-white/60 px-1"},"CONTROL"),
-            React.createElement(HexSettingToggle,{label:"振動",caption:"対応端末で操作と技の振動を使用",value:haptics,onChange:setHaptics,accent:"pink"}),
+            !shortHome&&React.createElement("div",{className:"text-[11px] font-black tracking-[.18em] text-white/60 px-1"},"CONTROL"),
+            (typeof navigator!=="undefined"&&typeof navigator.vibrate==="function")&&React.createElement(HexSettingToggle,{label:"振動",caption:"操作と技に合わせて端末を振動させます",value:haptics,onChange:setHaptics,accent:"pink"}),
             React.createElement(HexSettingToggle,{label:"色の記号表示",caption:"ボールに色ごとの記号を重ねて、色だけに頼らず見分けられるようにします",value:colorSymbols,onChange:setColorSymbols,accent:"cyan"})),
         React.createElement(HexPanel,{accent:"gray",className:"p-3 flex items-center justify-between gap-4",style:{gridColumn:"1 / -1"}},
             React.createElement("div",null,React.createElement("div",{className:"text-sm font-black text-white/88"},"初期設定に戻す"),React.createElement("div",{className:"text-[11px] text-white/60 mt-0.5"},"音量・振動・色の記号表示を最初の状態に戻します。")),
@@ -637,9 +645,8 @@ const helpSection=(title,rows)=>React.createElement(HexPanel,{accent:"cyan",clas
 const help=screen==="HELP"&&React.createElement(HexMenuShell,{title:"遊び方",eyebrow:"HOW TO PLAY",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,300px),1fr))",gap:12}},
         helpSection("ルール",[["勝ち負け","球が盤面からあふれた方の負けです。"],["消す","3個1組の三角ピースを落とし、同じ色を6個以上つなげると消えます。消えた後にまたつながると連鎖になります。"],["技","つなげた6個が形になると技です。ストレート（一直線）・ピラミッド（三角形）・ヘキサゴン（六角形）。技を作るとその色の球が盤面からすべて消えます。"],["攻撃","相手におじゃま球を送れるのは技だけです（ストレート19個・ピラミッド24個・ヘキサゴン36個）。"],["おじゃま","攻撃を受けると盤面の上部が赤く光り、少し後に球が降ってきます。"]]),
-        helpSection("タッチ操作",HEX_CONTROL_GUIDES.touch),
-        helpSection("キーボード",HEX_CONTROL_GUIDES.keys),
-        helpSection("コントローラー",[...HEX_CONTROL_GUIDES.pad,["A / B（メニュー）","決定 / 戻る"]])));
+        ...[["touch","タッチ操作",HEX_CONTROL_GUIDES.touch],["keys","キーボード",HEX_CONTROL_GUIDES.keys],["pad","コントローラー",[...HEX_CONTROL_GUIDES.pad,["A / B（メニュー）","決定 / 戻る"]]]].filter(([k])=>helpAllInputs||k===hexInputKind()).map(([k,t,rows])=>React.createElement("div",{key:k},helpSection(t,rows)))),
+    !helpAllInputs&&React.createElement("button",{onClick:()=>setHelpAllInputs(true),className:"mt-3 rounded-xl px-4 text-[13px] font-black text-white/80 border border-white/20 bg-white/5",style:{minHeight:44}},"ほかの入力方法の操作も見る"));
 const tutorial=screen==="TUTORIAL"&&React.createElement(HexTutorial,{onExit:()=>{setTutorialDone(hexReadStored("hexdrop_tutorial_done","0")==="1");setScreen("HOME");},onShowHelp:()=>{setTutorialDone(true);setScreen("HELP");},onPractice:()=>{initUiAudio();startTutorial(0);},onVsAi:()=>{setTutorialDone(true);initUiAudio();startMatch("CPU",1,{name:`CPU ${AI_PARAMS[1].name}`,rating:880+1*130});}});
 const cpu=screen==="CPU"&&React.createElement(HexMenuShell,{title:"AI対戦",eyebrow:"AI BATTLE",back:()=>setScreen("HOME"),wide:false},
     React.createElement("div",{className:"grid grid-cols-2 gap-2.5"},[1,2,3,4,5].map((lv)=>React.createElement(HexMenuButton,{key:lv,compact:true,icon:String(lv),title:AI_PARAMS[lv].name,subtitle:lv===5?"技の発動を最優先する最高難度":lv>=4?"高度な判断で攻める":lv===3?"標準的な強さ":lv===2?"ゆっくり考える相手":"はじめての対戦向け",meta:`LV.${lv}`,accent:lv===5?"pink":lv>=3?"cyan":"gray",onClick:()=>startMatch("CPU",lv,{name:`CPU ${AI_PARAMS[lv].name}`,rating:880+lv*130})}))));
@@ -656,6 +663,31 @@ const friend=screen==="FRIEND"&&React.createElement(HexMenuShell,{title:"ルー�
             React.createElement("div",{className:"text-[11px] leading-relaxed text-white/55"},"ルーム対戦はレートに影響しません。勝敗は戦績に記録されます。"))));
 const roomHost=screen==="ROOM_HOST"&&React.createElement(RoomHost,{onMatched:(match)=>beginOnline(match,"ROOM"),onCancel:()=>setScreen("FRIEND"),onError:(m)=>{setRoomErr(m);setScreen("FRIEND");}});
 const roomJoin=screen==="ROOM_JOIN"&&React.createElement(RoomJoin,{code:room,onMatched:(match)=>beginOnline(match,"ROOM"),onCancel:()=>setScreen("FRIEND"),onError:(m)=>{setRoomErr(m);setScreen("FRIEND");}});
+// Keep the screen on while playing or waiting for an opponent; phones
+// otherwise lock after ~30 s without touches and the connection drops.
+useEffect(() => {
+    const want = (screen === "GAME" && !pauseOpen) || screen === "MATCHING" || screen === "ROOM_HOST" || screen === "ROOM_JOIN";
+    if (!want || typeof navigator === "undefined" || !navigator.wakeLock) return;
+    let lock = null, alive = true;
+    const acquire = () => { if (!alive || document.hidden || lock) return; navigator.wakeLock.request("screen").then((l) => { if (!alive) { l.release().catch(() => {}); return; } lock = l; l.addEventListener("release", () => { lock = null; }); }).catch(() => {}); };
+    const onVis = () => { if (!document.hidden) acquire(); };
+    acquire(); document.addEventListener("visibilitychange", onVis);
+    return () => { alive = false; document.removeEventListener("visibilitychange", onVis); if (lock) lock.release().catch(() => {}); };
+}, [screen, pauseOpen]);
+// Offline matches: a tap or key during the intro jumps to "スタート！".
+const skipIntro = useCallback(() => {const me = meRef.current, foe = foeRef.current;if (!me || matchRef.current || me.state !== "READY") return;for (const g of [me, foe]) if (g && g.state === "READY" && g.stateT < READY_START_BEGIN) g.stateT = READY_START_BEGIN;}, []);
+useEffect(() => {const cv = cvRef.current;if (!cv || screen !== "GAME") return;cv.addEventListener("pointerdown", skipIntro);return () => cv.removeEventListener("pointerdown", skipIntro);}, [screen, skipIntro]);
+// Phone back button: while away from HOME one extra history entry is kept, so
+// "back" returns to the previous screen (in a match it opens or closes the
+// pause menu) instead of leaving the app.
+const histRef = useRef({ guard: false, ignore: 0 });
+useEffect(() => {const h = histRef.current;if (screen !== "HOME" && !h.guard) {try { history.pushState({ sixball: 1 }, ""); h.guard = true; } catch (_) {}} else if (screen === "HOME" && h.guard) {h.guard = false;h.ignore++;try { history.back(); } catch (_) { h.ignore--; }}}, [screen]);
+useEffect(() => {const onPop = () => {const h = histRef.current;if (h.ignore > 0) { h.ignore--; return; }h.guard = false;const scr = stateRef.current.screen;
+    if (scr === "GAME") {setPauseOpen((v) => !v);try { history.pushState({ sixball: 1 }, ""); h.guard = true; } catch (_) {}return;}
+    if (scr === "MATCHING") Net.cancelMatchmaking();
+    if (scr === "ROOM_HOST" || scr === "ROOM_JOIN") { setScreen("FRIEND"); return; }
+    if (scr !== "HOME") setScreen("HOME");};
+    window.addEventListener("popstate", onPop);return () => window.removeEventListener("popstate", onPop);}, []);
 return (React.createElement("div", { className: "relative w-full h-screen overflow-hidden font-sans", style: { background: "#060512" } },
 React.createElement("div", { className: "w-full h-full flex items-center justify-center" },React.createElement("div", { className: "relative", style: { width: "min(100vw, calc(100vh * 16 / 9))", aspectRatio: `${VW} / ${VH}` } },React.createElement("canvas", { ref: cvRef, className: "touch-none select-none", role: "img", "aria-label": screen === "GAME" ? `対戦画面：左があなた（${nickname||"Player"}）、右が相手（${opp?.name ?? "CPU"}）` : "", style: { width: "100%", height: "100%" } }),
 screen === "GAME" && tut && React.createElement(HexTutorialPanel, { lesson: tut.lesson, tracker: tut.tracker, status: tut.status, message: tut.message, onNext: () => startTutorial(tut.lesson + 1), onRetry: () => startTutorial(tut.lesson), onExit: () => {runRef.current = false;tutorialRef.current = null;setTut(null);setScreen("HOME");}, onVsAi: () => startMatch("CPU", 1, { name: `CPU ${AI_PARAMS[1].name}`, rating: 880 + 1 * 130 }) }))),
