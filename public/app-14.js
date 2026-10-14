@@ -157,7 +157,19 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     }
     ctx.font = "900 17px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.94)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.fillText("つぎ", ncx, ny0 + nh + 7);ctx.restore();
     const avx=side===0?44:VW-44,avy=36;
-    ctx.save();ctx.beginPath();ctx.arc(avx,avy,25,0,TAU);ctx.fillStyle=side===0?"#A9F68A":"#747C89";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle="rgba(255,255,255,.88)";ctx.stroke();ctx.beginPath();ctx.arc(avx,avy-5,7,0,TAU);ctx.fillStyle="rgba(25,24,38,.72)";ctx.fill();ctx.beginPath();ctx.ellipse(avx,avy+11,13,8,0,Math.PI,TAU);ctx.fill();ctx.font="900 8px ui-sans-serif,system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#FFFFFF";ctx.fillText((label||"").slice(0,7),avx,avy+31);ctx.restore();
+    ctx.save();ctx.beginPath();ctx.arc(avx,avy,25,0,TAU);ctx.fillStyle=side===0?"#A9F68A":"#747C89";ctx.fill();ctx.lineWidth=2;ctx.strokeStyle="rgba(255,255,255,.88)";ctx.stroke();ctx.beginPath();ctx.arc(avx,avy-5,7,0,TAU);ctx.fillStyle="rgba(25,24,38,.72)";ctx.fill();ctx.beginPath();ctx.ellipse(avx,avy+11,13,8,0,Math.PI,TAU);ctx.fill();ctx.restore();
+    // Player name (and rating) to the inner side of the avatar, above the NEXT
+    // window. Long names are shortened with an ellipsis instead of cut.
+    {ctx.save();const inner=side===0?1:-1,nx=avx+inner*32,ny=17,F="ui-sans-serif,system-ui,sans-serif";
+     const fit=(str,max)=>{str=String(str||"");if(typeof ctx.measureText!=="function"||ctx.measureText(str).width<=max)return str;while(str.length>1&&ctx.measureText(str+"…").width>max)str=str.slice(0,-1);return str+"…";};
+     ctx.font=`900 17px ${F}`;ctx.textAlign=side===0?"left":"right";ctx.textBaseline="middle";ctx.lineJoin="round";ctx.lineWidth=4;ctx.strokeStyle="rgba(0,0,0,.65)";
+     const nm=fit(label,230);ctx.strokeText(nm,nx,ny);ctx.fillStyle="#FFFFFF";ctx.fillText(nm,nx,ny);
+     if(sub&&typeof ctx.measureText==="function"){const w=ctx.measureText(nm).width;ctx.font=`800 13px ${F}`;ctx.fillStyle="rgba(255,255,255,.72)";ctx.fillText(String(sub),nx+inner*(w+9),ny+1);}
+     ctx.restore();}
+    // Queued garbage that has not started falling yet, in balls. Remote boards
+    // only report a mixed counter, so the badge is limited to local engines.
+    if(g.state!=="NET"){let n=Number(g.incoming)||0;for(const w of g.incomingShapes||[])n+=(GARBAGE_SHAPES[w]||[]).length;
+     if(n>0){ctx.save();const bw=116,bh=54,bx=ncx-bw/2,by=ny0+nh+34;ctx.globalAlpha=.92;ctx.fillStyle="rgba(60,6,20,.82)";ctx.fillRect(bx,by,bw,bh);ctx.lineWidth=2;ctx.strokeStyle="#FF5A72";ctx.strokeRect(bx,by,bw,bh);ctx.globalAlpha=1;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="900 13px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="rgba(255,220,228,.95)";ctx.fillText("おじゃま予告",ncx,by+15);ctx.font="900 22px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="#FF8A9C";ctx.fillText(`×${n}`,ncx,by+38);ctx.restore();}}
     for (const t2 of g.fx.toasts) {const k = t2.life / t2.max;const size = t2.waza ? 40 : 28+t2.big*38;ctx.save();ctx.globalAlpha = Math.min(1, k * 3);ctx.font = `900 ${size * (1 + (1 - k) * 0.08)}px ui-sans-serif, system-ui, sans-serif`;ctx.textAlign = "center";ctx.textBaseline = "middle";ctx.lineJoin="round";ctx.strokeStyle="rgba(0,0,0,.68)";ctx.lineWidth=t2.waza?7:4;ctx.shadowColor = t2.tint;ctx.shadowBlur = 24;const ty=t2.waza?Y+BH+48:Y+BH*(t2.sub?0.58:0.44)-(1-k)*26;ctx.strokeText(t2.text,X+BW/2,ty);ctx.fillStyle = "#FFFFFF";ctx.fillText(t2.text, X + BW / 2,ty);ctx.restore();}
     ctx.restore();
 }
@@ -185,8 +197,11 @@ function Screen({ children, title, back }) {
     const [shown, setShown] = useState(false);useEffect(() => { const t = requestAnimationFrame(() => setShown(true)); return () => cancelAnimationFrame(t); }, []);
     return (React.createElement("div", { className: "absolute inset-0 z-20 flex flex-col items-center justify-center font-sans overflow-y-auto", style: {background:SPACE_BG,opacity:shown?1:0,transform:shown?"none":"scale(1.015)",transition:"opacity .28s ease, transform .28s cubic-bezier(.2,.8,.3,1)",paddingTop:"max(20px, env(safe-area-inset-top))",paddingBottom:"max(20px, env(safe-area-inset-bottom))",paddingLeft:"max(20px, env(safe-area-inset-left))",paddingRight:"max(20px, env(safe-area-inset-right))"} },React.createElement("div", { className: "w-full max-w-sm flex flex-col" },(title || back) && (React.createElement("div", { className: "flex items-center gap-3 mb-5" },back && React.createElement("button", { onClick: back, className: "w-9 h-9 rounded-xl text-white/70 border border-white/20 bg-white/5" }, "←"),React.createElement("div", { className: "font-extrabold text-white/90 tracking-wide" }, title))),children)));
 }
-function ResultOverlay({win,onNext,onExit}){
+function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=false,rating,meName="Player",foeName="CPU",nextLabel="もう一度"}){
     const [phase,setPhase]=useState(0);
+    const nextRef=useRef(null);
+    useEffect(()=>{const t=setTimeout(()=>{try{nextRef.current&&nextRef.current.focus({preventScroll:true});}catch(_){}},560);
+        const key=(e)=>{if(e.key==="Escape"){e.preventDefault();onExit();}};window.addEventListener("keydown",key);return()=>{clearTimeout(t);window.removeEventListener("keydown",key);};},[onExit]);
     useEffect(()=>{const a=requestAnimationFrame(()=>setPhase(1)),b=setTimeout(()=>setPhase(2),240),c=setTimeout(()=>setPhase(3),520);return()=>{cancelAnimationFrame(a);clearTimeout(b);clearTimeout(c);};},[]);
     const card=(winner,left)=>React.createElement("div",{className:"relative flex-1 h-[68vh] flex flex-col items-center justify-center",style:{maxWidth:"42vw"}},
         winner&&React.createElement("div",{className:"absolute w-56 h-56 rounded-full",style:{opacity:phase>=3?.72:0,transform:`scale(${phase>=3?1:.22}) rotate(${phase>=3?18:0}deg)`,transition:"opacity .28s ease, transform .46s cubic-bezier(.18,.82,.22,1)",background:"repeating-conic-gradient(from 0deg,rgba(255,255,255,.92) 0deg,rgba(255,255,255,.92) 7deg,transparent 7deg,transparent 31deg)",filter:"blur(1px)",maskImage:"radial-gradient(circle,transparent 0 23%,#000 25% 68%,transparent 70%)",WebkitMaskImage:"radial-gradient(circle,transparent 0 23%,#000 25% 68%,transparent 70%)"}}),
@@ -195,13 +210,59 @@ function ResultOverlay({win,onNext,onExit}){
         React.createElement("div",{className:"mt-4 text-5xl font-black tracking-tight text-white",style:{opacity:phase>=2?1:0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:"0 4px 0 #111,0 0 18px #FFFFFF44"}},winner?"Winner!":"Lose..."),
         winner&&React.createElement("div",{className:"mt-1 text-2xl text-[#FFF36B] tracking-[.5em]",style:{opacity:phase>=3?1:0,transition:"opacity .25s ease"}},"♛—♛")
     );
-    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",style:{background:phase?"rgba(38,0,43,.64)":"rgba(38,0,43,0)",backdropFilter:`blur(${phase?6:0}px)`,WebkitBackdropFilter:`blur(${phase?6:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
-        React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]"},card(!!win,true),card(!win,false)),
-        React.createElement("div",{className:"absolute right-6 bottom-5 flex gap-8 text-white font-extrabold"},
-            React.createElement("button",{onClick:onExit,className:"px-4 py-2 rounded-xl bg-black/25 border border-white/15"},"○○ ヒント"),
-            React.createElement("button",{onClick:onNext,className:"px-5 py-2 rounded-xl bg-black/25 border border-white/15"},"○○ つぎへ")
+    const reasonText=reason==="disconnect"?(win?"相手の接続が切れたため、あなたの勝ちです":"接続が切れたため、敗北になりました"):reason==="resign"?(win?"相手が降参しました":"降参しました"):"";
+    const tag=(text,me)=>React.createElement("div",{className:"mt-3 rounded-full px-3 py-1 text-[13px] font-black max-w-full truncate",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease",color:me?"#061016":"#fff",background:me?"#2FE3F5":"rgba(255,255,255,.12)",border:me?"none":"1px solid rgba(255,255,255,.25)"}},text);
+    const btn={minHeight:44};
+    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",role:"dialog","aria-modal":"true","aria-label":win?"勝利":"敗北",style:{background:phase?"rgba(38,0,43,.64)":"rgba(38,0,43,0)",backdropFilter:`blur(${phase?6:0}px)`,WebkitBackdropFilter:`blur(${phase?6:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
+        React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]"},
+            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!!win,true),tag("あなた："+meName,true)),
+            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!win,false),tag("相手："+foeName,false))),
+        (reasonText||(online&&ranked))&&React.createElement("div",{className:"absolute left-1/2 -translate-x-1/2 text-center",style:{top:"max(14px, env(safe-area-inset-top))",opacity:phase>=2?1:0,transition:"opacity .25s ease"}},
+            reasonText&&React.createElement("div",{className:"text-[14px] font-bold text-white/85"},reasonText),
+            online&&ranked&&React.createElement("div",{className:"mt-1 text-[15px] font-black tabular-nums",style:{color:delta>=0?"#7DFFB2":"#FF9AB5"}},`レート ${delta>=0?"+":""}${delta}`,Number.isFinite(rating)?React.createElement("span",{className:"text-white/70 font-bold"},`（${rating}）`):null)),
+        React.createElement("div",{className:"absolute flex gap-3 text-white font-extrabold",style:{right:"max(20px, env(safe-area-inset-right))",bottom:"max(16px, env(safe-area-inset-bottom))"}},
+            React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"px-5 rounded-xl bg-black/30 border border-white/25 text-sm",style:btn},"メニューへ"),
+            React.createElement("button",{ref:nextRef,onClick:onNext,className:"px-6 rounded-xl text-sm text-[#061016]",style:{...btn,background:"#2FE3F5"}},nextLabel||"もう一度")
         )
     );
+}
+// Pause / quit dialog. Offline matches are frozen while it is open; online
+// matches cannot be paused, so the dialog says that leaving is a resignation.
+function HexPauseMenu({online,ranked,onResume,onRestart,onGuide,onQuit}){
+    const resumeRef=useRef(null);
+    useEffect(()=>{try{resumeRef.current&&resumeRef.current.focus({preventScroll:true});}catch(_){}},[]);
+    const b="w-full rounded-xl px-4 text-sm font-black";
+    return React.createElement("div",{className:"absolute inset-0 z-30 flex items-center justify-center p-4",role:"dialog","aria-modal":"true","aria-labelledby":"hex-pause-title",style:{background:"rgba(6,5,18,.72)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}},
+        React.createElement("div",{className:"w-full max-w-sm rounded-2xl p-5 text-center",style:{background:"linear-gradient(145deg,rgba(28,24,60,.96),rgba(12,10,30,.96))",border:"1px solid rgba(255,255,255,.14)"}},
+            React.createElement("div",{id:"hex-pause-title",className:"text-lg font-black text-white"},online?"対戦をやめますか？":"ポーズ中"),
+            online&&React.createElement("div",{className:"mt-2 text-[13px] leading-relaxed text-white/75"},"オンライン対戦は一時停止できません（対戦は続いています）。やめると降参となり、敗北として記録されます。",ranked?"レートも下がります。":""),
+            React.createElement("div",{className:"mt-4 grid gap-2"},
+                React.createElement("button",{ref:resumeRef,onClick:onResume,"data-hex-back":"1",className:b+" text-[#061016]",style:{minHeight:46,background:"#2FE3F5"}},"対戦に戻る"),
+                onRestart&&React.createElement("button",{onClick:onRestart,className:b+" text-white/90 border border-white/20 bg-white/5",style:{minHeight:44}},"最初からやり直す"),
+                React.createElement("button",{onClick:onGuide,className:b+" text-white/90 border border-white/20 bg-white/5",style:{minHeight:44}},"操作方法を表示"),
+                React.createElement("button",{onClick:onQuit,className:b,style:{minHeight:44,color:"#ffb8d6",border:"1px solid rgba(255,62,165,.45)",background:"rgba(255,62,165,.08)"}},online?"降参してメニューへ":"メニューへ戻る")),
+            hexInputKind()!=="touch"&&React.createElement("div",{className:"mt-3 text-[11px] text-white/65"},"Esc / P キー、コントローラーの＋ボタンでも開閉できます")));
+}
+function hexInputKind(){
+    try{if(window.__sixBallGamepadState&&window.__sixBallGamepadState.connected)return"pad";if(window.matchMedia&&window.matchMedia("(pointer: coarse)").matches)return"touch";}catch(_){}
+    return"keys";
+}
+const HEX_CONTROL_GUIDES={
+    touch:[["スワイプ","左右に移動"],["タップ","回転（盤面の左側＝左回り／右側＝右回り）"],["2本指タップ","すぐ落とす"],["2本指で長押し","速く落とす"]],
+    keys:[["← →","左右に移動"],["Z / X","左回り / 右回り"],["↓（押し続ける）","速く落とす"],["Space / ↑","すぐ落とす"],["Esc / P","ポーズ"]],
+    pad:[["十字キー / スティック","左右に移動"],["A / X","左回り / 右回り"],["↓（押し続ける）","速く落とす"],["Y / ↑","すぐ落とす"],["＋","ポーズ"]]
+};
+// Control guide over the player's own board (x 165..609 of 1280). It fades
+// once the player has used the controls a few times; pointer events pass
+// through to the canvas.
+function HexControlGuide({alpha}){
+    const kind=hexInputKind();
+    const rows=HEX_CONTROL_GUIDES[kind];
+    return React.createElement("div",{"aria-hidden":alpha<.05?"true":"false",className:"absolute pointer-events-none flex justify-center",style:{left:`${165/12.8}%`,width:`${444/12.8}%`,top:"30%",opacity:Math.max(0,Math.min(1,alpha)),transition:"opacity .35s ease"}},
+        React.createElement("div",{className:"rounded-xl px-3 py-2",style:{background:"rgba(6,5,18,.78)",border:"1px solid rgba(47,227,245,.35)",maxWidth:"100%"}},
+            React.createElement("div",{className:"text-[11px] font-black tracking-[.14em] text-cyan-200/90 mb-1"},"操作方法"),
+            rows.map(([k,v])=>React.createElement("div",{key:k,className:"flex gap-2 text-[12px] leading-snug text-white/90"},React.createElement("span",{className:"font-black shrink-0 text-white"},k),React.createElement("span",{className:"text-white/80"},v))),
+            React.createElement("div",{className:"mt-1 text-[11px] text-white/65"},"同じ色を6個以上つなげると消えます")));
 }
 const FIREBASE_CONFIG = {apiKey:"AIzaSyAanVETIredUVH1slS8OtIMSPdOn91u2HM",authDomain:"ballpuzzle-8cc87.firebaseapp.com",databaseURL:"https://ballpuzzle-8cc87-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"ballpuzzle-8cc87",storageBucket:"ballpuzzle-8cc87.firebasestorage.app",messagingSenderId:"114162791129",appId:"1:114162791129:web:14a0fc04ca3c6f5d9f84c8"};
 const BANDW = 150, STALE_MS = 20000, WAIT_MS = 1600, SNAP_MS = 66, GRACE_MS = 5000;

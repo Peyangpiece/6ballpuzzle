@@ -84,6 +84,20 @@ const Net = {
         const matchId = F.push(F.ref(this.db, "matches")).key;const seed = Math.floor(Math.random() * 0x7fffffff);
         await F.set(F.ref(this.db, "matches/" + matchId), {meta: { seed, ranked: false, createdAt: F.serverTimestamp() },players: {0: { uid: room.hostUid, name: room.hostName, rating: room.hostRating, connected: false },1: { uid: this.uid, name: this.profile.name, rating: this.profile.rating, connected: false }}});await F.update(roomRef, { matchId });return this.join(matchId);
     },
+    // Private rooms record players by Firebase auth UID (the rules require
+    // players/$i/uid == auth.uid). Ranked matchmaking swaps a per-tab client id
+    // into `uid` inside join(), so room joins run with that id set to the UID.
+    async hostRoom() {
+        const room = await this.createRoom();const self = this, saved = this.onlineClientId;let restored = false;
+        const restore = () => { if (!restored) { restored = true; self.onlineClientId = saved; } };
+        return {code: room.code,
+            wait: async () => { self.onlineClientId = self.uid; try { return await room.wait(); } finally { restore(); } },
+            cancel: async () => { restore(); await room.cancel(); }};
+    },
+    async joinRoomCode(code) {
+        await this.connect();const saved = this.onlineClientId;this.onlineClientId = this.uid;
+        try { return await this.joinRoom(code); } finally { this.onlineClientId = saved; }
+    },
     async join(matchId) {
         const F = this.fb, base = "matches/" + matchId;const snap = await F.get(F.ref(this.db, base));if (!snap.exists()) throw new Error("対戦データが見つかりません");
         const m = snap.val();const myIndex = m.players[0].uid === this.uid ? 0 : 1;const foeIndex = myIndex === 0 ? 1 : 0;const foe = m.players[foeIndex];const connRef = F.ref(this.db, base + "/players/" + myIndex + "/connected");await F.set(connRef, true);F.onDisconnect(connRef).set(false);F.set(F.ref(this.db, base + "/players/" + myIndex + "/joinedAt"), Date.now()).catch(() => { }); // write-once proof of participation; results and ratings require it from both players

@@ -52,7 +52,8 @@
             g &&
             g.state==="PLAYING" &&
             g.piece &&
-            !g.ai
+            !g.ai &&
+            !window.__sixBallPaused
         );
     }
 

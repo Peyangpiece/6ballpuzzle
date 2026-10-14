@@ -36,7 +36,7 @@
             const p={...(props||{})};
             if(!p.eyebrow)p.eyebrow="6BALL // COMMAND";
             if(p.title==="設定"){
-                const credit=React.createElement("div",{key:"sixball-bgm-credit",className:"mt-3 text-center text-[9px] font-semibold text-white/30 leading-relaxed"},"BGM：6 Ball Puzzle");
+                const credit=React.createElement("div",{key:"sixball-bgm-credit",className:"mt-3 text-center text-[11px] font-semibold text-white/60 leading-relaxed"},"BGM：6 Ball Puzzle");
                 p.children=React.createElement(React.Fragment,null,p.children,credit);
             }
             return baseShell(p);

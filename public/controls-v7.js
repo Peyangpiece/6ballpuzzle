@@ -1,7 +1,7 @@
 /* HEXDROP controls v7: single source of truth for touch input.
  * Gestures:
- * - right-half tap: clockwise 60deg
- * - left-half tap: counter-clockwise 60deg
+ * - tap right of your own board's centre: clockwise 60deg
+ * - tap left of your board centre: counter-clockwise 60deg
  * - two-finger tap: reference-speed vertical hard drop
  * - two-finger long press: fast fall while held
  * - one-finger horizontal slide: immediate continuous horizontal movement
@@ -112,7 +112,7 @@
         if(Number.isFinite(g?.pieceVX))return g.pieceVX;
         return Number.isFinite(g?.piece?.x)?g.piece.x:SPAWN_X;
     };
-    const validGame=g=>!!g&&g.state==="PLAYING"&&!!g.piece;
+    const validGame=g=>!!g&&g.state==="PLAYING"&&!!g.piece&&!window.__sixBallPaused;
     const stopFast=g=>{if(g)g.fastForward=false;};
     const releaseCapture=rec=>{
         try{
@@ -249,7 +249,9 @@
         const rec={
             id:e.pointerId,canvas:e.target,g,
             startX:p.x,startY:p.y,lastX:p.x,lastY:p.y,
-            downAt:performance.now(),half:p.x>=VW*.5?1:-1,
+            // Tap direction is relative to the player's own board: its right half
+            // turns clockwise, everything left of its centre counter-clockwise.
+            downAt:performance.now(),half:p.x>=ME.X+ME.BW/2?1:-1,
             tapEligible:true,dragActive:false,dragMoved:false,dual:false,
             dragBaseX:currentX(g)
         };
@@ -316,6 +318,8 @@
 
     const cancelBrowserGesture=e=>{
         const t=e?.target;
+        // Text fields keep selection and the paste menu (room code, nickname).
+        if(t?.closest?.("input,textarea"))return;
         if(t?.tagName==="CANVAS"||t?.closest?.("#root"))consume(e);
     };
 
