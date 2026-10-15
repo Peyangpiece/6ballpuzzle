@@ -149,5 +149,37 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
     const src = read(f);
     if (/textContent\|\|""\)\.trim\(\)==="✕"/.test(src)) assert(src.includes('button[aria-label="ポーズメニューを開く"]'), f + " detects the match only by the removed ✕ button");
   }
+  // --- Match records: bests and per-CPU-level wins/losses/streaks, shown on the result screen.
+  {
+    const store = new Map();
+    const rc = vm.createContext({ console, window: {}, localStorage: { getItem: k => store.has(k) ? store.get(k) : null, setItem: (k, v) => store.set(k, String(v)) } });
+    vm.runInContext(read("app-menu-ui.js") + "\nthis.api={hexRecordMatch,hexCpuRecord,hexBests,hexMatchSummary,hexFormatTime};", rc);
+    const { hexRecordMatch, hexCpuRecord, hexBests, hexMatchSummary, hexFormatTime } = rc.api;
+    const sum = (o) => hexMatchSummary({ stats: { time: 0, maxChain: 0, cleared: 0, waza: {}, ...o } });
+    const s1 = sum({ time: 120, maxChain: 2, cleared: 30, waza: { PYRAMID: 1 } });
+    assert.strictEqual(s1.wazaTotal, 1);
+    let r = hexRecordMatch({ cpuLevel: 3, win: true, summary: s1 });
+    assert.deepStrictEqual([...r.newBests], [], "the first match sets bests without announcing them");
+    assert(r.firstWin && r.level.w === 1 && r.level.streak === 1, "first win against a level");
+    r = hexRecordMatch({ cpuLevel: 3, win: true, summary: sum({ time: 90, maxChain: 3, cleared: 20, waza: { HEXAGON: 1 } }) });
+    assert(!r.firstWin && r.level.streak === 2 && r.level.best === 2);
+    assert.deepStrictEqual([...r.newBests].sort(), ["fastestWin", "maxChain"], "only improved bests are announced");
+    r = hexRecordMatch({ cpuLevel: 3, win: false, summary: sum({ time: 60, cleared: 50 }) });
+    assert(r.level.streak === 0 && r.level.l === 1 && r.level.best === 2, "a loss ends the streak but keeps the best streak");
+    assert.deepStrictEqual([...r.newBests], ["cleared"], "a loss can still set a best, but never the fastest win");
+    assert.strictEqual(hexBests().fastestWin, 90);
+    r = hexRecordMatch({ cpuLevel: 0, win: true, summary: s1 });
+    assert.strictEqual(r.level, null, "online matches do not touch the CPU record");
+    assert.strictEqual(hexBests().games, 4);
+    assert.deepStrictEqual({ ...hexCpuRecord()[3] }, { w: 2, l: 1, streak: 0, best: 2 });
+    store.set("hexdrop_cpu_record", "{broken"); store.set("hexdrop_bests", "null");
+    assert.strictEqual(hexCpuRecord()[5].w, 0, "a broken record reads as empty");
+    assert.strictEqual(hexBests().games, 0);
+    assert.strictEqual(hexFormatTime(95.4), "1:35");
+  }
+  assert(/me\.stats\.time = \(me\.stats\.time \|\| 0\) \+ h/.test(app16), "match time is counted while the player's game runs");
+  assert(/hexRecordMatch\(\{ cpuLevel: m === "CPU" \? lv : 0, win, summary \}\)/.test(app16) && /summary:result\?\.summary,progress:result\?\.progress/.test(app16), "finished matches are recorded and passed to the result screen");
+  assert(/summary&&React\.createElement\(ResultSummary,/.test(app14), "the result screen shows the match summary");
+  assert(/cpuRecord\[lv\]\.w\?\{text:"★勝利"/.test(app16) && /data-hex-cpu-progress/.test(app16), "the CPU list shows which levels were beaten");
   console.log("ui-ux regression PASS");
 })().catch(e => { console.error("ui-ux regression FAIL:", e && e.stack || e); process.exit(1); });

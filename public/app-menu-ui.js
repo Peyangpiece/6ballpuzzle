@@ -40,6 +40,46 @@ function hexRankLabel(r){
 }
 function hexWinRate(w,l){const n=(Number(w)||0)+(Number(l)||0);return n?Math.round((Number(w)||0)/n*100):0;}
 
+/* Match records kept in this browser: personal bests over every CPU and online
+ * match, and wins/losses/streaks per CPU level. The online win/loss record and
+ * rating stay on the server profile.
+ */
+const HEX_CPU_RECORD_KEY="hexdrop_cpu_record",HEX_BESTS_KEY="hexdrop_bests";
+function hexReadJson(key){try{const v=JSON.parse(hexReadStored(key,"null"));return v&&typeof v==="object"?v:{};}catch(_){return{};}}
+function hexCpuRecord(){
+    const raw=hexReadJson(HEX_CPU_RECORD_KEY),out={};
+    for(let lv=1;lv<=5;lv++){const r=raw[lv]||{};out[lv]={w:Math.max(0,Number(r.w)||0),l:Math.max(0,Number(r.l)||0),streak:Math.max(0,Number(r.streak)||0),best:Math.max(0,Number(r.best)||0)};}
+    return out;
+}
+function hexBests(){
+    const b=hexReadJson(HEX_BESTS_KEY),n=k=>Math.max(0,Number(b[k])||0);
+    return{games:n("games"),maxChain:n("maxChain"),waza:n("waza"),cleared:n("cleared"),fastestWin:n("fastestWin")};
+}
+function hexMatchSummary(g){
+    const s=(g&&g.stats)||{},w=s.waza||{},waza={STRAIGHT:Number(w.STRAIGHT)||0,PYRAMID:Number(w.PYRAMID)||0,HEXAGON:Number(w.HEXAGON)||0};
+    return{time:Math.max(0,Number(s.time)||0),waza,wazaTotal:waza.STRAIGHT+waza.PYRAMID+waza.HEXAGON,maxChain:Number(s.maxChain)||0,cleared:Number(s.cleared)||0};
+}
+// Stores one finished match and returns what it changed, for the result screen.
+// A best counts as new only when an earlier match set the previous value.
+function hexRecordMatch({cpuLevel=0,win,summary}){
+    const out={newBests:[],level:null,firstWin:false};
+    if(summary){
+        const b=hexBests(),had=b.games>0,next={...b,games:b.games+1};
+        for(const k of["maxChain","waza","cleared"]){const v=k==="waza"?summary.wazaTotal:summary[k];if(v>b[k]){next[k]=v;if(had&&v>0)out.newBests.push(k);}}
+        if(win&&summary.time>0&&(!b.fastestWin||summary.time<b.fastestWin)){next.fastestWin=Math.round(summary.time*10)/10;if(had&&b.fastestWin)out.newBests.push("fastestWin");}
+        hexStoreMenuPref(HEX_BESTS_KEY,JSON.stringify(next));
+    }
+    if(cpuLevel>=1&&cpuLevel<=5){
+        const all=hexCpuRecord(),r={...all[cpuLevel]};
+        out.firstWin=!!win&&r.w===0;
+        if(win){r.w++;r.streak++;r.best=Math.max(r.best,r.streak);}else{r.l++;r.streak=0;}
+        all[cpuLevel]=r;out.level={lv:cpuLevel,...r};
+        hexStoreMenuPref(HEX_CPU_RECORD_KEY,JSON.stringify(all));
+    }
+    return out;
+}
+function hexFormatTime(sec){sec=Math.max(0,Math.round(Number(sec)||0));return`${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;}
+
 function HexLogoMark({size=210}){
     const ref=React.useRef(null);
 
@@ -206,13 +246,13 @@ function HexMenuShell({children,title,eyebrow="6BALL",back,wide=true}){
                 React.createElement("div",null,React.createElement("div",{className:"text-[11px] font-black tracking-[.24em] text-cyan-200/70"},eyebrow),title&&React.createElement("div",{className:"text-white font-black tracking-[.04em]",style:{fontSize:"clamp(18px,2.5vw,27px)"}},title))),children));
 }
 
-function HexMenuButton({icon="◆",title,subtitle,meta,accent="cyan",onClick,disabled=false,compact=false}){
+function HexMenuButton({icon="◆",title,subtitle,meta,badge=null,accent="cyan",onClick,disabled=false,compact=false}){
     const [hover,setHover]=React.useState(false),[down,setDown]=React.useState(false);const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;
     return React.createElement("button",{disabled,onClick,onPointerEnter:()=>setHover(true),onPointerLeave:()=>{setHover(false);setDown(false);},onPointerDown:()=>setDown(true),onPointerUp:()=>setDown(false),className:"w-full text-left relative overflow-hidden disabled:opacity-35",style:{minHeight:compact?66:78,padding:compact?"11px 14px":"13px 16px",borderRadius:18,border:`1px solid ${c}${hover?"88":"42"}`,background:hover?`linear-gradient(105deg,${c}1f,rgba(255,255,255,.075) 52%,rgba(255,255,255,.035))`:`linear-gradient(105deg,${c}12,rgba(255,255,255,.048) 52%,rgba(255,255,255,.024))`,boxShadow:down?`inset 0 2px 14px rgba(0,0,0,.5),0 0 16px ${c}1c`:`0 12px 26px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.08),0 0 ${hover?28:13}px ${c}20`,backdropFilter:"blur(16px)",transform:down?"translateY(2px) scale(.992)":hover?"translateY(-1px)":"none",transition:"transform .12s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease"}},
         React.createElement("div",{style:{position:"absolute",left:0,top:0,bottom:0,width:3,background:c,boxShadow:`0 0 14px ${c}`}}),
         React.createElement("div",{className:"flex items-center gap-3"},
             React.createElement("div",{className:"shrink-0 flex items-center justify-center font-black",style:{width:compact?38:44,height:compact?38:44,borderRadius:13,color:c,border:`1px solid ${c}55`,background:`${c}10`,boxShadow:`inset 0 0 16px ${c}10`,fontSize:compact?17:20}},icon),
-            React.createElement("div",{className:"min-w-0 flex-1"},React.createElement("div",{className:"font-black text-white tracking-[.03em]",style:{fontSize:compact?14:16}},title),subtitle&&React.createElement("div",{className:"mt-0.5 text-[12px] text-white/60 font-semibold truncate"},subtitle)),
+            React.createElement("div",{className:"min-w-0 flex-1"},React.createElement("div",{className:"flex items-center gap-2 min-w-0"},React.createElement("div",{className:"font-black text-white tracking-[.03em] truncate",style:{fontSize:compact?14:16}},title),badge&&React.createElement("span",{className:"shrink-0 rounded-full px-2 py-px text-[10px] font-black",style:{color:badge.dark?"#2a1f00":badge.color,background:badge.dark?badge.color:`${badge.color}1f`,border:`1px solid ${badge.color}77`}},badge.text)),subtitle&&React.createElement("div",{className:"mt-0.5 text-[12px] text-white/60 font-semibold truncate"},subtitle)),
             meta&&React.createElement("div",{className:"text-[11px] font-black tracking-[.12em] shrink-0",style:{color:c}},meta),React.createElement("div",{className:"text-white/60 text-lg shrink-0","aria-hidden":"true"},"›")));
 }
 
