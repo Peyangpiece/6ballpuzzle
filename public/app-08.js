@@ -552,8 +552,11 @@ function resolveVisualContacts(g){
         }
         return[(q.v.x-ox)*.5,(q.v.y-oy)*H];
     };
+    const FAR2=(MIN-1e-9)*(MIN-1e-9)+1e-9;
     const solvePair=(a,b)=>{
-        let dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*H,d=Math.hypot(dx,dy);
+        let dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*H;
+        if(dx*dx+dy*dy>FAR2)return false;
+        let d=Math.hypot(dx,dy);
         if(d>=MIN-1e-9)return false;
         if(d<1e-10){
             const logicalDx=(a.x-b.x)*.5,logicalDy=(a.y-b.y)*H,ld=Math.hypot(logicalDx,logicalDy);
@@ -575,21 +578,23 @@ function resolveVisualContacts(g){
         }
         return true;
     };
-    const nearbyPairs=()=>{
-        const buckets=new Map(),pairs=[];
-        for(let i=0;i<items.length;i++){
-            const q=items[i],bx=Math.floor(q.v.x*.5),by=Math.floor(q.v.y*H),key=bx+","+by;
-            if(!buckets.has(key))buckets.set(key,[]);buckets.get(key).push(i);
-        }
-        for(let i=0;i<items.length;i++){
-            const q=items[i],bx=Math.floor(q.v.x*.5),by=Math.floor(q.v.y*H);
-            for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++)for(const j of buckets.get((bx+ox)+","+(by+oy))||[])if(j>i)pairs.push([q,items[j]]);
-        }
-        return pairs;
-    };
+    // Each pass buckets every ball by its position at the start of the pass and
+    // then solves the nearby pairs in a fixed order (ball, then the 3x3 buckets
+    // around it, then insertion order). Bucket coordinates are taken before any
+    // pair of the pass is solved, as when the pairs were collected into a list.
+    const n=items.length,BX=new Int32Array(n),BY=new Int32Array(n),buckets=new Map(),used=[];
+    const KEY=(bx,by)=>bx*4096+(by+2048);
     for(let pass=0;pass<48;pass++){
+        for(const list of used)list.length=0;used.length=0;
+        for(let i=0;i<n;i++){
+            const q=items[i],bx=Math.floor(q.v.x*.5),by=Math.floor(q.v.y*H),key=KEY(bx,by);BX[i]=bx;BY[i]=by;
+            let list=buckets.get(key);if(!list){list=[];buckets.set(key,list);}if(!list.length)used.push(list);list.push(i);
+        }
         let changed=false;
-        for(const[a,b]of nearbyPairs())if(solvePair(a,b))changed=true;
+        for(let i=0;i<n;i++){
+            const q=items[i],bx=BX[i],by=BY[i];
+            for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){const list=buckets.get(KEY(bx+ox,by+oy));if(!list)continue;for(let k=0;k<list.length;k++){const j=list[k];if(j>i&&solvePair(q,items[j]))changed=true;}}
+        }
         if(!changed)break;
     }
 }

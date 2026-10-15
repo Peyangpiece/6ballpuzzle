@@ -26,12 +26,26 @@ function visualPointSafe(g,id,x,y,minDist=0.999999){
     }
     return true;
 }
+// Same test as visualPointSafe at every sample, but balls farther than minDist
+// from the box around the segment are dropped first: no sample can be closer
+// to them than that (the margin covers rounding of the sample points).
 function visualSegmentSafe(g,id,ox,oy,nx,ny,minDist=0.999999){
     const physical=Math.hypot((nx-ox)*0.5,(ny-oy)*HEX_ROW_H);
     const samples=Math.max(12,Math.min(48,Math.ceil(physical*36)));
+    const maxVisualRowY=(FLOOR_CENTER_N-BOARD_TOP_CENTER_N)/HEX_ROW_H,pivot=g._visualArcPivotById?.get(id),reach=minDist+1e-6;
+    const x0=Math.min(ox,nx)*0.5,x1=Math.max(ox,nx)*0.5,y0=Math.min(oy,ny)*HEX_ROW_H,y1=Math.max(oy,ny)*HEX_ROW_H,near=[];
+    for(const [oid,ov] of g.vis.entries()){
+        if(oid===id||!ov)continue;
+        if(pivot){const pdx=(ov.x-pivot[0])*0.5,pdy=(ov.y-pivot[1])*HEX_ROW_H;if(pdx*pdx+pdy*pdy<=1e-10)continue;}
+        const px=ov.x*0.5,py=ov.y*HEX_ROW_H;
+        if(px<x0-reach||px>x1+reach||py<y0-reach||py>y1+reach)continue;
+        near.push(ov);
+    }
+    const min2=minDist*minDist;
     for(let i=1;i<=samples;i++){
-        const t=i/samples;
-        if(!visualPointSafe(g,id,ox+(nx-ox)*t,oy+(ny-oy)*t,minDist))return false;
+        const t=i/samples,x=ox+(nx-ox)*t,y=oy+(ny-oy)*t;
+        if(y>maxVisualRowY+1e-7)return false;
+        for(const ov of near){const dx=(x-ov.x)*0.5,dy=(y-ov.y)*HEX_ROW_H;if(dx*dx+dy*dy<min2)return false;}
     }
     return true;
 }
