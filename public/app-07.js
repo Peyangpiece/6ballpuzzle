@@ -37,10 +37,11 @@ isBalancedHexagonCenterHole=function(b,cx,cy){
     const ring=referenceHexagonRingBalls(b,cx,cy);if(!ring)return false;
     return [[cx-1,cy+1],[cx+1,cy+1]].every(([x,y])=>touchesFloorRow(y)||hexPhysSupportInfo(b,x,y).count>=2);
 };
+const HEX_RING_OFFSETS=[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+// (x,y) is a ring member of the centre (x-dx,y-dy) for each ring offset, so
+// only those six centres can answer true (the 3x5 window held nine more).
 ballInBalancedHexagonRing=function(b,x,y){
-    for(let cy=y-1;cy<=y+1;cy++)for(let cx=x-2;cx<=x+2;cx++)if(isBalancedHexagonCenterHole(b,cx,cy)){
-        if([[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]].some(([dx,dy])=>cx+dx===x&&cy+dy===y))return true;
-    }
+    for(const [dx,dy] of HEX_RING_OFFSETS)if(isBalancedHexagonCenterHole(b,x-dx,y-dy))return true;
     return false;
 };
 boardHasIntentionalHexagonHole=function(b){for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isBalancedHexagonCenterHole(b,x,y))return true;return false;};
@@ -225,8 +226,33 @@ function pileFlowPositionAt(g,ball,t,depth=0,seen=null){
 
 function pileFlowWaveSafe(g,waveSegs,start,duration){
     for(const seg of waveSegs){seg.pileFlowStart=start;seg.pileFlowDuration=duration;seg.pileFlowEnd=start+duration;}
+    // Same answer as testing every moving segment against every board ball at
+    // every sample with pileFlowPositionAt (tests/physics-speedup-parity.js),
+    // with much less work; a large post-clear collapse used to take up to
+    // seconds in one frame here:
+    //  - a ball with no scheduled segment is where pileFlowPositionAt puts it
+    //    for every t, so it is evaluated once per call;
+    //  - a scheduled ball's segment list is built once per call and walked as
+    //    pileFlowPositionAt walks it, once per ball and sample;
+    //  - distances are compared squared, with the exact test only within 1e-9
+    //    of the limit.
     const boardBalls=[];for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null;if(b)boardBalls.push(b);}
-    for(let i=0;i<=PILE_FLOW_COLLISION_SAMPLES;i++){const t=start+duration*(i/PILE_FLOW_COLLISION_SAMPLES);for(const seg of waveSegs){const moving=seg._pileFlowBall;if(!moving)continue;const a=pileFlowPositionAt(g,moving,t);for(const other of boardBalls){if(other===moving)continue;const b=pileFlowPositionAt(g,other,t),d=pileFlowPhysicalDist(a,b);if(d<PILE_FLOW_MIN_DIST){for(const q of waveSegs){delete q.pileFlowStart;delete q.pileFlowDuration;delete q.pileFlowEnd;}return false;}}}}return true;
+    const H=HEX_ROW_H,L2=PILE_FLOW_MIN_DIST*PILE_FLOW_MIN_DIST,n=PILE_FLOW_COLLISION_SAMPLES,fixedB=[],fixedP=[],live=[],sched=[];
+    for(const b of boardBalls){const s=Array.isArray(b.fallPath)?b.fallPath.filter(seg=>seg?.pileFlow&&Number.isFinite(seg.pileFlowStart)&&Number.isFinite(seg.pileFlowEnd)):[];
+        if(s.length){live.push(b);sched.push(s);}else{fixedB.push(b);fixedP.push(pileFlowPositionAt(g,b,start));}}
+    const nf=fixedB.length,nl=live.length,fx=new Float64Array(nf),fy=new Float64Array(nf),lx=new Float64Array(nl),ly=new Float64Array(nl),lp=new Array(nl);
+    for(let k=0;k<nf;k++){fx[k]=fixedP[k][0]*0.5;fy[k]=fixedP[k][1]*H;}
+    const liveAt=(k,t)=>{const s=sched[k];let pos=s[0].from;for(const seg of s){if(t<seg.pileFlowStart-1e-10)return pos;if(t<=seg.pileFlowEnd+1e-10)return pileFlowPointForBall(g,live[k],seg,(t-seg.pileFlowStart)/Math.max(1e-9,seg.pileFlowDuration),t,0,null);pos=seg.to;}return pos;};
+    const close=(a,b,dx,dy)=>{const d2=dx*dx+dy*dy;return d2<L2-1e-9||(d2<=L2+1e-9&&pileFlowPhysicalDist(a,b)<PILE_FLOW_MIN_DIST);};
+    const fail=()=>{for(const q of waveSegs){delete q.pileFlowStart;delete q.pileFlowDuration;delete q.pileFlowEnd;}return false;};
+    for(let i=0;i<=n;i++){const t=start+duration*(i/n);
+        for(let k=0;k<nl;k++){const p=liveAt(k,t);lp[k]=p;lx[k]=p[0]*0.5;ly[k]=p[1]*H;}
+        for(const seg of waveSegs){const moving=seg._pileFlowBall;if(!moving)continue;
+            const li=live.indexOf(moving),fi=li<0?fixedB.indexOf(moving):-1;
+            const a=li>=0?lp[li]:pileFlowPositionAt(g,moving,t),ax=a[0]*0.5,ay=a[1]*H;
+            for(let k=0;k<nf;k++){if(k===fi)continue;const dx=ax-fx[k],dy=ay-fy[k];if(dx*dx+dy*dy<=L2+1e-9&&close(a,fixedP[k],dx,dy))return fail();}
+            for(let k=0;k<nl;k++){if(k===li)continue;const dx=ax-lx[k],dy=ay-ly[k];if(dx*dx+dy*dy<=L2+1e-9&&close(a,lp[k],dx,dy))return fail();}}}
+    return true;
 }
 
 function preparePileFlowDurations(g,fresh){

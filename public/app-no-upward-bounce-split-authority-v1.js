@@ -237,26 +237,30 @@ resolveVisualContacts=function(g){
   /* Restoring Y must never trade the bounce for penetration.  Only violations
    * below the real physics threshold are repaired, and only sideways. */
   const minDist=Number.isFinite(Number(HEX_MIN_DIST))?Number(HEX_MIN_DIST):0.9995;
+  // Pairs whose squared distance is clearly beyond the contact distance are
+  // skipped before Math.hypot; the 1e-9 margin keeps every decision the same.
+  const far2=(minDist-SAFE_EPS)*(minDist-SAFE_EPS)+1e-9;
+  // Pairs of two balls at rest are skipped: for a ball at rest only the
+  // moving balls after it are visited, in the same (i, j) order as before.
+  const movingIdx=[];for(let i=0;i<after.length;i++)if(after[i].moving)movingIdx.push(i);
+  const forPairs=fn=>{for(let i=0;i<after.length;i++){if(after[i].moving){for(let j=i+1;j<after.length;j++)fn(after[i],after[j]);}else for(const j of movingIdx)if(j>i)fn(after[i],after[j]);}};
   for(let pass=0;pass<8;pass++){
     let changed=false;
-    for(let i=0;i<after.length;i++)for(let j=i+1;j<after.length;j++){
-      const a=after[i],b=after[j];
-      if(!a.moving&&!b.moving)continue;
+    forPairs((a,b)=>{
       if(
         a.moving && b.moving &&
         Number(a.ball?.motionGroupId)>0 &&
         Number(a.ball?.motionGroupId)===Number(b.ball?.motionGroupId)
-      )continue;
-      const d=Math.hypot(
-        (Number(a.v.x)-Number(b.v.x))*.5,
-        (Number(a.v.y)-Number(b.v.y))*HEX_ROW_H
-      );
-      if(d>=minDist-SAFE_EPS)continue;
+      )return;
+      const ex=(Number(a.v.x)-Number(b.v.x))*.5,ey=(Number(a.v.y)-Number(b.v.y))*HEX_ROW_H;
+      if(ex*ex+ey*ey>far2)return;
+      const d=Math.hypot(ex,ey);
+      if(d>=minDist-SAFE_EPS)return;
       if(repairTrueOverlapHorizontally(after,a,b,minDist)){
         horizontalRepairs++;
         changed=true;
       }
-    }
+    });
     if(!changed)break;
   }
 
@@ -270,13 +274,13 @@ resolveVisualContacts=function(g){
   let converged=false;
   for(let pass=0;pass<128;pass++){
     let changed=false;
-    for(let i=0;i<after.length;i++)for(let j=i+1;j<after.length;j++){
-      const a=after[i],b=after[j];
-      if(!a.moving&&!b.moving)continue;
-      const dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H,d=Math.hypot(dx,dy);
-      if(d>=minDist-SAFE_EPS)continue;
+    forPairs((a,b)=>{
+      const dx=(a.v.x-b.v.x)*.5,dy=(a.v.y-b.v.y)*HEX_ROW_H;
+      if(dx*dx+dy*dy>far2)return;
+      const d=Math.hypot(dx,dy);
+      if(d>=minDist-SAFE_EPS)return;
       const ac=cohort(a),bc=cohort(b);
-      if(ac.includes(b)||bc.includes(a))continue;
+      if(ac.includes(b)||bc.includes(a))return;
       const nx=d>EPS?dx/d:Math.sign(a.x-b.x)||1;
       const ny=d>EPS?dy/d:0;
       const need=minDist-d+SAFE_EPS;
@@ -291,7 +295,7 @@ resolveVisualContacts=function(g){
         q.v.y+=shiftY;
       }
       changed=true;
-    }
+    });
     if(!changed){converged=true;break;}
   }
   // Consecutive calls whose separation did not converge (read by the settle watchdog).
