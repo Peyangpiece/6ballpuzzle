@@ -21,18 +21,26 @@ function Matching({ onMatched, onCancel, onError }) {
         })();
         return () => { alive = false; sig.current.cancelled = true; Net.cancelMatchmaking(); };
     }, []);
-    return (React.createElement(Screen, null,
-        React.createElement("div", { className: "flex flex-col items-center" },
-            phase !== "found" ? (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "w-12 h-12 rounded-full border-4 border-white/15 animate-spin mb-5", style: { borderTopColor: "#2FE3F5" } }),
-                React.createElement("div", { className: "font-bold text-white/80" }, phase === "connect" ? "サーバーに接続中…" : "対戦相手を探しています…"),
-                React.createElement("div", { className: "text-[11px] text-white/60 mt-1 tabular-nums" }, Math.floor(waited / 1000), " 秒"))) : (React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "text-[12px] tracking-[0.25em] font-bold text-white/60 mb-3" }, "対戦相手"),
-                React.createElement("div", { className: "w-16 h-16 rounded-full mb-3", style: { background: "linear-gradient(135deg,#FF7AC6,#FFC46B)", boxShadow: "0 0 26px #FF3EA588" } }),
-                React.createElement("div", { className: "text-xl font-extrabold text-white" }, foe.name),
-                React.createElement("div", { className: "text-4xl font-extrabold text-white/20 my-4" }, "VS"))),
-            phase === "search" && waited >= 30000 && React.createElement("div", { className: "mt-3 max-w-xs text-center text-xs leading-relaxed text-white/55" }, "対戦できる相手がまだ見つかりません。レートの近い順から探す範囲を広げています。"),
-            phase !== "found" && React.createElement("button", { onClick: onCancel, className: "mt-5 rounded-xl px-6 py-2.5 text-sm font-black text-white/80", style: { border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.06)" } }, "キャンセル"))));
+    // Searching: a ring, the status and the elapsed time. Found: both players
+    // as the avatars used in the match, with names and ratings.
+    const me = (typeof Net !== "undefined" && Net.profile) || {};
+    const player = (name, rating, color) => React.createElement("div", { className: "flex flex-col items-center min-w-0", style: { width: 150 } },
+        React.createElement(HexAvatar, { name, size: 64, color }),
+        React.createElement("div", { className: "mt-3 text-[16px] font-bold text-white truncate max-w-full" }, name),
+        Number.isFinite(Number(rating)) && rating !== null && rating !== undefined && React.createElement("div", { className: "mt-0.5 text-[12px] tabular-nums text-white/50" }, "レート ", Number(rating)));
+    return React.createElement(HexMenuShell, { title: "オンライン対戦", back: onCancel, wide: false },
+        React.createElement(HexPanel, { className: "p-6 flex flex-col items-center text-center" },
+            phase !== "found"
+                ? React.createElement(React.Fragment, null,
+                    React.createElement("div", { className: "w-11 h-11 rounded-full border-2 border-white/10 animate-spin", style: { borderTopColor: "#2FE3F5" }, "aria-hidden": "true" }),
+                    React.createElement("div", { role: "status", className: "mt-4 text-[15px] font-bold text-white" }, phase === "connect" ? "サーバーに接続中" : "対戦相手を探しています"),
+                    React.createElement("div", { className: "mt-1 text-[13px] tabular-nums text-white/50" }, Math.floor(waited / 1000), " 秒"),
+                    phase === "search" && waited >= 30000 && React.createElement("div", { className: "mt-3 max-w-xs text-[12px] leading-relaxed text-white/50" }, "相手がまだ見つかりません。レートの近い順から探す範囲を広げています。"),
+                    React.createElement("button", { onClick: onCancel, className: "mt-6 rounded-xl px-6 text-[14px] font-bold text-white/85 active:scale-[.98]", style: { minHeight: 44, ...HEX_MENU_SURFACE } }, "キャンセル"))
+                : React.createElement("div", { role: "status", "aria-label": "対戦相手が見つかりました " + foe.name, className: "flex items-center justify-center gap-5" },
+                    player(me.name || "Player", me.rating, NEON[0]),
+                    React.createElement("div", { className: "text-[13px] font-bold tracking-[.2em] text-white/35" }, "VS"),
+                    player(foe.name, foe.rating, NEON[1]))));
 }
 
 // Turn a thrown network error into a sentence a player can act on. Messages
@@ -46,9 +54,9 @@ function hexFriendlyNetError(msg) {
     return m.replace(/:\s*$/, "") + "。";
 }
 function RoomSpinner({ label }) {
-    return React.createElement("div", { className: "flex items-center justify-center gap-3 py-2", role: "status" },
-        React.createElement("div", { className: "w-5 h-5 rounded-full border-2 border-white/15 animate-spin", style: { borderTopColor: "#9B6DFF" }, "aria-hidden": "true" }),
-        React.createElement("div", { className: "text-sm font-bold text-white/80" }, label));
+    return React.createElement("div", { className: "flex items-center justify-center gap-3", role: "status" },
+        React.createElement("div", { className: "w-5 h-5 rounded-full border-2 border-white/10 animate-spin", style: { borderTopColor: "#9B6DFF" }, "aria-hidden": "true" }),
+        React.createElement("div", { className: "text-[14px] font-semibold text-white/80" }, label));
 }
 // Host side of a private room: issue a code on the server, then wait for a
 // guest to join it. Leaving the screen withdraws the room.
@@ -71,15 +79,15 @@ function RoomHost({ onMatched, onCancel, onError }) {
     }, []);
     const copy = () => { try { navigator.clipboard.writeText(code).then(() => setCopied(true), () => {}); } catch (_) {} };
     return React.createElement(HexMenuShell, { title: "ルームを作成", back: onCancel, wide: false },
-        React.createElement(HexPanel, { accent: "violet", className: "p-6 text-center" },
-            React.createElement("div", { className: "text-[11px] font-black tracking-[.2em] text-white/65" }, "ROOM CODE"),
+        React.createElement(HexPanel, { className: "p-6 flex flex-col items-center text-center" },
+            React.createElement("div", { className: "text-[12px] font-semibold tracking-[.1em] text-white/50" }, "ルームコード"),
             code ? React.createElement(React.Fragment, null,
-                React.createElement("div", { className: "my-2 font-black tracking-[.24em] tabular-nums text-white select-all", style: { fontSize: "clamp(30px,5vw,44px)", textShadow: "0 0 24px rgba(155,109,255,.35)", userSelect: "text", WebkitUserSelect: "text" }, "aria-label": "ルームコード " + code.split("").join(" ") }, code.slice(0, 3), " ", code.slice(3)),
-                React.createElement("div", { className: "text-xs text-white/60 mb-3" }, "このコードを友だちに伝えてください。相手が参加すると自動で始まります。"),
-                React.createElement("button", { onClick: copy, className: "mb-4 rounded-xl px-4 py-2 text-xs font-black text-white/85", style: { border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.06)" } }, copied ? "コピーしました" : "コードをコピー"),
-                React.createElement(RoomSpinner, { label: "相手の参加を待っています…" }))
-                : React.createElement(RoomSpinner, { label: "ルームを準備しています…" }),
-            React.createElement("button", { onClick: onCancel, className: "mt-4 rounded-xl px-5 py-2.5 text-xs font-black text-white/75", style: { border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.04)" } }, "キャンセル")));
+                React.createElement("div", { className: "mt-1 font-bold tracking-[.22em] tabular-nums text-white", style: { fontSize: "clamp(32px,5vw,46px)", userSelect: "text", WebkitUserSelect: "text" }, "aria-label": "ルームコード " + code.split("").join(" ") }, code.slice(0, 3), " ", code.slice(3)),
+                React.createElement("div", { className: "mt-2 text-[13px] leading-relaxed text-white/55" }, "このコードを友だちに伝えてください。相手が参加すると自動で始まります。"),
+                React.createElement("button", { onClick: copy, className: "mt-4 rounded-xl px-5 text-[14px] font-bold text-white/85 active:scale-[.98]", style: { minHeight: 44, ...HEX_MENU_SURFACE } }, copied ? "コピーしました" : "コードをコピー"),
+                React.createElement("div", { className: "mt-5" }, React.createElement(RoomSpinner, { label: "相手の参加を待っています" })))
+                : React.createElement("div", { className: "mt-4" }, React.createElement(RoomSpinner, { label: "ルームを準備しています" })),
+            React.createElement("button", { onClick: onCancel, className: "mt-6 text-[14px] font-semibold text-white/60 active:scale-[.98]", style: { minHeight: 40 } }, "キャンセル")));
 }
 // Guest side: join an existing room by its six-digit code.
 function RoomJoin({ code, onMatched, onCancel, onError }) {
@@ -95,10 +103,11 @@ function RoomJoin({ code, onMatched, onCancel, onError }) {
         return () => { alive = false; };
     }, []);
     return React.createElement(HexMenuShell, { title: "ルームに参加", back: onCancel, wide: false },
-        React.createElement(HexPanel, { accent: "violet", className: "p-6 text-center" },
-            React.createElement("div", { className: "text-[11px] font-black tracking-[.2em] text-white/65 mb-2" }, "ROOM CODE ", code.slice(0, 3), " ", code.slice(3)),
-            React.createElement(RoomSpinner, { label: "ホストと接続しています…" }),
-            React.createElement("button", { onClick: onCancel, className: "mt-4 rounded-xl px-5 py-2.5 text-xs font-black text-white/75", style: { border: "1px solid rgba(255,255,255,.16)", background: "rgba(255,255,255,.04)" } }, "キャンセル")));
+        React.createElement(HexPanel, { className: "p-6 flex flex-col items-center text-center" },
+            React.createElement("div", { className: "text-[12px] font-semibold tracking-[.1em] text-white/50" }, "ルームコード"),
+            React.createElement("div", { className: "mt-1 font-bold tracking-[.22em] tabular-nums text-white", style: { fontSize: "clamp(32px,5vw,46px)" } }, code.slice(0, 3), " ", code.slice(3)),
+            React.createElement("div", { className: "mt-4" }, React.createElement(RoomSpinner, { label: "ホストと接続しています" })),
+            React.createElement("button", { onClick: onCancel, className: "mt-6 text-[14px] font-semibold text-white/60 active:scale-[.98]", style: { minHeight: 40 } }, "キャンセル")));
 }
 
 // ---------------------------------------------------------------------------
