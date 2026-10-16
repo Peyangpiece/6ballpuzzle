@@ -57,18 +57,30 @@ const Net = {
     async cancelMatchmaking() {try {await this.clearWaiting();if (this.fb && this.uid) await this.fb.remove(this.fb.ref(this.db, "pairings/" + this.uid));}catch (e) {}},
     async findMatch(onProgress, signal) {
         await this.connect();const F = this.fb, myBand = bandOf(this.profile.rating), started = Date.now();
+        // A transaction starts from the local cache and is abandoned when the
+        // update function returns undefined on that first run. A lobby slot is
+        // only cached while something listens to it, so without a listener
+        // claim() always saw null and never took a waiting host. Keep a listener
+        // on every band this search touches (waiting for its first value) and
+        // drop them all when the search ends.
+        const watched = new Map();
+        const watch = (b) => new Promise((res) => {if (watched.has(b)) return res();let first = true;const done = () => { if (first) { first = false; res(); } };const un = F.onValue(F.ref(this.db, "lobby/" + b + "/waiting"), done, done);watched.set(b, un);});
+        try {
         for (let round = 0;; round++) {
             if (signal && signal.cancelled) {await this.cancelMatchmaking();throw new Error("cancelled");}
             const spread = Math.min(4, Math.floor(round / 2));if (onProgress) onProgress(Date.now() - started, spread);
             for (const b of this.bands(myBand, spread)) {
+                await watch(b);
                 const host = await this.claim(b);if (!host) continue;
                 const matchId = F.push(F.ref(this.db, "matches")).key;const seed = Math.floor(Math.random() * 0x7fffffff);
                 await F.set(F.ref(this.db, "matches/" + matchId), {meta: { seed, ranked: true, createdAt: F.serverTimestamp() },players: {0: { uid: host.uid, name: host.name, rating: host.rating, connected: false },1: { uid: this.uid, name: this.profile.name, rating: this.profile.rating, connected: false }}});
                 await F.set(F.ref(this.db, "pairings/" + host.uid), matchId);return this.join(matchId);
             }
+            await watch(myBand);
             if (await this.putWaiting(myBand)) {this.waitingBand = myBand;const matchId = await this.waitPairing(WAIT_MS);if (matchId) {await this.clearWaiting();await F.remove(F.ref(this.db, "pairings/" + this.uid)).catch(() => { });return this.join(matchId);}}
             await new Promise((r) => setTimeout(r, 250));
         }
+        } finally { for (const un of watched.values()) { try { un(); } catch (_) { } } }
     },
     async createRoom() {
         await this.connect();const F = this.fb;let code = "";

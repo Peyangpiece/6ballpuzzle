@@ -24,9 +24,9 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 16 | `app-14.js` | core: engine, assets, net, app shell | 411 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
-| 19 | `app-15.js` | core: engine, assets, net, app shell | 119 |  |  |
+| 19 | `app-15.js` | core: engine, assets, net, app shell | 131 |  |  |
 | 20 | `app-google-login.js` | online | 316 |  |  |
-| 21 | `app-online-v2.js` | online | 2310 |  |  |
+| 21 | `app-online-v2.js` | online | 1754 |  |  |
 | 22 | `app-menu-ui.js` | menu / audio | 291 |  | HEXDROP immersive menu system. |
 | 23 | `app-brand-bgm.js` | menu / audio | 145 |  | 6ball brand + menu audio + gameplay BGM adapter. |
 | 24 | `app-bgm-local.js` | menu / audio | 352 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
