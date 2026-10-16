@@ -21,7 +21,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 719 |  |  |
 | 14 | `app-09.js` | core: engine, assets, net, app shell | 586 |  | Garbage pipeline entry points.  They are installed later by |
 | 15 | `app-10.js` | core: engine, assets, net, app shell | 442 |  | ボール描画 |
-| 16 | `app-14.js` | core: engine, assets, net, app shell | 416 |  |  |
+| 16 | `app-14.js` | core: engine, assets, net, app shell | 419 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
 | 19 | `app-15.js` | core: engine, assets, net, app shell | 119 |  |  |

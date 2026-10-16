@@ -211,27 +211,30 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
     useEffect(()=>{const t=setTimeout(()=>{try{nextRef.current&&nextRef.current.focus({preventScroll:true});}catch(_){}},560);
         const key=(e)=>{if(e.key==="Escape"){e.preventDefault();onExit();}};window.addEventListener("keydown",key);return()=>{clearTimeout(t);window.removeEventListener("keydown",key);};},[onExit]);
     useEffect(()=>{const a=requestAnimationFrame(()=>setPhase(1)),b=setTimeout(()=>setPhase(2),240),c=setTimeout(()=>setPhase(3),520);return()=>{cancelAnimationFrame(a);clearTimeout(b);clearTimeout(c);};},[]);
-    const card=(winner,left)=>React.createElement("div",{className:"relative flex-1 flex flex-col items-center justify-center",style:{maxWidth:"42vw",height:summary?"52vh":"68vh"}},
-        winner&&React.createElement("div",{className:"absolute w-56 h-56 rounded-full",style:{opacity:phase>=3?.72:0,transform:`scale(${phase>=3?1:.22}) rotate(${phase>=3?18:0}deg)`,transition:"opacity .28s ease, transform .46s cubic-bezier(.18,.82,.22,1)",background:"repeating-conic-gradient(from 0deg,rgba(255,255,255,.92) 0deg,rgba(255,255,255,.92) 7deg,transparent 7deg,transparent 31deg)",filter:"blur(1px)",maskImage:"radial-gradient(circle,transparent 0 23%,#000 25% 68%,transparent 70%)",WebkitMaskImage:"radial-gradient(circle,transparent 0 23%,#000 25% 68%,transparent 70%)"}}),
-        winner&&React.createElement("div",{className:"absolute top-[20%] text-4xl",style:{opacity:phase>=3?1:0,transform:`translateY(${phase>=3?0:12}px) scale(${phase>=3?1:.6})`,transition:"opacity .25s ease, transform .35s cubic-bezier(.18,.82,.22,1)",filter:"drop-shadow(0 0 14px #FFF36B)"}},"♛"),
-        React.createElement("div",{className:"relative w-16 h-16 rounded-full border-4 flex items-center justify-center text-3xl font-black",style:{opacity:phase>=1?1:0,transform:`scale(${phase>=1?1:.18})`,transition:"opacity .2s ease, transform .34s cubic-bezier(.15,.9,.2,1.18)",color:winner?"#5b4210":"#D6D8E0",borderColor:winner?"#FFF36B":"#D6D8E0",background:winner?"radial-gradient(circle at 35% 30%,#FFF8A8,#E7A914 72%)":"linear-gradient(145deg,#88909D,#424854)",boxShadow:winner?"0 0 0 7px #FFD83B55,0 0 34px #FFF36B88":"0 0 20px #FFFFFF22"}},winner?"★":"●"),
-        React.createElement("div",{className:"mt-4 text-5xl font-black tracking-tight text-white",style:{opacity:phase>=2?1:0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:"0 4px 0 #111,0 0 18px #FFFFFF44"}},winner?"Winner!":"Lose..."),
-        winner&&React.createElement("div",{className:"mt-1 text-2xl text-[#FFF36B] tracking-[.5em]",style:{opacity:phase>=3?1:0,transition:"opacity .25s ease"}},"♛—♛")
-    );
+    // One card per player: the avatar from the match HUD (initial on the
+    // player's colour), a gold ring and halo for the winner, then WIN / LOSE
+    // and the name. No medals, crowns or starbursts.
+    const GOLD="#FFD36A";
+    const card=(winner,me,name)=>React.createElement("div",{className:"relative flex-1 flex flex-col items-center justify-center",style:{maxWidth:"42vw",height:summary?"52vh":"68vh"}},
+        winner&&React.createElement("div",{"aria-hidden":"true",className:"absolute rounded-full",style:{width:280,height:280,opacity:phase>=3?1:0,transform:`scale(${phase>=3?1:.6})`,transition:"opacity .4s ease, transform .5s cubic-bezier(.18,.82,.22,1)",background:"radial-gradient(circle,rgba(255,211,106,.26),rgba(255,211,106,.07) 45%,transparent 70%)"}}),
+        React.createElement("div",{className:"relative rounded-full",style:{opacity:phase>=1?1:0,transform:`scale(${phase>=1?1:.4})`,transition:"opacity .2s ease, transform .34s cubic-bezier(.15,.9,.2,1.18)",padding:4,background:winner?GOLD:"rgba(255,255,255,.16)",boxShadow:winner?"0 0 36px rgba(255,211,106,.45)":"none",filter:winner?"none":"saturate(.3)"}},
+            React.createElement(HexAvatar,{name,size:72,color:me?NEON[0]:NEON[1]})),
+        React.createElement("div",{className:"mt-5 font-black tracking-[.08em] text-white",style:{fontSize:"clamp(34px,5.2vw,54px)",lineHeight:1,opacity:phase>=2?(winner?1:.5):0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:winner?"0 0 24px rgba(255,211,106,.45)":"none"}},winner?"WIN":"LOSE"),
+        React.createElement("div",{className:"mt-4 text-[12px] font-semibold tracking-[.14em] text-white/50",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},me?"あなた":"相手"),
+        React.createElement("div",{className:"mt-0.5 text-[17px] font-bold text-white max-w-full truncate",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},name));
     const reasonText=reason==="disconnect"?(win?"相手の接続が切れたため、あなたの勝ちです":"接続が切れたため、敗北になりました"):reason==="resign"?(win?"相手が降参しました":"降参しました"):"";
-    const tag=(text,me)=>React.createElement("div",{className:"mt-3 rounded-full px-3 py-1 text-[13px] font-black max-w-full truncate",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease",color:me?"#061016":"#fff",background:me?"#2FE3F5":"rgba(255,255,255,.12)",border:me?"none":"1px solid rgba(255,255,255,.25)"}},text);
     const btn={minHeight:44};
-    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",role:"dialog","aria-modal":"true","aria-label":win?"勝利":"敗北",style:{background:phase?"rgba(38,0,43,.64)":"rgba(38,0,43,0)",backdropFilter:`blur(${phase?6:0}px)`,WebkitBackdropFilter:`blur(${phase?6:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
+    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",role:"dialog","aria-modal":"true","aria-label":win?"勝利":"敗北",style:{background:phase?"rgba(6,5,18,.74)":"rgba(6,5,18,0)",backdropFilter:`blur(${phase?8:0}px)`,WebkitBackdropFilter:`blur(${phase?8:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
         React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]",style:summary?{flex:"1 1 0",minHeight:0,paddingTop:"max(34px, env(safe-area-inset-top))",paddingBottom:"clamp(92px,24vh,128px)"}:null},
-            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!!win,true),tag("あなた："+meName,true)),
-            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!win,false),tag("相手："+foeName,false))),
+            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!!win,true,meName)),
+            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!win,false,foeName))),
         (reasonText||(online&&ranked))&&React.createElement("div",{className:"absolute left-1/2 -translate-x-1/2 text-center",style:{top:"max(14px, env(safe-area-inset-top))",opacity:phase>=2?1:0,transition:"opacity .25s ease"}},
-            reasonText&&React.createElement("div",{className:"text-[14px] font-bold text-white/85"},reasonText),
-            online&&ranked&&React.createElement("div",{className:"mt-1 text-[15px] font-black tabular-nums",style:{color:delta>=0?"#7DFFB2":"#FF9AB5"}},`レート ${delta>=0?"+":""}${delta}`,Number.isFinite(rating)?React.createElement("span",{className:"text-white/70 font-bold"},`（${rating}）`):null)),
+            reasonText&&React.createElement("div",{className:"text-[14px] font-semibold text-white/85"},reasonText),
+            online&&ranked&&React.createElement("div",{className:"mt-1 text-[15px] font-bold tabular-nums",style:{color:delta>=0?"#7DFFB2":"#FF9AB5"}},`レート ${delta>=0?"+":""}${delta}`,Number.isFinite(rating)?React.createElement("span",{className:"text-white/70 font-semibold"},`（${rating}）`):null)),
         summary&&React.createElement(ResultSummary,{summary,progress,levelName,win,show:phase>=3}),
-        React.createElement("div",{className:"absolute flex gap-3 text-white font-extrabold",style:{right:"max(20px, env(safe-area-inset-right))",bottom:"max(16px, env(safe-area-inset-bottom))"}},
-            React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"px-5 rounded-xl bg-black/30 border border-white/25 text-sm",style:btn},"メニューへ"),
-            React.createElement("button",{ref:nextRef,onClick:onNext,className:"px-6 rounded-xl text-sm text-[#061016]",style:{...btn,background:"#2FE3F5"}},nextLabel||"もう一度")
+        React.createElement("div",{className:"absolute flex gap-3 text-white font-bold",style:{right:"max(20px, env(safe-area-inset-right))",bottom:"max(16px, env(safe-area-inset-bottom))"}},
+            React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"px-5 rounded-xl text-[14px] active:scale-[.98]",style:{...btn,...HEX_MENU_SURFACE}},"メニューへ"),
+            React.createElement("button",{ref:nextRef,onClick:onNext,className:"px-6 rounded-xl text-[14px] text-[#061016] active:scale-[.98]",style:{...btn,background:"#2FE3F5"}},nextLabel||"もう一度")
         )
     );
 }
@@ -250,13 +253,13 @@ function ResultSummary({summary,progress,levelName,win,show}){
     // Each technique as its first letter in its own colour (ス／ピ／ヘ); the full names are in the label for screen readers.
     const used=["STRAIGHT","PYRAMID","HEXAGON"].filter((k)=>summary.waza[k]>0);
     const parts=used.length?React.createElement("span",{"aria-label":used.map((k)=>`${WAZA[k].jp}${summary.waza[k]}回`).join("、")},used.map((k)=>React.createElement("span",{key:k,className:"mr-1.5",style:{color:WAZA[k].tint}},`${WAZA[k].jp[0]}×${summary.waza[k]}`))):null;
-    const chip=(key,label,value,sub)=>React.createElement("div",{key,className:"relative min-w-0 flex-1 rounded-xl px-2.5 py-1.5",style:{background:"rgba(0,0,0,.32)",border:`1px solid ${best.has(key)?"rgba(255,216,59,.75)":"rgba(255,255,255,.16)"}`,boxShadow:best.has(key)?"0 0 16px rgba(255,216,59,.28)":"none"}},
-        React.createElement("div",{className:"text-[10px] font-black tracking-[.08em] text-white/65 truncate"},label),
-        React.createElement("div",{className:"text-[19px] leading-tight font-black tabular-nums text-white"},value),
-        sub&&React.createElement("div",{className:"text-[10px] font-bold text-white/60 truncate"},sub),
-        best.has(key)&&React.createElement("div",{className:"absolute -top-2 right-1.5 rounded-full px-1.5 text-[9px] font-black text-[#3a2a00]",style:{background:"#FFD83B"}},"BEST"));
+    const chip=(key,label,value,sub)=>React.createElement("div",{key,className:"relative min-w-0 flex-1 rounded-xl px-3 py-2",style:{...HEX_MENU_SURFACE,border:`1px solid ${best.has(key)?"rgba(255,211,106,.7)":"rgba(255,255,255,.09)"}`,boxShadow:best.has(key)?"0 0 18px rgba(255,211,106,.22)":"none"}},
+        React.createElement("div",{className:"text-[11px] font-semibold tracking-[.06em] text-white/50 truncate"},label),
+        React.createElement("div",{className:"text-[20px] leading-tight font-bold tabular-nums text-white"},value),
+        sub&&React.createElement("div",{className:"text-[11px] font-semibold text-white/60 truncate"},sub),
+        best.has(key)&&React.createElement("div",{className:"absolute -top-2 right-2 rounded-full px-1.5 text-[9px] font-bold tracking-[.08em] text-[#3a2a00]",style:{background:"#FFD36A",lineHeight:"16px"}},"BEST"));
     return React.createElement("div",{"data-hex-result-summary":"1",className:"absolute",style:{left:"max(20px, env(safe-area-inset-left))",right:"calc(max(20px, env(safe-area-inset-right)) + 236px)",bottom:"max(16px, env(safe-area-inset-bottom))",opacity:show?1:0,transform:`translateY(${show?0:8}px)`,transition:"opacity .3s ease, transform .3s ease"}},
-        headline&&React.createElement("div",{role:"status",className:"mb-1.5 text-[13px] font-black truncate",style:{color:gold?"#FFE66D":"rgba(255,255,255,.85)",textShadow:gold?"0 0 12px rgba(255,216,59,.5)":"none"}},headline),
+        headline&&React.createElement("div",{role:"status",className:"mb-2 text-[13px] font-semibold truncate",style:{color:gold?"#FFD36A":"rgba(255,255,255,.75)"}},headline),
         React.createElement("div",{className:"flex gap-2",style:{maxWidth:520}},
             chip("waza","技",summary.wazaTotal,parts),
             chip("maxChain","最大連鎖",summary.maxChain),
