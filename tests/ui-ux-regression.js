@@ -115,6 +115,11 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(!/startMatch\(\s*"FRIEND"/.test(app16), "rooms must not start a local CPU match");
   assert(/beginOnline\(match,"ROOM"\)/.test(app16), "rooms must start a networked match");
   assert(/Net\.hostRoom\(\)/.test(app17) && /Net\.joinRoomCode\(code\)/.test(app17), "room screens must use the network API");
+  // Ranked matchmaking (2026-10-16): the rules permit only the lobby/pairings
+  // scheme keyed by the account uid, and a transaction only sees a lobby slot
+  // while something listens to it.
+  assert(!/"online(Queue|Pairings|Claims)/.test(read("app-online-v2.js")), "ranked matchmaking must use the lobby/pairings paths the database rules permit");
+  assert(/F\.onValue\(F\.ref\(this\.db, "lobby\/" \+ b \+ "\/waiting"\)/.test(read("app-15.js")), "matchmaking keeps a listener on each lobby slot so claim() transactions start from the server value");
   assert(!app14.includes("○○"), "result buttons must not show placeholder glyphs");
   assert(app14.includes('"メニューへ"') && /nextLabel\|\|"もう一度"/.test(app14), "result buttons say what they do");
   assert(/aiLevel<5\?"次のレベルへ":"もう一度"/.test(app16) && /const lv=aiLevel\+1;startMatch\("CPU",lv,/.test(app16), "a CPU win offers the next level, the top level and a loss replay the same one");
