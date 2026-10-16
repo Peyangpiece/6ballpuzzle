@@ -233,6 +233,26 @@ function HexLogoMark({size=210}){
  * small hints (chevrons, values, switches).
  */
 const HEX_MENU_SURFACE={background:"rgba(255,255,255,.05)",border:"1px solid rgba(255,255,255,.09)",backdropFilter:"blur(18px)",WebkitBackdropFilter:"blur(18px)"};
+/* Line icons drawn in code (24-unit grid, 1.8 stroke, round caps). No emoji,
+ * no font glyphs: the same strokes render identically on every platform. */
+const HEX_GEAR_PATH=(()=>{const R=10.4,r=7.9,n=8,tooth=9.5,base=14.5,rad=Math.PI/180;const P=(a,k)=>(12+Math.cos(a)*k).toFixed(2)+" "+(12+Math.sin(a)*k).toFixed(2);let d="";for(let i=0;i<n;i++){const a=i*Math.PI*2/n;d+=(i?"L":"M")+P(a-base*rad,r)+" L"+P(a-tooth*rad,R)+" L"+P(a+tooth*rad,R)+" L"+P(a+base*rad,r)+" A"+r+" "+r+" 0 0 1 "+P(a+Math.PI*2/n-base*rad,r)+" ";}return d+"Z";})();
+const HEX_ICON_PATHS={
+    globe:["M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z","M3 12h18","M12 3c-2.6 2.7-3.9 5.7-3.9 9s1.3 6.3 3.9 9c2.6-2.7 3.9-5.7 3.9-9S14.6 5.7 12 3z"],
+    chip:["M8 5h8a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z","M9.5 9.5h5v5h-5z","M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"],
+    people:["M9 11.5a3.5 3.5 0 1 0 0-7a3.5 3.5 0 0 0 0 7z","M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5","M16.5 10.5a3 3 0 1 0 0-6a3 3 0 0 0 0 6z","M17.5 14.6c2.1.5 3.5 2.3 3.5 4.9"],
+    book:["M4 4.5h6a3 3 0 0 1 3 3V20a2 2 0 0 0-2-2H4z","M20 4.5h-6a3 3 0 0 0-3 3V20a2 2 0 0 1 2-2h7z"],
+    help:["M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z","M9.4 9.4a2.6 2.6 0 1 1 3.7 2.4c-.8.4-1.1 1-1.1 1.8v.4","M12 17.3h.01"],
+    gear:[HEX_GEAR_PATH,"M12 15.2a3.2 3.2 0 1 0 0-6.4a3.2 3.2 0 0 0 0 6.4z"],
+    person:["M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8z","M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"]
+};
+function HexIcon({name,size=20,color="currentColor",strokeWidth=1.8}){
+    const P=HEX_ICON_PATHS[name];if(!P)return null;
+    return React.createElement("svg",{"aria-hidden":"true",width:size,height:size,viewBox:"0 0 24 24",fill:"none",stroke:color,strokeWidth,strokeLinecap:"round",strokeLinejoin:"round",style:{display:"block",flexShrink:0}},P.map((d,i)=>React.createElement("path",{key:i,d})));
+}
+// Player avatar: the first character of the name on the player's colour.
+function HexAvatar({name,size=36,color=HEX_MENU_ACCENTS.cyan}){
+    return React.createElement("div",{"aria-hidden":"true",className:"shrink-0 flex items-center justify-center rounded-full font-bold",style:{width:size,height:size,fontSize:size*.46,color:"#07101a",background:`linear-gradient(145deg,#ffffff66,#ffffff00),${color}`,boxShadow:`0 0 0 1px ${color}55`}},String(name||"P").trim().slice(0,1).toUpperCase());
+}
 function HexChevron({dir="right",color="rgba(255,255,255,.4)",size=18}){
     const d=dir==="left"?"M11.5 3.5 6 9l5.5 5.5":"M6.5 3.5 12 9l-5.5 5.5";
     return React.createElement("svg",{"aria-hidden":"true",width:size,height:size,viewBox:"0 0 18 18",fill:"none",style:{flexShrink:0,display:"block"}},React.createElement("path",{d,stroke:color,strokeWidth:2,strokeLinecap:"round",strokeLinejoin:"round"}));
@@ -251,9 +271,10 @@ function HexMenuShell({children,title,back,wide=true}){
             children));
 }
 
-function HexMenuButton({title,subtitle,meta,badge=null,accent="cyan",onClick,disabled=false,compact=false}){
+function HexMenuButton({icon=null,title,subtitle,meta,badge=null,accent="cyan",onClick,disabled=false,compact=false}){
     const [hover,setHover]=React.useState(false),[down,setDown]=React.useState(false);const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;
-    return React.createElement("button",{disabled,onClick,onPointerEnter:()=>setHover(true),onPointerLeave:()=>{setHover(false);setDown(false);},onPointerDown:()=>setDown(true),onPointerUp:()=>setDown(false),className:"w-full text-left flex items-center gap-4 disabled:opacity-35",style:{minHeight:compact?56:64,padding:compact?"0 16px 0 18px":"0 18px 0 22px",borderRadius:16,...HEX_MENU_SURFACE,background:hover?"rgba(255,255,255,.085)":HEX_MENU_SURFACE.background,transform:down?"scale(.985)":"none",transition:"transform .12s ease,background .18s ease"}},
+    return React.createElement("button",{disabled,onClick,onPointerEnter:()=>setHover(true),onPointerLeave:()=>{setHover(false);setDown(false);},onPointerDown:()=>setDown(true),onPointerUp:()=>setDown(false),className:"w-full text-left flex items-center gap-4 disabled:opacity-35",style:{minHeight:compact?58:66,padding:compact?"0 16px 0 14px":"0 18px 0 16px",borderRadius:16,...HEX_MENU_SURFACE,background:hover?"rgba(255,255,255,.085)":HEX_MENU_SURFACE.background,transform:down?"scale(.985)":"none",transition:"transform .12s ease,background .18s ease"}},
+        icon&&React.createElement("div",{"aria-hidden":"true",className:"shrink-0 flex items-center justify-center font-bold tabular-nums",style:{width:compact?36:42,height:compact?36:42,borderRadius:12,color:c,background:`${c}14`,border:`1px solid ${c}30`,fontSize:compact?15:17}},typeof icon==="string"?React.createElement(HexIcon,{name:icon,size:compact?18:21,color:c}):icon),
         React.createElement("div",{className:"min-w-0 flex-1"},
             React.createElement("div",{className:"flex items-center gap-2 min-w-0"},React.createElement("div",{className:"font-bold text-white truncate",style:{fontSize:compact?15:17,letterSpacing:".01em"}},title),badge&&React.createElement("span",{className:"shrink-0 rounded-full px-2 text-[11px] font-bold",style:{lineHeight:"18px",color:badge.dark?"#1d1600":badge.color,background:badge.dark?badge.color:`${badge.color}22`}},badge.text)),
             subtitle&&React.createElement("div",{className:"mt-0.5 text-[13px] text-white/55 truncate"},subtitle)),
