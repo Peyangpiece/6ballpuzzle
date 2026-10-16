@@ -21,7 +21,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 719 |  |  |
 | 14 | `app-09.js` | core: engine, assets, net, app shell | 586 |  | Garbage pipeline entry points.  They are installed later by |
 | 15 | `app-10.js` | core: engine, assets, net, app shell | 442 |  | ボール描画 |
-| 16 | `app-14.js` | core: engine, assets, net, app shell | 419 |  |  |
+| 16 | `app-14.js` | core: engine, assets, net, app shell | 411 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
 | 19 | `app-15.js` | core: engine, assets, net, app shell | 119 |  |  |
@@ -35,7 +35,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 27 | `app-rotate-sfx.js` | menu / audio | 137 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
 | 28 | `app-instant-drop-sfx.js` | menu / audio | 140 |  | 6ball instant-drop landing v10 |
 | 29 | `app-16.js` | core: engine, assets, net, app shell | 301 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
-| 30 | `app-17.js` | core: engine, assets, net, app shell | 268 |  |  |
+| 30 | `app-17.js` | core: engine, assets, net, app shell | 277 |  |  |
 | 31 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 351 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
 | 32 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |
 | 33 | `app-garbage-zero-rigidity.js` | garbage (おじゃま) pipeline | 118 | hexPhysPlanGroup | Post-split garbage rigidity invariant. |
