@@ -11,30 +11,30 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 3 | `app-03.js` | core: constants, physics planner, resolver, renderer | 221 |  | HEXDROP unified event resolver. |
 | 4 | `app-04.js` | core: constants, physics planner, resolver, renderer | 196 |  | Canonical motion-group cleanup. No legacy rigidity metadata exists here. / |
 | 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 277 |  |  |
-| 6 | `app-06.js` | core: constants, physics planner, resolver, renderer | 48 |  | Shared garbage presentation constants and visual collision helpers. |
-| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 509 |  | Pile/garbage collapse overlap-scheduler constants. |
+| 6 | `app-06.js` | core: constants, physics planner, resolver, renderer | 62 |  | Shared garbage presentation constants and visual collision helpers. |
+| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 535 |  | Pile/garbage collapse overlap-scheduler constants. |
 | 8 | `app-pile-arc.js` | clear / collapse corrections | 132 |  | Accumulated-pile gravity binding (legacy filename). |
 | 9 | `app-clear-gap-collapse.js` | clear / collapse corrections | 266 |  | Post-clear accumulated-pile compaction invariant. |
 | 10 | `app-floor-gap-invariant.js` | clear / collapse corrections | 40 |  | Floor-side no-gap invariant. |
 | 11 | `app-clear-vacancy-priority.js` | clear / collapse corrections | 331 |  | Post-clear vacancy conservation. |
 | 12 | `app-release-parity-settle.js` | clear / collapse corrections | 60 |  | Parity-safe active-piece hand-off. |
-| 13 | `app-08.js` | core: engine, assets, net, app shell | 714 |  |  |
+| 13 | `app-08.js` | core: engine, assets, net, app shell | 719 |  |  |
 | 14 | `app-09.js` | core: engine, assets, net, app shell | 586 |  | Garbage pipeline entry points.  They are installed later by |
-| 15 | `app-10.js` | core: engine, assets, net, app shell | 437 |  | ボール描画 |
-| 16 | `app-14.js` | core: engine, assets, net, app shell | 379 |  |  |
+| 15 | `app-10.js` | core: engine, assets, net, app shell | 442 |  | ボール描画 |
+| 16 | `app-14.js` | core: engine, assets, net, app shell | 419 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
 | 19 | `app-15.js` | core: engine, assets, net, app shell | 119 |  |  |
 | 20 | `app-google-login.js` | online | 316 |  |  |
 | 21 | `app-online-v2.js` | online | 2310 |  |  |
-| 22 | `app-menu-ui.js` | menu / audio | 225 |  | HEXDROP immersive menu system. |
-| 23 | `app-brand-bgm.js` | menu / audio | 146 |  | 6ball brand + menu audio + gameplay BGM adapter. |
+| 22 | `app-menu-ui.js` | menu / audio | 291 |  | HEXDROP immersive menu system. |
+| 23 | `app-brand-bgm.js` | menu / audio | 145 |  | 6ball brand + menu audio + gameplay BGM adapter. |
 | 24 | `app-bgm-local.js` | menu / audio | 352 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
 | 25 | `app-audio-volume-control.js` | menu / audio | 277 |  | 6ball unified live audio controller. |
 | 26 | `app-menu-volume-fix.js` | menu / audio | 78 |  | 6ball menu click volume hotfix. |
 | 27 | `app-rotate-sfx.js` | menu / audio | 137 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
 | 28 | `app-instant-drop-sfx.js` | menu / audio | 140 |  | 6ball instant-drop landing v10 |
-| 29 | `app-16.js` | core: engine, assets, net, app shell | 706 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
+| 29 | `app-16.js` | core: engine, assets, net, app shell | 301 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
 | 30 | `app-17.js` | core: engine, assets, net, app shell | 268 |  |  |
 | 31 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 351 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
 | 32 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |
@@ -70,11 +70,11 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 62 | `app-rigidity-nintendo-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 230 | createEngine, hexPhysPlanGroup | Nintendo-reference rigidity authority v1. |
 | 63 | `app-rigidity-release-bounce-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 231 | createEngine, hexPhysPlanGroup, hexPhysResolveEvent | Nintendo rigidity release + no-bounce authority v1. |
 | 64 | `app-motion-smoothness-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 91 |  | Motion smoothness authority v1. |
-| 65 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 334 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
+| 65 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 338 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
 | 66 | `app-even-row-split-continuity-v1.js` | rigidity / split authorities (Nintendo reference) | 72 |  | Even/narrow-row strict-inner split continuity authority v1. |
 | 67 | `app-split-visual-smoothness-v1.js` | rigidity / split authorities (Nintendo reference) | 15 |  | Retired split display follower. |
 | 68 | `app-settle-watchdog-v1.js` | other | 48 |  | Settle watchdog v1. |
 | 69 | `controls-v7.js` | input | 341 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
 | 70 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
 | 71 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
-| 72 | `app-mobile-performance-v1.js` | other | 44 |  | Mobile performance layer v1 (no physics changes). |
+| 72 | `app-mobile-performance-v1.js` | other | 75 |  | Mobile performance layer v1 (no physics changes). |

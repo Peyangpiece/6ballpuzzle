@@ -153,461 +153,46 @@ const up=(e)=>{const g=meRef.current;try{cv.releasePointerCapture(e.pointerId);}
 cv.addEventListener("pointerdown",dn);cv.addEventListener("pointermove",mv);cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);return()=>{pressActive=false; stopFast();cv.removeEventListener("pointerdown",dn);cv.removeEventListener("pointermove",mv);cv.removeEventListener("pointerup",up);cv.removeEventListener("pointercancel",up);};}, [screen,sfxVolume]);
 const me = meRef.current;
 const rankName=hexRankLabel(rating),winRate=hexWinRate(record.w,record.l);
-const homeWordmark=React.createElement(
-    "div",
-    {
-        "aria-hidden":"true",
-        style:{
-            "--logoH":"clamp(225px,39vh,320px)",
-            position:"absolute",
-            left:"clamp(30px,4vw,64px)",
-            top:"50%",
-            transform:"translateY(-57%)",
-            display:"flex",
-            alignItems:"center",
-            height:"var(--logoH)",
-            pointerEvents:"none",
-            whiteSpace:"nowrap",
-            zIndex:0
-        }
-    },
-
-    React.createElement(
-        "img",
-        {
-            src:"/assets/6ball-logo-transparent.png",
-            alt:"",
-            draggable:false,
-            style:{
-                height:"var(--logoH)",
-                width:"auto",
-                objectFit:"contain",
-                flexShrink:0,
-                filter:
-                    "saturate(1.08) contrast(1.03) brightness(1.04) drop-shadow(0 18px 28px rgba(0,0,0,.30))"
-            }
-        }
-    ),
-
-    /*
-     * BALL is a fixed part of the logo.
-     * Its position never follows the menu buttons.
-     */
-    React.createElement(
-        "svg",
-        {
-            viewBox:"0 0 760 300",
-            preserveAspectRatio:"none",
-            style:{
-                width:"calc(var(--logoH) * 2.45)",
-                height:"var(--logoH)",
-                marginLeft:"clamp(24px,2.8vw,46px)",
-                overflow:"visible"
-            }
-        },
-
-        React.createElement(
-            "text",
-            {
-                x:"8",
-                y:"246",
-                fill:"rgba(205,210,220,.20)",
-                fontFamily:
-                    'ui-sans-serif,system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif',
-                fontSize:"255",
-                fontWeight:"900",
-                letterSpacing:"22"
-            },
-            "BALL"
-        )
-    )
-);
-
-const homeHero=React.createElement(
-    "div",
-    {
-        className:"relative flex items-end",
-        style:{
-            minHeight:"clamp(330px,57vh,420px)",
-            paddingLeft:"clamp(18px,3vw,42px)",
-            paddingBottom:8,
-            zIndex:2
-        }
-    },
-
-    React.createElement(
-        "button",
-        {
-            onClick:()=>{
-                initUiAudio();
-                setProfileDraft(nickname);
-                setScreen("PROFILE");
-            },
-            className:
-                "inline-flex items-center rounded-2xl px-5 py-3 text-left active:scale-[.98]",
-            style:{
-                minWidth:185,
-                border:
-                    "1px solid rgba(255,255,255,.10)",
-                background:
-                    "rgba(10,12,28,.52)",
-                backdropFilter:"blur(15px)",
-                boxShadow:
-                    "0 12px 30px rgba(0,0,0,.24)"
-            }
-        },
-
-        React.createElement(
-            "div",
-            {
-                className:"min-w-0 flex-1"
-            },
-
-            React.createElement(
-                "div",
-                {
-                    className:
-                        "text-[12px] font-black text-white/90"
-                },
-                "戦績"
-            ),
-
-            React.createElement(
-                "div",
-                {
-                    className:
-                        "mt-1 text-[11px] tracking-[.08em] font-black text-white/60"
-                },
-                record.w,
-                "勝 ",
-                record.l,
-                "敗 · レート ",
-                rating
-            )
-        ),
-
-        React.createElement(
-            "div",
-            {
-                className:"ml-4 text-white/60",
-                "aria-hidden":"true"
-            },
-            "›"
-        )
-    )
-);
-
 const googleSignedIn=!!googleUser;
-
-const homeMenu=React.createElement(
-    "div",
-    {
-        className:
-            "relative flex flex-col justify-center",
-        style:{
-            width:"100%",
-            maxWidth:525,
-            justifySelf:"end",
-            zIndex:3
-        }
-    },
-
-    /*
-     * Login belongs to normal layout flow.
-     * It can no longer overlap Online Battle.
-     */
-    React.createElement(
-        "div",
-        {
-            className:"flex justify-end items-center gap-2 mb-4"
-        },
-
-        [["HELP","遊び方","?"],["SETTINGS","設定","⚙"]].map(([to,label,icon])=>React.createElement(
-            "button",
-            {
-                key:to,
-                onClick:()=>{
-                    initUiAudio();
-                    setScreen(to);
-                },
-                className:"inline-flex items-center gap-1.5 rounded-2xl px-3.5 text-[12px] font-black text-white/85 active:scale-[.98]",
-                style:{
-                    minHeight:42,
-                    border:"1px solid rgba(255,255,255,.12)",
-                    background:"rgba(10,12,28,.52)",
-                    backdropFilter:"blur(15px)"
-                }
-            },
-            React.createElement("span",{"aria-hidden":"true",className:"text-cyan-200/80"},icon),
-            label
-        )),
-
-        React.createElement(
-            "button",
-            {
-                disabled:
-                    googleBusy||
-                    googleSignedIn,
-
-                onClick:async()=>{
-                    if(
-                        googleBusy||
-                        googleSignedIn
-                    )return;
-
-                    initUiAudio();
-                    setGoogleBusy(true);
-                    setGoogleErr("");
-
-                    try{
-                        const user=
-                            await Net.loginWithGoogle();
-
-                        setGoogleUser({
-                            name:
-                                user?.displayName||
-                                Net.profile.name||
-                                "Google"
-                        });
-
-                        setRating(
-                            Number(
-                                Net.profile.rating
-                            )||1000
-                        );
-
-                        setRecord({
-                            w:
-                                Number(
-                                    Net.profile.wins
-                                )||0,
-                            l:
-                                Number(
-                                    Net.profile.losses
-                                )||0
-                        });
-
-                        if(Net.profile.name){
-                            setNickname(
-                                Net.profile.name
-                            );
-                            setProfileDraft(
-                                Net.profile.name
-                            );
-                        }
-                    }catch(err){
-                        const code=
-                            String(err?.code||"");
-
-                        if(
-                            code===
-                            "auth/operation-not-allowed"
-                        ){
-                            setGoogleErr(
-                                "GoogleログインをFirebaseで有効にしてください"
-                            );
-                        }else if(
-                            code===
-                            "auth/popup-closed-by-user"
-                        ){
-                            setGoogleErr("");
-                        }else{
-                            console.error(
-                                "Google login",
-                                err
-                            );
-                            setGoogleErr(
-                                "Googleログインに失敗しました"
-                            );
-                        }
-                    }finally{
-                        setGoogleBusy(false);
-                    }
-                },
-
-                className:
-                    "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-black active:scale-[.98] disabled:opacity-70",
-
-                style:{
-                    color:
-                        googleSignedIn
-                            ?"rgba(255,255,255,.54)"
-                            :"rgba(255,255,255,.88)",
-                    border:
-                        "1px solid rgba(255,255,255,.13)",
-                    background:
-                        "rgba(10,13,28,.64)",
-                    backdropFilter:"blur(16px)",
-                    boxShadow:
-                        "0 8px 24px rgba(0,0,0,.22)"
-                }
-            },
-
-            React.createElement(
-                "div",
-                {
-                    className:
-                        "flex items-center justify-center rounded-full font-black",
-                    style:{
-                        width:20,
-                        height:20,
-                        background:
-                            "rgba(255,255,255,.94)",
-                        color:"#202124",
-                        fontSize:12
-                    }
-                },
-                "G"
-            ),
-
-            googleBusy
-                ?"ログイン中…"
-                :googleSignedIn
-                    ?"Googleログイン済み"
-                    :"Googleでログイン"
-        )
-    ),
-
-    googleErr&&React.createElement(
-        "div",
-        {
-            className:
-                "mb-3 text-right text-[11px] font-bold",
-            style:{
-                color:"#ff9bbf"
-            }
-        },
-        googleErr
-    ),
-
-    React.createElement(
-        "div",
-        {
-            className:shortHome?"space-y-2":"space-y-3",
-            style:{
-                width:"100%"
-            }
-        },
-
-        React.createElement(
-            HexMenuButton,
-            {
-                icon:"↗",
-                compact:shortHome,
-                title:"オンライン対戦",
-                subtitle:
-                    "レートをかけてプレイヤーと対戦",
-                accent:"pink",
-                onClick:()=>{
-                    initUiAudio();
-                    setNetErr(null);
-                    setScreen("MATCHING");
-                }
-            }
-        ),
-
-        React.createElement(
-            HexMenuButton,
-            {
-                icon:"AI",
-                compact:shortHome,
-                title:"AI対戦",
-                subtitle:
-                    "5段階の強さから相手を選択",
-                accent:"cyan",
-                onClick:()=>{
-                    initUiAudio();
-                    setScreen("CPU");
-                }
-            }
-        ),
-
-        React.createElement(
-            HexMenuButton,
-            {
-                icon:"+",
-                compact:shortHome,
-                title:"ルームでプレイ",
-                subtitle:
-                    "ルームを作成・参加して友だちと対戦",
-                accent:"violet",
-                onClick:()=>{
-                    initUiAudio();
-                    setScreen("FRIEND");
-                }
-            }
-        ),
-
-        React.createElement(
-            HexMenuButton,
-            {
-                icon:"▶",
-                compact:shortHome,
-                title:"チュートリアル",
-                subtitle:
-                    "説明と実際のプレイで遊び方を覚える",
-                meta:tutorialDone?null:"NEW",
-                accent:"gold",
-                onClick:()=>{
-                    initUiAudio();
-                    setScreen("TUTORIAL");
-                }
-            }
-        )
-    ),
-
-    netErr&&React.createElement(
-        "div",
-        {
-            className:
-                "mt-3 rounded-xl px-3 py-2 text-[12px] leading-relaxed font-bold",
-            role:"alert",
-            style:{
-                border:
-                    "1px solid rgba(255,62,165,.28)",
-                background:
-                    "rgba(255,62,165,.08)",
-                color:"#ffb8d6"
-            }
-        },
-        hexFriendlyNetError(netErr)
-    )
-);
-
-const home=
-screen==="HOME"&&
-React.createElement(
-    HexMenuShell,
-    {
-        wide:true
-    },
-
-    homeWordmark,
-
-    /*
-     * Buttons only reserve space against the polygon 6.
-     * BALL may continue behind the buttons.
-     */
-    React.createElement(
-        "div",
-        {
-            style:{
-                position:"relative",
-                zIndex:2,
-                display:"grid",
-                gridTemplateColumns:
-                    "minmax(190px,38%) minmax(300px,525px)",
-                justifyContent:"space-between",
-                gap:"clamp(18px,2vw,34px)",
-                alignItems:"center",
-                width:"100%"
-            }
-        },
-
-        homeHero,
-        homeMenu
-    )
-);
+const loginWithGoogle=async()=>{
+    if(googleBusy||googleSignedIn)return;
+    initUiAudio();setGoogleBusy(true);setGoogleErr("");
+    try{
+        const user=await Net.loginWithGoogle();
+        setGoogleUser({name:user?.displayName||Net.profile.name||"Google"});
+        setRating(Number(Net.profile.rating)||1000);
+        setRecord({w:Number(Net.profile.wins)||0,l:Number(Net.profile.losses)||0});
+        if(Net.profile.name){setNickname(Net.profile.name);setProfileDraft(Net.profile.name);}
+    }catch(err){
+        const code=String(err?.code||"");
+        if(code==="auth/operation-not-allowed")setGoogleErr("GoogleログインをFirebaseで有効にしてください");
+        else if(code==="auth/popup-closed-by-user")setGoogleErr("");
+        else{console.error("Google login",err);setGoogleErr("Googleログインに失敗しました");}
+    }finally{setGoogleBusy(false);}
+};
+// HOME. Left: the logo and the player's card (opens the profile). Right: the
+// quiet links (遊び方 / 設定) above the four actions. Nothing else.
+const homeLogo=React.createElement("img",{src:"/assets/6ball-logo-transparent.png",alt:"6ball",draggable:false,style:{height:"clamp(180px,36vh,300px)",width:"auto",objectFit:"contain",filter:"saturate(1.08) contrast(1.03) brightness(1.04) drop-shadow(0 18px 28px rgba(0,0,0,.30))"}});
+const homePlayer=React.createElement("button",{onClick:()=>{initUiAudio();setProfileDraft(nickname);setScreen("PROFILE");},"aria-label":`プロフィール（${nickname||"Player"}）`,className:"inline-flex items-center gap-3 rounded-2xl text-left active:scale-[.98]",style:{minWidth:220,maxWidth:320,minHeight:60,padding:"0 16px 0 12px",...HEX_MENU_SURFACE}},
+    React.createElement(HexAvatar,{name:nickname||"Player",size:38}),
+    React.createElement("div",{className:"min-w-0 flex-1"},
+        React.createElement("div",{className:"text-[15px] font-bold text-white truncate"},nickname||"Player"),
+        React.createElement("div",{className:"mt-0.5 text-[12px] tabular-nums text-white/55 truncate"},`レート ${rating} · ${record.w}勝 ${record.l}敗`)),
+    React.createElement(HexChevron,null));
+const homeLinks=React.createElement("div",{className:"flex justify-end items-center gap-2",style:{marginBottom:"clamp(12px,2.6vh,24px)"}},
+    [["HELP","遊び方","help"],["SETTINGS","設定","gear"]].map(([to,label,icon])=>React.createElement("button",{key:to,onClick:()=>{initUiAudio();setScreen(to);},className:"inline-flex items-center gap-2 rounded-full pl-3.5 pr-4 text-[14px] font-semibold text-white/85 active:scale-[.98]",style:{minHeight:40,...HEX_MENU_SURFACE}},React.createElement(HexIcon,{name:icon,size:17,color:"rgba(255,255,255,.8)"}),label)));
+const homeMenu=React.createElement("div",{className:"relative flex flex-col justify-center",style:{width:"100%",maxWidth:480,justifySelf:"end"}},
+    homeLinks,
+    React.createElement("div",{className:shortHome?"space-y-2":"space-y-3"},
+        React.createElement(HexMenuButton,{icon:"globe",compact:shortHome,title:"オンライン対戦",accent:"pink",onClick:()=>{initUiAudio();setNetErr(null);setScreen("MATCHING");}}),
+        React.createElement(HexMenuButton,{icon:"chip",compact:shortHome,title:"AI対戦",accent:"cyan",onClick:()=>{initUiAudio();setScreen("CPU");}}),
+        React.createElement(HexMenuButton,{icon:"people",compact:shortHome,title:"ルームでプレイ",accent:"violet",onClick:()=>{initUiAudio();setScreen("FRIEND");}}),
+        React.createElement(HexMenuButton,{icon:"book",compact:shortHome,title:"チュートリアル",accent:"gold",onClick:()=>{initUiAudio();setScreen("TUTORIAL");}})),
+    netErr&&React.createElement("div",{className:"mt-4 rounded-xl px-4 py-3 text-[13px] leading-relaxed",role:"alert",style:{border:"1px solid rgba(255,62,165,.28)",background:"rgba(255,62,165,.08)",color:"#ffb8d6"}},hexFriendlyNetError(netErr)));
+const home=screen==="HOME"&&React.createElement(HexMenuShell,{wide:true},
+    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"minmax(200px,1fr) minmax(300px,480px)",justifyContent:"space-between",gap:"clamp(24px,5vw,80px)",alignItems:"center",width:"100%"}},
+        React.createElement("div",{className:"flex flex-col items-center",style:{gap:"clamp(18px,4vh,32px)",paddingLeft:"clamp(8px,3vw,40px)"}},homeLogo,homePlayer),
+        homeMenu));
 
 const battle=screen==="BATTLE"&&React.createElement(HexMenuShell,{title:"対戦",eyebrow:"BATTLE SELECT",back:()=>setScreen("HOME"),wide:false},
     React.createElement("div",{className:"grid gap-2.5"},
@@ -615,66 +200,65 @@ const battle=screen==="BATTLE"&&React.createElement(HexMenuShell,{title:"対戦"
         React.createElement(HexMenuButton,{icon:"◇",title:"AI対戦",subtitle:"5段階の強さから相手を選択",meta:"SOLO",accent:"cyan",onClick:()=>{initUiAudio();setScreen("CPU");}}),
         React.createElement(HexMenuButton,{icon:"⌁",title:"フレンド対戦",subtitle:"ルームコードで友だちと遊ぶ",meta:"ROOM",accent:"violet",onClick:()=>{initUiAudio();setScreen("FRIEND");}})));
 const profileBests=screen==="PROFILE"?hexBests():null,profileCpu=screen==="PROFILE"?hexCpuRecord():null;
-const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プロフィール",eyebrow:"PLAYER PROFILE",back:()=>setScreen("HOME"),wide:true},
+const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プロフィール",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"minmax(260px,.9fr) minmax(0,1.1fr)",gap:14}},
         React.createElement(HexPanel,{accent:"cyan",className:"p-5 flex items-center gap-4"},
-            React.createElement("div",{className:"shrink-0 rounded-3xl flex items-center justify-center font-black text-[#07101a]",style:{width:74,height:74,fontSize:30,background:"linear-gradient(145deg,#9AF8FF,#2FE3F5)",boxShadow:"0 0 28px rgba(47,227,245,.25)" }},(nickname||"P").slice(0,1).toUpperCase()),
+            React.createElement(HexAvatar,{name:nickname,size:72}),
             React.createElement("div",{className:"min-w-0 flex-1"},
                 React.createElement("div",{className:"text-[11px] tracking-[.2em] font-black text-cyan-200/70"},rankName),
                 React.createElement("div",{className:"text-xl font-black text-white truncate"},nickname),
                 React.createElement("div",{className:"mt-2 flex items-center gap-2"},React.createElement("div",{className:"text-[11px] font-black text-white/60"},"RATING"),React.createElement("div",{className:"text-2xl font-black tabular-nums",style:{color:"#2FE3F5",textShadow:"0 0 15px rgba(47,227,245,.35)"}},rating)))),
         React.createElement("div",{className:"grid grid-cols-3 gap-2.5"},React.createElement(HexStat,{label:"MATCHES",value:record.w+record.l,accent:"gray"}),React.createElement(HexStat,{label:"WIN",value:record.w,accent:"cyan"}),React.createElement(HexStat,{label:"WIN RATE",value:`${winRate}%`,accent:"violet"})),
         React.createElement(HexPanel,{accent:"gold",className:"p-4","data-hex-profile-records":"1",style:{gridColumn:"1 / -1"}},
-            React.createElement("div",{className:"text-[11px] font-black tracking-[.16em] text-white/60 mb-2"},"自己ベスト（AI対戦・オンライン対戦）"),
+            React.createElement("div",{className:"text-[12px] font-bold tracking-[.08em] text-white/50 mb-2"},"自己ベスト"),
             React.createElement("div",{className:"grid grid-cols-4 gap-2"},[["最大連鎖",profileBests.maxChain||"—"],["1試合の技",profileBests.waza||"—"],["1試合で消した球",profileBests.cleared||"—"],["最速の勝利",profileBests.fastestWin?hexFormatTime(profileBests.fastestWin):"—"]].map(([k,v])=>React.createElement("div",{key:k,className:"min-w-0 rounded-xl px-3 py-2",style:{background:"rgba(0,0,0,.22)",border:"1px solid rgba(255,255,255,.1)"}},React.createElement("div",{className:"text-[10px] font-black text-white/60 truncate"},k),React.createElement("div",{className:"text-lg font-black tabular-nums",style:{color:"#FFD36A"}},v)))),
-            React.createElement("div",{className:"text-[11px] font-black tracking-[.16em] text-white/60 mt-3 mb-2"},"AI対戦"),
-            React.createElement("div",{className:"grid grid-cols-5 gap-2"},[1,2,3,4,5].map((lv)=>{const r=profileCpu[lv];return React.createElement("div",{key:lv,className:"min-w-0 rounded-xl px-2 py-2 text-center",style:{background:r.w?"rgba(255,216,59,.08)":"rgba(0,0,0,.22)",border:`1px solid ${r.w?"rgba(255,216,59,.45)":"rgba(255,255,255,.1)"}`}},React.createElement("div",{className:"text-[11px] font-black text-white/80 truncate"},(r.w?"★ ":"")+AI_PARAMS[lv].name),React.createElement("div",{className:"text-[12px] font-black tabular-nums text-white/70"},r.w+r.l?`${r.w}勝 ${r.l}敗`:"未対戦"),r.best>=2&&React.createElement("div",{className:"text-[10px] font-bold text-white/55"},`最高${r.best}連勝`));}))),
+            React.createElement("div",{className:"text-[12px] font-bold tracking-[.08em] text-white/50 mt-4 mb-2"},"AI対戦"),
+            React.createElement("div",{className:"grid grid-cols-5 gap-2"},[1,2,3,4,5].map((lv)=>{const r=profileCpu[lv];return React.createElement("div",{key:lv,className:"min-w-0 rounded-xl px-2 py-2 text-center",style:{background:r.w?"rgba(255,216,59,.08)":"rgba(0,0,0,.22)",border:`1px solid ${r.w?"rgba(255,216,59,.45)":"rgba(255,255,255,.1)"}`}},React.createElement("div",{className:"text-[11px] font-black text-white/80 truncate"},AI_PARAMS[lv].name),React.createElement("div",{className:"text-[12px] font-black tabular-nums text-white/70"},r.w+r.l?`${r.w}勝 ${r.l}敗`:"未対戦"),r.best>=2&&React.createElement("div",{className:"text-[10px] font-bold text-white/55"},`最高${r.best}連勝`));}))),
         React.createElement(HexPanel,{accent:"violet",className:"p-4",style:{gridColumn:"1 / -1"}},
             React.createElement("div",{className:"flex items-end gap-3"},
-                React.createElement("div",{className:"flex-1"},React.createElement("div",{className:"text-[11px] font-black tracking-[.16em] text-white/60 mb-1.5"},"NICKNAME"),React.createElement("input",{value:profileDraft,maxLength:12,onChange:e=>setProfileDraft(e.target.value.slice(0,12)),placeholder:"ニックネーム",className:"w-full rounded-xl px-3 py-2.5 text-sm font-black text-white outline-none",style:{background:"rgba(0,0,0,.28)",border:"1px solid rgba(255,255,255,.13)"}})),
+                React.createElement("div",{className:"flex-1"},React.createElement("div",{className:"text-[12px] font-bold tracking-[.08em] text-white/50 mb-1.5"},"NICKNAME"),React.createElement("input",{value:profileDraft,maxLength:12,onChange:e=>setProfileDraft(e.target.value.slice(0,12)),placeholder:"ニックネーム",className:"w-full rounded-xl px-3 py-2.5 text-sm font-black text-white outline-none",style:{background:"rgba(0,0,0,.28)",border:"1px solid rgba(255,255,255,.13)"}})),
                 React.createElement("button",{onClick:saveProfile,className:"rounded-xl px-5 py-2.5 text-xs font-black text-[#070915] active:scale-95",style:{background:"linear-gradient(135deg,#96F8FF,#2FE3F5)",boxShadow:"0 0 18px rgba(47,227,245,.2)"}},"保存")),
-            React.createElement("div",{className:"mt-2 text-[11px] text-white/60"},"ニックネームはオンライン対戦時の表示名にも使用されます。")),
-    !googleUser&&React.createElement(HexPanel,{accent:"gold",className:"p-4",style:{gridColumn:"1 / -1"}},
-        React.createElement("div",{className:"text-sm font-black text-white"},"戦績のバックアップ"),
-        React.createElement("div",{className:"mt-1 text-[12px] leading-relaxed text-white/75"},"戦績とレートは、このブラウザに作られたゲスト用アカウントに保存されています。ブラウザのデータを消したり、ホーム画面に追加していないSafariでしばらく遊ばなかったりすると消えることがあります。ホームの「Googleでログイン」で引き継げるようになります。"))));
-const settings=screen==="SETTINGS"&&React.createElement(HexMenuShell,{title:"設定",eyebrow:"SYSTEM OPTION",back:()=>setScreen("HOME"),wide:true},
-    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:shortHome?8:12}},
-        React.createElement("div",{className:"space-y-2.5"},
-            !shortHome&&React.createElement("div",{className:"text-[11px] font-black tracking-[.18em] text-white/60 px-1"},"AUDIO"),
-            React.createElement(HexSettingSlider,{label:"BGM音量",caption:"ゲーム内BGMの音量",value:bgmVolume,onChange:setBgmVolume,accent:"violet"}),
-            React.createElement(HexSettingSlider,{label:"効果音音量",caption:"操作・落下・技などの効果音",value:sfxVolume,onChange:setSfxVolume,accent:"cyan"})),
-        React.createElement("div",{className:"space-y-2.5"},
-            !shortHome&&React.createElement("div",{className:"text-[11px] font-black tracking-[.18em] text-white/60 px-1"},"CONTROL"),
-            (typeof navigator!=="undefined"&&typeof navigator.vibrate==="function")&&React.createElement(HexSettingToggle,{label:"振動",caption:"操作と技に合わせて端末を振動させます",value:haptics,onChange:setHaptics,accent:"pink"}),
-            React.createElement(HexSettingToggle,{label:"色の記号表示",caption:"ボールに色ごとの記号を重ねて、色だけに頼らず見分けられるようにします",value:colorSymbols,onChange:setColorSymbols,accent:"cyan"})),
-        React.createElement(HexPanel,{accent:"gray",className:"p-3 flex items-center justify-between gap-4",style:{gridColumn:"1 / -1"}},
-            React.createElement("div",null,React.createElement("div",{className:"text-sm font-black text-white/88"},"初期設定に戻す"),React.createElement("div",{className:"text-[11px] text-white/60 mt-0.5"},"音量・振動・色の記号表示を最初の状態に戻します。")),
-            React.createElement("div",{className:"flex gap-2"},React.createElement("button",{onClick:()=>{setBgmVolume(70);setSfxVolume(85);setHaptics(true);setOffset(false);setColorSymbols(false);},className:"rounded-xl px-4 py-2 text-[12px] font-black",style:{color:"#9B6DFF",border:"1px solid rgba(155,109,255,.3)",background:"rgba(155,109,255,.07)"}},"初期設定")))));
-const helpSection=(title,rows)=>React.createElement(HexPanel,{accent:"cyan",className:"p-4"},React.createElement("div",{className:"text-sm font-black text-white mb-2"},title),React.createElement("dl",{className:"grid gap-1.5"},rows.map(([k,v])=>React.createElement("div",{key:k,className:"flex gap-3 text-[13px] leading-relaxed"},React.createElement("dt",{className:"shrink-0 font-black text-cyan-100",style:{width:"6.5em"}},k),React.createElement("dd",{className:"flex-1 min-w-0 text-white/80"},v)))));
-const help=screen==="HELP"&&React.createElement(HexMenuShell,{title:"遊び方",eyebrow:"HOW TO PLAY",back:()=>setScreen("HOME"),wide:true},
+            React.createElement("div",{className:"mt-2 text-[12px] text-white/50"},"オンライン対戦での表示名になります。")),
+    React.createElement(HexPanel,{className:"p-5 flex items-center gap-4 flex-wrap",style:{gridColumn:"1 / -1"}},
+        React.createElement("div",{className:"flex-1 min-w-[240px]"},
+            React.createElement("div",{className:"text-[15px] font-bold text-white"},googleSignedIn?"Googleログイン済み":"戦績のバックアップ"),
+            React.createElement("div",{className:"mt-1 text-[13px] leading-relaxed text-white/55"},googleSignedIn?"戦績とレートはGoogleアカウントに引き継がれます。":"戦績とレートはこのブラウザだけに保存されています。Googleでログインすると、ほかの端末でも引き継げます。"),
+            googleErr&&React.createElement("div",{role:"alert",className:"mt-2 text-[12px] font-semibold",style:{color:"#ff9bbf"}},googleErr)),
+        !googleSignedIn&&React.createElement("button",{disabled:googleBusy,onClick:loginWithGoogle,className:"inline-flex items-center gap-2.5 rounded-xl pl-3.5 pr-5 text-[14px] font-bold text-white active:scale-[.98] disabled:opacity-60",style:{minHeight:44,...HEX_MENU_SURFACE}},React.createElement("span",{"aria-hidden":"true",className:"flex items-center justify-center rounded-full font-bold",style:{width:22,height:22,background:"#fff",color:"#202124",fontSize:13}},"G"),googleBusy?"ログイン中…":"Googleでログイン"))));
+const settings=screen==="SETTINGS"&&React.createElement(HexMenuShell,{title:"設定",back:()=>setScreen("HOME"),wide:true},
+    React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:shortHome?10:14}},
+        React.createElement("div",{className:shortHome?"space-y-2.5":"space-y-3.5"},
+            React.createElement(HexSettingSlider,{label:"BGM音量",value:bgmVolume,onChange:setBgmVolume,accent:"violet"}),
+            React.createElement(HexSettingSlider,{label:"効果音音量",value:sfxVolume,onChange:setSfxVolume,accent:"cyan"})),
+        React.createElement("div",{className:shortHome?"space-y-2.5":"space-y-3.5"},
+            (typeof navigator!=="undefined"&&typeof navigator.vibrate==="function")&&React.createElement(HexSettingToggle,{label:"振動",value:haptics,onChange:setHaptics,accent:"pink"}),
+            React.createElement(HexSettingToggle,{label:"色の記号表示",caption:"球に色ごとの記号を重ね、色だけに頼らず見分けられます",value:colorSymbols,onChange:setColorSymbols,accent:"cyan"})),
+        React.createElement("div",{className:"flex justify-center",style:{gridColumn:"1 / -1"}},
+            React.createElement("button",{onClick:()=>{setBgmVolume(70);setSfxVolume(85);setHaptics(true);setOffset(false);setColorSymbols(false);},className:"rounded-xl px-5 text-[14px] font-semibold text-white/70 active:scale-[.98]",style:{minHeight:44}},"初期設定に戻す"))));
+const helpSection=(title,rows)=>React.createElement(HexPanel,{className:"p-5"},React.createElement("div",{className:"text-[15px] font-bold text-white mb-2"},title),React.createElement("dl",{className:"grid gap-1.5"},rows.map(([k,v])=>React.createElement("div",{key:k,className:"flex gap-3 text-[13px] leading-relaxed"},React.createElement("dt",{className:"shrink-0 font-black text-cyan-100",style:{width:"6.5em"}},k),React.createElement("dd",{className:"flex-1 min-w-0 text-white/80"},v)))));
+const help=screen==="HELP"&&React.createElement(HexMenuShell,{title:"遊び方",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,300px),1fr))",gap:12}},
         helpSection("ルール",[["勝ち負け","球が盤面からあふれた方の負けです。"],["消す","3個1組の三角ピースを落とし、同じ色を6個以上つなげると消えます。消えた後にまたつながると連鎖になります。"],["技","つなげた6個が形になると技です。ストレート（一直線）・ピラミッド（三角形）・ヘキサゴン（六角形）。技を作るとその色の球が盤面からすべて消えます。"],["攻撃","相手におじゃま球を送れるのは技だけです（ストレート19個・ピラミッド24個・ヘキサゴン36個）。"],["おじゃま","攻撃を受けると盤面の上部が赤く光り、少し後に球が降ってきます。"]]),
         ...[["touch","タッチ操作",HEX_CONTROL_GUIDES.touch],["keys","キーボード",HEX_CONTROL_GUIDES.keys],["pad","コントローラー",[...HEX_CONTROL_GUIDES.pad,["A / B（メニュー）","決定 / 戻る"]]]].filter(([k])=>helpAllInputs||k===hexInputKind()).map(([k,t,rows])=>React.createElement("div",{key:k},helpSection(t,rows)))),
-    !helpAllInputs&&React.createElement("button",{onClick:()=>setHelpAllInputs(true),className:"mt-3 rounded-xl px-4 text-[13px] font-black text-white/80 border border-white/20 bg-white/5",style:{minHeight:44}},"ほかの入力方法の操作も見る"));
+    !helpAllInputs&&React.createElement("button",{onClick:()=>setHelpAllInputs(true),className:"mt-4 self-center rounded-xl px-5 text-[14px] font-semibold text-white/70 active:scale-[.98]",style:{minHeight:44}},"ほかの入力方法の操作も見る"));
 const tutorial=screen==="TUTORIAL"&&React.createElement(HexTutorial,{onExit:()=>{setTutorialDone(hexReadStored("hexdrop_tutorial_done","0")==="1");setScreen("HOME");},onShowHelp:()=>{setTutorialDone(true);setScreen("HELP");},onPractice:()=>{initUiAudio();startTutorial(0);},onVsAi:()=>{setTutorialDone(true);initUiAudio();startMatch("CPU",1,{name:`CPU ${AI_PARAMS[1].name}`,rating:880+1*130});}});
 const cpuRecord=screen==="CPU"?hexCpuRecord():null,cpuGoal=cpuRecord?[1,2,3,4,5].find((lv)=>!cpuRecord[lv].w)||0:0;
 const cpuCleared=cpuRecord?[1,2,3,4,5].filter((lv)=>cpuRecord[lv].w).length:0;
-const cpu=screen==="CPU"&&React.createElement(HexMenuShell,{title:"AI対戦",eyebrow:"AI BATTLE",back:()=>setScreen("HOME"),wide:false},
-    React.createElement("div",{"data-hex-cpu-progress":"1",className:"mb-2.5 flex items-center gap-3 px-1"},
-        React.createElement("div",{className:"text-[12px] font-black text-white/75 shrink-0"},"勝利した強さ ",React.createElement("span",{className:"tabular-nums",style:{color:"#FFD83B"}},cpuCleared)," / 5"),
-        React.createElement("div",{className:"flex-1 flex gap-1","aria-hidden":"true"},[1,2,3,4,5].map((lv)=>React.createElement("div",{key:lv,className:"h-1.5 flex-1 rounded-full",style:{background:cpuRecord[lv].w?"#FFD83B":"rgba(255,255,255,.14)",boxShadow:cpuRecord[lv].w?"0 0 8px rgba(255,216,59,.5)":"none"}})))),
-    React.createElement("div",{className:"grid grid-cols-2 gap-2.5"},[1,2,3,4,5].map((lv)=>React.createElement(HexMenuButton,{key:lv,compact:true,icon:String(lv),title:AI_PARAMS[lv].name,subtitle:lv===5?"技の発動を最優先する最高難度":lv>=4?"高度な判断で攻める":lv===3?"標準的な強さ":lv===2?"ゆっくり考える相手":"はじめての対戦向け",meta:cpuRecord[lv].w+cpuRecord[lv].l?`${cpuRecord[lv].w}勝 ${cpuRecord[lv].l}敗`:`LV.${lv}`,badge:cpuRecord[lv].w?{text:"★勝利",color:"#FFD83B",dark:true}:lv===cpuGoal?{text:"次の目標",color:"#2FE3F5"}:null,accent:lv===5?"pink":lv>=3?"cyan":"gray",onClick:()=>startMatch("CPU",lv,{name:`CPU ${AI_PARAMS[lv].name}`,rating:880+lv*130})}))));
-const friend=screen==="FRIEND"&&React.createElement(HexMenuShell,{title:"ルームでプレイ",eyebrow:"PRIVATE ROOM",back:()=>{setRoomErr("");setScreen("HOME");},wide:false},
-    React.createElement(HexPanel,{accent:"violet",className:"p-5"},
-        React.createElement("div",{className:"grid gap-3"},
-            React.createElement("button",{onClick:()=>{initUiAudio();setRoomErr("");setScreen("ROOM_HOST");},className:"w-full rounded-2xl px-4 py-3 text-sm font-black text-[#0a0f18]",style:{background:"linear-gradient(145deg,#c59cff,#8e66ff)",minHeight:48}},"新しくルームを作成"),
-            React.createElement("div",{className:"text-[11px] font-black tracking-[.18em] text-white/65 text-center pt-1"},"または"),
-            React.createElement("label",{htmlFor:"hex-room-code",className:"text-[11px] font-black tracking-[.16em] text-white/55 mb-1"},"友だちのルームコードを入力"),
+const cpu=screen==="CPU"&&React.createElement(HexMenuShell,{title:"AI対戦",back:()=>setScreen("HOME"),wide:false},
+    React.createElement("div",{"data-hex-cpu-progress":"1",className:"mb-4 flex items-center gap-4 px-1"},
+        React.createElement("div",{className:"text-[13px] text-white/60 shrink-0"},"勝利した強さ ",React.createElement("span",{className:"tabular-nums text-white font-bold"},cpuCleared)," / 5"),
+        React.createElement("div",{className:"flex-1 flex gap-1.5","aria-hidden":"true"},[1,2,3,4,5].map((lv)=>React.createElement("div",{key:lv,className:"h-1 flex-1 rounded-full",style:{background:cpuRecord[lv].w?"#FFD36A":"rgba(255,255,255,.12)"}})))),
+    React.createElement("div",{className:"grid grid-cols-2 gap-3"},[1,2,3,4,5].map((lv)=>React.createElement(HexMenuButton,{key:lv,compact:true,icon:React.createElement("span",null,String(lv)),title:AI_PARAMS[lv].name,meta:cpuRecord[lv].w+cpuRecord[lv].l?`${cpuRecord[lv].w}勝 ${cpuRecord[lv].l}敗`:null,badge:cpuRecord[lv].w?{text:"勝利",color:"#FFD36A",dark:true}:lv===cpuGoal?{text:"次の目標",color:"#2FE3F5"}:null,accent:lv===5?"pink":lv>=3?"cyan":"gray",onClick:()=>startMatch("CPU",lv,{name:`CPU ${AI_PARAMS[lv].name}`,rating:880+lv*130})}))));
+const friend=screen==="FRIEND"&&React.createElement(HexMenuShell,{title:"ルームでプレイ",back:()=>{setRoomErr("");setScreen("HOME");},wide:false},
+    React.createElement(HexPanel,{className:"p-5"},
+        React.createElement("div",{className:"grid gap-4"},
+            React.createElement("button",{onClick:()=>{initUiAudio();setRoomErr("");setScreen("ROOM_HOST");},className:"w-full rounded-2xl px-4 text-[15px] font-bold text-[#0a0f18] active:scale-[.99]",style:{background:"linear-gradient(145deg,#c59cff,#8e66ff)",minHeight:52}},"新しくルームを作成"),
+            React.createElement("label",{htmlFor:"hex-room-code",className:"text-[13px] font-semibold text-white/60 pt-2"},"ルームコードで参加"),
             React.createElement("div",{className:"flex gap-2"},
-                React.createElement("input",{id:"hex-room-code",value:room,onChange:e=>{setRoomErr("");setRoom(e.target.value.replace(/\D/g,"").slice(0,6));},onKeyDown:e=>{if(e.key==="Enter"&&room.length===6){initUiAudio();setScreen("ROOM_JOIN");}},placeholder:"6桁のコード",inputMode:"numeric",autoComplete:"off",className:"flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/30 border border-white/15 text-white text-center tracking-[0.28em] font-black tabular-nums placeholder:text-white/60"}),
-                React.createElement("button",{disabled:room.length!==6,onClick:()=>{initUiAudio();setRoomErr("");setScreen("ROOM_JOIN");},className:"px-6 rounded-xl text-sm font-black text-[#061016] disabled:opacity-40",style:{background:"#2FE3F5",minHeight:48}},"参加")),
+                React.createElement("input",{id:"hex-room-code",value:room,onChange:e=>{setRoomErr("");setRoom(e.target.value.replace(/\D/g,"").slice(0,6));},onKeyDown:e=>{if(e.key==="Enter"&&room.length===6){initUiAudio();setScreen("ROOM_JOIN");}},placeholder:"6桁のコード",inputMode:"numeric",autoComplete:"off",className:"flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/30 border border-white/15 text-white text-center tracking-[0.28em] font-bold tabular-nums placeholder:text-white/40"}),
+                React.createElement("button",{disabled:room.length!==6,onClick:()=>{initUiAudio();setRoomErr("");setScreen("ROOM_JOIN");},className:"px-6 rounded-xl text-[15px] font-bold text-[#061016] disabled:opacity-40",style:{background:"#2FE3F5",minHeight:52}},"参加")),
             roomErr&&React.createElement("div",{role:"alert",className:"rounded-xl px-3 py-2 text-[12px] leading-relaxed font-bold",style:{border:"1px solid rgba(255,62,165,.28)",background:"rgba(255,62,165,.08)",color:"#ffb8d6"}},hexFriendlyNetError(roomErr)),
-            React.createElement("div",{className:"text-[11px] leading-relaxed text-white/55"},"ルーム対戦はレートに影響しません。勝敗は戦績に記録されます。"))));
+            React.createElement("div",{className:"text-[12px] leading-relaxed text-white/50"},"ルーム対戦はレートに影響しません。"))));
 const roomHost=screen==="ROOM_HOST"&&React.createElement(RoomHost,{onMatched:(match)=>beginOnline(match,"ROOM"),onCancel:()=>setScreen("FRIEND"),onError:(m)=>{setRoomErr(m);setScreen("FRIEND");}});
 const roomJoin=screen==="ROOM_JOIN"&&React.createElement(RoomJoin,{code:room,onMatched:(match)=>beginOnline(match,"ROOM"),onCancel:()=>setScreen("FRIEND"),onError:(m)=>{setRoomErr(m);setScreen("FRIEND");}});
 // Keep the screen on while playing or waiting for an opponent; phones
@@ -705,10 +289,10 @@ useEffect(() => {const onPop = () => {const h = histRef.current;if (h.ignore > 0
 return (React.createElement("div", { className: "relative w-full h-screen overflow-hidden font-sans", style: { background: "#060512" } },
 React.createElement("div", { className: "w-full h-full flex items-center justify-center" },React.createElement("div", { className: "relative", style: { width: "min(100vw, calc(100vh * 16 / 9))", aspectRatio: `${VW} / ${VH}`, ...(bgLayerUrl ? { backgroundImage: `url(${bgLayerUrl})`, backgroundSize: "100% 100%" } : null) } },React.createElement("canvas", { ref: cvRef, className: "touch-none select-none", role: "img", "aria-label": screen === "GAME" ? `対戦画面：左があなた（${nickname||"Player"}）、右が相手（${opp?.name ?? "CPU"}）` : "", style: { width: "100%", height: "100%" } }),
 screen === "GAME" && tut && React.createElement(HexTutorialPanel, { lesson: tut.lesson, tracker: tut.tracker, status: tut.status, message: tut.message, onNext: () => startTutorial(tut.lesson + 1), onRetry: () => startTutorial(tut.lesson), onExit: () => {runRef.current = false;tutorialRef.current = null;setTut(null);setScreen("HOME");}, onVsAi: () => startMatch("CPU", 1, { name: `CPU ${AI_PARAMS[1].name}`, rating: 880 + 1 * 130 }) }))),
-screen === "GAME" && React.createElement("button", { onClick: () => setPauseOpen(true), "aria-label": "ポーズメニューを開く", title: "ポーズ（Esc）", className: "absolute left-1/2 -translate-x-1/2 z-10 w-11 h-11 rounded-xl flex items-center justify-center gap-1 border border-white/25 bg-black/50", style: { top: "max(8px, env(safe-area-inset-top))" } }, React.createElement("span", { className: "block w-1 h-4 rounded-sm bg-white/80" }), React.createElement("span", { className: "block w-1 h-4 rounded-sm bg-white/80" })),
+screen === "GAME" && React.createElement("button", { onClick: () => setPauseOpen(true), "aria-label": "ポーズメニューを開く", title: "ポーズ（Esc）", className: "absolute left-1/2 -translate-x-1/2 z-10 w-11 h-11 rounded-full flex items-center justify-center gap-1 active:scale-95", style: { top: "max(8px, env(safe-area-inset-top))", background: "rgba(10,12,28,.6)", border: "1px solid rgba(255,255,255,.14)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" } }, React.createElement("span", { className: "block w-1 h-4 rounded-sm bg-white/80" }), React.createElement("span", { className: "block w-1 h-4 rounded-sm bg-white/80" })),
 screen === "GAME" && matchRef.current && !foeConn && React.createElement("div", { role: "status", className: "absolute left-1/2 -translate-x-1/2 z-10 rounded-xl px-4 py-2 text-[13px] font-bold text-center", style: { top: 60, color: "#ffd2e3", background: "rgba(40,6,24,.82)", border: "1px solid rgba(255,62,165,.4)" } }, "相手の接続が切れました。5秒以内に戻らなければあなたの勝ちになります。"),
 screen === "GAME" && pauseOpen && React.createElement(HexPauseMenu, { online: !!matchRef.current, ranked: !!matchRef.current && matchKindRef.current !== "ROOM" && matchRef.current.ranked !== false, onResume: () => setPauseOpen(false), onRestart: matchRef.current ? null : () => (tutorialRef.current ? startTutorial(tutorialRef.current.lesson) : startMatch(mode, aiLevel, opp)), onQuit: () => {runRef.current = false;setPauseOpen(false);/* Online: the resignation goes through finish(), which records the loss (and rating) before leaving the match. */if (matchRef.current) matchRef.current.reportResult(false, "resign");setScreen("HOME");} }),
-portrait && React.createElement("div", { className: "absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 px-8 text-center", style: { background: SPACE_BG } },React.createElement("div", { className: "text-5xl" }, "📱"),React.createElement("div", { className: "text-white font-extrabold text-lg" }, "端末を横向きにしてください"),React.createElement("div", { className: "text-white/65 text-sm leading-relaxed" },"このゲームは横画面専用です。",React.createElement("br", null),"画面の自動回転をオンにしてから横に倒してください。")),
+portrait && React.createElement("div", { className: "absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 px-8 text-center", style: { background: SPACE_BG } },React.createElement("div", { className: "text-white font-extrabold text-lg" }, "端末を横向きにしてください"),React.createElement("div", { className: "text-white/65 text-sm leading-relaxed" },"このゲームは横画面専用です。",React.createElement("br", null),"画面の自動回転をオンにしてから横に倒してください。")),
 home,battle,profile,settings,help,tutorial,cpu,
 screen === "MATCHING" && React.createElement(Matching, { onMatched: beginOnline, onCancel: () => { Net.cancelMatchmaking(); setScreen("HOME"); }, onError: (m) => { setNetErr(m); setScreen("HOME"); } }),
 friend,roomHost,roomJoin,

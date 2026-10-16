@@ -136,7 +136,7 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(/history\.pushState\(\{ sixball: 1 \}/.test(app16) && /addEventListener\("popstate"/.test(app16), "the phone back button must navigate inside the app");
   assert(/navigator\.wakeLock\.request\("screen"\)/.test(app16), "the screen stays on while playing or waiting");
   assert(/typeof navigator\.vibrate==="function"\)&&React\.createElement\(HexSettingToggle,\{label:"振動"/.test(app16), "the vibration setting is hidden where it cannot work");
-  assert(/ctx\.font=`900 28px \$\{F\}`/.test(app14) && app14.includes('"900 30px ui-sans-serif, system-ui, sans-serif"'), "HUD text is large enough at phone scale");
+  assert(/ctx\.font=`900 28px \$\{F\}`/.test(app14) && app14.includes('"800 24px ui-sans-serif, system-ui, sans-serif"'), "HUD text is large enough at phone scale");
   assert(!/おじゃま予告/.test(app14 + app17), "badge and tutorial texts agree on 「おじゃま」");
   // BGM starts when the match screen is shown; it recognises that screen by the pause button.
   const bgmSrc = read("app-bgm-local.js");
@@ -180,6 +180,6 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(/me\.stats\.time = \(me\.stats\.time \|\| 0\) \+ h/.test(app16), "match time is counted while the player's game runs");
   assert(/hexRecordMatch\(\{ cpuLevel: m === "CPU" \? lv : 0, win, summary \}\)/.test(app16) && /summary:result\?\.summary,progress:result\?\.progress/.test(app16), "finished matches are recorded and passed to the result screen");
   assert(/summary&&React\.createElement\(ResultSummary,/.test(app14), "the result screen shows the match summary");
-  assert(/cpuRecord\[lv\]\.w\?\{text:"★勝利"/.test(app16) && /data-hex-cpu-progress/.test(app16), "the CPU list shows which levels were beaten");
+  assert(/cpuRecord\[lv\]\.w\?\{text:"勝利"/.test(app16) && /data-hex-cpu-progress/.test(app16), "the CPU list shows which levels were beaten");
   console.log("ui-ux regression PASS");
 })().catch(e => { console.error("ui-ux regression FAIL:", e && e.stack || e); process.exit(1); });
