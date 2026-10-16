@@ -160,7 +160,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         drawBall(ctx, ncx - nd * 0.5, ncy + nd * 0.42, nd, q[2], {});
         drawBall(ctx, ncx + nd * 0.5, ncy + nd * 0.42, nd, q[1], {});
     }
-    ctx.font = "900 30px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.8)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.shadowColor="rgba(0,0,0,.6)";ctx.shadowBlur=8;ctx.fillText("つぎ", ncx, ny0 + nh + 6);ctx.restore();
+    ctx.font = "800 24px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.8)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.shadowColor="rgba(0,0,0,.6)";ctx.shadowBlur=8;if("letterSpacing" in ctx)ctx.letterSpacing="3px";ctx.fillText("NEXT", ncx + (("letterSpacing" in ctx) ? 1.5 : 0), ny0 + nh + 9);ctx.restore();
     const avx=side===0?44:VW-44,avy=36;
     ctx.save();ctx.beginPath();ctx.arc(avx,avy,25,0,TAU);ctx.shadowColor=NEON[side];ctx.shadowBlur=14;ctx.fillStyle=NEON[side];ctx.fill();ctx.shadowBlur=0;
      {const hi=typeof ctx.createLinearGradient==="function"?ctx.createLinearGradient(avx-25,avy-25,avx+25,avy+25):null;if(hi){hi.addColorStop(0,"rgba(255,255,255,.42)");hi.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=hi;ctx.fill();}}
