@@ -70,7 +70,7 @@ function RoomHost({ onMatched, onCancel, onError }) {
         return () => { alive = false; if (room) room.cancel(); };
     }, []);
     const copy = () => { try { navigator.clipboard.writeText(code).then(() => setCopied(true), () => {}); } catch (_) {} };
-    return React.createElement(HexMenuShell, { title: "ルームを作成", eyebrow: "PRIVATE ROOM // HOST", back: onCancel, wide: false },
+    return React.createElement(HexMenuShell, { title: "ルームを作成", back: onCancel, wide: false },
         React.createElement(HexPanel, { accent: "violet", className: "p-6 text-center" },
             React.createElement("div", { className: "text-[11px] font-black tracking-[.2em] text-white/65" }, "ROOM CODE"),
             code ? React.createElement(React.Fragment, null,
@@ -94,7 +94,7 @@ function RoomJoin({ code, onMatched, onCancel, onError }) {
         })();
         return () => { alive = false; };
     }, []);
-    return React.createElement(HexMenuShell, { title: "ルームに参加", eyebrow: "PRIVATE ROOM // GUEST", back: onCancel, wide: false },
+    return React.createElement(HexMenuShell, { title: "ルームに参加", back: onCancel, wide: false },
         React.createElement(HexPanel, { accent: "violet", className: "p-6 text-center" },
             React.createElement("div", { className: "text-[11px] font-black tracking-[.2em] text-white/65 mb-2" }, "ROOM CODE ", code.slice(0, 3), " ", code.slice(3)),
             React.createElement(RoomSpinner, { label: "ホストと接続しています…" }),
@@ -147,7 +147,7 @@ function HexTutorial({ onExit, onPractice, onVsAi, onShowHelp }) {
         window.addEventListener("keydown", key); return () => window.removeEventListener("keydown", key);
     }, []);
     const navBtn = { minHeight: 44 };
-    return React.createElement(HexMenuShell, { title: "チュートリアル", eyebrow: `TUTORIAL  ${i + 1} / ${steps.length}`, back: onExit, wide: true },
+    return React.createElement(HexMenuShell, { title: "チュートリアル", back: onExit, wide: true },
         React.createElement(HexPanel, { accent: "gold", className: "p-4 sm:p-5" },
             React.createElement("div", { className: "flex items-center gap-5 flex-wrap justify-center", style: { minHeight: 150 }, "aria-live": "polite" },
                 step.art && React.createElement("div", { className: "flex justify-center shrink-0", style: { minWidth: 150 } }, step.art),
@@ -160,10 +160,10 @@ function HexTutorial({ onExit, onPractice, onVsAi, onShowHelp }) {
                         React.createElement("button", { onClick: onVsAi, className: "rounded-xl px-4 text-sm font-black text-white/85 border border-white/20 bg-white/5", style: navBtn }, "AIと対戦する"),
                         React.createElement("button", { onClick: onShowHelp, className: "rounded-xl px-4 text-sm font-black text-white/85 border border-white/20 bg-white/5", style: navBtn }, "操作一覧を見る"))))),
         React.createElement("div", { className: "mt-3 flex items-center justify-between gap-3" },
-            React.createElement("button", { onClick: () => setI(v => Math.max(0, v - 1)), disabled: i === 0, className: "rounded-xl px-5 text-sm font-black text-white/85 border border-white/20 bg-white/5 disabled:opacity-30", style: navBtn }, "← 前へ"),
+            React.createElement("button", { onClick: () => setI(v => Math.max(0, v - 1)), disabled: i === 0, className: "rounded-xl px-5 text-sm font-black text-white/85 border border-white/20 bg-white/5 disabled:opacity-30", style: navBtn }, "前へ"),
             React.createElement("div", { className: "flex gap-1.5", "aria-hidden": "true" }, steps.map((_, k) => React.createElement("span", { key: k, className: "block rounded-full", style: { width: k === i ? 18 : 7, height: 7, background: k === i ? "#FFD36A" : "rgba(255,255,255,.3)", transition: "width .2s ease" } }))),
             last ? React.createElement("button", { onClick: onExit, className: "rounded-xl px-5 text-sm font-black text-white/85 border border-white/20 bg-white/5", style: navBtn }, "ホームへ")
-                : React.createElement("button", { onClick: () => setI(v => Math.min(steps.length - 1, v + 1)), className: "rounded-xl px-5 text-sm font-black text-[#061016]", style: { ...navBtn, background: "#FFD36A" } }, "次へ →")));
+                : React.createElement("button", { onClick: () => setI(v => Math.min(steps.length - 1, v + 1)), className: "rounded-xl px-5 text-sm font-black text-[#061016]", style: { ...navBtn, background: "#FFD36A" } }, "次へ")));
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +234,7 @@ function HexTutorialPanel({ lesson, tracker, status, message, onNext, onRetry, o
         React.createElement("ul", { className: "mt-2 grid gap-1" }, L.checks.map(([k, label]) => { const done = status === "success" || !!tracker[k]; return React.createElement("li", { key: k, className: "flex items-center gap-2 text-[12px] font-bold", style: { color: done ? "#7DFFB2" : "rgba(255,255,255,.7)" } }, React.createElement("span", { "aria-hidden": "true", className: "inline-flex items-center justify-center rounded-full", style: { width: 16, height: 16, border: `2px solid ${done ? "#7DFFB2" : "rgba(255,255,255,.4)"}`, fontSize: 10 } }, done ? "✓" : ""), label, React.createElement("span", { className: "sr-only" }, done ? "（完了）" : "")); })),
         message && React.createElement("div", { role: "status", className: "mt-2 rounded-lg px-2.5 py-1.5 text-[12px] font-bold", style: { color: status === "success" ? "#061016" : "#ffd2e3", background: status === "success" ? "#7DFFB2" : "rgba(255,62,165,.16)" } }, message),
         React.createElement("div", { className: "mt-auto pt-2 flex flex-wrap gap-2" },
-            status === "success" && !last && React.createElement("button", { onClick: onNext, className: btn + " text-[#061016]", style: { minHeight: 40, background: "#FFD36A" } }, "次のレッスンへ →"),
+            status === "success" && !last && React.createElement("button", { onClick: onNext, className: btn + " text-[#061016]", style: { minHeight: 40, background: "#FFD36A" } }, "次のレッスンへ"),
             status === "success" && last && React.createElement("button", { onClick: onVsAi, className: btn + " text-[#061016]", style: { minHeight: 40, background: "#FFD36A" } }, "AIと対戦する"),
             status !== "success" && React.createElement("button", { onClick: onRetry, className: btn + " text-white/85 border border-white/20 bg-white/5", style: { minHeight: 40 } }, "やり直す"),
             React.createElement("button", { onClick: onExit, "data-hex-back": "1", className: btn + " text-white/70 border border-white/15", style: { minHeight: 40 } }, last && status === "success" ? "ホームへ" : "やめる")));

@@ -180,6 +180,6 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(/me\.stats\.time = \(me\.stats\.time \|\| 0\) \+ h/.test(app16), "match time is counted while the player's game runs");
   assert(/hexRecordMatch\(\{ cpuLevel: m === "CPU" \? lv : 0, win, summary \}\)/.test(app16) && /summary:result\?\.summary,progress:result\?\.progress/.test(app16), "finished matches are recorded and passed to the result screen");
   assert(/summary&&React\.createElement\(ResultSummary,/.test(app14), "the result screen shows the match summary");
-  assert(/cpuRecord\[lv\]\.w\?\{text:"★勝利"/.test(app16) && /data-hex-cpu-progress/.test(app16), "the CPU list shows which levels were beaten");
+  assert(/cpuRecord\[lv\]\.w\?\{text:"勝利"/.test(app16) && /data-hex-cpu-progress/.test(app16), "the CPU list shows which levels were beaten");
   console.log("ui-ux regression PASS");
 })().catch(e => { console.error("ui-ux regression FAIL:", e && e.stack || e); process.exit(1); });
