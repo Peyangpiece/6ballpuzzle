@@ -117,6 +117,7 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(/Net\.hostRoom\(\)/.test(app17) && /Net\.joinRoomCode\(code\)/.test(app17), "room screens must use the network API");
   assert(!app14.includes("○○"), "result buttons must not show placeholder glyphs");
   assert(app14.includes('"メニューへ"') && /nextLabel\|\|"もう一度"/.test(app14), "result buttons say what they do");
+  assert(/aiLevel<5\?"次のレベルへ":"もう一度"/.test(app16) && /const lv=aiLevel\+1;startMatch\("CPU",lv,/.test(app16), "a CPU win offers the next level, the top level and a loss replay the same one");
   assert(!/onClick:onExit[^)]*"[^"]*ヒント/.test(app14), "the exit button must not be labelled as a hint");
   assert(/\["SETTINGS","設定"/.test(app16) && /\["HELP","遊び方"/.test(app16), "settings and help must be reachable from HOME");
   assert(app16.includes("HexPauseMenu") && app14.includes("降参してメニューへ"), "leaving a match goes through the pause / quit dialog");
