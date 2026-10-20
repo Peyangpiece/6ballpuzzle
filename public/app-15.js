@@ -128,3 +128,22 @@ const Net = {
     },
     async applyRating(win, foeRating, ranked, matchId = null) {if (this.ratingAuthority === "server" && this.fb && this.uid && typeof matchId === "string" && matchId) return this.awaitServerRating(matchId);const delta = ranked === false ? 0 : eloDelta(this.profile.rating, foeRating, win);this.profile.rating = Math.max(0, this.profile.rating + delta);this.profile.wins += win ? 1 : 0;this.profile.losses += win ? 0 : 1;if (this.fb && this.uid) {const F = this.fb;const patch = {rating: this.profile.rating, wins: this.profile.wins,losses: this.profile.losses, updatedAt: F.serverTimestamp()};if (typeof matchId === "string" && matchId) { patch.lastMatch = matchId; patch.lastResult = win ? "win" : "loss"; }await F.update(F.ref(this.db, "users/" + this.uid), patch).catch(() => { });await F.set(F.ref(this.db, "leaderboard/" + this.uid), { name: this.profile.name, rating: this.profile.rating }).catch(() => { });}return delta;}
 };
+// Rating ranking: the top players in leaderboard/{uid} ({name, rating}, kept
+// up to date after every rated match), highest first. Equal ratings share a
+// rank (1, 2, 2, 4).
+Net.fetchLeaderboard = async function (limit = 50) {
+    await this.connect();
+    const F = this.fb;
+    const ref = F.ref(this.db, "leaderboard");
+    let snap;
+    // The query needs ".indexOn": "rating" in the database rules; until those
+    // rules are deployed, read the whole list and sort it here.
+    try { snap = await F.get(F.query(ref, F.orderByChild("rating"), F.limitToLast(limit))); }
+    catch (err) { if (!/index/i.test(String(err?.message || err))) throw err; snap = await F.get(ref); }
+    const rows = [];
+    snap.forEach((c) => { const v = c.val() || {}; rows.push({ uid: c.key, name: String(v.name || "Player").slice(0, 24), rating: Number(v.rating) || 0 }); });
+    rows.sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name));
+    rows.length = Math.min(rows.length, limit);
+    rows.forEach((r, i) => { r.rank = i && rows[i - 1].rating === r.rating ? rows[i - 1].rank : i + 1; });
+    return { rows, me: this.uid };
+};

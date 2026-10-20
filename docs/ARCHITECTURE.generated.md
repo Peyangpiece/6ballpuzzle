@@ -24,10 +24,10 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 16 | `app-14.js` | core: engine, assets, net, app shell | 411 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
-| 19 | `app-15.js` | core: engine, assets, net, app shell | 131 |  |  |
+| 19 | `app-15.js` | core: engine, assets, net, app shell | 150 |  |  |
 | 20 | `app-google-login.js` | online | 287 |  |  |
 | 21 | `app-online-v2.js` | online | 1754 |  |  |
-| 22 | `app-menu-ui.js` | menu / audio | 300 |  | HEXDROP immersive menu system. |
+| 22 | `app-menu-ui.js` | menu / audio | 301 |  | HEXDROP immersive menu system. |
 | 23 | `app-brand-bgm.js` | menu / audio | 145 |  | 6ball brand + menu audio + gameplay BGM adapter. |
 | 24 | `app-bgm-local.js` | menu / audio | 352 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
 | 25 | `app-audio-volume-control.js` | menu / audio | 277 |  | 6ball unified live audio controller. |
@@ -35,7 +35,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 27 | `app-audio-element-gain-v1.js` | other | 74 |  | Volume for <audio> elements where the browser ignores it. |
 | 28 | `app-rotate-sfx.js` | menu / audio | 137 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
 | 29 | `app-instant-drop-sfx.js` | menu / audio | 140 |  | 6ball instant-drop landing v10 |
-| 30 | `app-16.js` | core: engine, assets, net, app shell | 300 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
+| 30 | `app-16.js` | core: engine, assets, net, app shell | 324 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
 | 31 | `app-17.js` | core: engine, assets, net, app shell | 277 |  |  |
 | 32 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 351 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
 | 33 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |

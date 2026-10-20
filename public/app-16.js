@@ -44,6 +44,7 @@ const [netErr, setNetErr] = useState(null);
 const [googleUser,setGoogleUser]=useState(null);
 const [googleBusy,setGoogleBusy]=useState(false);
 const [googleErr,setGoogleErr]=useState("");
+const [ranking,setRanking]=useState({status:"idle",rows:[],me:null});
 const [foeConn, setFoeConn] = useState(true);
 const [roomErr, setRoomErr] = useState("");
 const [helpAllInputs, setHelpAllInputs] = useState(false);
@@ -170,7 +171,7 @@ const loginWithGoogle=async()=>{
     }finally{setGoogleBusy(false);}
 };
 // HOME. Left: the logo and the player's card (opens the profile). Right: the
-// quiet links (遊び方 / 設定) above the four actions. Nothing else.
+// quiet links (ランキング / 遊び方 / 設定) above the four actions. Nothing else.
 const homeLogo=React.createElement("img",{src:"/assets/6ball-logo-transparent.png",alt:"6ball",draggable:false,style:{height:"clamp(180px,36vh,300px)",width:"auto",objectFit:"contain",filter:"saturate(1.08) contrast(1.03) brightness(1.04) drop-shadow(0 18px 28px rgba(0,0,0,.30))"}});
 const homePlayer=React.createElement("button",{onClick:()=>{initUiAudio();setProfileDraft(nickname);setScreen("PROFILE");},"aria-label":`プロフィール（${nickname||"Player"}）`,className:"inline-flex items-center gap-3 rounded-2xl text-left active:scale-[.98]",style:{minWidth:220,maxWidth:320,minHeight:60,padding:"0 16px 0 12px",...HEX_MENU_SURFACE}},
     React.createElement(HexAvatar,{name:nickname||"Player",size:38}),
@@ -179,7 +180,7 @@ const homePlayer=React.createElement("button",{onClick:()=>{initUiAudio();setPro
         React.createElement("div",{className:"mt-0.5 text-[12px] tabular-nums text-white/55 truncate"},`レート ${rating} · ${record.w}勝 ${record.l}敗`)),
     React.createElement(HexChevron,null));
 const homeLinks=React.createElement("div",{className:"flex justify-end items-center gap-2",style:{marginBottom:"clamp(12px,2.6vh,24px)"}},
-    [["HELP","遊び方","help"],["SETTINGS","設定","gear"]].map(([to,label,icon])=>React.createElement("button",{key:to,onClick:()=>{initUiAudio();setScreen(to);},className:"inline-flex items-center gap-2 rounded-full pl-3.5 pr-4 text-[14px] font-semibold text-white/85 active:scale-[.98]",style:{minHeight:40,...HEX_MENU_SURFACE}},React.createElement(HexIcon,{name:icon,size:17,color:"rgba(255,255,255,.8)"}),label)));
+    [["RANKING","ランキング","trophy"],["HELP","遊び方","help"],["SETTINGS","設定","gear"]].map(([to,label,icon])=>React.createElement("button",{key:to,onClick:()=>{initUiAudio();setScreen(to);},className:"inline-flex items-center gap-2 rounded-full pl-3.5 pr-4 text-[14px] font-semibold text-white/85 active:scale-[.98]",style:{minHeight:40,...HEX_MENU_SURFACE}},React.createElement(HexIcon,{name:icon,size:17,color:"rgba(255,255,255,.8)"}),label)));
 const homeMenu=React.createElement("div",{className:"relative flex flex-col justify-center",style:{width:"100%",maxWidth:480,justifySelf:"end"}},
     homeLinks,
     React.createElement("div",{className:shortHome?"space-y-2":"space-y-3"},
@@ -198,6 +199,29 @@ const battle=screen==="BATTLE"&&React.createElement(HexMenuShell,{title:"対戦"
         React.createElement(HexMenuButton,{icon:"◉",title:"オンライン対戦",subtitle:"レートをかけてプレイヤーとマッチング",meta:"RANKED",accent:"pink",onClick:()=>{initUiAudio();setScreen("MATCHING");}}),
         React.createElement(HexMenuButton,{icon:"◇",title:"AI対戦",subtitle:"5段階の強さから相手を選択",meta:"SOLO",accent:"cyan",onClick:()=>{initUiAudio();setScreen("CPU");}}),
         React.createElement(HexMenuButton,{icon:"⌁",title:"フレンド対戦",subtitle:"ルームコードで友だちと遊ぶ",meta:"ROOM",accent:"violet",onClick:()=>{initUiAudio();setScreen("FRIEND");}})));
+// RANKING: the top 50 by rating, the player's own row highlighted; below the
+// list, the player's rating when it is not among them.
+useEffect(()=>{
+    if(screen!=="RANKING")return;
+    let alive=true;setRanking(r=>({...r,status:"loading"}));
+    Net.fetchLeaderboard(50).then(res=>{if(alive)setRanking({status:"ok",rows:res.rows,me:res.me});})
+        .catch(err=>{console.error("ranking",err);if(alive)setRanking({status:"error",rows:[],me:null});});
+    return()=>{alive=false;};
+},[screen]);
+const rankingMine=ranking.rows.find(r=>r.uid===ranking.me);
+const rankingRow=(r)=>{const mine=r.uid===ranking.me,top=r.rank<=3?["#FFD36A","#C9D3E6","#E3A06A"][r.rank-1]:null;
+    return React.createElement("div",{key:r.uid,"data-hex-ranking-row":mine?"me":"1",className:"flex items-center gap-3 rounded-xl px-3",style:{minHeight:46,background:mine?"rgba(47,227,245,.10)":"transparent",border:mine?"1px solid rgba(47,227,245,.35)":"1px solid transparent"}},
+        React.createElement("div",{className:"w-9 text-center text-[15px] font-bold tabular-nums",style:{color:top||"rgba(255,255,255,.6)"}},r.rank),
+        React.createElement(HexAvatar,{name:r.name,size:28,color:mine?HEX_MENU_ACCENTS.cyan:"#8B93A7"}),
+        React.createElement("div",{className:"min-w-0 flex-1 truncate text-[14px] font-semibold text-white"},r.name,mine&&React.createElement("span",{className:"ml-2 text-[11px] font-bold",style:{color:HEX_MENU_ACCENTS.cyan}},"あなた")),
+        React.createElement("div",{className:"shrink-0 text-[15px] font-bold tabular-nums text-white"},r.rating));};
+const rankingScreen=screen==="RANKING"&&React.createElement(HexMenuShell,{title:"ランキング",back:()=>setScreen("HOME"),wide:false},
+    React.createElement("div",{className:"rounded-2xl p-2",style:HEX_MENU_SURFACE},
+        ranking.status==="loading"&&!ranking.rows.length&&React.createElement("div",{role:"status",className:"py-8 text-center text-[13px] text-white/60"},"読み込み中…"),
+        ranking.status==="error"&&React.createElement("div",{role:"alert",className:"py-8 text-center text-[13px]",style:{color:"#ff9bbf"}},"ランキングを読み込めませんでした。接続を確認してください。"),
+        ranking.status==="ok"&&!ranking.rows.length&&React.createElement("div",{className:"py-8 text-center text-[13px] text-white/60"},"まだランキングに載っているプレイヤーがいません。オンライン対戦をすると載ります。"),
+        ranking.rows.length>0&&React.createElement("div",{"data-hex-ranking":"1",className:"grid gap-0.5"},ranking.rows.map(rankingRow))),
+    ranking.status==="ok"&&!rankingMine&&React.createElement("div",{className:"mt-3 px-1 text-[12px] text-white/60"},ranking.rows.length<50?`あなたのレートは ${rating} です。オンライン対戦（レート戦）を1回するとランキングに載ります。`:`あなたのレートは ${rating} です。上位50位に入るとここに載ります。`));
 const profileBests=screen==="PROFILE"?hexBests():null,profileCpu=screen==="PROFILE"?hexCpuRecord():null;
 const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プロフィール",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"minmax(260px,.9fr) minmax(0,1.1fr)",gap:14}},
@@ -292,7 +316,7 @@ screen === "GAME" && React.createElement("button", { onClick: () => setPauseOpen
 screen === "GAME" && matchRef.current && !foeConn && React.createElement("div", { role: "status", className: "absolute left-1/2 -translate-x-1/2 z-10 rounded-xl px-4 py-2 text-[13px] font-bold text-center", style: { top: 60, color: "#ffd2e3", background: "rgba(40,6,24,.82)", border: "1px solid rgba(255,62,165,.4)" } }, "相手の接続が切れました。5秒以内に戻らなければあなたの勝ちになります。"),
 screen === "GAME" && pauseOpen && React.createElement(HexPauseMenu, { online: !!matchRef.current, ranked: !!matchRef.current && matchKindRef.current !== "ROOM" && matchRef.current.ranked !== false, onResume: () => setPauseOpen(false), onRestart: matchRef.current ? null : () => (tutorialRef.current ? startTutorial(tutorialRef.current.lesson) : startMatch(mode, aiLevel, opp)), onQuit: () => {runRef.current = false;setPauseOpen(false);/* Online: the resignation goes through finish(), which records the loss (and rating) before leaving the match. */if (matchRef.current) matchRef.current.reportResult(false, "resign");setScreen("HOME");} }),
 portrait && React.createElement("div", { className: "absolute inset-0 z-30 flex flex-col items-center justify-center gap-4 px-8 text-center", style: { background: SPACE_BG } },React.createElement("div", { className: "text-white font-extrabold text-lg" }, "端末を横向きにしてください"),React.createElement("div", { className: "text-white/65 text-sm leading-relaxed" },"このゲームは横画面専用です。",React.createElement("br", null),"画面の自動回転をオンにしてから横に倒してください。")),
-home,battle,profile,settings,help,tutorial,cpu,
+home,battle,profile,settings,help,tutorial,cpu,rankingScreen,
 screen === "MATCHING" && React.createElement(Matching, { onMatched: beginOnline, onCancel: () => { Net.cancelMatchmaking(); setScreen("HOME"); }, onError: (m) => { setNetErr(m); setScreen("HOME"); } }),
 friend,roomHost,roomJoin,
 screen === "RESULT" && React.createElement(ResultOverlay,{win:!!result?.win,delta:result?.delta||0,reason:result?.reason||"",online:!!result?.online,ranked:!!result?.ranked&&matchKindRef.current!=="ROOM",rating:result?.rating,summary:result?.summary,progress:result?.progress,levelName:mode==="CPU"?AI_PARAMS[aiLevel]?.name||"":"",meName:nickname||"Player",foeName:opp?.name??"CPU",nextLabel:mode==="ONLINE"?(matchKindRef.current==="ROOM"?"ルームへ戻る":"次の相手を探す"):(mode==="CPU"&&result?.win&&aiLevel<5?"次のレベルへ":"もう一度"),onNext:()=>{if(mode==="ONLINE")setScreen(matchKindRef.current==="ROOM"?"FRIEND":"MATCHING");else if(mode==="CPU"&&result?.win&&aiLevel<5){/* A CPU win moves on to the next level; the top level and a loss replay the same one. */const lv=aiLevel+1;startMatch("CPU",lv,{name:`CPU ${AI_PARAMS[lv].name}`,rating:880+lv*130});}else startMatch(mode,aiLevel,opp);},onExit:()=>setScreen("HOME")})));
