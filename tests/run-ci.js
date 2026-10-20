@@ -15,6 +15,8 @@ const GATE = [
   "tests/ai-core.js",
   "tests/settle-watchdog.js",
   "tests/physics-speedup-parity.js",
+  "tests/google-login.js",
+  "tests/audio-element-gain.js",
   "tests/brand-bgm.js",
   "tests/bgm-local.js",
   "tests/landscape-startup.js",

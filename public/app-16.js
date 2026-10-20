@@ -165,9 +165,8 @@ const loginWithGoogle=async()=>{
         if(Net.profile.name){setNickname(Net.profile.name);setProfileDraft(Net.profile.name);}
     }catch(err){
         const code=String(err?.code||"");
-        if(code==="auth/operation-not-allowed")setGoogleErr("GoogleログインをFirebaseで有効にしてください");
-        else if(code==="auth/popup-closed-by-user")setGoogleErr("");
-        else{console.error("Google login",err);setGoogleErr("Googleログインに失敗しました");}
+        if(code==="auth/popup-closed-by-user"||code==="auth/cancelled-popup-request")setGoogleErr("");
+        else{console.error("Google login",err);setGoogleErr(hexGoogleLoginError(code));}
     }finally{setGoogleBusy(false);}
 };
 // HOME. Left: the logo and the player's card (opens the profile). Right: the

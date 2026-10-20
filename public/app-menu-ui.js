@@ -78,6 +78,15 @@ function hexRecordMatch({cpuLevel=0,win,summary}){
     }
     return out;
 }
+// What a failed Google sign-in tells the player, by Firebase error code.
+function hexGoogleLoginError(code){
+    const standalone=typeof window!=="undefined"&&((window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator?.standalone===true);
+    if(code==="auth/popup-blocked")return standalone?"ホーム画面から開いたアプリではGoogleログインの画面を開けませんでした。Safariなどのブラウザで開いてお試しください。":"ポップアップがブロックされました。このサイトのポップアップを許可して、もう一度押してください。";
+    if(code==="auth/network-request-failed")return"通信できませんでした。接続を確認して、もう一度お試しください。";
+    if(code==="auth/unauthorized-domain"||code==="auth/operation-not-allowed")return"このアドレスではGoogleログインが許可されていません（"+code+"）。";
+    if(code==="auth/web-storage-unsupported"||code==="auth/operation-not-supported-in-environment")return"このブラウザの設定ではGoogleログインを使えません。Cookieとサイトデータを許可してください。";
+    return"Googleログインに失敗しました"+(code?"（"+code+"）":"")+"。";
+}
 function hexFormatTime(sec){sec=Math.max(0,Math.round(Number(sec)||0));return`${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;}
 
 function HexLogoMark({size=210}){
