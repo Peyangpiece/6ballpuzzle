@@ -78,6 +78,15 @@ function hexRecordMatch({cpuLevel=0,win,summary}){
     }
     return out;
 }
+// What a failed Google sign-in tells the player, by Firebase error code.
+function hexGoogleLoginError(code){
+    const standalone=typeof window!=="undefined"&&((window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator?.standalone===true);
+    if(code==="auth/popup-blocked")return standalone?"ホーム画面から開いたアプリではGoogleログインの画面を開けませんでした。Safariなどのブラウザで開いてお試しください。":"ポップアップがブロックされました。このサイトのポップアップを許可して、もう一度押してください。";
+    if(code==="auth/network-request-failed")return"通信できませんでした。接続を確認して、もう一度お試しください。";
+    if(code==="auth/unauthorized-domain"||code==="auth/operation-not-allowed")return"このアドレスではGoogleログインが許可されていません（"+code+"）。";
+    if(code==="auth/web-storage-unsupported"||code==="auth/operation-not-supported-in-environment")return"このブラウザの設定ではGoogleログインを使えません。Cookieとサイトデータを許可してください。";
+    return"Googleログインに失敗しました"+(code?"（"+code+"）":"")+"。";
+}
 function hexFormatTime(sec){sec=Math.max(0,Math.round(Number(sec)||0));return`${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`;}
 
 function HexLogoMark({size=210}){
@@ -243,7 +252,8 @@ const HEX_ICON_PATHS={
     book:["M4 4.5h6a3 3 0 0 1 3 3V20a2 2 0 0 0-2-2H4z","M20 4.5h-6a3 3 0 0 0-3 3V20a2 2 0 0 1 2-2h7z"],
     help:["M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z","M9.4 9.4a2.6 2.6 0 1 1 3.7 2.4c-.8.4-1.1 1-1.1 1.8v.4","M12 17.3h.01"],
     gear:[HEX_GEAR_PATH,"M12 15.2a3.2 3.2 0 1 0 0-6.4a3.2 3.2 0 0 0 0 6.4z"],
-    person:["M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8z","M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"]
+    person:["M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8z","M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"],
+    trophy:["M7.5 4h9v5a4.5 4.5 0 0 1-9 0z","M7.5 6H4.5v1.2a3.3 3.3 0 0 0 3.2 3.3","M16.5 6h3v1.2a3.3 3.3 0 0 1-3.2 3.3","M12 13.5V17","M8.5 20h7","M9.5 17h5v3h-5z"]
 };
 function HexIcon({name,size=20,color="currentColor",strokeWidth=1.8}){
     const P=HEX_ICON_PATHS[name];if(!P)return null;

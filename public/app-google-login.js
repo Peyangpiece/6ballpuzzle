@@ -119,9 +119,13 @@
                     ).slice(0,12);
             }
 
+            // The rules accept a new record only with the starting rating and
+            // record, whatever the guest account had locally.
             this.profile={
-                ...previous,
-                name
+                name,
+                rating:1000,
+                wins:0,
+                losses:0
             };
 
             await F.set(
@@ -226,90 +230,57 @@
         return this.uid;
     };
 
-    Net.loginWithGoogle=async function(){
-        const F=
-            await this._ensureFirebase();
-
-        const provider=
-            new F.GoogleAuthProvider();
-
-        provider.setCustomParameters({
-            prompt:"select_account"
-        });
-
-        let current=
-            this.auth.currentUser;
-
-        if(!current){
-            current=
+    // The Google popup must open in the task of the click itself: Safari (and
+    // other browsers after a delay) block a popup opened after awaited work.
+    // When Firebase is already set up (restored at start-up, or by the profile
+    // screen), the popup is requested synchronously here.
+    Net.loginWithGoogle=function(){
+        const F=this.fb||window.FB;
+        if(F&&this.app&&this.auth)
+            return this._googlePopup(F,this.auth.currentUser);
+        return (async()=>{
+            const F=await this._ensureFirebase();
+            const current=
+                this.auth.currentUser||
                 await this._restoredAuthUser();
-        }
+            return this._googlePopup(F,current);
+        })();
+    };
 
-        let result;
+    Net._googlePopup=function(F,current){
+        if(current&&!current.isAnonymous)
+            return this._syncAuthProfile(current).then(()=>current);
 
-        if(
-            current &&
-            !current.isAnonymous
-        ){
-            await this._syncAuthProfile(
-                current
-            );
+        const provider=new F.GoogleAuthProvider();
+        provider.setCustomParameters({prompt:"select_account"});
 
-            return current;
-        }
-
-        if(
-            current &&
-            current.isAnonymous &&
-            typeof F.linkWithPopup===
-                "function"
-        ){
-            try{
-                result=
-                    await F.linkWithPopup(
-                        current,
-                        provider
-                    );
-            }catch(err){
-                const code=
-                    String(
-                        err?.code||""
-                    );
-
-                if(
-                    code===
-                        "auth/credential-already-in-use" ||
-                    code===
-                        "auth/email-already-in-use"
-                ){
-                    result=
-                        await F.signInWithPopup(
-                            this.auth,
-                            provider
-                        );
-                }else{
-                    throw err;
-                }
-            }
+        let pending;
+        if(current&&current.isAnonymous&&typeof F.linkWithPopup==="function"){
+            pending=F.linkWithPopup(current,provider).catch(err=>{
+                // This Google account already belongs to a player (signed in
+                // before on another device or before the browser data was
+                // cleared): sign in to it with the credential the popup just
+                // returned. A second popup here would be blocked, as it is no
+                // longer opened by the click.
+                const code=String(err?.code||"");
+                if(code!=="auth/credential-already-in-use"&&code!=="auth/email-already-in-use")throw err;
+                const credential=
+                    typeof F.GoogleAuthProvider.credentialFromError==="function"?
+                        F.GoogleAuthProvider.credentialFromError(err):null;
+                if(!credential||typeof F.signInWithCredential!=="function")throw err;
+                return F.signInWithCredential(this.auth,credential);
+            });
         }else{
-            result=
-                await F.signInWithPopup(
-                    this.auth,
-                    provider
-                );
+            pending=F.signInWithPopup(this.auth,provider);
         }
 
-        const user=
-            result?.user||
-            this.auth.currentUser;
-
-        await this._syncAuthProfile(
-            user
-        );
-
-        return user;
+        return pending.then(async result=>{
+            const user=result?.user||this.auth.currentUser;
+            await this._syncAuthProfile(user);
+            return user;
+        });
     };
 
     window.__sixBallGoogleAuthVersion=
-        "google-auth-v1";
+        "google-auth-v2";
 })();
