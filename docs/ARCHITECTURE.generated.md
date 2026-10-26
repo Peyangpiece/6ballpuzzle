@@ -79,4 +79,3 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 71 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
 | 72 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
 | 73 | `app-mobile-performance-v1.js` | other | 75 |  | Mobile performance layer v1 (no physics changes). |
-| 74 | `app-hidden-tools-v1.js` | other | 159 |  | Hidden tools, opened only from the keyboard (no menu entry): |
