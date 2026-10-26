@@ -96,6 +96,22 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
     assert.strictEqual(state.bootError, "", "startup error shown: " + state.bootError);
     assert(state.bgm.lazy && state.bgm.warmed, "lazy BGM did not warm up after gesture: " + JSON.stringify(state.bgm));
     assert(/\.(ogg|m4a)\?v=/.test(state.bgm.src), "BGM source must be the transcoded file, got " + state.bgm.src);
+    // Hidden tools: ⌘+D calculator, ⌘+K pen. Neither may move the piece.
+    // Compared only while the same piece is in play (it may land meanwhile).
+    const piece = (mark) => page.evaluate((mark) => { const g = window.__sixBallDebugRefs && window.__sixBallDebugRefs.meRef.current; if (!g || !g.piece) return "none"; if (mark) g.piece.__toolsProbe = true; else if (!g.piece.__toolsProbe) return "none"; return [g.piece.x, g.piece.rot].join(","); }, mark);
+    await page.keyboard.press("Meta+d");
+    const pieceBeforeTools = await piece(true);
+    for (const k of ["1", "2", "+", "3", "x", "2", "Enter", "ArrowLeft", "x"]) await page.keyboard.press(k);
+    assert.strictEqual(await page.textContent("[data-hex-calculator-display]"), "30", "calculator: 12 + 3 × 2 = 30 (left to right)");
+    await page.keyboard.press("Meta+k");
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.5); await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.35, box.y + box.height * 0.55, { steps: 6 }); await page.mouse.up();
+    await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.4);
+    assert.strictEqual(await page.evaluate(() => window.__sixBallPenStrokeCount()), 2, "pen strokes were not recorded");
+    const pieceAfterTools = await piece(false);
+    assert(pieceBeforeTools === "none" || pieceAfterTools === "none" || pieceAfterTools === pieceBeforeTools, "typing in the calculator or drawing moved the piece: " + pieceBeforeTools + " -> " + pieceAfterTools);
+    await page.keyboard.press("Meta+k"); await page.keyboard.press("Meta+d");
+    assert.deepStrictEqual(await page.evaluate(() => [getComputedStyle(document.querySelector("[data-hex-pen]")).display, getComputedStyle(document.querySelector("[data-hex-calculator]")).display]), ["none", "none"], "the shortcuts hide the tools again");
     const fps = await page.evaluate(() => new Promise(res => { let n = 0; const s = performance.now(); (function f() { n++; if (performance.now() - s < 2000) requestAnimationFrame(f); else res(n / 2); })(); }));
     assert.deepStrictEqual(badResponses, [], "same-origin 4xx/5xx responses: " + badResponses.join(" | "));
     assert(requests.some(u => /menu-confirm-42\.mp3\?v=/.test(u)), "menu click sound was not requested");
