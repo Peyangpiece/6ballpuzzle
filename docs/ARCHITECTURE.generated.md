@@ -75,7 +75,8 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 67 | `app-even-row-split-continuity-v1.js` | rigidity / split authorities (Nintendo reference) | 72 |  | Even/narrow-row strict-inner split continuity authority v1. |
 | 68 | `app-split-visual-smoothness-v1.js` | rigidity / split authorities (Nintendo reference) | 15 |  | Retired split display follower. |
 | 69 | `app-settle-watchdog-v1.js` | other | 48 |  | Settle watchdog v1. |
-| 70 | `controls-v7.js` | input | 341 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
-| 71 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
-| 72 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
-| 73 | `app-mobile-performance-v1.js` | other | 75 |  | Mobile performance layer v1 (no physics changes). |
+| 70 | `app-mass-fall-v1.js` | other | 349 |  | Mass fall v1. |
+| 71 | `controls-v7.js` | input | 341 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
+| 72 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
+| 73 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
+| 74 | `app-mobile-performance-v1.js` | other | 75 |  | Mobile performance layer v1 (no physics changes). |

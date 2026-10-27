@@ -16,6 +16,10 @@ vm.createContext(ctx);
 vm.runInContext(read("ai-worker.js"), ctx);
 for (const f of files) vm.runInContext(read(f), ctx, { filename: f });
 
+// The replay reaches the frozen board through the batched SETTLE animation;
+// a mass collapse on the way is shown by app-mass-fall-v1.js instead and
+// leaves a different (converging) board, so keep the batched animation here.
+ctx.__sixBallMassFallDisabled = true;
 const r = JSON.parse(vm.runInContext(`(()=>{
  const g=createEngine(4),moves=${JSON.stringify(MOVES)};let t=0,i=0,fires=0,last=null,afterFire=null,longest=0,run=0;
  while(t<40&&g.alive){
