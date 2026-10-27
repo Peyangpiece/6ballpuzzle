@@ -20,6 +20,7 @@ const GATE = [
   "tests/audio-element-gain.js",
   "tests/leaderboard.js",
   "tests/account-delete.js",
+  "tests/native-bridge.js",
   "tests/brand-bgm.js",
   "tests/bgm-local.js",
   "tests/landscape-startup.js",

@@ -157,12 +157,15 @@ cv.addEventListener("pointerdown",dn);cv.addEventListener("pointermove",mv);cv.a
 const me = meRef.current;
 const rankName=hexRankLabel(rating),winRate=hexWinRate(record.w,record.l);
 const googleSignedIn=!!googleUser;
-const loginWithGoogle=async()=>{
+// In the iOS app (app-native-v1.js) Apple sign-in is offered next to Google.
+const nativeApp=typeof window!=="undefined"?window.DropBallNative:null;
+const loginWithGoogle=(provider)=>loginWith(provider==="apple"?"apple":"google");
+const loginWith=async(provider)=>{
     if(googleBusy||googleSignedIn)return;
     initUiAudio();setGoogleBusy(true);setGoogleErr("");
     try{
-        const user=await Net.loginWithGoogle();
-        setGoogleUser({name:user?.displayName||Net.profile.name||"Google"});
+        const user=await (provider==="apple"?Net.loginWithApple():Net.loginWithGoogle());
+        setGoogleUser({name:user?.displayName||Net.profile.name||(provider==="apple"?"Apple":"Google")});
         setRating(Number(Net.profile.rating)||1000);
         setRecord({w:Number(Net.profile.wins)||0,l:Number(Net.profile.losses)||0});
         if(Net.profile.name){setNickname(Net.profile.name);setProfileDraft(Net.profile.name);}
@@ -220,6 +223,7 @@ const rankingRow=(r)=>{const mine=r.uid===ranking.me,top=r.rank<=3?["#FFD36A","#
         React.createElement("div",{className:"min-w-0 flex-1 truncate text-[14px] font-semibold text-white"},r.name,mine&&React.createElement("span",{className:"ml-2 text-[11px] font-bold",style:{color:HEX_MENU_ACCENTS.cyan}},"あなた")),
         React.createElement("div",{className:"shrink-0 text-[15px] font-bold tabular-nums text-white"},r.rating));};
 const rankingScreen=screen==="RANKING"&&React.createElement(HexMenuShell,{title:"ランキング",back:()=>setScreen("HOME"),wide:false},
+    nativeApp&&nativeApp.gameCenter&&React.createElement("button",{onClick:()=>{initUiAudio();nativeApp.showLeaderboard();},"data-hex-game-center":"1",className:"mb-3 inline-flex items-center gap-2 rounded-xl px-4 text-[14px] font-semibold text-white/85 active:scale-[.98]",style:{minHeight:44,...HEX_MENU_SURFACE}},"Game Center のランキング"),
     React.createElement("div",{className:"rounded-2xl p-2",style:HEX_MENU_SURFACE},
         ranking.status==="loading"&&!ranking.rows.length&&React.createElement("div",{role:"status",className:"py-8 text-center text-[13px] text-white/60"},"読み込み中…"),
         ranking.status==="error"&&React.createElement("div",{role:"alert",className:"py-8 text-center text-[13px]",style:{color:"#ff9bbf"}},"ランキングを読み込めませんでした。接続を確認してください。"),
@@ -266,9 +270,10 @@ const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プ�
             React.createElement("div",{className:"mt-2 text-[12px] text-white/50"},"オンライン対戦での表示名になります。")),
     React.createElement(HexPanel,{className:"p-5 flex items-center gap-4 flex-wrap",style:{gridColumn:"1 / -1"}},
         React.createElement("div",{className:"flex-1 min-w-[240px]"},
-            React.createElement("div",{className:"text-[15px] font-bold text-white"},googleSignedIn?"Googleログイン済み":"戦績のバックアップ"),
+            React.createElement("div",{className:"text-[15px] font-bold text-white"},googleSignedIn?(nativeApp?"ログイン済み":"Googleログイン済み"):"戦績のバックアップ"),
             React.createElement("div",{className:"mt-1 text-[13px] leading-relaxed text-white/55"},googleSignedIn?"戦績とレートはGoogleアカウントに引き継がれます。":"戦績とレートはこのブラウザだけに保存されています。Googleでログインすると、ほかの端末でも引き継げます。"),
             googleErr&&React.createElement("div",{role:"alert",className:"mt-2 text-[12px] font-semibold",style:{color:"#ff9bbf"}},googleErr)),
+        !googleSignedIn&&nativeApp&&nativeApp.appleSignIn&&React.createElement("button",{disabled:googleBusy,onClick:()=>loginWith("apple"),"data-hex-apple-signin":"1",className:"inline-flex items-center gap-2 rounded-xl pl-4 pr-5 text-[14px] font-semibold text-black active:scale-[.98] disabled:opacity-60",style:{minHeight:44,background:"#fff"}},React.createElement("span",{"aria-hidden":"true",style:{fontSize:17,lineHeight:1}},"\uF8FF"),googleBusy?"サインイン中…":"Appleでサインイン"),
         !googleSignedIn&&React.createElement("button",{disabled:googleBusy,onClick:loginWithGoogle,className:"inline-flex items-center gap-2.5 rounded-xl pl-3.5 pr-5 text-[14px] font-bold text-white active:scale-[.98] disabled:opacity-60",style:{minHeight:44,...HEX_MENU_SURFACE}},React.createElement("span",{"aria-hidden":"true",className:"flex items-center justify-center rounded-full font-bold",style:{width:22,height:22,background:"#fff",color:"#202124",fontSize:13}},"G"),googleBusy?"ログイン中…":"Googleでログイン")),
     React.createElement(HexPanel,{className:"p-5 flex items-center gap-4 flex-wrap",style:{gridColumn:"1 / -1"}},
         React.createElement("div",{"data-hex-account-delete":"1",className:"flex-1 min-w-[240px]"},

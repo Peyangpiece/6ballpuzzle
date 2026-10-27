@@ -1,6 +1,6 @@
 # アセットの出所
 
-配信される資産は `public/assets/`、`public/icons/`、`public/vendor/` のみです。参照されないファイルは置きません
+配信される資産は `public/assets/`、`public/icons/`、`public/vendor/`、`public/lib/` のみです。参照されないファイルは置きません
 （`tests/build-output.js` がバンドルから参照される資産の存在を検証します）。
 
 | ファイル | 用途 | 出所 / ライセンス |
@@ -14,6 +14,7 @@
 | `assets/drop-ball-logo.svg` | ホーム画面のロゴ | `tools/make-brand.py` が生成（`brand/drop-ball-logo-on-dark.svg` と同じ）。ブランド一式とガイドは `brand/`・`docs/BRAND.md` |
 | `icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, `favicon-32.png` | アプリのアイコン（ホーム画面・インストール） | `tools/make-brand.py` がシンボル（落ちるガラス玉と 3 本のスピードライン）から生成 |
 | `vendor/react@18.3.1/*.min.js` | React / ReactDOM | MIT License (Meta Platforms, Inc.) |
+| `lib/firebase/10.12.2/*.js` | Firebase JS SDK（app / auth / database） | Apache License 2.0 (Google LLC)。gstatic 配布版の import 先を同梱ファイルへ書き換えたもの（アプリが外部からコードを読まないため） |
 | `tailwind.css` | 生成 CSS | Tailwind CSS v3.4.17, MIT License |
 
 2026-10 に名称を「Drop Ball」へ変更し、「6」の旧ロゴ `6ball-logo-transparent.png`・`6ball-logo-source.jpg` を削除。

@@ -6,6 +6,8 @@ STRAIGHT / PYRAMID / HEXAGON の「技」でおじゃま球を相手に送りま
 
 公開先: https://6ballpuzzle.hrk-6888.workers.dev
 
+iOS アプリ版（Capacitor）の作り方と App Store への提出手順は [docs/IOS.md](docs/IOS.md)。
+
 スマホではホーム画面に追加するとアプリとして起動できます（Android は「アプリをインストール」、iPhone は共有メニューの「ホーム画面に追加」）。
 一度開けば、AI 対戦とチュートリアルは電波がなくても遊べます（Service Worker がアプリ本体をキャッシュ。オンライン対戦は通信が必要）。
 

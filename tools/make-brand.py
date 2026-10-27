@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build the Drop Ball brand: logo SVGs (brand/), the home-screen logo
-(public/assets/drop-ball-logo.svg) and the app icons (public/icons/).
+(public/assets/drop-ball-logo.svg), the web app icons (public/icons/) and the
+iOS app icon and launch image (ios/App/App/Assets.xcassets/).
 
 Run: python3 tools/make-brand.py
 Needs: fonttools, cairosvg (pip) and the Inter Display Black font
@@ -12,6 +13,7 @@ dropped below the line, with three speed lines in the game's colours above
 it. The symbol (app icon) is that ball and its speed lines alone.
 Geometry is derived from the font's cap height so every size is consistent.
 """
+import io
 import math
 import shutil
 from pathlib import Path
@@ -20,6 +22,7 @@ import cairosvg
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
+from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 BRAND = ROOT / "brand"
@@ -160,6 +163,20 @@ def main():
                           ("favicon-32.png", symbol("f", scale=1.12).encode(), 32)]:
         cairosvg.svg2png(bytestring=png, write_to=str(ICONS / name), output_width=px, output_height=px)
     cairosvg.svg2png(bytestring=icon, write_to=str(BRAND / "drop-ball-app-icon-1024.png"), output_width=1024, output_height=1024)
+    # App Store icons must be opaque.
+    Image.open(BRAND / "drop-ball-app-icon-1024.png").convert("RGB").save(BRAND / "drop-ball-app-icon-1024.png", optimize=True)
+
+    # iOS app (Capacitor): the app icon and the launch image.
+    assets = ROOT / "ios/App/App/Assets.xcassets"
+    if assets.exists():
+        shutil.copy(BRAND / "drop-ball-app-icon-1024.png", assets / "AppIcon.appiconset/AppIcon-512@2x.png")
+        side = 2732
+        splash = Image.new("RGB", (side, side), (6, 5, 18))
+        logo_png = io.BytesIO(cairosvg.svg2png(bytestring=wordmark("sp", WHITE).encode(), output_width=1100))
+        logo = Image.open(logo_png).convert("RGBA")
+        splash.paste(logo, ((side - logo.width) // 2, (side - logo.height) // 2), logo)
+        for name in ("splash-2732x2732.png", "splash-2732x2732-1.png", "splash-2732x2732-2.png"):
+            splash.save(assets / "Splash.imageset" / name, optimize=True)
     print("brand files written to", BRAND, "and", ICONS)
 
 
