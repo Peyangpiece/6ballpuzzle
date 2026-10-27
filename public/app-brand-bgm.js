@@ -5,13 +5,13 @@
     if(typeof window==="undefined"||window.__sixBallBrandInstalled)return;
     window.__sixBallBrandInstalled=true;
     window.__sixBallBrandVersion="6ball-brand-v2";
-    window.__sixBallAppName="ハニカムパズル";
+    window.__sixBallAppName="Drop Ball";
 
     if(typeof React!=="undefined"&&React.createElement&&!React.__sixBallNameBridge){
         const baseCreateElement=React.createElement.bind(React);
         React.__sixBallNameBridge=true;
         React.createElement=function(type,props,...children){
-            const renamed=children.map(v=>v==="HEXDROP"?"ハニカムパズル":v);
+            const renamed=children.map(v=>v==="HEXDROP"?"Drop Ball":v);
             return baseCreateElement(type,props,...renamed);
         };
     }

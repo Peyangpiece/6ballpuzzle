@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "ハニカムパズル",
-  "short_name": "ハニカムパズル",
+  "name": "Drop Ball",
+  "short_name": "Drop Ball",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

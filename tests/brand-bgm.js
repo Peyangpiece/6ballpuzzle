@@ -1,4 +1,4 @@
-// Brand (ハニカムパズル), menu tap sound and legacy BGM adapter contract (public/app-brand-bgm.js).
+// Brand (Drop Ball), menu tap sound and legacy BGM adapter contract (public/app-brand-bgm.js).
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 function expect(v, m) { if (!v) throw new Error(m); }
 const root = path.join(__dirname, '..');
@@ -6,14 +6,14 @@ const brand = fs.readFileSync(path.join(root, 'public/app-brand-bgm.js'), 'utf8'
 const index = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'public/manifest.webmanifest'), 'utf8'));
 new Function(brand);
-expect(manifest.name === 'ハニカムパズル' && manifest.short_name === 'ハニカムパズル', 'installed app name is not ハニカムパズル');
-expect(index.includes('<title>ハニカムパズル</title>'), 'document title is not ハニカムパズル');
-expect(index.includes('apple-mobile-web-app-title" content="ハニカムパズル"'), 'iOS app title is not ハニカムパズル');
-expect(index.includes('ハニカムパズルは横画面専用です'), 'orientation gate still shows old app name');
+expect(manifest.name === 'Drop Ball' && manifest.short_name === 'Drop Ball', 'installed app name is not Drop Ball');
+expect(index.includes('<title>Drop Ball</title>'), 'document title is not Drop Ball');
+expect(index.includes('apple-mobile-web-app-title" content="Drop Ball"'), 'iOS app title is not Drop Ball');
+expect(index.includes('Drop Ballは横画面専用です'), 'orientation gate still shows old app name');
 const order = JSON.parse(/var files=(\[[\s\S]*?\]);/.exec(index)[1]);
 const pos = f => order.indexOf(f);
 expect(pos('app-menu-ui.js') >= 0 && pos('app-brand-bgm.js') > pos('app-menu-ui.js') && pos('app-bgm-local.js') > pos('app-brand-bgm.js') && pos('app-16.js') > pos('app-bgm-local.js'), 'brand/BGM adapters must load after menu UI and before App');
-expect(brand.includes('v==="HEXDROP"?"ハニカムパズル":v'), 'visible old app name is not bridged to ハニカムパズル');
+expect(brand.includes('v==="HEXDROP"?"Drop Ball":v'), 'visible old app name is not bridged to Drop Ball');
 expect(brand.includes('window.__sixBallUsesGameBallAssets=true'), 'game-ball menu art marker missing');
 expect(brand.includes('src:BALL_SRC[ci]'), 'menu illustration is not using gameplay BALL_SRC assets');
 const gameplay = fs.readFileSync(path.join(root, 'public/app-10.js'), 'utf8');
