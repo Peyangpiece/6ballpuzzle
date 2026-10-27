@@ -172,7 +172,9 @@ const loginWithGoogle=async()=>{
 };
 // HOME. Left: the logo and the player's card (opens the profile). Right: the
 // quiet links (ランキング / 遊び方 / 設定) above the four actions. Nothing else.
-const homeLogo=React.createElement("img",{src:"/assets/6ball-logo-transparent.png",alt:"6ball",draggable:false,style:{height:"clamp(180px,36vh,300px)",width:"auto",objectFit:"contain",filter:"saturate(1.08) contrast(1.03) brightness(1.04) drop-shadow(0 18px 28px rgba(0,0,0,.30))"}});
+const homeLogo=React.createElement("div",{className:"flex flex-col items-center",style:{gap:"clamp(6px,1.4vh,12px)"}},
+    React.createElement("h1",{className:"m-0"},React.createElement("img",{src:"/assets/drop-ball-logo.svg",alt:"Drop Ball",draggable:false,style:{display:"block",height:"clamp(74px,19vh,150px)",width:"auto",filter:"drop-shadow(0 10px 24px rgba(0,0,0,.35))"}})),
+    React.createElement("div",{className:"text-center font-bold",style:{fontSize:"clamp(10px,1.8vh,13px)",letterSpacing:".32em",color:"rgba(150,230,255,.8)"}},"HEXAGON DROP PUZZLE"));
 const homePlayer=React.createElement("button",{onClick:()=>{initUiAudio();setProfileDraft(nickname);setScreen("PROFILE");},"aria-label":`プロフィール（${nickname||"Player"}）`,className:"inline-flex items-center gap-3 rounded-2xl text-left active:scale-[.98]",style:{minWidth:220,maxWidth:320,minHeight:60,padding:"0 16px 0 12px",...HEX_MENU_SURFACE}},
     React.createElement(HexAvatar,{name:nickname||"Player",size:38}),
     React.createElement("div",{className:"min-w-0 flex-1"},

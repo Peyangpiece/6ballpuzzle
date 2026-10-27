@@ -19,7 +19,7 @@
   効果音と球の画像）を事前キャッシュし、ページ遷移はネットワーク優先・失敗時にキャッシュを返すため、デプロイは次回の起動で
   反映されます。BGM と Range リクエスト、Firebase など他オリジンの通信には関与しません。キャッシュ名はバンドルの内容から決まり、
   新しい版が有効になると古いキャッシュを削除します。`/sw.js` は `no-cache` で配信します。
-- アイコンを作り直すときは `python3 tools/make-icons.py`（Pillow が必要）を実行して `public/icons/` をコミットします。
+- ロゴとアイコンを作り直すときは `python3 tools/make-brand.py`（`pip install fonttools cairosvg` と Inter フォントが必要）を実行し、`brand/`・`public/icons/`・`public/assets/drop-ball-logo.svg` をコミットします。
 
 手元から配信物を確認する:
 
