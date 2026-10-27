@@ -5,7 +5,7 @@
 
 | ファイル | 用途 | 出所 / ライセンス |
 | --- | --- | --- |
-| `assets/6ball-battle-bgm.ogg` (Opus 48kbps) / `.m4a` (AAC 80kbps) | 対戦中 BGM | リポジトリ所有者が用意した 15 分の楽曲「6 Ball Puzzle」を再エンコード。原曲の作者・ライセンスは所有者が確認してここに記載すること |
+| `assets/6ball-battle-bgm.ogg` (Opus 96kbps) / `.m4a` (AAC 128kbps) | 対戦中 BGM（3 分・継ぎ目なしループ） | `tools/make-bgm.py` がコードで作曲・合成したオリジナル曲「Glass Cascade」（旋律・和声進行の配置・音色・ドラム・残響はすべて本作用に作成、外部の音源やサンプルは不使用）。テンポ 160 BPM・4/4・ハ長調という一般的な性質だけを旧曲に合わせた。2026-10 に、出所不明だった旧 15 分曲から置き換え |
 | `assets/menu-confirm-42.mp3` | メニュー決定音 | 所有者アップロードの「決定ボタンを押す42.mp3」。出所サイト・ライセンスは所有者が確認して記載すること |
 | `assets/normal-ball-rotate-v14.mp3`, `normal-ball-rotate-v15-clear.wav` | 回転音 | 所有者作成 |
 | `assets/instant-drop-land-v10.wav` | ハードドロップ着地音 | 所有者作成 |
@@ -16,7 +16,7 @@
 | `vendor/react@18.3.1/*.min.js` | React / ReactDOM | MIT License (Meta Platforms, Inc.) |
 | `tailwind.css` | 生成 CSS | Tailwind CSS v3.4.17, MIT License |
 
-2026-10 の整理で削除したもの: `6ball-battle-bgm.mp3`（21.6 MB、上記に再エンコード）、`maou_bgm_cyber44.mp3`、
+2026-10 の整理で削除したもの: `6ball-battle-bgm.mp3`（21.6 MB の旧曲。その再エンコード版も 2026-10 に新曲へ置き換え）、`maou_bgm_cyber44.mp3`、
 `maou_se_sound_footstep02.wav`、`6ball-rotate.mp3`、`normal-ball-rotat.mp3`、`normal-ball-rotate.mp3`、`回転.mp3`
 （いずれもコードから参照されていませんでした）。魔王魂（maou.audio）由来の素材は配信物に含まれていません。
 

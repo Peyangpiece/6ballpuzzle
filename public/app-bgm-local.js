@@ -5,12 +5,12 @@
   if(typeof window==="undefined"||window.__sixBallLocalBgmInstalled)return;
   window.__sixBallLocalBgmInstalled=true;
 
-  // The battle BGM ships as Opus (5.7 MB) with an AAC fallback (9.2 MB)
-  // instead of the former 21.6 MB MP3.  The browser picks the first format
-  // it can decode; both are re-encodes of the same 15-minute source.
+  // The battle BGM is an original 3-minute loop rendered by tools/make-bgm.py,
+  // shipped as Opus (2.9 MB) with an AAC fallback (3.1 MB).  The browser
+  // picks the first format it can decode.
   const SOURCES=[
-    {src:"/assets/6ball-battle-bgm.ogg?v=1a8a07a1867c",type:'audio/ogg; codecs="opus"'},
-    {src:"/assets/6ball-battle-bgm.m4a?v=b54f4700e776",type:'audio/mp4; codecs="mp4a.40.2"'}
+    {src:"/assets/6ball-battle-bgm.ogg?v=28e28987afa2",type:'audio/ogg; codecs="opus"'},
+    {src:"/assets/6ball-battle-bgm.m4a?v=0537aa218fe2",type:'audio/mp4; codecs="mp4a.40.2"'}
   ];
   function pickSource(){
     try{
