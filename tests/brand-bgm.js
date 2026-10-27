@@ -17,7 +17,7 @@ expect(brand.includes('v==="HEXDROP"?"6ball":v'), 'visible old app name is not b
 expect(brand.includes('window.__sixBallUsesGameBallAssets=true'), 'game-ball menu art marker missing');
 expect(brand.includes('src:BALL_SRC[ci]'), 'menu illustration is not using gameplay BALL_SRC assets');
 const gameplay = fs.readFileSync(path.join(root, 'public/app-10.js'), 'utf8');
-for (const s of ['ball-red.png', 'ball-blue.png', 'ball-green.png', 'ball-yellow.png', 'ball-purple.png']) {
+for (const s of ['ball-glass-red.png', 'ball-glass-blue.png', 'ball-glass-green.png', 'ball-glass-yellow.png', 'ball-glass-purple.png']) {
   expect(gameplay.includes(s), `missing gameplay ball asset ${s}`);
   expect(fs.existsSync(path.join(root, 'public/assets', s)), `ball asset file missing ${s}`);
 }
