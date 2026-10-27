@@ -5,13 +5,13 @@
     if(typeof window==="undefined"||window.__sixBallBrandInstalled)return;
     window.__sixBallBrandInstalled=true;
     window.__sixBallBrandVersion="6ball-brand-v2";
-    window.__sixBallAppName="6ball";
+    window.__sixBallAppName="ハニカムパズル";
 
     if(typeof React!=="undefined"&&React.createElement&&!React.__sixBallNameBridge){
         const baseCreateElement=React.createElement.bind(React);
         React.__sixBallNameBridge=true;
         React.createElement=function(type,props,...children){
-            const renamed=children.map(v=>v==="HEXDROP"?"6ball":v);
+            const renamed=children.map(v=>v==="HEXDROP"?"ハニカムパズル":v);
             return baseCreateElement(type,props,...renamed);
         };
     }
@@ -35,7 +35,7 @@
         HexMenuShell=function(props){
             const p={...(props||{})};
             if(p.title==="設定"){
-                const credit=React.createElement("div",{key:"sixball-bgm-credit",className:"mt-3 text-center text-[11px] font-semibold text-white/60 leading-relaxed"},"BGM：6 Ball Puzzle");
+                const credit=React.createElement("div",{key:"sixball-bgm-credit",className:"mt-3 text-center text-[11px] font-semibold text-white/60 leading-relaxed"},"BGM：Glass Cascade");
                 p.children=React.createElement(React.Fragment,null,p.children,credit);
             }
             return baseShell(p);

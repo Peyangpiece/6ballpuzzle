@@ -11,10 +11,13 @@
 | `assets/instant-drop-land-v10.wav` | ハードドロップ着地音 | 所有者作成 |
 | `assets/ball-position-lock-v6-buin.wav` | 位置確定音 | 所有者作成 |
 | `assets/ball-glass-{red,blue,green,yellow,purple}.png` | 球（盤面・メニュー共通、192px） | `tools/make-balls.py` がコードで描画したオリジナル作品（ガラス玉の陰影・映り込みと、色ごとの内部模様: 赤＝キャッツアイ、青＝水面の光の網目、緑＝クラックル、黄＝サンバースト、紫＝星雲）。2026-10 に、原作の球に似ていた旧画像から置き換え |
-| `assets/6ball-logo-source.jpg`, `6ball-logo-transparent.png` | ロゴ | 所有者作成 |
-| `icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png` | アプリのアイコン（ホーム画面・インストール） | `assets/6ball-logo-transparent.png` から `tools/make-icons.py` で生成 |
+| `assets/honeycomb-logo.png` | タイトルのエンブレム（ホーム画面） | `tools/make-logo.py` が上記の球画像から描画（7 球のハニカムと琥珀色の六角形）。タイトル文字は画像ではなくページの文字 |
+| `assets/6ball-logo-source.jpg` | 旧ロゴ（`app-menu-ui.js` の旧ロゴ部品が参照。表示は `app-brand-bgm.js` が差し替えるため画面には出ない） | 所有者作成 |
+| `icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png` | アプリのアイコン（ホーム画面・インストール） | `assets/honeycomb-logo.png` から `tools/make-icons.py` で生成 |
 | `vendor/react@18.3.1/*.min.js` | React / ReactDOM | MIT License (Meta Platforms, Inc.) |
 | `tailwind.css` | 生成 CSS | Tailwind CSS v3.4.17, MIT License |
+
+2026-10 に名称を「ハニカムパズル」へ変更し、「6」の旧ロゴ `6ball-logo-transparent.png` を削除。
 
 2026-10 の整理で削除したもの: `6ball-battle-bgm.mp3`（21.6 MB の旧曲。その再エンコード版も 2026-10 に新曲へ置き換え）、`maou_bgm_cyber44.mp3`、
 `maou_se_sound_footstep02.wav`、`6ball-rotate.mp3`、`normal-ball-rotat.mp3`、`normal-ball-rotate.mp3`、`回転.mp3`

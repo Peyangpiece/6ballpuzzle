@@ -172,7 +172,10 @@ const loginWithGoogle=async()=>{
 };
 // HOME. Left: the logo and the player's card (opens the profile). Right: the
 // quiet links (ランキング / 遊び方 / 設定) above the four actions. Nothing else.
-const homeLogo=React.createElement("img",{src:"/assets/6ball-logo-transparent.png",alt:"6ball",draggable:false,style:{height:"clamp(180px,36vh,300px)",width:"auto",objectFit:"contain",filter:"saturate(1.08) contrast(1.03) brightness(1.04) drop-shadow(0 18px 28px rgba(0,0,0,.30))"}});
+const homeLogo=React.createElement("div",{className:"flex flex-col items-center",style:{gap:"clamp(6px,1.4vh,12px)"}},
+    React.createElement("img",{src:"/assets/honeycomb-logo.png",alt:"",draggable:false,style:{height:"clamp(130px,27vh,230px)",width:"auto",objectFit:"contain",filter:"saturate(1.05) drop-shadow(0 18px 28px rgba(0,0,0,.30))"}}),
+    React.createElement("h1",{className:"m-0 text-center font-black text-white",style:{fontSize:"clamp(26px,5.4vh,44px)",letterSpacing:".06em",lineHeight:1.1,textShadow:"0 2px 0 rgba(122,70,8,.9), 0 0 18px rgba(255,176,32,.35)"}},"ハニカムパズル"),
+    React.createElement("div",{className:"text-center font-bold",style:{fontSize:"clamp(10px,1.8vh,13px)",letterSpacing:".32em",color:"rgba(255,206,110,.85)"}},"HONEYCOMB PUZZLE"));
 const homePlayer=React.createElement("button",{onClick:()=>{initUiAudio();setProfileDraft(nickname);setScreen("PROFILE");},"aria-label":`プロフィール（${nickname||"Player"}）`,className:"inline-flex items-center gap-3 rounded-2xl text-left active:scale-[.98]",style:{minWidth:220,maxWidth:320,minHeight:60,padding:"0 16px 0 12px",...HEX_MENU_SURFACE}},
     React.createElement(HexAvatar,{name:nickname||"Player",size:38}),
     React.createElement("div",{className:"min-w-0 flex-1"},

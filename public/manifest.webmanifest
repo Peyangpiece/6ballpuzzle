@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "6ball",
-  "short_name": "6ball",
+  "name": "ハニカムパズル",
+  "short_name": "ハニカムパズル",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

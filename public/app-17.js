@@ -126,7 +126,7 @@ function hexTutorialSteps() {
     const kind = hexInputKind();
     const kindName = kind === "touch" ? "タッチ" : kind === "pad" ? "コントローラー" : "キーボード";
     return [
-        { title: "6ballへようこそ", art: React.createElement(TutBalls, { cells: [[1, 0, 0], [0, 1, 3], [2, 1, 1]], d: 54, label: "3個1組の三角ピース" }),
+        { title: "ハニカムパズルへようこそ", art: React.createElement(TutBalls, { cells: [[1, 0, 0], [0, 1, 3], [2, 1, 1]], d: 54, label: "3個1組の三角ピース" }),
           body: ["上から落ちてくる、3個1組の三角ピースを積んでいきます。", "同じ色の球をつなげて消し、技で相手を攻撃します。", "球が盤面からあふれた方の負けです。"] },
         { title: `操作（${kindName}）`, art: null, rows: HEX_CONTROL_GUIDES[kind],
           body: ["ほかの入力方法の操作は、ホームの「遊び方」で確認できます。"] },
