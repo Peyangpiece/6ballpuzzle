@@ -44,6 +44,8 @@ const [netErr, setNetErr] = useState(null);
 const [googleUser,setGoogleUser]=useState(null);
 const [googleBusy,setGoogleBusy]=useState(false);
 const [googleErr,setGoogleErr]=useState("");
+const [deleteState,setDeleteState]=useState("idle");
+const [deleteErr,setDeleteErr]=useState("");
 const [ranking,setRanking]=useState({status:"idle",rows:[],me:null});
 const [foeConn, setFoeConn] = useState(true);
 const [roomErr, setRoomErr] = useState("");
@@ -225,6 +227,24 @@ const rankingScreen=screen==="RANKING"&&React.createElement(HexMenuShell,{title:
         ranking.rows.length>0&&React.createElement("div",{"data-hex-ranking":"1",className:"grid gap-0.5"},ranking.rows.map(rankingRow))),
     ranking.status==="ok"&&!rankingMine&&React.createElement("div",{className:"mt-3 px-1 text-[12px] text-white/60"},ranking.rows.length<50?`あなたのレートは ${rating} です。オンライン対戦（レート戦）を1回するとランキングに載ります。`:`あなたのレートは ${rating} です。上位50位に入るとここに載ります。`));
 const profileBests=screen==="PROFILE"?hexBests():null,profileCpu=screen==="PROFILE"?hexCpuRecord():null;
+// Account deletion (app-account-delete-v1.js). Net.deleteAccount() is called
+// in the click itself so that a sign-in popup it needs is not blocked.
+const deleteAccount=()=>{
+    if(deleteState==="busy")return;
+    if(deleteState!=="confirm"){setDeleteState("confirm");setDeleteErr("");return;}
+    initUiAudio();setDeleteState("busy");setDeleteErr("");
+    let pending;
+    try{pending=Net.deleteAccount();}catch(err){pending=Promise.reject(err);}
+    pending.then(()=>{try{window.location.reload();}catch(_){}}).catch((err)=>{
+        const code=String(err?.code||"");
+        setDeleteState("confirm");
+        if(code==="auth/popup-closed-by-user"||code==="auth/cancelled-popup-request")return;
+        console.error("delete account",err);
+        setDeleteErr(code==="auth/requires-recent-login"?"データは削除しました。アカウントの削除には再ログインが必要なため、ログアウトしました。もう一度ログインしてから削除してください。"
+            :code==="auth/popup-blocked"?"ログイン画面が開けませんでした。もう一度「削除する」を押してください。"
+            :"削除できませんでした。通信状態を確認して、もう一度お試しください。");
+    });
+};
 const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プロフィール",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"minmax(260px,.9fr) minmax(0,1.1fr)",gap:14}},
         React.createElement(HexPanel,{accent:"cyan",className:"p-5 flex items-center gap-4"},
@@ -249,7 +269,14 @@ const profile=screen==="PROFILE"&&React.createElement(HexMenuShell,{title:"プ�
             React.createElement("div",{className:"text-[15px] font-bold text-white"},googleSignedIn?"Googleログイン済み":"戦績のバックアップ"),
             React.createElement("div",{className:"mt-1 text-[13px] leading-relaxed text-white/55"},googleSignedIn?"戦績とレートはGoogleアカウントに引き継がれます。":"戦績とレートはこのブラウザだけに保存されています。Googleでログインすると、ほかの端末でも引き継げます。"),
             googleErr&&React.createElement("div",{role:"alert",className:"mt-2 text-[12px] font-semibold",style:{color:"#ff9bbf"}},googleErr)),
-        !googleSignedIn&&React.createElement("button",{disabled:googleBusy,onClick:loginWithGoogle,className:"inline-flex items-center gap-2.5 rounded-xl pl-3.5 pr-5 text-[14px] font-bold text-white active:scale-[.98] disabled:opacity-60",style:{minHeight:44,...HEX_MENU_SURFACE}},React.createElement("span",{"aria-hidden":"true",className:"flex items-center justify-center rounded-full font-bold",style:{width:22,height:22,background:"#fff",color:"#202124",fontSize:13}},"G"),googleBusy?"ログイン中…":"Googleでログイン"))));
+        !googleSignedIn&&React.createElement("button",{disabled:googleBusy,onClick:loginWithGoogle,className:"inline-flex items-center gap-2.5 rounded-xl pl-3.5 pr-5 text-[14px] font-bold text-white active:scale-[.98] disabled:opacity-60",style:{minHeight:44,...HEX_MENU_SURFACE}},React.createElement("span",{"aria-hidden":"true",className:"flex items-center justify-center rounded-full font-bold",style:{width:22,height:22,background:"#fff",color:"#202124",fontSize:13}},"G"),googleBusy?"ログイン中…":"Googleでログイン")),
+    React.createElement(HexPanel,{className:"p-5 flex items-center gap-4 flex-wrap",style:{gridColumn:"1 / -1"}},
+        React.createElement("div",{"data-hex-account-delete":"1",className:"flex-1 min-w-[240px]"},
+            React.createElement("div",{className:"text-[15px] font-bold text-white"},"アカウントを削除"),
+            React.createElement("div",{className:"mt-1 text-[13px] leading-relaxed text-white/55"},deleteState==="idle"?"オンラインの戦績・レート・ランキングの登録と、この端末に保存した戦績を削除します。":"本当に削除しますか？ オンラインの戦績・レート・ランキングの登録と、この端末の戦績が消え、元に戻せません。"),
+            deleteErr&&React.createElement("div",{role:"alert",className:"mt-2 text-[12px] font-semibold",style:{color:"#ff9bbf"}},deleteErr)),
+        deleteState!=="idle"&&React.createElement("button",{disabled:deleteState==="busy",onClick:()=>{setDeleteState("idle");setDeleteErr("");},className:"rounded-xl px-5 text-[14px] font-bold text-white/80 active:scale-[.98] disabled:opacity-50",style:{minHeight:44,...HEX_MENU_SURFACE}},"やめる"),
+        React.createElement("button",{disabled:deleteState==="busy",onClick:deleteAccount,className:"rounded-xl px-5 text-[14px] font-bold active:scale-[.98] disabled:opacity-60",style:{minHeight:44,color:deleteState==="idle"?"#ff9bbf":"#fff",background:deleteState==="idle"?"rgba(255,59,77,.08)":"#d6293c",border:"1px solid rgba(255,59,77,.45)"}},deleteState==="busy"?"削除中…":deleteState==="confirm"?"削除する":"アカウントを削除…"))));
 const settings=screen==="SETTINGS"&&React.createElement(HexMenuShell,{title:"設定",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:shortHome?10:14}},
         React.createElement("div",{className:shortHome?"space-y-2.5":"space-y-3.5"},
@@ -259,7 +286,8 @@ const settings=screen==="SETTINGS"&&React.createElement(HexMenuShell,{title:"設
             (typeof navigator!=="undefined"&&typeof navigator.vibrate==="function")&&React.createElement(HexSettingToggle,{label:"振動",value:haptics,onChange:setHaptics,accent:"pink"}),
             React.createElement(HexSettingToggle,{label:"色の記号表示",caption:"球に色ごとの記号を重ね、色だけに頼らず見分けられます",value:colorSymbols,onChange:setColorSymbols,accent:"cyan"})),
         React.createElement("div",{className:"flex justify-center",style:{gridColumn:"1 / -1"}},
-            React.createElement("button",{onClick:()=>{setBgmVolume(70);setSfxVolume(85);setHaptics(true);setOffset(false);setColorSymbols(false);},className:"rounded-xl px-5 text-[14px] font-semibold text-white/70 active:scale-[.98]",style:{minHeight:44}},"初期設定に戻す"))));
+            React.createElement("button",{onClick:()=>{setBgmVolume(70);setSfxVolume(85);setHaptics(true);setOffset(false);setColorSymbols(false);},className:"rounded-xl px-5 text-[14px] font-semibold text-white/70 active:scale-[.98]",style:{minHeight:44}},"初期設定に戻す"),
+            React.createElement("a",{href:"/privacy.html",target:"_blank",rel:"noopener","data-hex-privacy-link":"1",className:"inline-flex items-center rounded-xl px-5 text-[14px] font-semibold text-white/70 underline-offset-4 hover:underline",style:{minHeight:44}},"プライバシーポリシー"))));
 const helpSection=(title,rows)=>React.createElement(HexPanel,{className:"p-5"},React.createElement("div",{className:"text-[15px] font-bold text-white mb-2"},title),React.createElement("dl",{className:"grid gap-1.5"},rows.map(([k,v])=>React.createElement("div",{key:k,className:"flex gap-3 text-[13px] leading-relaxed"},React.createElement("dt",{className:"shrink-0 font-black text-cyan-100",style:{width:"6.5em"}},k),React.createElement("dd",{className:"flex-1 min-w-0 text-white/80"},v)))));
 const help=screen==="HELP"&&React.createElement(HexMenuShell,{title:"遊び方",back:()=>setScreen("HOME"),wide:true},
     React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,300px),1fr))",gap:12}},

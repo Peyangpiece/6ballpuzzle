@@ -159,6 +159,13 @@ async function deny(label, p) { try { await assertFails(p); passed++; console.lo
   await ok("server mode: player reads own settlement", A.ref("matches/" + mid4 + "/settlement/uidA").get());
   await deny("server mode: outsider cannot read a settlement", C.ref("matches/" + mid4 + "/settlement/uidA").get());
 
+  console.log("account deletion");
+  await deny("B cannot delete A's leaderboard entry", B.ref("leaderboard/uidA").remove());
+  await deny("B cannot delete A's profile", B.ref("users/uidA").remove());
+  await ok("A deletes own leaderboard entry", A.ref("leaderboard/uidA").remove());
+  await ok("A deletes own profile", A.ref("users/uidA").remove());
+  await ok("a deleted account starts over at the starting values", A.ref("users/uidA").set(profile("uidA")));
+
   await env.cleanup();
   console.log(`\nfirebase rules: ${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);
