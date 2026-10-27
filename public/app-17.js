@@ -114,7 +114,7 @@ function RoomJoin({ code, onMatched, onCancel, onError }) {
 // Tutorial (HOME → チュートリアル). Step-by-step rules and controls, shown
 // outside the match so nothing covers the boards during play.
 const HEX_TUTORIAL_DONE_KEY = "hexdrop_tutorial_done";
-const HEX_BALL_SRC = ["/assets/ball-red.png", "/assets/ball-blue.png", "/assets/ball-green.png", "/assets/ball-yellow.png", "/assets/ball-purple.png"];
+const HEX_BALL_SRC = ["/assets/ball-glass-red.png", "/assets/ball-glass-blue.png", "/assets/ball-glass-green.png", "/assets/ball-glass-yellow.png", "/assets/ball-glass-purple.png"];
 // Balls on the game's lattice: x in half-ball steps, y in rows (row pitch = √3/2 · d).
 function TutBalls({ cells, d = 34, label }) {
     const maxX = Math.max(...cells.map(c => c[0])), maxY = Math.max(...cells.map(c => c[1]));

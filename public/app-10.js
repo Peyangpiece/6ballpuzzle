@@ -1,14 +1,14 @@
 /* =============================================================
  * ボール描画
- *   旧HEXDROPのPNGボール画像（赤・青・緑・黄・紫）を復元。
+ *   球の画像（赤・青・緑・黄・紫）は tools/make-balls.py が描画したオリジナル。
  *   画像はブラウザがデコード・キャッシュし、毎フレームはdrawImageのみ。
  * ============================================================= */
 const BALL_SRC = [
-    "assets/ball-red.png",
-    "assets/ball-blue.png",
-    "assets/ball-green.png",
-    "assets/ball-yellow.png",
-    "assets/ball-purple.png",
+    "assets/ball-glass-red.png",
+    "assets/ball-glass-blue.png",
+    "assets/ball-glass-green.png",
+    "assets/ball-glass-yellow.png",
+    "assets/ball-glass-purple.png",
 ];
 const BALL_IMG = BALL_SRC.map((src) => {
     if (typeof Image === "undefined") return null;

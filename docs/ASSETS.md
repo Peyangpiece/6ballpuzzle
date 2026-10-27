@@ -10,7 +10,7 @@
 | `assets/normal-ball-rotate-v14.mp3`, `normal-ball-rotate-v15-clear.wav` | 回転音 | 所有者作成 |
 | `assets/instant-drop-land-v10.wav` | ハードドロップ着地音 | 所有者作成 |
 | `assets/ball-position-lock-v6-buin.wav` | 位置確定音 | 所有者作成 |
-| `assets/ball-{red,blue,green,yellow,purple}.png` | メニューの球イラスト | 所有者作成 |
+| `assets/ball-glass-{red,blue,green,yellow,purple}.png` | 球（盤面・メニュー共通、192px） | `tools/make-balls.py` がコードで描画したオリジナル作品（ガラス玉の陰影・映り込みと、色ごとの内部模様: 赤＝キャッツアイ、青＝水面の光の網目、緑＝クラックル、黄＝サンバースト、紫＝星雲）。2026-10 に、原作の球に似ていた旧画像から置き換え |
 | `assets/6ball-logo-source.jpg`, `6ball-logo-transparent.png` | ロゴ | 所有者作成 |
 | `icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png` | アプリのアイコン（ホーム画面・インストール） | `assets/6ball-logo-transparent.png` から `tools/make-icons.py` で生成 |
 | `vendor/react@18.3.1/*.min.js` | React / ReactDOM | MIT License (Meta Platforms, Inc.) |
