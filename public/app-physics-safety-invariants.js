@@ -7,35 +7,9 @@
 
   const EPS=1e-9;
 
-  function explicitHorizontalPush(p){
-    if(!p)return false;
+  
 
-    const kind=String(p.kind||"").toUpperCase();
-
-    return !!(
-      p.isPush ||
-      p.pushedById ||
-      p.pushSourceId ||
-      p.contactPush ||
-      kind.includes("PUSH") ||
-      kind.includes("EJECT") ||
-      kind.includes("DISPLACE")
-    );
-  }
-
-  function legalPhysicalProposal(p){
-    if(!p)return false;
-
-    const dx=(Number(p.tx)||0)-(Number(p.x)||0);
-    const dy=(Number(p.ty)||0)-(Number(p.y)||0);
-
-    if(dy>EPS)return true;
-    if(dy<-EPS)return false;
-
-    if(Math.abs(dx)<=EPS)return false;
-
-    return explicitHorizontalPush(p);
-  }
+  
 
   if(typeof hexPhysGroupTranslationPlan==="function"){
     const baseGroupPlan=hexPhysGroupTranslationPlan;
@@ -60,114 +34,17 @@
   }
 
   if(typeof hexPhysApplyEvent==="function"){
-    const baseApply=hexPhysApplyEvent;
+    
 
-    hexPhysApplyEvent=function(b,accepted){
-      if(!Array.isArray(accepted)||!accepted.length)return false;
-
-      const invalidBundles=new Set();
-
-      for(const p of accepted){
-        if(!legalPhysicalProposal(p) && p?.bundleId){
-          invalidBundles.add(p.bundleId);
-        }
-      }
-
-      const safe=accepted.filter(p=>{
-        if(p?.bundleId && invalidBundles.has(p.bundleId))return false;
-
-        const ok=legalPhysicalProposal(p);
-
-        if(!ok){
-          window.__sixBallRejectedNonPhysicalMotion=
-            (window.__sixBallRejectedNonPhysicalMotion||0)+1;
-
-          window.__sixBallLastRejectedMotion={
-            x:p?.x,
-            y:p?.y,
-            tx:p?.tx,
-            ty:p?.ty,
-            kind:p?.kind||"",
-            id:p?.ball?.id||0,
-            at:performance.now()
-          };
-        }
-
-        return ok;
-      });
-
-      if(!safe.length)return false;
-
-      return baseApply(b,safe);
-    };
+    
   }
 
   if(typeof unstableFrozenBalls==="function"){
-    unstableFrozenBalls=function(b){
-      const out=[];
-
-      for(let y=boardScanMin(b);y<ROWS;y++){
-        for(let x=0;x<W2;x++){
-          if(!valid(x,y))continue;
-
-          const ball=b[y]?.[x];
-
-          if(
-            !ball ||
-            touchesFloorRow(y) ||
-            ballInBalancedHexagonRing(b,x,y) ||
-            ball.garbageBubbleHold
-          )continue;
-
-          const support=hexPhysSupportInfo(b,x,y);
-          const motion=hexPhysNaturalMotion(b,x,y);
-
-          if(ball.equilibriumLocked){
-            if(motion || support.count===0){
-              delete ball.equilibriumLocked;
-            }else{
-              continue;
-            }
-          }
-
-          if(!motion && support.count<2){
-            out.push({
-              x,y,
-              id:ball.id,
-              contacts:support.count
-            });
-          }
-        }
-      }
-
-      return out;
-    };
+    
   }
 
   if(typeof markCollisionBalancedGaps==="function"){
-    markCollisionBalancedGaps=function(b){
-      const stuck=unstableFrozenBalls(b);
-      let locked=0;
-
-      for(const q of stuck){
-        const ball=b[q.y]?.[q.x];
-        if(!ball)continue;
-
-        if(q.contacts>=1){
-          ball.equilibriumLocked=true;
-          locked++;
-        }else{
-          delete ball.equilibriumLocked;
-
-          if(ball.motionGroupId){
-            try{hexPhysClearGroupBall(ball);}catch(_){}
-            ball.rigid=false;
-          }
-        }
-      }
-
-      return locked;
-    };
+    
   }
 
   function boardIdSet(g){

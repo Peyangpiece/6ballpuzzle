@@ -1,37 +1,7 @@
 /* UI/UX layer v1 (no physics).
- * - Colour symbols: when the player enables "色の記号表示", every ball gets a
- *   white symbol per colour so the five colours can be told apart without hue.
  * - Gamepad menus: D-pad / stick moves focus between buttons, A presses,
  *   B goes back, + opens the pause menu during a match.
  */
-(function installColorSymbols(){
-    if(typeof window==="undefined"||typeof drawBall!=="function"||window.__sixBallColorSymbolsV1)return;
-    window.__sixBallColorSymbolsV1=true;
-    const baseDrawBall=drawBall;
-    // One distinct silhouette per colour index (red, blue, green, yellow, purple).
-    const SYMBOLS=[
-        (c,r)=>{c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,k=i%2?r*.45:r;c.lineTo(Math.cos(a)*k,Math.sin(a)*k);}c.closePath();},
-        (c,r)=>{c.beginPath();c.arc(0,0,r*.92,0,Math.PI*2);c.moveTo(r*.42,0);c.arc(0,0,r*.42,0,Math.PI*2,true);},
-        (c,r)=>{const t=r*.34;c.beginPath();c.rect(-t,-r,t*2,r*2);c.rect(-r,-t,r*2,t*2);},
-        (c,r)=>{c.beginPath();c.rect(-r,-r*.34,r*2,r*.68);},
-        (c,r)=>{c.beginPath();c.moveTo(0,-r);c.lineTo(r*.95,r*.75);c.lineTo(-r*.95,r*.75);c.closePath();}
-    ];
-    drawBall=function(ctx,cx,cy,d,ci,o={}){
-        baseDrawBall(ctx,cx,cy,d,ci,o);
-        if(!window.__sixBallColorSymbols)return;
-        const alpha=o.alpha===undefined?1:o.alpha,scale=o.scale===undefined?1:o.scale;
-        const size=d*scale;
-        if(size<12||alpha<.2||!SYMBOLS[ci])return;
-        ctx.save();
-        ctx.globalAlpha*=alpha;
-        ctx.translate(cx,cy);
-        SYMBOLS[ci](ctx,size*.2);
-        ctx.lineJoin="round";ctx.lineWidth=Math.max(1.5,size*.06);ctx.strokeStyle="rgba(10,8,24,.85)";ctx.stroke();
-        ctx.fillStyle="rgba(255,255,255,.95)";ctx.fill();
-        ctx.restore();
-    };
-})();
-
 (function installGamepadMenus(){
     if(typeof window==="undefined"||typeof navigator==="undefined"||typeof navigator.getGamepads!=="function"||window.__sixBallGamepadMenusV1)return;
     window.__sixBallGamepadMenusV1=true;

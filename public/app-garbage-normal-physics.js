@@ -56,20 +56,8 @@
     // set captured at phase start instead of rescanning every lattice cell on
     // every gravity proposal. Fallback scanning keeps diagnostic/manual boards
     // with ad-hoc garbagePhaseFrozen flags fully compatible.
-    const ordinaryContactEntries=hexPhysContactEntries;
-    hexPhysContactEntries=function(board,excluded=new Set()){
-        const blocked=new Set(excluded||[]);
-        const frozenIds=board?.__hexGarbageFrozenIds;
-        if(frozenIds instanceof Set){
-            for(const id of frozenIds)blocked.add(id);
-        }else{
-            for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){
-                const ball=valid(x,y)?board[y][x]:null;
-                if(ball?.garbagePhaseFrozen)blocked.add(ball.id);
-            }
-        }
-        return ordinaryContactEntries(board,blocked);
-    };
+    
+    
 
     // Garbage metadata must not create a special HEXAGON-hole exemption. Mixed
     // incoming colours behave exactly like mixed ordinary balls under gravity.
@@ -309,7 +297,6 @@
         if(pendingFallPathCount(g)!==0||!nearlySettled(g,NORMAL_GARBAGE_SETTLE_TOL))return false;
         return !hasLegalGravityMove(g.board);
     };
-    garbageVisualsDone=garbageBatchDone;
 
     finishGarbageVisuals=function(g){
         unfreezeExistingPile(g);

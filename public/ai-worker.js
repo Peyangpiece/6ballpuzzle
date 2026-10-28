@@ -36,7 +36,6 @@ var AI_WORKER_FILES=[
   "app-mass-motion-safety.js",
   "app-gravity-priority-v1.js",
   "app-garbage-performance-v1.js",
-  "app-post-clear-two-stage-v1.js",
   "app-garbage-continuous-v1.js",
   "app-contact-separation-v1.js",
   "app-floor-bridge-collapse-v1.js",

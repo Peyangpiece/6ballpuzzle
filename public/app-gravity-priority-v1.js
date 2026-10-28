@@ -1884,111 +1884,17 @@
      *
      * That is exactly what produced the circled screenshots.
      */
-    markCollisionBalancedGaps=function(b){
-
-        clearAllGapLocks(b);
-
-        window.__sixBallPreventedArchLocks=
-            (
-                window.__sixBallPreventedArchLocks||
-                0
-            )+1;
-
-        return 0;
-    };
+    
 
 
     /* ========================================================
      * STRICT UNSUPPORTED TEST
      * ======================================================== */
 
-    unstableFrozenBalls=function(b){
-
-        const out=[];
+    
 
 
-        for(
-            let y=boardScanMin(b);
-            y<ROWS;
-            y++
-        ){
-            for(let x=0;x<W2;x++){
-
-                if(!valid(x,y))
-                    continue;
-
-
-                const ball=b[y][x];
-
-                if(!ball)
-                    continue;
-
-
-                if(
-                    touchesFloorRow(y) ||
-                    ball.garbageBubbleHold
-                ){
-                    continue;
-                }
-
-
-                /*
-                 * Intentional HEXAGON centre remains legal.
-                 */
-                if(
-                    typeof ballInBalancedHexagonRing===
-                        "function" &&
-                    ballInBalancedHexagonRing(
-                        b,
-                        x,
-                        y
-                    )
-                ){
-                    continue;
-                }
-
-
-                const s=
-                    hexPhysSupportInfo(
-                        b,
-                        x,
-                        y
-                    );
-
-
-                const supportCount=
-                    Number.isFinite(s.realCount)
-                        ?s.realCount
-                        :s.count;
-
-
-                /*
-                 * One real ball or zero real balls is NOT
-                 * considered settled.
-                 *
-                 * Do not exclude equilibriumLocked balls.
-                 */
-                if(supportCount<2){
-
-                    out.push({
-                        x,
-                        y,
-                        id:ball.id,
-                        contacts:supportCount
-                    });
-                }
-            }
-        }
-
-
-        return out;
-    };
-
-
-    boardHasIllegalFloat=function(b){
-
-        return unstableFrozenBalls(b).length>0;
-    };
+    
 
 
     /* ========================================================
@@ -3045,22 +2951,7 @@
      * - rigid release v3
      * - gravity rescue v2
      */
-    function boardHasActualDownwardMove(b){
-
-        const p=
-            hexPhysResolveEvent(
-                b,
-                true
-            )||[];
-
-        return p.some(
-            q=>
-                q &&
-                Number.isFinite(q.y) &&
-                Number.isFinite(q.ty) &&
-                q.ty>q.y
-        );
-    }
+    
 
 
     /*
@@ -3155,75 +3046,13 @@
     };
 
 
-    boardHasIllegalFloat=function(b){
-
-        const unsupported=
-            unstableFrozenBalls(b);
-
-
-        if(!unsupported.length)
-            return false;
-
-
-        /*
-         * If the complete physics resolver can still find an
-         * actual downward event, SETTLE must continue.
-         */
-        if(
-            boardHasActualDownwardMove(b)
-        ){
-            return true;
-        }
-
-
-        /*
-         * No downward event exists.
-         *
-         * Do NOT manufacture a sideways move and do NOT enter
-         * an infinite SETTLE loop.
-         *
-         * This is especially important at a frictionless wall:
-         * the boundary can geometrically block the remaining
-         * direction even though it is not counted as a ball
-         * support.
-         */
-        window.__sixBallBlockedStableCount=
-            (
-                window.__sixBallBlockedStableCount||
-                0
-            )+unsupported.length;
-
-
-        window.__sixBallLastBlockedStable=
-            unsupported.map(
-                q=>({
-                    x:q.x,
-                    y:q.y,
-                    id:q.id,
-                    wall:q.wall,
-                    supports:q.contacts
-                })
-            );
-
-
-        return false;
-    };
+    
 
 
     /*
      * Keep the old arch-lock mechanism disabled.
      */
-    markCollisionBalancedGaps=function(b){
-
-        if(
-            typeof clearBoardEquilibriumLocks===
-                "function"
-        ){
-            clearBoardEquilibriumLocks(b);
-        }
-
-        return 0;
-    };
+    
 
 
     window.__sixBallGravityPriorityVersion=
@@ -4041,13 +3870,7 @@
      * This removes the freeze permanently.
      * ======================================================== */
 
-    boardHasIllegalFloat=function(b){
-
-        return settlePass(
-            b,
-            true
-        );
-    };
+    
 
 
     markCollisionBalancedGaps=function(b){
@@ -4152,8 +3975,7 @@
     const liveSettlePass=
         settlePass;
 
-    const liveBoardHasIllegalFloat=
-        boardHasIllegalFloat;
+    
 
 
     /* --------------------------------------------------------
@@ -4303,28 +4125,7 @@
     };
 
 
-    boardHasIllegalFloat=function(b){
-
-        if(
-            primitiveSimulationBoard(b)
-        ){
-            /*
-             * For an AI board, "illegal float" simply means
-             * another gravity move remains.
-             *
-             * No expensive live-board rescue machinery.
-             */
-            return simulationMove(
-                b,
-                true
-            );
-        }
-
-
-        return liveBoardHasIllegalFloat(
-            b
-        );
-    };
+    
 
 
     window.__sixBallGravityPriorityVersion=

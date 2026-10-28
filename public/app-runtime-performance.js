@@ -13,8 +13,6 @@
     const baseSafeActiveFallOffset=safeActiveFallOffset;
     const baseLandingShadowVisualCells=landingShadowVisualCells;
     const baseResolveVisualContacts=resolveVisualContacts;
-    const baseRigidShadowPixelPlacement=typeof rigidShadowPixelPlacement==="function"?rigidShadowPixelPlacement:null;
-    const baseDrawBall=typeof drawBall==="function"?drawBall:null;
 
     function boardStaticForActivePlay(g){
         return !!g&&g.state==="PLAYING"&&g.piece&&g._visualMovingIds instanceof Set&&g._visualMovingIds.size===0;
@@ -34,21 +32,7 @@
         return items;
     }
 
-    function staticVisualColliders(g){
-        if(!boardStaticForActivePlay(g))return null;
-        const scanMin=boardScanMin(g.board),ver=Number(g.ver)||0;
-        const cache=g._perfStaticVisualColliders;
-        if(cache&&cache.ver===ver&&cache.scanMin===scanMin)return cache.items;
-        const items=[];
-        for(let y=scanMin;y<ROWS;y++)for(let x=0;x<W2;x++){
-            const ball=valid(x,y)?g.board[y][x]:null;
-            if(!ball)continue;
-            const v=g.vis.get(ball.id)||{x,y};
-            items.push({x:v.x,y:v.y,id:ball.id});
-        }
-        g._perfStaticVisualColliders={ver,scanMin,items};
-        return items;
-    }
+    
 
     safeActiveFallOffset=function(g,cells,dx,dOff,desired){
         const colliders=staticLogicalColliders(g);
@@ -103,44 +87,6 @@
         return cs.map(([x,y,c])=>[x+dxGrid,y+rowOffset,c]);
     };
 
-    if(baseRigidShadowPixelPlacement){
-        rigidShadowPixelPlacement=function(g,shadowCells,pos,D,X,Y,BW,BH){
-            const colliders=staticVisualColliders(g);
-            if(!colliders)return baseRigidShadowPixelPlacement(g,shadowCells,pos,D,X,Y,BW,BH);
-            if(!shadowCells||!shadowCells.length)return [];
-            const pts=shadowCells.map(([sx,sy,sc])=>{const [px,py]=pos(sx,sy);return{px,py,sc};});
-            const floorCenter=Y+BH-D*.5;
-            let dy=0;
-            const deepest=Math.max(...pts.map(p=>p.py));
-            if(deepest+dy>floorCenter)dy=floorCenter-deepest;
-            // Each obstacle limits the same rigid translation. Accumulating
-            // penetrations with a stale gy over-corrects multi-ball contacts.
-            for(const gp of pts)for(const q of colliders){
-                const [bpX,bpY]=pos(q.x,q.y);
-                const ddx=Math.abs(gp.px-bpX);if(ddx>=D-1e-6)continue;
-                const vert=Math.sqrt(Math.max(0,D*D-ddx*ddx));
-                dy=Math.min(dy,bpY-vert-gp.py);
-            }
-            if(!Number.isFinite(dy))dy=0;
-            return pts.map(p=>[p.px,p.py+dy,p.sc]);
-        };
-    }
-
-    if(baseDrawBall){
-        drawBall=function(ctx,cx,cy,d,ci,o={}){
-            const alpha=o.alpha===undefined?1:o.alpha;
-            const scale=o.scale===undefined?1:o.scale;
-            const sq=o.sq===undefined?0:o.sq;
-            const aura=o.aura===undefined?0:o.aura;
-            const ring=o.ring===undefined?0:o.ring;
-            if(alpha===1&&scale===1&&sq===0&&aura===0&&ring===0&&d>1.2&&
-               ctx?.globalAlpha===1&&typeof imgReady==="function"&&imgReady(ci)){
-                ctx.drawImage(BALL_IMG[ci],cx-d/2,cy-d/2,d,d);
-                return;
-            }
-            return baseDrawBall(ctx,cx,cy,d,ci,o);
-        };
-    }
 
     resolveVisualContacts=function(g){
         if(boardStaticForActivePlay(g)){
@@ -154,7 +100,5 @@
     window.__hexStaticBoardContactPassSkipped=true;
     window.__hexActiveCollisionColliderCache=true;
     window.__hexLandingShadowColliderCache=true;
-    window.__hexRigidShadowVisualColliderCache=!!baseRigidShadowPixelPlacement;
-    window.__hexDefaultBallDrawFastPath=!!baseDrawBall;
     window.__hexPerformanceBehaviorParityRequired=true;
 })();

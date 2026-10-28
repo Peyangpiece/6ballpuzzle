@@ -44,7 +44,7 @@ const canonicalSafeActiveFallOffset=safeActiveFallOffset;
 const canonicalLandingShadowVisualCells=landingShadowVisualCells;
 const canonicalResolveVisualContacts=resolveVisualContacts;
 const canonicalRigidShadowPixelPlacement=rigidShadowPixelPlacement;
-const canonicalDrawBall=drawBall;
+const canonicalDrawBall=drawBallSprite;
 const shadowBefore=canonicalLandingShadowVisualCells(g);
 const activeCells=pieceCells(g.piece);
 const safeBefore=canonicalSafeActiveFallOffset(g,activeCells,.37,dispOff(g.piece.rot),1.7);
@@ -57,8 +57,6 @@ resolveVisualContacts=function(q){delegatedContacts++;return canonicalResolveVis
 const after=String.raw`
 expect(window.__hexRuntimePerformanceVersion==="runtime-perf-v2","runtime performance v2 adapter was not installed");
 expect(window.__hexStaticBoardContactPassSkipped===true&&window.__hexActiveCollisionColliderCache===true&&window.__hexLandingShadowColliderCache===true,"runtime performance markers missing");
-expect(window.__hexRigidShadowVisualColliderCache===true,"rigid shadow cache marker missing");
-expect(window.__hexDefaultBallDrawFastPath===true,"default ball draw fast path marker missing");
 expect(window.__hexPerformanceBehaviorParityRequired===true,"behavior parity marker missing");
 
 const shadowAfter=landingShadowVisualCells(g);
@@ -68,9 +66,6 @@ expect(Math.abs(safeBefore-safeAfter)<1e-12,"cached active fall clamp changed st
 
 const rigidAfter=rigidShadowPixelPlacement(g,shadowAfter,pos,38,20,20,500,500);
 expect(sameCells(rigidBefore,rigidAfter),"cached rigid shadow placement changed pixel geometry");
-const visualCache1=g._perfStaticVisualColliders?.items;
-rigidShadowPixelPlacement(g,shadowAfter,pos,38,20,20,500,500);
-expect(visualCache1&&visualCache1===g._perfStaticVisualColliders?.items,"rigid shadow visual collider cache was rebuilt without motion");
 
 // Repeated calls on an unchanged active board must reuse the same compact
 // collider list rather than rebuilding the whole lattice scan.

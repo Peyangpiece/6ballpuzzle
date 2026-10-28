@@ -17,7 +17,7 @@ const GROUPS = [
   [/^app-ai-/, "AI opponent"],
   [/^app-runtime-performance/, "performance"],
   [/^app-(physics-safety-invariants|mass-motion-safety|contact-separation-v1)\.js$/, "safety invariants"],
-  [/^app-(gravity-priority-v1|post-clear-two-stage-v1|floor-bridge-collapse-v1|lattice-finalize-v2|coherent-collapse-v1|collapse-vertical-merge-v1|pile-motion-authority-v2)\.js$/, "collapse scheduling authorities"],
+  [/^app-(gravity-priority-v1|floor-bridge-collapse-v1|lattice-finalize-v2|coherent-collapse-v1|collapse-vertical-merge-v1|pile-motion-authority-v2)\.js$/, "collapse scheduling authorities"],
   [/^app-(wall-boundary|slope-upconvex|intentional-hexagon|rigidity-|reference-|no-upward-bounce|even-row|split-visual|motion-smoothness)/, "rigidity / split authorities (Nintendo reference)"],
   [/^controls-/, "input"],
   [/^app-switch-gamepad/, "input"]

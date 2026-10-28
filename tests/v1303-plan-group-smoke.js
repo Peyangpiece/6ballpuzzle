@@ -37,7 +37,6 @@ const files = [
   "app-mass-motion-safety.js",
   "app-gravity-priority-v1.js",
   "app-garbage-performance-v1.js",
-  "app-post-clear-two-stage-v1.js",
   "app-garbage-continuous-v1.js",
   "app-contact-separation-v1.js",
   "app-floor-bridge-collapse-v1.js",
@@ -77,7 +76,7 @@ const separatelyTested = new Set([
   "app-bgm-local.js", "app-audio-volume-control.js", "app-menu-volume-fix.js", "app-audio-element-gain-v1.js",
   "app-rotate-sfx.js", "app-instant-drop-sfx.js", "app-16.js",
   "app-ai-core.js", "app-position-lock-sfx.js",
-  "controls-v7.js", "app-switch-gamepad-authoritative-v1.js", "app-ui-ux-v1.js", "app-mobile-performance-v1.js"
+  "controls-v7.js", "app-switch-gamepad-authoritative-v1.js", "app-ui-ux-v1.js"
 ]);
 if (new Set(publishedFiles).size !== publishedFiles.length) {
   throw new Error("Duplicate production runtime layer");

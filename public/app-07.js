@@ -44,7 +44,7 @@ ballInBalancedHexagonRing=function(b,x,y){
     for(const [dx,dy] of HEX_RING_OFFSETS)if(isBalancedHexagonCenterHole(b,x-dx,y-dy))return true;
     return false;
 };
-boardHasIntentionalHexagonHole=function(b){for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isBalancedHexagonCenterHole(b,x,y))return true;return false;};
+function boardHasIntentionalHexagonHole(b){for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isBalancedHexagonCenterHole(b,x,y))return true;return false;}
 
 // A settled pile member is not a bead constrained to an invisible circular
 // rail.  Once support is lost its vertical component is ordinary gravity.  A
@@ -517,7 +517,7 @@ window.__sixBallPivotArcPreservesLogicalRadius=true;
 // rotation will actually be shown. The original check sampled only the logical
 // lattice row, so a piece that was already part-way through its fall could be
 // declared legal and then swing through a settled ball while the animation ran.
-rotate=function(g,dir){
+function rotate(g,dir){
     if(g.state!=="PLAYING"||!g.piece)return false;
     const nr=(g.piece.rot+(dir>0?1:5))%6,from={...g.piece},before=centroidOf(from);
     const fracNow=activeDropFraction(g,0),fracEnd=activeDropFraction(g,ROTATE_VISUAL_TIME),sweepFrac=Math.max(fracNow,fracEnd);
@@ -531,4 +531,4 @@ rotate=function(g,dir){
         const after=centroidOf(q);g.piece=q;g.rotAnim={p:0,dir:dir>0?1:-1,dx:before[0]-after[0],dy:before[1]-after[1]};emit(g,{t:"rotate"});if(g.lockT>0&&g.lockResets<12){g.lockT=0;g.lockResets++;}return true;
     }
     return false;
-};
+}

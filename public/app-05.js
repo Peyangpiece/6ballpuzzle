@@ -1,3 +1,7 @@
+// Every engine by its board: the physics layers that resolve a bare board look
+// up the live game (visual positions, motion batches) here.
+const ENGINE_BY_BOARD=new WeakMap();
+function engineOfBoard(board){return ENGINE_BY_BOARD.get(board);}
 function createEngine(seed,opts={}){
  const g={
   seed,rng:mulberry32(seed),aiRng:mulberry32((seed^0x41A7C15D)>>>0),fxRng:mulberry32((seed^0x9E3779B9)>>>0),
@@ -14,6 +18,7 @@ function createEngine(seed,opts={}){
   gameOverOverflow:[],gameOverReason:null,ai:null,alive:true,offset:opts.offset??false
  };
  for(let i=0;i<3;i++)g.queue.push(makeSet(g));
+ ENGINE_BY_BOARD.set(g.board,g);
  return g;
 }
 const mkBall=(g,c)=>({id:g.nextId++,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0});
@@ -81,11 +86,7 @@ function rotationSweepSafe(board,fromPiece,toPiece,dir){
  }
  return true;
 }
-function rotate(g,dir){
- if(g.state!=="PLAYING"||!g.piece)return false;const nr=(g.piece.rot+(dir>0?1:5))%6,from={...g.piece},before=centroidOf(from);
- for(const[kx,ky]of KICKS){const q={...from,rot:nr,x:from.x+kx,y:from.y+ky};if(!pieceFits(g.board,q)||!rotationSweepSafe(g.board,from,q,dir))continue;const after=centroidOf(q);g.piece=q;g.rotAnim={p:0,dir:dir>0?1:-1,dx:before[0]-after[0],dy:before[1]-after[1]};emit(g,{t:"rotate"});if(g.lockT>0&&g.lockResets<12){g.lockT=0;g.lockResets++;}return true;}
- return false;
-}
+
 function armHardDropImpact(g,target,dx,contactFrac){
  const cells=pieceCells(target).map(([x,y,c])=>[x+dx,y+contactFrac,c]);
  const max=HARD_DROP_IMPACT_DURATION;

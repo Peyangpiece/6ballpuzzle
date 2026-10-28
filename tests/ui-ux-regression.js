@@ -57,57 +57,55 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert(/else if \(!tutorialRef\.current\) stepEngine\(foe, h\)/.test(app16), "the tutorial must not simulate an opponent");
   assert(/onPractice:\(\)=>\{initUiAudio\(\);startTutorial\(0\);\}/.test(app16), "the tutorial cards lead into the playable lessons");
 
-  // --- Colour symbols are drawn only when enabled, one shape per colour.
-  const calls = [];
-  const fakeCtx = () => {
+  // --- Ball and background drawing (app-10.js), in the production physics stack.
+  const { ctx: game } = require("./v1303-plan-group-smoke.js");
+  // A canvas context that records every call; gradients are inert objects.
+  const recCtx = (extra = {}) => {
     const ops = [];
-    const c = { globalAlpha: 1, ops };
-    for (const m of ["save", "restore", "translate", "beginPath", "lineTo", "moveTo", "closePath", "arc", "rect", "stroke", "fill"]) c[m] = (...a) => ops.push(m + (m === "rect" || m === "arc" ? ":" + a.length : ""));
+    const c = new Proxy(Object.assign({ globalAlpha: 1, filter: "none", ops }, extra), {
+      get(t, k) {
+        if (k in t) return t[k];
+        if (typeof k !== "string") return undefined;
+        return (...a) => { ops.push(k); return /Gradient$/.test(k) ? { addColorStop() {} } : undefined; };
+      }
+    });
     return c;
   };
-  const cs = vm.createContext({ window: { __sixBallColorSymbols: false }, console, drawBall: (...a) => calls.push(a) });
-  vm.runInContext(read("app-ui-ux-v1.js") + "\nthis.draw = drawBall;", cs);
-  const off = fakeCtx(); cs.draw(off, 10, 10, 40, 0, {});
-  assert.strictEqual(calls.length, 1, "base ball must still be drawn");
-  assert(!off.ops.includes("fill"), "no symbol while the setting is off");
-  cs.window.__sixBallColorSymbols = true;
+  const symbolOps = c => { const i = c.ops.indexOf("translate"); return i < 0 ? null : c.ops.slice(i).join(","); };
+  // Colour symbols are drawn only when enabled, one shape per colour, after the ball.
+  game.__sixBallColorSymbols = false;
+  const off = recCtx(); game.drawBall(off, 10, 10, 40, 0, {});
+  assert(off.ops.length > 0, "the ball itself must still be drawn");
+  assert.strictEqual(symbolOps(off), null, "no symbol while the setting is off");
+  game.__sixBallColorSymbols = true;
   const shapes = new Set();
-  for (let ci = 0; ci < 5; ci++) { const k = fakeCtx(); cs.draw(k, 10, 10, 40, ci, {}); assert(k.ops.includes("fill"), "symbol for colour " + ci); shapes.add(k.ops.join(",")); }
+  for (let ci = 0; ci < 5; ci++) { const k = recCtx(); game.drawBall(k, 10, 10, 40, ci, {}); const sym = symbolOps(k); assert(sym && sym.includes("fill"), "symbol for colour " + ci); shapes.add(sym); }
   assert.strictEqual(shapes.size, 5, "each colour needs a distinct symbol");
-  const tiny = fakeCtx(); cs.draw(tiny, 10, 10, 8, 0, {}); assert(!tiny.ops.includes("fill"), "no symbol on tiny previews");
+  const tiny = recCtx(); game.drawBall(tiny, 10, 10, 8, 0, {}); assert.strictEqual(symbolOps(tiny), null, "no symbol on tiny previews");
+  game.__sixBallColorSymbols = false;
 
-  // --- Mobile performance: the static background is a CSS layer.
-  const perfLog = [];
-  const cp = vm.createContext({
-    window: {}, console, VW: 1280, VH: 720, STARS: [{ x: 1, y: 2, s: 2, a: 1, p: 0 }],
-    drawBackground: () => perfLog.push("base-bg"),
-    getStaticBackgroundCanvas: () => ({ toDataURL: () => "data:image/png;base64,AAA" })
-  });
-  vm.runInContext(read("app-mobile-performance-v1.js") + "\nthis.bg = drawBackground;", cp);
-  const bgCtx = marked => { const ops = []; return { ops, canvas: { __sixBallBgLayer: marked }, globalAlpha: 1, clearRect: () => ops.push("clear"), fillRect: () => ops.push("fill") }; };
-  const plain = bgCtx(false); cp.bg(plain, 0);
-  assert.deepStrictEqual(perfLog, ["base-bg"], "an unmarked canvas keeps the full background");
-  const layered = bgCtx(true); cp.bg(layered, 0);
-  assert.strictEqual(perfLog.length, 1, "a marked canvas must not redraw the static background");
-  assert.deepStrictEqual(layered.ops, ["clear", "fill"], "a marked canvas is cleared and gets only the stars");
-  assert.strictEqual(cp.window.__sixBallStaticBackgroundUrl(), "data:image/png;base64,AAA");
+  // Mobile performance: the static background is a CSS layer.
+  vm.runInContext("getStaticBackgroundCanvas=()=>({toDataURL:()=>'data:image/png;base64,AAA'});", game);
+  const plain = recCtx({ canvas: {} }); game.drawBackground(plain, 0);
+  assert(!plain.ops.includes("clearRect") && /drawImage|fillRect/.test(plain.ops[0]), "an unmarked canvas keeps the full background");
+  const layered = recCtx({ canvas: { __sixBallBgLayer: true } }); game.drawBackground(layered, 0);
+  assert.strictEqual(layered.ops[0], "clearRect", "a marked canvas is cleared first");
+  assert(!layered.ops.includes("drawImage"), "a marked canvas must not redraw the static background");
+  assert.strictEqual(game.__sixBallStaticBackgroundUrl(), "data:image/png;base64,AAA");
+
   // Defeat animation: a filtered ball draw uses a cached filtered sprite (one filter pass per colour).
   const sprites = [];
-  const fakeCanvas = () => { const c = { width: 0, height: 0, filterDraws: 0 }; c.getContext = () => ({ set filter(v) { c.filter = v; }, get filter() { return c.filter || "none"; }, drawImage() { c.filterDraws++; } }); sprites.push(c); return c; };
-  const base = [];
-  const cf = vm.createContext({ window: {}, console, document: { createElement: fakeCanvas }, BALL_IMG: [{ naturalWidth: 64, naturalHeight: 64 }], imgReady: () => true,
-    drawBackground: () => {}, drawBall: (...a) => base.push(a) });
-  vm.runInContext(read("app-mobile-performance-v1.js") + "\nthis.draw = drawBall;", cf);
+  game.document.createElement = () => { const c = { width: 0, height: 0, filterDraws: 0 }; c.getContext = () => ({ set filter(v) { c.filter = v; }, get filter() { return c.filter || "none"; }, drawImage() { c.filterDraws++; } }); sprites.push(c); return c; };
+  vm.runInContext("BALL_IMG[0]={complete:true,naturalWidth:64,naturalHeight:64};", game);
   const drawn = [];
   const ctx2 = { filter: "none", globalAlpha: 1, drawImage: (img, x, y, w, h) => drawn.push({ img, filter: ctx2.filter, w }) };
-  cf.draw(ctx2, 10, 10, 40, 0, {});
-  assert.strictEqual(base.length, 1, "unfiltered balls keep the normal drawing");
+  game.drawBall(ctx2, 10, 10, 40, 0, {});
+  assert.strictEqual(sprites.length, 0, "unfiltered balls keep the normal drawing");
   ctx2.filter = "grayscale(1)";
-  for (let i = 0; i < 5; i++) cf.draw(ctx2, 10, 10, 40, 0, {});
-  assert.strictEqual(base.length, 1, "filtered balls must not go through the per-draw filter");
+  for (let i = 0; i < 5; i++) game.drawBall(ctx2, 10, 10, 40, 0, {});
   assert.strictEqual(sprites.length, 1, "one cached sprite per colour and filter");
   assert.strictEqual(sprites[0].filterDraws, 1, "the filter is applied to the sprite once");
-  assert(drawn.length === 5 && drawn.every(d => d.filter === "none" && d.w === 40), "cached sprite drawn without a live filter");
+  assert(drawn.length === 6 && drawn.slice(1).every(d => d.filter === "none" && d.w === 40 && sprites.includes(d.img)), "cached sprite drawn without a live filter");
   assert.strictEqual(ctx2.filter, "grayscale(1)", "the caller's filter is restored");
   assert(/backgroundImage: `url\(\$\{bgLayerUrl\}\)`/.test(app16) && /cv\.__sixBallBgLayer = !!bgLayerUrl/.test(app16), "the App shows the static background behind the canvas");
 

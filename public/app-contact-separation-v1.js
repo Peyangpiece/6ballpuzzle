@@ -189,23 +189,7 @@
     }
 
 
-    function physicalDistance(
-        a,
-        b
-    ){
-
-        const [dx,dy]=
-            physicalDelta(
-                a,
-                b
-            );
-
-
-        return Math.hypot(
-            dx,
-            dy
-        );
-    }
+    
 
 
     function fallbackNormal(

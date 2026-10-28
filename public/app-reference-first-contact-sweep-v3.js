@@ -32,8 +32,6 @@ const basePathHitsStationary=hexPhysPathHitsStationary;
 const baseHexPhysAppendSegment=typeof hexPhysAppendSegment==="function"?hexPhysAppendSegment:null;
 const baseHexMotionDuration=typeof hexMotionDuration==="function"?hexMotionDuration:null;
 const baseLiveBatchPointAt=typeof liveBatchPointAt==="function"?liveBatchPointAt:null;
-const gameByBoard=new WeakMap();
-const baseCreateEngine=createEngine;
 /* Inner-half contacts start closer to the separator than the retired outer
  * contact case.  Use the collision-swept outward bow required to keep the
  * surviving pair tangent to that separator throughout the first segment. */
@@ -47,11 +45,6 @@ const REFERENCE_FIRST_CONTACT_PAIR_DURATION=REFERENCE_FIRST_CONTACT_PAIR_FRAMES/
 const REFERENCE_FIRST_CONTACT_SOLO_DURATION=REFERENCE_FIRST_CONTACT_SOLO_FRAMES/REFERENCE_CAPTURE_FPS;
 const REFERENCE_SOLO_CONTINUATION_DURATION=REFERENCE_SOLO_CONTINUATION_FRAMES/REFERENCE_CAPTURE_FPS;
 
-createEngine=function(...args){
-  const game=baseCreateEngine(...args);
-  if(game?.board&&typeof game.board==="object")gameByBoard.set(game.board,game);
-  return game;
-};
 
 function clamp01(v){return Math.max(0,Math.min(1,Number(v)||0));}
 function renderedPoint(x,y){
@@ -117,7 +110,7 @@ function renderedSweepHitsStationary(p,board,movingIds,game){
 
 hexPhysPathHitsStationary=function(p,board,movingIds){
   if(String(p?.kind||"")==="REFERENCE_FIRST_CONTACT_PAIR"){
-    const game=gameByBoard.get(board);
+    const game=engineOfBoard(board);
     const rendered=renderedSweepHitsStationary(p,board,movingIds,game);
     if(rendered!==null)return rendered;
   }

@@ -13,11 +13,6 @@ const basePlanGroup=hexPhysPlanGroup;
 const baseResolveEvent=typeof hexPhysResolveEvent==="function"?hexPhysResolveEvent:null;
 const baseSettlePass=typeof settlePass==="function"?settlePass:null;
 const baseApplyEvent=typeof hexPhysApplyEvent==="function"?hexPhysApplyEvent:null;
-const gameByBoard=new WeakMap();
-const baseCreateEngine=typeof createEngine==="function"?createEngine:null;
-if(baseCreateEngine){
- createEngine=function(...args){const g=baseCreateEngine(...args);if(g?.board)gameByBoard.set(g.board,g);return g;};
-}
 
 const FIELDS=["motionGroupId","motionGroupRole","motionGroupOrientation","motionGroupSize","rigid","momentumX","rollDir","subCellBias"];
 const EPS=2e-5;
@@ -80,7 +75,7 @@ function liveBusy(game,ball){
   v?.pileFlow||v?._pendingPathComplete
  );
 }
-function anyBusy(board,members){const game=gameByBoard.get(board);return!!game&&members.some(m=>liveBusy(game,m.ball));}
+function anyBusy(board,members){const game=engineOfBoard(board);return!!game&&members.some(m=>liveBusy(game,m.ball));}
 function splitPlan(plan,size){const moving=(plan||[]).filter(vec);return moving.some(p=>Number(p.groupSize)!==size);}
 function rigidPlan(plan,size){const moving=(plan||[]).filter(vec);return moving.length>0&&moving.every(p=>Number(p.groupSize)===size);}
 function pairPivotValid(members,actual,plan){
@@ -146,7 +141,7 @@ hexPhysPlanGroup=function(board,members,preview=false){
 };
 
 function ordinaryVisualMotionBusy(board){
- const game=gameByBoard.get(board);
+ const game=engineOfBoard(board);
  if(!game)return false;
  for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){
   const ball=valid(x,y)?board[y][x]:null;
@@ -192,7 +187,7 @@ if(baseResolveEvent){
 
 if(baseApplyEvent){
  hexPhysApplyEvent=function(board,accepted){
-  const game=gameByBoard.get(board),origins=new Map();
+  const game=engineOfBoard(board),origins=new Map();
   if(game&&Array.isArray(accepted))for(const p of accepted){
    const ball=p?.ball;if(!ball||typeof ball!=="object"||ball.isGarbage)continue;
    const v=game.vis?.get?.(ball.id);if(!v||!Number.isFinite(v.x)||!Number.isFinite(v.y))continue;

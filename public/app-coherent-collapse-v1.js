@@ -1119,30 +1119,8 @@
 
             if(
                 !liveObjectBoard(board) ||
-                !(
-                    board?.
-                        __coherentCollapseActive ||
-                    board?.
-                        __postClearTwoStage ||
-                    board?.
-                        __postClearChunkMode
-                )
-            ){
-
-                return baseSettlePass(
-                    board,
-                    preview
-                );
-            }
-
-
-            /*
-             * app-post-clear-two-stage owns the complete
-             * first vertical-collapse phase.
-             */
-            if(
-                board.__postClearTwoStage &&
-                board.__postClearStage!=="ARC"
+                !board?.
+                    __coherentCollapseActive
             ){
 
                 return baseSettlePass(

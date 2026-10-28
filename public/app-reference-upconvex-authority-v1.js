@@ -8,21 +8,12 @@ typeof hexPhysIndependentMemberMotion!=="function"
 window.__sixBallReferenceUpConvexAuthorityV1=true;
 window.__sixBallReferenceUpConvexAuthorityV2=true;
 const basePlanGroup=hexPhysPlanGroup;
-const liveEngineByBoard=new WeakMap();
 const FIRST_CONTACT_EPS=0.014;
 const FIRST_CONTACT_MIN=0.94;
 const INNER_CONTACT_MIN=0.25;
 const INNER_CONTACT_MAX=0.75;
 const INNER_CONTACT_EPS=1e-9;
 const NORMAL_LOCK_VY=3;
-if(typeof createEngine==="function"){
-const baseCreateEngine=createEngine;
-createEngine=function(...args){
-const game=baseCreateEngine(...args);
-if(game?.board&&typeof game.board==="object")liveEngineByBoard.set(game.board,game);
-return game;
-};
-}
 function memberId(value){return value?.ball?.id;}
 function vectorOf(step){
 if(!step)return null;
@@ -92,7 +83,7 @@ v?.pileFlow||v?.justReleased||v?._pendingPathComplete
 );
 }
 function firstUnilateralReleaseContact(board,members,layout){
-const game=liveEngineByBoard.get(board);
+const game=engineOfBoard(board);
 window.__sixBallReferenceFirstContactDiagnosticV2={phase:"scan",hasGame:!!game};
 if(!game)return null;
 window.__sixBallReferenceFirstContactDiagnosticV2.hasGame=true;

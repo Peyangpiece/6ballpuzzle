@@ -493,19 +493,6 @@
             return[];
 
 
-        /*
-         * During the initial post-clear phase ONLY vertical
-         * gravity is allowed. The two-stage layer will switch
-         * this to ARC before ordinary resolver motion begins.
-         */
-        if(
-            board?.
-                __postClearTwoStage &&
-            board.
-                __postClearStage!=="ARC"
-        ){
-            return[];
-        }
 
 
         const y=

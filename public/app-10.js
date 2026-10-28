@@ -21,7 +21,8 @@ const imgReady = (i) => {
     const im = BALL_IMG[i];
     return !!(im && im.complete && im.naturalWidth > 0);
 };
-function drawBall(ctx, cx, cy, d, ci, o = {}) {
+// One ball sprite with its squash, aura and ring.
+function drawBallSprite(ctx, cx, cy, d, ci, o = {}) {
     const { alpha = 1, scale = 1, sq = 0, aura = 0, ring = 0 } = o;
     const w = d * scale * (1 + sq * 0.45);
     const h = d * scale * (1 - sq * 0.6);
@@ -54,6 +55,62 @@ function drawBall(ctx, cx, cy, d, ci, o = {}) {
         ctx.beginPath(); ctx.ellipse(cx, cy + yShift, w * 0.6, h * 0.6, 0, 0, TAU);
         ctx.strokeStyle = "#FFFFFF"; ctx.lineWidth = w * 0.14; ctx.stroke();
     }
+    ctx.restore();
+}
+// Colour symbols ("色の記号表示"): a white silhouette per colour (red, blue,
+// green, yellow, purple) so the colours can be told apart without hue.
+const BALL_SYMBOLS=[
+    (c,r)=>{c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,k=i%2?r*.45:r;c.lineTo(Math.cos(a)*k,Math.sin(a)*k);}c.closePath();},
+    (c,r)=>{c.beginPath();c.arc(0,0,r*.92,0,Math.PI*2);c.moveTo(r*.42,0);c.arc(0,0,r*.42,0,Math.PI*2,true);},
+    (c,r)=>{const t=r*.34;c.beginPath();c.rect(-t,-r,t*2,r*2);c.rect(-r,-t,r*2,t*2);},
+    (c,r)=>{c.beginPath();c.rect(-r,-r*.34,r*2,r*.68);},
+    (c,r)=>{c.beginPath();c.moveTo(0,-r);c.lineTo(r*.95,r*.75);c.lineTo(-r*.95,r*.75);c.closePath();}
+];
+// The lost board is drawn through a grayscale canvas filter. A filtered draw
+// per ball is expensive (3-4 fps in software canvases), so the filter is
+// applied once per colour to a cached copy of the sprite.
+const FILTERED_BALL_SPRITES=new Map();
+function filteredBallSprite(ci,filter){
+    const key=ci+"|"+filter;let cv=FILTERED_BALL_SPRITES.get(key);
+    if(cv===undefined){
+        cv=null;
+        try{const img=BALL_IMG[ci],w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+            if(w&&h){cv=document.createElement("canvas");cv.width=w;cv.height=h;const c=cv.getContext("2d");if(c&&"filter" in c){c.filter=filter;c.drawImage(img,0,0);}else cv=null;}
+        }catch(_){cv=null;}
+        FILTERED_BALL_SPRITES.set(key,cv);
+    }
+    return cv;
+}
+function drawBall(ctx,cx,cy,d,ci,o={}){
+    const filter=ctx&&typeof ctx.filter==="string"?ctx.filter:"none";
+    if(!(filter==="none"||!(d>1.2)||(o.sq||0)!==0||(o.aura||0)!==0||(o.ring||0)!==0||!imgReady(ci))){
+        const sprite=filteredBallSprite(ci,filter);
+        if(sprite){
+            const alpha=o.alpha===undefined?1:o.alpha,scale=o.scale===undefined?1:o.scale,s=d*scale;
+            if(alpha<=0||s<=0)return;
+            const a0=ctx.globalAlpha;ctx.filter="none";ctx.globalAlpha=a0*alpha;
+            ctx.drawImage(sprite,cx-s/2,cy-s/2,s,s);
+            ctx.globalAlpha=a0;ctx.filter=filter;
+            return;
+        }
+    }
+    const alpha=o.alpha===undefined?1:o.alpha;
+    const scale=o.scale===undefined?1:o.scale;
+    const sq=o.sq===undefined?0:o.sq;
+    const aura=o.aura===undefined?0:o.aura;
+    const ring=o.ring===undefined?0:o.ring;
+    // The plain case (most balls every frame) skips the save/restore.
+    if(alpha===1&&scale===1&&sq===0&&aura===0&&ring===0&&d>1.2&&ctx?.globalAlpha===1&&imgReady(ci))ctx.drawImage(BALL_IMG[ci],cx-d/2,cy-d/2,d,d);
+    else drawBallSprite(ctx,cx,cy,d,ci,o);
+    if(!window.__sixBallColorSymbols)return;
+    const size=d*scale;
+    if(size<12||alpha<.2||!BALL_SYMBOLS[ci])return;
+    ctx.save();
+    ctx.globalAlpha*=alpha;
+    ctx.translate(cx,cy);
+    BALL_SYMBOLS[ci](ctx,size*.2);
+    ctx.lineJoin="round";ctx.lineWidth=Math.max(1.5,size*.06);ctx.strokeStyle="rgba(10,8,24,.85)";ctx.stroke();
+    ctx.fillStyle="rgba(255,255,255,.95)";ctx.fill();
     ctx.restore();
 }
 
@@ -412,8 +469,14 @@ function getStaticBackgroundCanvas(){
     c.globalAlpha=1;
     STATIC_BG_CANVAS=cv;return cv;
 }
+// The App shows the static background once, as the CSS background of the
+// canvas wrapper (__sixBallStaticBackgroundUrl), and marks the canvas with
+// __sixBallBgLayer: then the canvas is only cleared and gets what changes
+// (twinkling stars, attack wash). Copying the full background every frame cost
+// phones about as much as the rest of the frame.
 function drawBackground(ctx,t,me=null,foe=null){
-    const bg=getStaticBackgroundCanvas();if(bg)ctx.drawImage(bg,0,0,VW,VH);else{ctx.fillStyle="#080617";ctx.fillRect(0,0,VW,VH);}
+    if(ctx&&ctx.canvas&&ctx.canvas.__sixBallBgLayer&&typeof ctx.clearRect==="function")ctx.clearRect(0,0,VW,VH);
+    else{const bg=getStaticBackgroundCanvas();if(bg)ctx.drawImage(bg,0,0,VW,VH);else{ctx.fillStyle="#080617";ctx.fillRect(0,0,VW,VH);}}
     for(const s of STARS){ctx.globalAlpha=s.a*(0.55+0.45*Math.sin(t*1.6+s.p));ctx.fillStyle="#EAF3FF";ctx.fillRect(s.x,s.y,s.s,s.s);}
     ctx.globalAlpha=1;
     const active=[...(me?.fx?.formations||[]),...(foe?.fx?.formations||[])].sort((a,b)=>(b.life/b.max)-(a.life/a.max))[0];
@@ -426,6 +489,13 @@ function drawBackground(ctx,t,me=null,foe=null){
         ctx.fillStyle=wash;ctx.fillRect(0,0,VW,VH);ctx.restore();
     }
 }
+// Data URL of the static background, for the App's CSS background layer.
+let STATIC_BG_URL=null;
+if(typeof window!=="undefined")window.__sixBallStaticBackgroundUrl=function(){
+    if(STATIC_BG_URL)return STATIC_BG_URL;
+    try{const cv=getStaticBackgroundCanvas();if(cv)STATIC_BG_URL=cv.toDataURL("image/png");}catch(_){STATIC_BG_URL=null;}
+    return STATIC_BG_URL;
+};
 
 function drawAttackFlights(ctx,orbs){
     for(const o of orbs||[]){

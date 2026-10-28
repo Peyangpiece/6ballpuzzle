@@ -38,44 +38,11 @@
         try{a.load();}catch(_){}
         return a;
     });
-    let rotateAudioCursor=0;
+    
 
-    function rotateAudioVolume(){
-        try{
-            const v=Number(localStorage.getItem("hexdrop_sfx_volume"));
-            if(Number.isFinite(v))return Math.max(0,Math.min(1,v/100));
-        }catch(_){}
-        return 1;
-    }
+    
 
-    function playRotateAudioNow(){
-        const volume=rotateAudioVolume();
-        window.__sixBallRotateDirectRequested=(window.__sixBallRotateDirectRequested||0)+1;
-        window.__sixBallRotateDirectVolume=volume;
-        if(volume<=0)return;
-
-        const a=rotateAudioPool[rotateAudioCursor++%rotateAudioPool.length];
-        try{
-            a.pause();
-            a.currentTime=0;
-            a.muted=false;
-            a.volume=volume;
-
-            const result=a.play();
-            if(result&&typeof result.then==="function"){
-                result.then(()=>{
-                    window.__sixBallRotateDirectPlayed=(window.__sixBallRotateDirectPlayed||0)+1;
-                    window.__sixBallRotateDirectError="";
-                }).catch(err=>{
-                    window.__sixBallRotateDirectError=
-                        err&&err.name?String(err.name):"play-rejected";
-                });
-            }
-        }catch(err){
-            window.__sixBallRotateDirectError=
-                err&&err.name?String(err.name):"play-error";
-        }
-    }
+    
 
     window.__sixBallRotateDirectSource=ROTATE_AUDIO_SRC;
 

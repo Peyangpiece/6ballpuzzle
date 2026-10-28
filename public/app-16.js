@@ -37,7 +37,7 @@ if(typeof window!=="undefined"){
 const orbsRef = useRef([]), runRef = useRef(false), dropFlashRef = useRef(0);
 const matchRef = useRef(null), reportedRef = useRef(false);
 const sizeRef = useRef({ scale: 0, dpr: 1, rect: null });
-// Static background shown once behind the canvas (see app-mobile-performance-v1.js).
+// Static background shown once behind the canvas (see drawBackground in app-10.js).
 const [bgLayerUrl] = useState(() => (typeof window !== "undefined" && typeof window.__sixBallStaticBackgroundUrl === "function" ? window.__sixBallStaticBackgroundUrl() : null));
 useEffect(() => { const cv = cvRef.current; if (cv) cv.__sixBallBgLayer = !!bgLayerUrl; }, [bgLayerUrl]);
 const [netErr, setNetErr] = useState(null);

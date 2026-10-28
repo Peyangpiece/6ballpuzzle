@@ -69,7 +69,10 @@ function install({base,independent,natural,groupPlan,supportInfo,touchesFloor,se
     ),
     hexPhysClearGroupBall:clear
   };
-  if(createEngine)ctx.createEngine=createEngine;
+  // app-05.js registers every engine by its board for engineOfBoard().
+  const engines=new WeakMap();
+  ctx.engineOfBoard=board=>engines.get(board);
+  if(createEngine)ctx.createEngine=(...args)=>{const game=createEngine(...args);if(game?.board)engines.set(game.board,game);return game;};
   if(supportInfo)ctx.hexPhysSupportInfo=supportInfo;
   if(touchesFloor)ctx.touchesFloorRow=touchesFloor;
   if(rigidSlope)ctx.hexPhysRigidSlopePlan=rigidSlope;
