@@ -10,7 +10,7 @@ App Store Connect に入力する文面の下書きです。文字数は App Sto
 | アプリ名 | Drop Ball（App Store 全体で一意である必要あり。使用中なら「Drop Ball: Color Clash」など） |
 | バンドル ID | `app.dropball.game`（`capacitor.config.json` と一致させる） |
 | カテゴリ | ゲーム（パズル）／サブ: ボード |
-| プライバシーポリシー URL | https://6ballpuzzle.hrk-6888.workers.dev/privacy.html |
+| プライバシーポリシー URL | https://dropball.hrk-6888.workers.dev/privacy |
 | サポート URL | 同上（連絡先を記載） |
 | 年齢区分 | 質問票の回答による（暴力・課金・無制限の Web アクセスなし。プレイヤー名がランキングに表示される） |
 

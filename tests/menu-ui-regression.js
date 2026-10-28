@@ -11,7 +11,7 @@ expect(menuPos>=0&&appPos>menuPos,'menu UI must load before App');
 expect(ui.includes('window.__hexMenuUiVersion="menu-ui-v1"'),'menu UI version marker missing');
 for(const s of ['対戦','プロフィール','設定','オンライン対戦','AI対戦','フレンド対戦'])expect(app.includes(s),`missing menu item: ${s}`);
 for(const s of ['BGM音量','効果音音量','振動'])expect(app.includes(s),`missing setting: ${s}`);
-for(const s of ['NICKNAME','WIN RATE','RATING'])expect(app.includes(s),`missing profile field: ${s}`);
+for(const s of ['ニックネーム','勝率','レート'])expect(app.includes(s),`missing profile field: ${s}`);
 expect(app.includes('stateRef.current.nickname||"Player"'),'game HUD should use saved nickname');
 expect(app.includes('Net.applyRating(win'),'online results should update profile record');
 expect(app.includes('hexdrop_sfx_volume')&&app.includes('hexdrop_bgm_volume'),'audio preferences must persist');

@@ -111,7 +111,7 @@ jobs:
         run: |
           set -euo pipefail
           expected="$GITHUB_SHA"
-          url="https://6ballpuzzle.hrk-6888.workers.dev/deploy-sha.txt"
+          url="https://dropball.hrk-6888.workers.dev/deploy-sha.txt"
           observed=""
           for attempt in $(seq 1 150); do
             observed="$(curl -fsS "${url}?run=${GITHUB_RUN_ID}-${attempt}" 2>/dev/null | tr -d '\r\n' || true)"
@@ -121,5 +121,5 @@ jobs:
             fi
             sleep 10
           done
-          echo "::error::Production still serves ${observed:-nothing} instead of ${expected} after 25 minutes. Check the Cloudflare Workers Builds log for 6ballpuzzle, or deploy manually with 'npx wrangler deploy'."
+          echo "::error::Production still serves ${observed:-nothing} instead of ${expected} after 25 minutes. Check the Cloudflare Workers Builds log for dropball, or deploy manually with 'npx wrangler deploy'."
           exit 1

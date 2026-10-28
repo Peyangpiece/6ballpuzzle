@@ -70,7 +70,7 @@ npm run ios:open      # Xcode で開く
    - 識別子 → ユーザ ID（App の機能、ユーザに関連付け）
    - 連絡先情報 → メールアドレス（Apple / Google でサインインした場合のみ、App の機能、ユーザに関連付け）
    - ユーザコンテンツ → その他（ニックネーム、ランキング表示）、ゲームプレイ（戦績・レート）
-5. プライバシーポリシー URL: `https://6ballpuzzle.hrk-6888.workers.dev/privacy.html`
+5. プライバシーポリシー URL: `https://dropball.hrk-6888.workers.dev/privacy`
 
 ## 5. テストと提出
 1. 実機をつないで Xcode で実行（Game Center は Sandbox アカウントで確認できます）。
