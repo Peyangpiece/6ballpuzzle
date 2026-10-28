@@ -55,7 +55,7 @@
     function restoreReceiving(g,snap){
         for(const[id,s]of snap){const v=g.vis.get(id);if(v){v.x=s.x;v.y=s.y;v.vy=s.vy;v.motionSpeed=s.motionSpeed;}}
     }
-    function physicalDistXY(ax,ay,bx,by){return Math.hypot((ax-bx)*0.5,(ay-by)*HEX_ROW_H);}
+    
 
     function moveLiveGarbageAwayFromReceiving(g,snap){
         if(!snap.size)return false;

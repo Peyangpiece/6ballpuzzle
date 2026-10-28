@@ -145,29 +145,7 @@
   }
 
   if(typeof markCollisionBalancedGaps==="function"){
-    markCollisionBalancedGaps=function(b){
-      const stuck=unstableFrozenBalls(b);
-      let locked=0;
-
-      for(const q of stuck){
-        const ball=b[q.y]?.[q.x];
-        if(!ball)continue;
-
-        if(q.contacts>=1){
-          ball.equilibriumLocked=true;
-          locked++;
-        }else{
-          delete ball.equilibriumLocked;
-
-          if(ball.motionGroupId){
-            try{hexPhysClearGroupBall(ball);}catch(_){}
-            ball.rigid=false;
-          }
-        }
-      }
-
-      return locked;
-    };
+    
   }
 
   function boardIdSet(g){

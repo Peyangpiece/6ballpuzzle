@@ -156,7 +156,7 @@ function boardOverflowCells(b){
 }
 function boardHasOverflow(b){return boardOverflowCells(b).length>0;}
 function isHexagonCenterHole(b,cx,cy){return valid(cx,cy)&&b[cy][cx]===null&&[[-2,0],[2,0],[-1,-1],[1,-1],[-1,1],[1,1]].every(([dx,dy])=>valid(cx+dx,cy+dy)&&!!b[cy+dy][cx+dx]);}
-function boardHasIntentionalHexagonHole(b){for(let y=1;y<ROWS-1;y++)for(let x=2;x<W2-2;x++)if(isHexagonCenterHole(b,x,y))return true;return false;}
+
 function proposalPointAt(p,t){
  t=Math.max(0,Math.min(1,t));const a=normPoint(p.x,p.y),z=normPoint(p.tx,p.ty);
  if(p.kind==="FOLLOW_SUPPORT"&&p.followProposal){const s0=normPoint(p.followProposal.x,p.followProposal.y),sp=proposalPointAt(p.followProposal,t);return[a[0]+sp[0]-s0[0],a[1]+sp[1]-s0[1]];}
