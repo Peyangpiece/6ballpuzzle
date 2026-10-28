@@ -44,7 +44,7 @@ const canonicalSafeActiveFallOffset=safeActiveFallOffset;
 const canonicalLandingShadowVisualCells=landingShadowVisualCells;
 const canonicalResolveVisualContacts=resolveVisualContacts;
 const canonicalRigidShadowPixelPlacement=rigidShadowPixelPlacement;
-const canonicalDrawBall=drawBall;
+const canonicalDrawBall=drawBallSprite;
 const shadowBefore=canonicalLandingShadowVisualCells(g);
 const activeCells=pieceCells(g.piece);
 const safeBefore=canonicalSafeActiveFallOffset(g,activeCells,.37,dispOff(g.piece.rot),1.7);
@@ -57,7 +57,6 @@ resolveVisualContacts=function(q){delegatedContacts++;return canonicalResolveVis
 const after=String.raw`
 expect(window.__hexRuntimePerformanceVersion==="runtime-perf-v2","runtime performance v2 adapter was not installed");
 expect(window.__hexStaticBoardContactPassSkipped===true&&window.__hexActiveCollisionColliderCache===true&&window.__hexLandingShadowColliderCache===true,"runtime performance markers missing");
-expect(window.__hexDefaultBallDrawFastPath===true,"default ball draw fast path marker missing");
 expect(window.__hexPerformanceBehaviorParityRequired===true,"behavior parity marker missing");
 
 const shadowAfter=landingShadowVisualCells(g);

@@ -13,7 +13,6 @@
     const baseSafeActiveFallOffset=safeActiveFallOffset;
     const baseLandingShadowVisualCells=landingShadowVisualCells;
     const baseResolveVisualContacts=resolveVisualContacts;
-    const baseDrawBall=typeof drawBall==="function"?drawBall:null;
 
     function boardStaticForActivePlay(g){
         return !!g&&g.state==="PLAYING"&&g.piece&&g._visualMovingIds instanceof Set&&g._visualMovingIds.size===0;
@@ -88,21 +87,6 @@
         return cs.map(([x,y,c])=>[x+dxGrid,y+rowOffset,c]);
     };
 
-    if(baseDrawBall){
-        drawBall=function(ctx,cx,cy,d,ci,o={}){
-            const alpha=o.alpha===undefined?1:o.alpha;
-            const scale=o.scale===undefined?1:o.scale;
-            const sq=o.sq===undefined?0:o.sq;
-            const aura=o.aura===undefined?0:o.aura;
-            const ring=o.ring===undefined?0:o.ring;
-            if(alpha===1&&scale===1&&sq===0&&aura===0&&ring===0&&d>1.2&&
-               ctx?.globalAlpha===1&&typeof imgReady==="function"&&imgReady(ci)){
-                ctx.drawImage(BALL_IMG[ci],cx-d/2,cy-d/2,d,d);
-                return;
-            }
-            return baseDrawBall(ctx,cx,cy,d,ci,o);
-        };
-    }
 
     resolveVisualContacts=function(g){
         if(boardStaticForActivePlay(g)){
@@ -116,6 +100,5 @@
     window.__hexStaticBoardContactPassSkipped=true;
     window.__hexActiveCollisionColliderCache=true;
     window.__hexLandingShadowColliderCache=true;
-    window.__hexDefaultBallDrawFastPath=!!baseDrawBall;
     window.__hexPerformanceBehaviorParityRequired=true;
 })();

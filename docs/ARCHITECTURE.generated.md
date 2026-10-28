@@ -10,7 +10,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 2 | `app-02.js` | core: constants, physics planner, resolver, renderer | 309 |  | HEXDROP unified physics core: the only ball-motion definition. / |
 | 3 | `app-03.js` | core: constants, physics planner, resolver, renderer | 221 |  | HEXDROP unified event resolver. |
 | 4 | `app-04.js` | core: constants, physics planner, resolver, renderer | 216 |  | Canonical motion-group cleanup. No legacy rigidity metadata exists here. / |
-| 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 273 |  |  |
+| 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 278 |  | Every engine by its board: the physics layers that resolve a bare board look |
 | 6 | `app-06.js` | core: constants, physics planner, resolver, renderer | 62 |  | Shared garbage presentation constants and visual collision helpers. |
 | 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 535 |  | Pile/garbage collapse overlap-scheduler constants. |
 | 8 | `app-pile-arc.js` | clear / collapse corrections | 132 |  | Accumulated-pile gravity binding (legacy filename). |
@@ -20,7 +20,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 12 | `app-release-parity-settle.js` | clear / collapse corrections | 60 |  | Parity-safe active-piece hand-off. |
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 719 |  |  |
 | 14 | `app-09.js` | core: engine, assets, net, app shell | 587 |  | Garbage pipeline entry points.  They are installed later by |
-| 15 | `app-10.js` | core: engine, assets, net, app shell | 442 |  | ボール描画 |
+| 15 | `app-10.js` | core: engine, assets, net, app shell | 512 |  | ボール描画 |
 | 16 | `app-14.js` | core: engine, assets, net, app shell | 411 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
@@ -46,7 +46,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 38 | `app-garbage-simultaneous-motion.js` | garbage (おじゃま) pipeline | 118 |  | Garbage contact resolution after unit-local ordinary timelines. |
 | 39 | `app-garbage-render-overlap-guard.js` | garbage (おじゃま) pipeline | 107 |  | Render-only garbage overlap guard. |
 | 40 | `app-ai-core.js` | AI opponent | 428 |  | CPU AI core v1: one engine-accurate simulation and one decision function for |
-| 41 | `app-runtime-performance.js` | performance | 122 |  | Main-thread runtime performance guards. |
+| 41 | `app-runtime-performance.js` | performance | 105 |  | Main-thread runtime performance guards. |
 | 42 | `app-physics-safety-invariants.js` | safety invariants | 604 |  |  |
 | 43 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |
 | 44 | `app-mass-motion-safety.js` | safety invariants | 960 |  |  |
@@ -65,12 +65,12 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 57 | `app-pile-motion-authority-v2.js` | collapse scheduling authorities | 205 |  | 6ball PILE MOTION AUTHORITY v2 |
 | 58 | `app-runtime-performance-v3.js` | performance | 1034 |  | 6ball RUNTIME PERFORMANCE AUTHORITATIVE v3 |
 | 59 | `app-runtime-performance-v4.js` | performance | 353 |  | 6ball RUNTIME PERFORMANCE AUTHORITATIVE v4 |
-| 60 | `app-rigidity-final-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 1260 | createEngine, hexPhysPlanGroup | 6ball FINAL RIGIDITY AUTHORITY v1 (UP-CONVEX SCOPE) |
-| 61 | `app-reference-upconvex-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 373 | createEngine, hexPhysPlanGroup |  |
-| 62 | `app-reference-first-contact-sweep-v3.js` | rigidity / split authorities (Nintendo reference) | 196 | createEngine | Nintendo-reference first-contact sweep v3. |
+| 60 | `app-rigidity-final-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 1249 | hexPhysPlanGroup | 6ball FINAL RIGIDITY AUTHORITY v1 (UP-CONVEX SCOPE) |
+| 61 | `app-reference-upconvex-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 364 | hexPhysPlanGroup |  |
+| 62 | `app-reference-first-contact-sweep-v3.js` | rigidity / split authorities (Nintendo reference) | 189 |  | Nintendo-reference first-contact sweep v3. |
 | 63 | `app-reference-inverted-flat-split-v1.js` | rigidity / split authorities (Nintendo reference) | 68 | hexPhysPlanGroup | Nintendo-reference inverted flat split v1. |
-| 64 | `app-rigidity-nintendo-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 230 | createEngine, hexPhysPlanGroup | Nintendo-reference rigidity authority v1. |
-| 65 | `app-rigidity-release-bounce-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 231 | createEngine, hexPhysPlanGroup, hexPhysResolveEvent | Nintendo rigidity release + no-bounce authority v1. |
+| 64 | `app-rigidity-nintendo-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 227 | hexPhysPlanGroup | Nintendo-reference rigidity authority v1. |
+| 65 | `app-rigidity-release-bounce-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 226 | hexPhysPlanGroup, hexPhysResolveEvent | Nintendo rigidity release + no-bounce authority v1. |
 | 66 | `app-motion-smoothness-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 91 |  | Motion smoothness authority v1. |
 | 67 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 338 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
 | 68 | `app-even-row-split-continuity-v1.js` | rigidity / split authorities (Nintendo reference) | 72 |  | Even/narrow-row strict-inner split continuity authority v1. |
@@ -79,5 +79,4 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 71 | `app-mass-fall-v1.js` | other | 349 |  | Mass fall v1. |
 | 72 | `controls-v7.js` | input | 308 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
 | 73 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
-| 74 | `app-ui-ux-v1.js` | other | 80 |  | UI/UX layer v1 (no physics). |
-| 75 | `app-mobile-performance-v1.js` | other | 75 |  | Mobile performance layer v1 (no physics changes). |
+| 74 | `app-ui-ux-v1.js` | other | 50 |  | UI/UX layer v1 (no physics). |
