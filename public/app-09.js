@@ -18,7 +18,7 @@ function visualSubstepCount(g){
 function stepEngine(g, dt) {
     var _a, _b;
     g.stateT += dt;
-    if (g.gravityRamp && g.alive && g.state !== "READY") g.playClock = (g.playClock || 0) + dt;
+    if (g.gravityRamp && g.alive && g.state !== "READY") { g.playClock = (g.playClock || 0) + dt; applyGravityRamp(g); }
     g.fx.shake = 0;
     g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);
     g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);

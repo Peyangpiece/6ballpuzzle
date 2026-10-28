@@ -1,31 +1,43 @@
-// The natural fall speeds up little by little during a match (app-04.js
-// gravityRampFactor): unchanged for 30 s, 2x at 2 min, capped at 3x. The
-// interval only changes at spawn, held fast fall keeps its measured on-screen
-// speed, the opponent view leads by the real speed, and engines created
-// without gravityRamp (tutorial, tests, AI search) never change.
+// The natural fall speeds up as a smooth gradient during a match (app-04.js
+// gravityRampFactor): a smoothstep from 1x to 3x over 4 minutes. The interval
+// follows the play clock every frame without moving the falling piece, held
+// fast fall keeps its measured on-screen speed, the opponent view leads by the
+// real speed, and engines created without gravityRamp (tutorial, tests, AI
+// search) never change.
 const assert = require("assert"), vm = require("vm"), fs = require("fs"), path = require("path");
 const { ctx } = require("./v1303-plan-group-smoke.js");
 const run = src => JSON.parse(vm.runInContext(`JSON.stringify((()=>{${src}})())`, ctx));
 
-const curve = run(`return [0,30,60,120,210,600].map(t=>gravityRampFactor(t));`);
-assert.deepStrictEqual(curve.map(v => +v.toFixed(4)), [1, 1, 1.3333, 2, 3, 3], "ramp curve");
+const curve = run(`return [0,30,60,120,180,240,600].map(t=>gravityRampFactor(t));`);
+assert.deepStrictEqual(curve.map(v => +v.toFixed(4)), [1, 1.0859, 1.3125, 2, 2.6875, 3, 3], "ramp curve");
+// A gradient: strictly rising with no step between frames, flat at both ends.
+const steps = run(`const out=[];let prev=gravityRampFactor(0),maxStep=0,rising=true;for(let i=1;i<=240*120;i++){const f=gravityRampFactor(i/120);maxStep=Math.max(maxStep,f-prev);if(f<=prev)rising=false;prev=f;}
+  return {maxStep,rising,startSlope:(gravityRampFactor(1)-1),endSlope:(3-gravityRampFactor(239))};`);
+assert(steps.rising, "the speed rises every frame");
+assert(steps.maxStep < 1.1e-4, "no visible step between frames: " + steps.maxStep);
+assert(steps.startSlope < 1e-3 && steps.endSlope < 1e-3, "eases in and out");
 
-// A ramped engine: the clock runs only while playing, and the next piece uses it.
+// A ramped engine: the clock runs only while playing; the interval follows it
+// during a fall and the piece's position inside its step does not move.
 const live = run(`
   const g=createEngine(5,{gravityRamp:true});spawn(g);
-  const first=g.dropInterval;
-  // Freeze the piece in place so the clock, not the board, is under test.
-  for(let i=0;i<120*150;i++){g.dropT=0;g.lockT=0;stepEngine(g,PHYSICS_FRAME);if(!g.alive)break;}
-  const mid=g.dropInterval,clock=g.playClock;spawn(g);
-  return {first,mid,clock,next:g.dropInterval,base:DROP_INTERVAL};`);
+  const first=g.dropInterval;let maxJump=0;
+  for(let i=0;i<120*150;i++){
+    const before=activeDropFraction(g),pre=g.dropT;
+    applyGravityRamp(g);
+    maxJump=Math.max(maxJump,Math.abs(activeDropFraction(g)-before));
+    g.dropT=Math.min(g.dropT,g.dropInterval*.4);g.lockT=0;g.piece={...g.piece,y:-2};
+    stepEngine(g,PHYSICS_FRAME);if(!g.alive)break;
+  }
+  return {first,mid:g.dropInterval,clock:g.playClock,maxJump,base:DROP_INTERVAL,expect:rampedDropInterval(g.playClock)};`);
 assert.strictEqual(live.first, live.base, "the first piece falls at the measured speed");
-assert.strictEqual(live.mid, live.first, "a falling piece keeps its interval");
 assert(Math.abs(live.clock - 150) < 1e-6, "the play clock counts match time: " + live.clock);
-assert(Math.abs(live.next - live.base / 2.3333333) < 1e-6, "the next piece falls faster: " + live.next);
+assert(Math.abs(live.mid - live.expect) < 1e-9 && live.mid < live.base / 2, "the falling piece speeds up with the clock: " + live.mid);
+assert(live.maxJump < 1e-9, "re-timing never moves the piece: " + live.maxJump);
 
 // Held fast fall: the same rows per second at any ramp; snapshot speed tracks the real fall.
 const fast = run(`
-  const a=createEngine(6,{gravityRamp:true});a.playClock=600;spawn(a);
+  const a=createEngine(6,{gravityRamp:true});a.playClock=600;spawn(a);applyGravityRamp(a);
   const b=createEngine(6);spawn(b);
   const rate=g=>activeFallTimeScale(g)/g.dropInterval;
   const natural=[rate(a),rate(b)],snapA=pieceSnapshotOf(a).s,snapB=pieceSnapshotOf(b).s;

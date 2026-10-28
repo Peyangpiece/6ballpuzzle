@@ -25,7 +25,6 @@ function spawn(g){
  g.piece={x:SPAWN_X,y:-2,rot:1,colors};g.pieceVX=SPAWN_X;g.pieceVY=-2;
  g.rotAnim={p:1,dir:1,dx:0,dy:0};g.freeX=null;g.dragging=false;
  g.physicsWatch={lastSig:"",repeats:0,steps:0,fallbacks:g.physicsWatch?.fallbacks||0};
- if(g.gravityRamp)g.dropInterval=rampedDropInterval(g.playClock);
  g.dropT=0;g.lockT=0;g.lockResets=0;g.garbDone=false;g.garbLeft=0;g.garbShapes=[];
  g.garbagePlans=[];g.activeGarbagePacks=[];g.garbageClock=0;g.garbageMaterializeIndex=0;g.garbageNextBallAt=0;g.garbageWatchdogLimit=6;g.garbBlocked=false;g.garbageBatchPrepared=false;g.garbageSeq=0;
  g.chain=0;g.state="PLAYING";g.phase=null;

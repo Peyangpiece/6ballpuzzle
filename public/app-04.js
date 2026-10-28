@@ -126,12 +126,22 @@ const HARD_DROP_IMPACT_DURATION=HARD_DROP_SPARK_FRAMES/30;
 // a multiplier. 5.8 yielded 210 px/s instead of the captured ~1035 px/s.
 const REFERENCE_FAST_FALL_PX_PER_SEC=REFERENCE_FAST_FALL_PX_PER_FRAME*30;
 const FAST_DROP_MULTIPLIER=REFERENCE_FAST_FALL_PX_PER_SEC/REFERENCE_FALL_PX_PER_SEC;
-// Matches speed up little by little: the natural fall keeps the measured speed
-// for the first 30 s of play, then gets faster linearly, reaching 2x at 2 min
-// and 3x (the cap) at 3.5 min. The interval only changes when a piece spawns,
-// so a falling piece never jumps. Held fast fall keeps its measured speed.
-const GRAVITY_RAMP_DELAY=30,GRAVITY_RAMP_SECONDS_PER_X=90,GRAVITY_RAMP_MAX=3;
-const gravityRampFactor=t=>Math.min(GRAVITY_RAMP_MAX,1+Math.max(0,(Number(t)||0)-GRAVITY_RAMP_DELAY)/GRAVITY_RAMP_SECONDS_PER_X);
+// Matches speed up as a smooth gradient: the natural fall starts at the
+// measured speed and eases up to 3x over 4 minutes of play along a smoothstep
+// (about 1.1x at 30 s, 1.3x at 1 min, 2x at 2 min, 2.7x at 3 min), with no
+// corner at either end. The interval is updated every frame and the fall
+// clock is rescaled with it, so the falling piece speeds up in place without
+// a jump. Held fast fall keeps its measured speed.
+const GRAVITY_RAMP_SECONDS=240,GRAVITY_RAMP_MAX=3;
+const gravityRampFactor=t=>{const u=Math.max(0,Math.min(1,(Number(t)||0)/GRAVITY_RAMP_SECONDS));return 1+(GRAVITY_RAMP_MAX-1)*u*u*(3-2*u);};
+// Moves an engine to the interval of its play clock, keeping the fraction of
+// the current fall step (dropT/dropInterval) unchanged.
+function applyGravityRamp(g){
+ if(!g||!g.gravityRamp)return;
+ const iv=rampedDropInterval(g.playClock),old=g.dropInterval||DROP_INTERVAL;
+ if(iv===old)return;
+ g.dropT=(Number(g.dropT)||0)*iv/old;g.dropInterval=iv;
+}
 const rampedDropInterval=t=>DROP_INTERVAL/gravityRampFactor(t);
 // How fast the fall clock runs: held fast fall is a fixed speed on screen, so
 // its multiplier shrinks as the natural interval does.
