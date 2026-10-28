@@ -342,7 +342,7 @@ function applySnapshot(g,str,fx=null) {
 function pieceSnapshotOf(g){
     if(!g?.piece)return null;
     let frac=activeDropFraction(g);
-    return{x:g.piece.x,y:g.piece.y,r:g.piece.rot,c:g.piece.colors.slice(0,3),vx:Number.isFinite(g.pieceVX)?+g.pieceVX.toFixed(3):g.piece.x,f:+frac.toFixed(3),m:pieceFits(g.board,{...g.piece,y:g.piece.y+2})?1:0,s:g.fastForward?FAST_DROP_MULTIPLIER:1,q:(g.queue[0]||[]).slice(0,3)};
+    return{x:g.piece.x,y:g.piece.y,r:g.piece.rot,c:g.piece.colors.slice(0,3),vx:Number.isFinite(g.pieceVX)?+g.pieceVX.toFixed(3):g.piece.x,f:+frac.toFixed(3),m:pieceFits(g.board,{...g.piece,y:g.piece.y+2})?1:0,s:+(activeFallTimeScale(g)*DROP_INTERVAL/(g.dropInterval||DROP_INTERVAL)).toFixed(3),q:(g.queue[0]||[]).slice(0,3)};
 }
 function remoteFxSnapshotOf(g){
     const f=(g?.fx?.formations||[])[0],toast=(g?.fx?.toasts||[]).find(t=>t.waza);
