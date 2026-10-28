@@ -13,7 +13,6 @@
     const baseSafeActiveFallOffset=safeActiveFallOffset;
     const baseLandingShadowVisualCells=landingShadowVisualCells;
     const baseResolveVisualContacts=resolveVisualContacts;
-    const baseRigidShadowPixelPlacement=typeof rigidShadowPixelPlacement==="function"?rigidShadowPixelPlacement:null;
     const baseDrawBall=typeof drawBall==="function"?drawBall:null;
 
     function boardStaticForActivePlay(g){
@@ -89,10 +88,6 @@
         return cs.map(([x,y,c])=>[x+dxGrid,y+rowOffset,c]);
     };
 
-    if(baseRigidShadowPixelPlacement){
-        
-    }
-
     if(baseDrawBall){
         drawBall=function(ctx,cx,cy,d,ci,o={}){
             const alpha=o.alpha===undefined?1:o.alpha;
@@ -121,7 +116,6 @@
     window.__hexStaticBoardContactPassSkipped=true;
     window.__hexActiveCollisionColliderCache=true;
     window.__hexLandingShadowColliderCache=true;
-    window.__hexRigidShadowVisualColliderCache=!!baseRigidShadowPixelPlacement;
     window.__hexDefaultBallDrawFastPath=!!baseDrawBall;
     window.__hexPerformanceBehaviorParityRequired=true;
 })();
