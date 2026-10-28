@@ -297,7 +297,6 @@
         if(pendingFallPathCount(g)!==0||!nearlySettled(g,NORMAL_GARBAGE_SETTLE_TOL))return false;
         return !hasLegalGravityMove(g.board);
     };
-    garbageVisualsDone=garbageBatchDone;
 
     finishGarbageVisuals=function(g){
         unfreezeExistingPile(g);
