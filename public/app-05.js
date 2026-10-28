@@ -4,7 +4,7 @@ function createEngine(seed,opts={}){
   board:newBoard(),nextId:1,queue:[],piece:null,pieceVX:SPAWN_X,pieceVY:-2,
   rotAnim:{p:1,dir:1,dx:0,dy:0},freeX:null,dragging:false,
   physicsWatch:{lastSig:"",repeats:0,steps:0,fallbacks:0},balanceWait:0,ver:0,state:"READY",phase:null,stateT:0,introCue:0,
-  dropT:0,dropInterval:opts.dropInterval??DROP_INTERVAL,soft:false,fastForward:false,fastForwardCarry:0,
+  dropT:0,dropInterval:opts.dropInterval??DROP_INTERVAL,gravityRamp:!!opts.gravityRamp,playClock:0,soft:false,fastForward:false,fastForwardCarry:0,
   lockT:0,hardDropAnim:null,hardDropSeq:0,lockResets:0,
   incoming:0,incomingShapes:[],sendBuffer:0,sendShapes:[],garbShapes:[],garbBlocked:false,garbDone:false,garbLeft:0,
   garbageBatchPrepared:false,garbageAnimDuration:2.45,garbageSeq:0,garbagePlans:[],activeGarbagePacks:[],garbageClock:0,garbageMaterializeIndex:0,garbageNextBallAt:0,garbageWatchdogLimit:6,
@@ -25,6 +25,7 @@ function spawn(g){
  g.piece={x:SPAWN_X,y:-2,rot:1,colors};g.pieceVX=SPAWN_X;g.pieceVY=-2;
  g.rotAnim={p:1,dir:1,dx:0,dy:0};g.freeX=null;g.dragging=false;
  g.physicsWatch={lastSig:"",repeats:0,steps:0,fallbacks:g.physicsWatch?.fallbacks||0};
+ if(g.gravityRamp)g.dropInterval=rampedDropInterval(g.playClock);
  g.dropT=0;g.lockT=0;g.lockResets=0;g.garbDone=false;g.garbLeft=0;g.garbShapes=[];
  g.garbagePlans=[];g.activeGarbagePacks=[];g.garbageClock=0;g.garbageMaterializeIndex=0;g.garbageNextBallAt=0;g.garbageWatchdogLimit=6;g.garbBlocked=false;g.garbageBatchPrepared=false;g.garbageSeq=0;
  g.chain=0;g.state="PLAYING";g.phase=null;

@@ -18,6 +18,7 @@ function visualSubstepCount(g){
 function stepEngine(g, dt) {
     var _a, _b;
     g.stateT += dt;
+    if (g.gravityRamp && g.alive && g.state !== "READY") g.playClock = (g.playClock || 0) + dt;
     g.fx.shake = 0;
     g.fx.warn = pendingIncomingCount(g) > 0 ? Math.min(1, g.fx.warn + dt * 4) : Math.max(0, g.fx.warn - dt * 4);
     g.fx.fastPulse = Math.max(0, (g.fx.fastPulse || 0) - dt * 7);
@@ -372,7 +373,7 @@ function stepEngine(g, dt) {
         // interval自体は常に同じなので、ON/OFF時に落下進捗率が再解釈されず、
         // 球が沈む/浮く/上へ戻る現象を構造的に防ぐ。
         const iv = g.dropInterval;
-        const dropTimeScale = g.fastForward ? FAST_DROP_MULTIPLIER : 1;
+        const dropTimeScale = activeFallTimeScale(g);
         g.dropT += dt * dropTimeScale;
         while (g.dropT >= iv && pieceFits(g.board, { ...g.piece, y: g.piece.y + 2 })) {
             g.dropT -= iv;

@@ -126,6 +126,16 @@ const HARD_DROP_IMPACT_DURATION=HARD_DROP_SPARK_FRAMES/30;
 // a multiplier. 5.8 yielded 210 px/s instead of the captured ~1035 px/s.
 const REFERENCE_FAST_FALL_PX_PER_SEC=REFERENCE_FAST_FALL_PX_PER_FRAME*30;
 const FAST_DROP_MULTIPLIER=REFERENCE_FAST_FALL_PX_PER_SEC/REFERENCE_FALL_PX_PER_SEC;
+// Matches speed up little by little: the natural fall keeps the measured speed
+// for the first 30 s of play, then gets faster linearly, reaching 2x at 2 min
+// and 3x (the cap) at 3.5 min. The interval only changes when a piece spawns,
+// so a falling piece never jumps. Held fast fall keeps its measured speed.
+const GRAVITY_RAMP_DELAY=30,GRAVITY_RAMP_SECONDS_PER_X=90,GRAVITY_RAMP_MAX=3;
+const gravityRampFactor=t=>Math.min(GRAVITY_RAMP_MAX,1+Math.max(0,(Number(t)||0)-GRAVITY_RAMP_DELAY)/GRAVITY_RAMP_SECONDS_PER_X);
+const rampedDropInterval=t=>DROP_INTERVAL/gravityRampFactor(t);
+// How fast the fall clock runs: held fast fall is a fixed speed on screen, so
+// its multiplier shrinks as the natural interval does.
+const activeFallTimeScale=g=>g&&g.fastForward?Math.max(1,FAST_DROP_MULTIPLIER*(g.dropInterval||DROP_INTERVAL)/DROP_INTERVAL):1;
 const LONG_PRESS_MS=260;
 const GRAV=24.329692506794245;
 const RELEASE_INITIAL_VY=3.788971974109861;
@@ -160,7 +170,7 @@ const smoothRotationT=t=>t*t*(3-2*t);
 // interval.  Collision geometry, not pieceFits(), clamps the visible descent.
 // Returning zero as soon as the next complete row was blocked produced a
 // conspicuous pause/upward snap immediately before every non-flat landing.
-const activeDropFraction=(g,renderLead=0)=>{if(!g||!g.piece)return 0;const scale=g.fastForward?FAST_DROP_MULTIPLIER:1,pred=g.dropT+Math.max(0,renderLead)*scale;return Math.max(0,Math.min(.999999,pred/g.dropInterval)*2);};
+const activeDropFraction=(g,renderLead=0)=>{if(!g||!g.piece)return 0;const scale=activeFallTimeScale(g),pred=g.dropT+Math.max(0,renderLead)*scale;return Math.max(0,Math.min(.999999,pred/g.dropInterval)*2);};
 function safeActiveFallOffset(g,cells,dx,dOff,desired){
  if(!g||!g.board)return desired;
  // Rendering uses full-diameter ball images. The former .998 contact radius
