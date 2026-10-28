@@ -1891,87 +1891,7 @@
      * STRICT UNSUPPORTED TEST
      * ======================================================== */
 
-    unstableFrozenBalls=function(b){
-
-        const out=[];
-
-
-        for(
-            let y=boardScanMin(b);
-            y<ROWS;
-            y++
-        ){
-            for(let x=0;x<W2;x++){
-
-                if(!valid(x,y))
-                    continue;
-
-
-                const ball=b[y][x];
-
-                if(!ball)
-                    continue;
-
-
-                if(
-                    touchesFloorRow(y) ||
-                    ball.garbageBubbleHold
-                ){
-                    continue;
-                }
-
-
-                /*
-                 * Intentional HEXAGON centre remains legal.
-                 */
-                if(
-                    typeof ballInBalancedHexagonRing===
-                        "function" &&
-                    ballInBalancedHexagonRing(
-                        b,
-                        x,
-                        y
-                    )
-                ){
-                    continue;
-                }
-
-
-                const s=
-                    hexPhysSupportInfo(
-                        b,
-                        x,
-                        y
-                    );
-
-
-                const supportCount=
-                    Number.isFinite(s.realCount)
-                        ?s.realCount
-                        :s.count;
-
-
-                /*
-                 * One real ball or zero real balls is NOT
-                 * considered settled.
-                 *
-                 * Do not exclude equilibriumLocked balls.
-                 */
-                if(supportCount<2){
-
-                    out.push({
-                        x,
-                        y,
-                        id:ball.id,
-                        contacts:supportCount
-                    });
-                }
-            }
-        }
-
-
-        return out;
-    };
+    
 
 
     
@@ -3950,13 +3870,7 @@
      * This removes the freeze permanently.
      * ======================================================== */
 
-    boardHasIllegalFloat=function(b){
-
-        return settlePass(
-            b,
-            true
-        );
-    };
+    
 
 
     markCollisionBalancedGaps=function(b){
@@ -4061,8 +3975,7 @@
     const liveSettlePass=
         settlePass;
 
-    const liveBoardHasIllegalFloat=
-        boardHasIllegalFloat;
+    
 
 
     /* --------------------------------------------------------

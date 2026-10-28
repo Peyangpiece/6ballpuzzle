@@ -56,7 +56,7 @@
     // set captured at phase start instead of rescanning every lattice cell on
     // every gravity proposal. Fallback scanning keeps diagnostic/manual boards
     // with ad-hoc garbagePhaseFrozen flags fully compatible.
-    const ordinaryContactEntries=hexPhysContactEntries;
+    
     
 
     // Garbage metadata must not create a special HEXAGON-hole exemption. Mixed

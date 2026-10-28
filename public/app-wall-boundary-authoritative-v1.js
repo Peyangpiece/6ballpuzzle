@@ -390,15 +390,7 @@
         };
 
 
-    boardHasIllegalFloat =
-        function(board){
-
-            return(
-                unstableFrozenBalls(
-                    board
-                ).length>0
-            );
-        };
+    
 
 
     window.__sixBallWallEdgeTerminalVersion =

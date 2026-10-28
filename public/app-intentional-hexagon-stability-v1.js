@@ -536,15 +536,7 @@
             };
 
 
-        boardHasIllegalFloat=
-            function(board){
-
-                return(
-                    unstableFrozenBalls(
-                        board
-                    ).length>0
-                );
-            };
+        
     }
 
 

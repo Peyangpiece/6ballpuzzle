@@ -38,7 +38,7 @@
         try{a.load();}catch(_){}
         return a;
     });
-    let rotateAudioCursor=0;
+    
 
     
 
