@@ -7,9 +7,6 @@
 if(typeof window==="undefined"||window.__sixBallNintendoRigidityAuthorityV1||typeof hexPhysPlanGroup!=="function")return;
 window.__sixBallNintendoRigidityAuthorityV1=true;
 const basePlanGroup=hexPhysPlanGroup;
-const gameByBoard=new WeakMap();
-const baseCreateEngine=typeof createEngine==="function"?createEngine:null;
-if(baseCreateEngine){createEngine=function(...args){const g=baseCreateEngine(...args);if(g?.board)gameByBoard.set(g.board,g);return g;};}
 const MUTATION_FIELDS=["motionGroupId","motionGroupRole","motionGroupOrientation","motionGroupSize","rigid","momentumX","rollDir","subCellBias"];
 function id(v){return v?.ball?.id;}
 function vec(p){if(!p)return null;const dx=Number(p.tx)-Number(p.x),dy=Number(p.ty)-Number(p.y);return Number.isFinite(dx)&&Number.isFinite(dy)&&(dx||dy)?{dx,dy,key:dx+","+dy}:null;}
@@ -117,14 +114,14 @@ function wholeRigid(board,members,ind,base){
  return null;
 }
 function liveBusy(game,ball){const v=game?.vis?.get?.(ball.id),clock=game?._liveBatchClock;return!!((Array.isArray(ball.fallPath)&&ball.fallPath.length)||(game?._visualMovingIds instanceof Set&&game._visualMovingIds.has(ball.id))||(clock?.states instanceof Map&&clock.states.has(ball.id)&&Number(clock.elapsed)<Number(clock.duration)-1e-9)||v?.pileFlow||v?._pendingPathComplete);}
-function liveContacts(board,members){const game=gameByBoard.get(board),own=new Set(members.map(id)),out=[];if(!game?.vis)return out;
+function liveContacts(board,members){const game=engineOfBoard(board),own=new Set(members.map(id)),out=[];if(!game?.vis)return out;
  for(const m of members){const mv=game.vis.get(m.ball.id);if(!mv)continue;if(typeof touchesFloorRow==="function"&&touchesFloorRow(m.y)&&Math.abs(Number(mv.y)-Number(m.y))<.08)out.push({member:m,kind:"floor",distance:0});
   for(let y=boardScanMin(board);y<ROWS;y++)for(let x=0;x<W2;x++){const q=valid(x,y)?board[y][x]:null;if(!q||own.has(q.id)||liveBusy(game,q))continue;const qv=game.vis.get(q.id);if(!qv)continue;const dy=(Number(qv.y)-Number(mv.y))*HEX_ROW_H;if(dy<-.04||dy>1.15)continue;const d=Math.hypot((Number(qv.x)-Number(mv.x))*.5,dy);if(d>=.985&&d<=1.018)out.push({member:m,kind:"ball",support:q,x,y,distance:d});}
  }
  return out;
 }
 function logicalContact(board,members){const own=new Set(members.map(id));for(const m of members){if(typeof touchesFloorRow==="function"&&touchesFloorRow(m.y))return true;if(typeof hexPhysSupportInfo==="function"){let s=null;try{s=hexPhysSupportInfo(board,m.x,m.y,own);}catch(_){}if(s&&(s.realCount>0||s.floor))return true;}}return false;}
-function currentContactState(board,members){const game=gameByBoard.get(board);if(!game)return{current:logicalContact(board,members),busy:false,live:false,contacts:[]};const busy=members.some(m=>liveBusy(game,m.ball)),contacts=liveContacts(board,members);return{current:contacts.length>0,busy,live:true,contacts};}
+function currentContactState(board,members){const game=engineOfBoard(board);if(!game)return{current:logicalContact(board,members),busy:false,live:false,contacts:[]};const busy=members.some(m=>liveBusy(game,m.ball)),contacts=liveContacts(board,members);return{current:contacts.length>0,busy,live:true,contacts};}
 function pairPlan(board,pair){
  const exact=exactPairPivot(board,pair);if(exact)return exact;
  const base=previewBase(board,pair);if(base.length&&planTargetsSafe(board,pair,base)&&distancePreserved(pair,base))return base;
@@ -162,7 +159,7 @@ function pinnedLowerRelease(board,members,actual,contact){
   // a settled support makes the upper ball wait for a fictitious stationary ball.
   const plan=moving.map(m=>hexPhysNaturalMotion(board,m.x,m.y,movingIds)).filter(Boolean);
   if(!plan.length||!planTargetsSafe(board,members,plan))continue;
-  const game=gameByBoard.get(board);
+  const game=engineOfBoard(board);
   const exitSpeed=p=>{const v=game?.vis?.get(id(p)),exit=v?.constraintExitMomentum;
     return exit&&game.pileFlowClock-exit.time<=2*GAME_FRAME?Number(exit.speed)||0:Number(v?.motionSpeed)||0;};
   return {type:"full",soloId:id(solo),plan:plan.map(p=>({...p,pinnedLowerSplit:true,incomingMotionSpeed:exitSpeed(p),
@@ -171,7 +168,7 @@ function pinnedLowerRelease(board,members,actual,contact){
  }
  return null;
 }
-function stableAccumulated(board,members,actual=null){const game=gameByBoard.get(board);if(game&&members.some(m=>liveBusy(game,m.ball)))return false;const a=actual||actualMotions(board,members);return a.every(p=>!p);}
+function stableAccumulated(board,members,actual=null){const game=engineOfBoard(board);if(game&&members.some(m=>liveBusy(game,m.ball)))return false;const a=actual||actualMotions(board,members);return a.every(p=>!p);}
 function commitPairSplit(members,candidate,gid){const pair=members.filter(m=>candidate.pairIds.has(id(m))),solo=members.find(m=>id(m)===candidate.soloId);if(pair.length!==2||!solo)return[];clear(solo);commitGroup(pair,2,gid);const pairSteps=(candidate.pairPlan||candidate.plan||[]).filter(p=>candidate.pairIds.has(id(p))).map(p=>({...p,bundleId:gid||Number(p.bundleId)||0,groupSize:2}));let soloStep=candidate.soloMotion||(candidate.plan||[]).find(p=>id(p)===candidate.soloId&&vec(p))||null;if(soloStep)soloStep={...soloStep,bundleId:0,groupSize:0};return soloStep?[...pairSteps,soloStep]:pairSteps;}
 hexPhysPlanGroup=function(board,members,preview=false){
  if(!ordinary(members))return basePlanGroup(board,members,preview)||[];

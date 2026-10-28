@@ -49,21 +49,10 @@
     window.__sixBallFinalRigidityAuthorityV1=true;
 
     const basePlanGroup=hexPhysPlanGroup;
-    const liveEngineByBoard=new WeakMap();
 
     /* Group planning normally receives only the board, while physical stop
        proof also needs the live visual/batch state. Register every engine at
        creation without putting a circular owner reference on the board. */
-    if(typeof createEngine==="function"){
-        const baseCreateEngine=createEngine;
-        createEngine=function(...args){
-            const game=baseCreateEngine(...args);
-            if(game?.board&&typeof game.board==="object"){
-                liveEngineByBoard.set(game.board,game);
-            }
-            return game;
-        };
-    }
 
     function ordinaryGroup(members){
         return !!(
@@ -353,7 +342,7 @@
        Headless planner/audit boards have no visual clock and keep using the
        bilateral-pivot proof above. */
     function liveVisualCentralContact(board,members,info){
-        const game=liveEngineByBoard.get(board);
+        const game=engineOfBoard(board);
         if(!game)return{
             ok:true,
             source:"headless-bilateral-pivot",

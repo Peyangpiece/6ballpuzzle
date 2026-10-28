@@ -1,3 +1,7 @@
+// Every engine by its board: the physics layers that resolve a bare board look
+// up the live game (visual positions, motion batches) here.
+const ENGINE_BY_BOARD=new WeakMap();
+function engineOfBoard(board){return ENGINE_BY_BOARD.get(board);}
 function createEngine(seed,opts={}){
  const g={
   seed,rng:mulberry32(seed),aiRng:mulberry32((seed^0x41A7C15D)>>>0),fxRng:mulberry32((seed^0x9E3779B9)>>>0),
@@ -14,6 +18,7 @@ function createEngine(seed,opts={}){
   gameOverOverflow:[],gameOverReason:null,ai:null,alive:true,offset:opts.offset??false
  };
  for(let i=0;i<3;i++)g.queue.push(makeSet(g));
+ ENGINE_BY_BOARD.set(g.board,g);
  return g;
 }
 const mkBall=(g,c)=>({id:g.nextId++,c,motionGroupId:0,motionGroupRole:-1,motionGroupOrientation:"",motionGroupSize:0});
