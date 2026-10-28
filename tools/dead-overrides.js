@@ -17,6 +17,8 @@
 const fs=require("fs"),path=require("path");
 const acorn=require("acorn"),scope=require("eslint-scope"),estraverse=require("estraverse");
 const PUB=path.join(__dirname,"..","public");
+// --relaxed: ignore reads inside functions that do not run while loading.
+const RELAXED=process.argv.includes("--relaxed");
 const html=fs.readFileSync(path.join(PUB,"index.html"),"utf8");
 const page=JSON.parse(/var files=(\[[\s\S]*?\]);/.exec(html)[1].replace(/,\s*\]$/,"]"));
 const wsrc=fs.readFileSync(path.join(PUB,"ai-worker.js"),"utf8");
@@ -84,6 +86,9 @@ for(const f of page){
       if(p&&p.type==="UnaryExpression"&&p.operator==="typeof")kind="typeof";
       let q=id,qp=p;if(qp&&qp.type==="ConditionalExpression"&&(qp.consequent===q||qp.alternate===q)){q=qp;qp=parent.get(qp);}
       if(qp&&qp.type==="VariableDeclarator"&&qp.init===q&&qp.id.type==="Identifier"){const v=sm.getDeclaredVariables(qp).find(v=>v.name===qp.id.name);if(v&&v.references.every(r=>!r.isRead()))kind="typeof";}
+      // A read inside a function that only runs after loading sees the final
+      // value, never D (relaxed mode, used for clean-up with a behaviour trace).
+      if(RELAXED&&kind==="read"&&!isLoadFn(fnOf(id)))kind="runtime";
       events.push({name,kind,pos:id.start});
     }
   }
@@ -91,7 +96,7 @@ for(const f of page){
     if(n.type==="MemberExpression"&&!n.computed&&n.object.type==="Identifier"&&/^(window|globalThis|self)$/.test(n.object.name)&&n.property.type==="Identifier"){
       const isW=p&&p.type==="AssignmentExpression"&&p.left===n&&p.operator==="=";
       if(isW){(flagWriters.get(n.property.name)||flagWriters.set(n.property.name,new Set()).get(n.property.name)).add(f+":"+((fnOf(n)||{}).start));}
-      events.push({name:n.property.name,kind:isW?"memberdef":"read",pos:n.start});
+      events.push({name:n.property.name,kind:isW?"memberdef":(RELAXED&&!isLoadFn(fnOf(n))?"runtime":"read"),pos:n.start});
     }
     if(n.type==="Literal"&&typeof n.value==="string"&&/^[A-Za-z_$][\w$]*$/.test(n.value))events.push({name:n.value,kind:"read",pos:n.start});
   }});
@@ -107,6 +112,19 @@ function guardFalse(t,f,fnStart,defined,writtenBefore){
   if(flag(t))return !writtenBefore(flag(t),t.start);
   if(t.type==="BinaryExpression"&&/^===?$/.test(t.operator)&&flag(t.left)&&t.right.type==="Literal"&&t.right.value!==undefined)return !writtenBefore(flag(t.left),t.start);
   return false;
+}
+function testOrders(){
+  const gate=fs.readFileSync(path.join(__dirname,"..","tests","run-ci.js"),"utf8").match(/"tests\/[^"]+\.js"/g).map(x=>x.slice(1,-1));
+  // Follow require("./x.js") between test files too.
+  const seen=new Set(gate);
+  for(const t of [...seen]){const src=fs.readFileSync(path.join(__dirname,"..",t),"utf8");for(const m of src.matchAll(/require\("\.\/([\w.-]+\.js)"\)/g)){const r="tests/"+m[1];if(!seen.has(r)){seen.add(r);gate.push(r);}}}
+  const out=[];
+  for(const t of new Set(gate)){
+    const src=fs.readFileSync(path.join(__dirname,"..",t),"utf8");
+    const list=(src.match(/"(app-[a-z0-9-]+|controls-v7)\.js"/g)||[]).map(x=>x.slice(1,-1)).filter(f=>page.includes(f));
+    if(list.length)out.push([...new Set(list)]);
+  }
+  return out;
 }
 function analyse(order){
   const seq=new Map();
@@ -139,8 +157,11 @@ function analyse(order){
 }
 function findDeadOverrides(){
 const key=d=>d.name+"@"+d.f+":"+d.pos;
-const dp=analyse(page),dw=analyse(worker),wk=new Set(dw.map(key)),wset=new Set(worker);
-const dead=dp.filter(d=>!wset.has(d.f)||wk.has(key(d)));
+// Every load order in use: the page, the AI worker, and the partial stacks the
+// gate tests load (a definition one of them relies on is not dead there).
+const orders=[page,worker,...testOrders()];
+const results=orders.map(o=>({set:new Set(o),keys:new Set(analyse(o).map(key))}));
+const dead=analyse(page).filter(d=>results.every(r=>!r.set.has(d.f)||r.keys.has(key(d))));
 const line=(f,pos)=>info[f].src.slice(0,Math.max(0,pos)).split("\n").length;
 let tot=0;for(const d of dead){d.lines=line(d.f,d.end)-line(d.f,d.start)+1;tot+=d.lines;}
 return dead.sort((a,b)=>b.lines-a.lines).map(d=>({...d,line:line(d.f,d.pos),byLine:line(d.by,d.byPos)}));
@@ -149,6 +170,7 @@ return dead.sort((a,b)=>b.lines-a.lines).map(d=>({...d,line:line(d.f,d.pos),byLi
 module.exports={findDeadOverrides};
 if(require.main===module){
   const dead=findDeadOverrides();
+  if(process.argv.includes("--json")){process.stdout.write(JSON.stringify(dead));process.exit(0);}
   for(const d of dead)console.log(String(d.lines).padStart(5),d.how.padEnd(6),d.name.padEnd(40),d.f+":"+d.line,"<- replaced by",d.by+":"+d.byLine);
   console.log("superseded definitions:",dead.length);
   process.exitCode=dead.length?1:0;
