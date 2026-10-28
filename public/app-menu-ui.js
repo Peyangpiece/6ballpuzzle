@@ -189,7 +189,7 @@ function HexLogoMark({size=210}){
         };
 
         img.src=
-            "/assets/6ball-logo-source.jpg";
+            "/assets/drop-ball-logo.svg";
     },[]);
 
     return React.createElement(

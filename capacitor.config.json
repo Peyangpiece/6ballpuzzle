@@ -1,0 +1,38 @@
+{
+  "appId": "app.dropball.game",
+  "appName": "Drop Ball",
+  "webDir": "dist",
+  "backgroundColor": "#060512",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "backgroundColor": "#060512",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "FirebaseAuthentication": {
+      "skipNativeAuth": true,
+      "providers": [
+        "apple.com",
+        "google.com"
+      ]
+    }
+  },
+  "experimental": {
+    "ios": {
+      "spm": {
+        "swiftToolsVersion": "6.1",
+        "packageOptions": {
+          "@capacitor-firebase/authentication": {
+            "symlink": true
+          }
+        },
+        "packageTraits": {
+          "@capacitor-firebase/authentication": [
+            "Google"
+          ]
+        }
+      }
+    }
+  }
+}
