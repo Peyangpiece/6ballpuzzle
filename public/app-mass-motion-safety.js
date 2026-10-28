@@ -523,6 +523,34 @@
    * pileFlowWaveSafe() has rejected it.
    */
 
+  /*
+   * A segment that no short delay makes safe waits until the balls already
+   * scheduled have moved out of its way -- at the latest until all of them
+   * have landed. If it still cannot be scheduled it runs unscheduled, but
+   * only after that time (liveHoldUntil, see collectLiveMotionBatch):
+   * started at once, a ball the planner moves later blocked a path scheduled
+   * earlier, and the contact correction then pushed the earlier ball
+   * sideways and up until it overlapped and snapped.
+   */
+  function scheduleAfterScheduled(g,segs,from,duration,STEP){
+    let last=from;
+    for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){
+      const ball=valid(x,y)?g.board[y][x]:null;
+      if(!Array.isArray(ball?.fallPath))continue;
+      for(const s of ball.fallPath)if(s?.pileFlow&&Number.isFinite(s.pileFlowEnd)&&!segs.includes(s))last=Math.max(last,s.pileFlowEnd);
+    }
+    // A "late" gravity path (straight down, then sideways) can pass through
+    // the ball under its start, e.g. a ball leaving a wall over a ball below:
+    // then it moves sideways first, or straight to its cell.
+    const modes=segs.map(q=>q.pileGravityLateralMode);
+    for(const mode of [null,"early","linear"]){
+      if(mode)for(const q of segs)if(q.pileGravityFall&&q.pileGravityLateralMode==="late")q.pileGravityLateralMode=mode;
+      for(let start=from;start<=last+STEP+1e-9;start+=STEP)if(pileFlowWaveSafe(g,segs,start,duration))return{ok:true,last};
+    }
+    segs.forEach((q,k)=>{q.pileGravityLateralMode=modes[k];});
+    return{ok:false,last};
+  }
+
   function returnSegmentToLegacy(seg){
     if(!seg)return;
 
@@ -752,10 +780,13 @@
             continue;
           }
 
+          let hold=0;
+          if(!safe){const r=scheduleAfterScheduled(g,[seg],fallback+Math.max(duration,.35)+STEP,duration,STEP);safe=r.ok;hold=r.last;}
           if(!safe){
             returnSegmentToLegacy(
               seg
             );
+            seg.liveHoldUntil=hold;
           }
         }
       }
@@ -936,15 +967,22 @@
           start+=STEP;
         }
 
+        let hold=0;
+        if(!safe){
+          const r=scheduleAfterScheduled(g,segs,limit+STEP,duration,STEP);
+          if(r.ok){safe=true;start=segs[0].pileFlowStart;}else hold=r.last;
+        }
         if(!safe){
           /*
            * Entire motionSeq falls back together,
            * preserving simultaneous motion.
            */
-          for(const seg of segs)
+          for(const seg of segs){
             returnSegmentToLegacy(
               seg
             );
+            seg.liveHoldUntil=hold;
+          }
 
           previousStart=earliest;
         }else{
