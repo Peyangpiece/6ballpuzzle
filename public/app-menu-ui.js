@@ -271,10 +271,24 @@ function HexMenuBackdrop(){
     return React.createElement("div",{className:"absolute inset-0 pointer-events-none overflow-hidden","aria-hidden":"true",style:{background:"radial-gradient(900px 520px at 12% 18%,rgba(58,38,145,.30),transparent 60%),radial-gradient(760px 460px at 88% 28%,rgba(0,187,210,.16),transparent 62%),radial-gradient(800px 440px at 58% 112%,rgba(255,62,165,.14),transparent 58%),linear-gradient(145deg,#050412 0%,#08081c 46%,#050512 100%)"}});
 }
 
+// Menus are laid out for phones in landscape. On larger screens (desktop,
+// tablet) they are zoomed so that text and targets keep their proportion to
+// the screen instead of floating small in the middle.
+function hexMenuScale(){
+    if(typeof window==="undefined")return 1;
+    const w=window.innerWidth||0,h=window.innerHeight||0;
+    return Math.round(Math.max(1,Math.min(1.6,w/1000,h/560))*100)/100;
+}
+function useHexMenuScale(){
+    const [scale,setScale]=React.useState(hexMenuScale);
+    React.useEffect(()=>{const on=()=>setScale(hexMenuScale());window.addEventListener("resize",on);return()=>window.removeEventListener("resize",on);},[]);
+    return scale;
+}
 function HexMenuShell({children,title,back,wide=true}){
-    return React.createElement("div",{className:"absolute inset-0 z-20 overflow-y-auto font-sans",style:{paddingTop:"max(16px,env(safe-area-inset-top))",paddingBottom:"max(16px,env(safe-area-inset-bottom))",paddingLeft:"max(24px,env(safe-area-inset-left))",paddingRight:"max(24px,env(safe-area-inset-right))"}},
+    const scale=useHexMenuScale();
+    return React.createElement("div",{className:"absolute inset-0 z-20 overflow-y-auto font-sans flex flex-col",style:{paddingTop:"max(16px,env(safe-area-inset-top))",paddingBottom:"max(16px,env(safe-area-inset-bottom))",paddingLeft:"max(24px,env(safe-area-inset-left))",paddingRight:"max(24px,env(safe-area-inset-right))"}},
         React.createElement(HexMenuBackdrop,null),
-        React.createElement("div",{className:"relative z-10 mx-auto min-h-full flex flex-col justify-center",style:{maxWidth:wide?920:640}},
+        React.createElement("div",{"data-hex-menu-content":"1",className:"relative z-10 mx-auto my-auto w-full flex flex-col",style:{maxWidth:wide?920:640,zoom:scale}},
             (title||back)&&React.createElement("div",{className:"flex items-center gap-3",style:{marginBottom:"clamp(14px,3vh,28px)"}},
                 back&&React.createElement("button",{onClick:back,"aria-label":"戻る","data-hex-back":"1",className:"shrink-0 flex items-center justify-center rounded-full active:scale-95",style:{width:40,height:40,...HEX_MENU_SURFACE}},React.createElement(HexChevron,{dir:"left",color:"rgba(255,255,255,.85)",size:20})),
                 title&&React.createElement("div",{className:"text-white font-bold tracking-[.01em]",style:{fontSize:"clamp(21px,2.6vw,28px)",lineHeight:1.2}},title)),
@@ -293,7 +307,7 @@ function HexMenuButton({icon=null,title,subtitle,meta,badge=null,accent="cyan",o
 }
 
 function HexPanel({children,className="",style={}}){return React.createElement("div",{className,style:{...HEX_MENU_SURFACE,borderRadius:18,...style}},children);}
-function HexStat({label,value,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement(HexPanel,{className:"p-4 text-center"},React.createElement("div",{className:"text-[11px] font-bold tracking-[.14em] text-white/50"},label),React.createElement("div",{className:"mt-1 font-bold tabular-nums",style:{fontSize:"clamp(20px,3vw,30px)",color:c}},value));}
+function HexStat({label,value,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement(HexPanel,{className:"p-4 text-center"},React.createElement("div",{className:"text-[12px] font-bold text-white/55"},label),React.createElement("div",{className:"mt-1 font-bold tabular-nums",style:{fontSize:"clamp(20px,3vw,30px)",color:c}},value));}
 function HexSettingSlider({label,caption,value,onChange,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement(HexPanel,{className:"px-5 py-4"},React.createElement("div",{className:"flex items-center justify-between gap-4 mb-3"},React.createElement("div",null,React.createElement("div",{className:"text-[15px] font-bold text-white"},label),caption&&React.createElement("div",{className:"text-[12px] text-white/50 mt-0.5 leading-relaxed"},caption)),React.createElement("div",{className:"text-[13px] tabular-nums text-white/60"},`${Math.round(value)}%`)),React.createElement("input",{type:"range",min:0,max:100,step:1,value,"aria-label":label,onChange:e=>onChange(Number(e.target.value)),className:"w-full",style:{accentColor:c}}));}
 function HexSettingToggle({label,caption,value,onChange,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement("button",{onClick:()=>onChange(!value),role:"switch","aria-checked":value?"true":"false","aria-label":label,className:"w-full text-left"},React.createElement(HexPanel,{className:"px-5 py-4 flex items-center gap-4"},React.createElement("div",{className:"flex-1"},React.createElement("div",{className:"text-[15px] font-bold text-white"},label),caption&&React.createElement("div",{className:"text-[12px] text-white/50 mt-0.5 leading-relaxed"},caption)),React.createElement("div",{className:"shrink-0 relative rounded-full",style:{width:50,height:30,background:value?c:"rgba(255,255,255,.14)",transition:"background .18s ease"}},React.createElement("div",{style:{position:"absolute",top:2,left:value?22:2,width:26,height:26,borderRadius:"50%",background:"#fff",boxShadow:"0 2px 6px rgba(0,0,0,.35)",transition:"left .16s ease"}}))));}
 
