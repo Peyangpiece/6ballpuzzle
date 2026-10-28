@@ -34,21 +34,7 @@
         return items;
     }
 
-    function staticVisualColliders(g){
-        if(!boardStaticForActivePlay(g))return null;
-        const scanMin=boardScanMin(g.board),ver=Number(g.ver)||0;
-        const cache=g._perfStaticVisualColliders;
-        if(cache&&cache.ver===ver&&cache.scanMin===scanMin)return cache.items;
-        const items=[];
-        for(let y=scanMin;y<ROWS;y++)for(let x=0;x<W2;x++){
-            const ball=valid(x,y)?g.board[y][x]:null;
-            if(!ball)continue;
-            const v=g.vis.get(ball.id)||{x,y};
-            items.push({x:v.x,y:v.y,id:ball.id});
-        }
-        g._perfStaticVisualColliders={ver,scanMin,items};
-        return items;
-    }
+    
 
     safeActiveFallOffset=function(g,cells,dx,dOff,desired){
         const colliders=staticLogicalColliders(g);
@@ -104,26 +90,7 @@
     };
 
     if(baseRigidShadowPixelPlacement){
-        rigidShadowPixelPlacement=function(g,shadowCells,pos,D,X,Y,BW,BH){
-            const colliders=staticVisualColliders(g);
-            if(!colliders)return baseRigidShadowPixelPlacement(g,shadowCells,pos,D,X,Y,BW,BH);
-            if(!shadowCells||!shadowCells.length)return [];
-            const pts=shadowCells.map(([sx,sy,sc])=>{const [px,py]=pos(sx,sy);return{px,py,sc};});
-            const floorCenter=Y+BH-D*.5;
-            let dy=0;
-            const deepest=Math.max(...pts.map(p=>p.py));
-            if(deepest+dy>floorCenter)dy=floorCenter-deepest;
-            // Each obstacle limits the same rigid translation. Accumulating
-            // penetrations with a stale gy over-corrects multi-ball contacts.
-            for(const gp of pts)for(const q of colliders){
-                const [bpX,bpY]=pos(q.x,q.y);
-                const ddx=Math.abs(gp.px-bpX);if(ddx>=D-1e-6)continue;
-                const vert=Math.sqrt(Math.max(0,D*D-ddx*ddx));
-                dy=Math.min(dy,bpY-vert-gp.py);
-            }
-            if(!Number.isFinite(dy))dy=0;
-            return pts.map(p=>[p.px,p.py+dy,p.sc]);
-        };
+        
     }
 
     if(baseDrawBall){
