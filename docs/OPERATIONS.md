@@ -10,6 +10,10 @@
   `main` では加えて `verify-production` ジョブが「本番の `/deploy-sha.txt` がそのコミットになるまで最大 25 分待つ」
   検証を行います。Actions 自身はデプロイしません（以前は両方がデプロイしており、古いコミットのビルドが後から
   上書きする競合が実際に起きたため、デプロイ元を 1 つにしました）。
+- Worker 名は `dropball`（公開 URL `https://dropball.hrk-6888.workers.dev`）。Workers Builds はダッシュボード上の
+  Worker 名でデプロイ先を決めるため、名前を変えるときは **先にダッシュボードで Worker の名前を変え**、そのあとで
+  `wrangler.jsonc` の `name` と `validate.yml` の URL を合わせます。公開ドメインを変えたら Firebase コンソールの
+  Authentication → 設定 → 承認済みドメイン に新しいドメインを追加します（Google ログインのポップアップに必要）。
 - Cloudflare の Git 連携を外す場合は、`validate.yml` の `verify-production` を `cloudflare/wrangler-action` による
   デプロイに戻してください（`CLOUDFLARE_API_TOKEN` と `CLOUDFLARE_ACCOUNT_ID` のシークレットは残っています）。
 - `dist/_headers` でキャッシュ方針を配信します。ハッシュ付き `/js/* /css/* /vendor/*` は 1 年 immutable、
@@ -120,7 +124,7 @@ GitHub → Settings → Branches → `main`:
 ## 障害時
 
 - 直前のデプロイへ戻す: 対象コミットで `workflow_dispatch` を実行するか、`git revert` を `main` に push します。
-- 本番が動いているかの確認: `curl https://6ballpuzzle.hrk-6888.workers.dev/deploy-sha.txt` と
+- 本番が動いているかの確認: `curl https://dropball.hrk-6888.workers.dev/deploy-sha.txt` と
   `npm run test:browser`（`DIST_DIR` を使わず本番 URL を見るには `tests/quality-browser-review.js` を `REVIEW_URL` 付きで実行）。
 - `main` への push に Cloudflare がビルドを作らないことがあります（2026-10-13、#20 のマージ `a1db2d0` で発生。
   ダッシュボードの Deployments に該当コミットの `main` ビルドが無く、`verify-production` は 25 分待って失敗）。

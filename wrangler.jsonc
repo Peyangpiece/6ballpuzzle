@@ -1,6 +1,6 @@
 {
   // Production serves the built bundle in dist/ (npm run build). public/ is the dev tree.
-  "name": "6ballpuzzle",
+  "name": "dropball",
   "compatibility_date": "2026-08-16",
   // `wrangler deploy` runs this first, so Cloudflare Workers Builds (Git integration)
   // and the GitHub Actions deploy both ship the same freshly built dist/.

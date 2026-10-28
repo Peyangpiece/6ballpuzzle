@@ -4,7 +4,7 @@
 STRAIGHT / PYRAMID / HEXAGON の「技」でおじゃま球を相手に送ります。
 横画面専用の PWA で、Cloudflare Workers の静的配信と Firebase Realtime Database（オンライン対戦）で動きます。
 
-公開先: https://6ballpuzzle.hrk-6888.workers.dev
+公開先: https://dropball.hrk-6888.workers.dev
 
 iOS アプリ版（Capacitor）の作り方と App Store への提出手順は [docs/IOS.md](docs/IOS.md)。
 
