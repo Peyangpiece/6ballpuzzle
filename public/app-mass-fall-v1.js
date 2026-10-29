@@ -268,7 +268,9 @@ function separate(balls){
    if(b.moving){b.p[0]+=nx*push/.5;b.p[1]+=ny*push/H;}
    worst=Math.max(worst,1-d);
   }
-  for(const q of moving){q.p[0]=Math.max(0,Math.min(W2-1,q.p[0]));q.p[1]=Math.min(FLOOR_ROW,q.p[1]);}
+  // A falling ball never goes back up: an overlap is resolved sideways
+  // (q.minY is its height in the previous frame).
+  for(const q of moving){q.p[0]=Math.max(0,Math.min(W2-1,q.p[0]));q.p[1]=Math.min(FLOOR_ROW,Math.max(q.minY??-Infinity,q.p[1]));}
   if(worst<2e-4)break;
  }
 }
@@ -280,7 +282,8 @@ function showMassFall(g,dt){
  const balls=[];
  for(const{b,x,y}of boardBalls(g)){
   const it=m.byId.get(b.id);
-  balls.push(it?{it,p:posAt(it,m.t).slice(),moving:m.t<it.plan[it.plan.length-1].t1,i:balls.length}:{b,p:[x,y],moving:false});
+  const v=g.vis.get(b.id);
+  balls.push(it?{it,p:posAt(it,m.t).slice(),moving:m.t<it.plan[it.plan.length-1].t1,i:balls.length,minY:Math.min(posAt(it,m.t)[1],(it.last||[0,v&&Number.isFinite(v.y)?v.y:-Infinity])[1])}:{b,p:[x,y],moving:false});
  }
  separate(balls);
  for(const q of balls){

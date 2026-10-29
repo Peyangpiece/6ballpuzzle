@@ -95,6 +95,9 @@ function enforcePileGravitySegment(seg,reason="pile_flow",ball=null){
     if(!seg?.from||!seg?.to||seg.to[1]<=seg.from[1])return false;
     // Contact with a real support retains its circle/tangent geometry.
     if(reason==="clear_support_loss"&&!ball?.isGarbage&&(seg.pivot||seg.topPivot))return false;
+    // A ball stepping off the wall rolls round the ball under it (topPivot);
+    // a straight or two-stage path cuts through that ball or the one beside it.
+    if(seg.topPivot&&/^GRAVITY_RESCUE_(LEFT|RIGHT)$/.test(String(seg.kind||"")))return false;
     if(!seg.pileGravityFall){
         const originalPivot=Array.isArray(seg.pivot)?seg.pivot:null;
         if(originalPivot){
@@ -505,7 +508,7 @@ function liveSegPoint(seg,t,startState=null,duration=null){
 }
 
 function collectLiveMotionBatch(g){
-    let seq=Infinity;const all=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const cell=valid(x,y)?g.board[y][x]:null;if(!cell||!Array.isArray(cell.fallPath)||!cell.fallPath.length)continue;const seg=cell.fallPath[0];if(!seg?.to||seg.pileFlow||!seg.motionSeq)continue;const v=g.vis.get(cell.id);if(!v)continue;const startState={vy:Math.max(0,v?.vy||0),speed:Math.max(0,v?.motionSpeed||0)},endState={...startState},duration=hexMotionDuration(seg,endState);all.push({cell,v,x,y,seg,duration,startState,endState});seq=Math.min(seq,seg.motionSeq);}if(!Number.isFinite(seq))return null;const members=all.filter(m=>m.seg.motionSeq===seq);return{seq,members,byId:new Map(members.map(m=>[m.cell.id,m])),duration:Math.max(1/120,...members.map(m=>m.duration))};
+    let seq=Infinity;const all=[];for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const cell=valid(x,y)?g.board[y][x]:null;if(!cell||!Array.isArray(cell.fallPath)||!cell.fallPath.length)continue;const seg=cell.fallPath[0];if(!seg?.to||seg.pileFlow||!seg.motionSeq)continue;if(seg.liveHoldUntil>(g.pileFlowClock||0))continue;const v=g.vis.get(cell.id);if(!v)continue;const startState={vy:Math.max(0,v?.vy||0),speed:Math.max(0,v?.motionSpeed||0)},endState={...startState},duration=hexMotionDuration(seg,endState);all.push({cell,v,x,y,seg,duration,startState,endState});seq=Math.min(seq,seg.motionSeq);}if(!Number.isFinite(seq))return null;const members=all.filter(m=>m.seg.motionSeq===seq);return{seq,members,byId:new Map(members.map(m=>[m.cell.id,m])),duration:Math.max(1/120,...members.map(m=>m.duration))};
 }
 function liveBatchPointAt(batch,member,t,states,memo=new Map(),stack=new Set()){
     if(!member)return[0,0];const id=member.cell.id;if(memo.has(id))return memo.get(id);if(member.seg.kind==="FOLLOW_SUPPORT"&&!stack.has(id)){const sid=member.seg.followSupportIds?.[0],support=batch.byId?.get(sid);if(support){stack.add(id);const sp=liveBatchPointAt(batch,support,t,states,memo,stack);stack.delete(id);const out=[member.seg.from[0]+sp[0]-support.seg.from[0],member.seg.from[1]+sp[1]-support.seg.from[1]];memo.set(id,out);return out;}}const st=states?.get(id),out=liveSegPoint(member.seg,t,st?.startState,st?.naturalDuration);memo.set(id,out);return out;
