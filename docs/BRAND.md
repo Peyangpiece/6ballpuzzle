@@ -17,6 +17,7 @@
 | `drop-ball-logo-mono-white.svg` / `-mono-navy.svg` | 1 色版。写真の上、刻印、単色印刷 |
 | `drop-ball-symbol.svg` / `drop-ball-app-icon-1024.png` | アプリアイコン（App Store 用は 1024px PNG） |
 | `drop-ball-symbol-transparent.svg` | 背景なしのシンボル（SNS アバターの重ね合わせ等） |
+| `icon-composer/*.svg` | iOS 26 以降のリキッドグラス用アイコンのレイヤー（玉・ライン 3 本。光沢と影はシステムが付けるので描かない）。Icon Composer で組んだものが `ios/App/App/AppIcon.icon` |
 
 ## 色
 | 名前 | HEX | 役割 |

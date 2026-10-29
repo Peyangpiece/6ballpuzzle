@@ -15,7 +15,7 @@
 ここから先は **Mac での作業** です（この開発環境は Linux のため、ビルドと署名はできません）。
 
 ## 1. 準備
-- Mac、Xcode 16.3 以降（Swift 6.1。Firebase プラグインの SPM トレイトに必要）、Node.js 20 以降
+- Mac、Xcode 26 以降（2026 年 4 月 28 日から App Store Connect へのアップロードに必須）、Node.js 20 以降
 - Apple Developer Program（年会費）
 
 ```bash
@@ -32,6 +32,11 @@ npm run ios:open      # Xcode で開く
 2. Capabilities に **Game Center** と **Sign in with Apple** があることを確認（`App/App.entitlements` に記載済み。
    自動署名で App ID に反映されます。表示されない場合は「+ Capability」で追加）。
 3. 初回は Swift パッケージ（Capacitor、Firebase、GoogleSignIn）の取得に数分かかります。
+4. **アプリアイコン（リキッドグラス）**: `App/App/AppIcon.icon`（Icon Composer で作成）を Xcode のプロジェクトナビゲータの
+   「App」フォルダへドラッグし、ターゲット App にチェックを入れて追加します。General → App Icons and Launch Screen の
+   App Icon が `AppIcon` になっていることを確認します。従来の `Assets.xcassets/AppIcon.appiconset` も同じ名前で残っているため、
+   ビルドした実機・シミュレータのホーム画面でリキッドグラスのアイコンが使われていることを確かめてください
+   （使われない場合は `AppIcon.appiconset` を削除）。元のレイヤーは `brand/icon-composer/`。
 
 ## 3. Firebase（プロジェクト ballpuzzle-8cc87）
 1. Firebase コンソール → プロジェクトの設定 → **iOS アプリを追加**（バンドル ID は上と同じ）。
