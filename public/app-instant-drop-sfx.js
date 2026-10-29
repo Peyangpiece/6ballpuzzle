@@ -32,7 +32,8 @@
 
     loading=fetch(SRC,{cache:"force-cache"})
       .then(r=>{
-        if(!r.ok)throw new Error("instant-drop fetch "+r.status);
+        // status 0: a file served by the iOS app (capacitor://), body intact.
+        if(!r.ok&&r.status!==0)throw new Error("instant-drop fetch "+r.status);
         return r.arrayBuffer();
       })
       .then(ab=>ctx.decodeAudioData(ab.slice(0)))

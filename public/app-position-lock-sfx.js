@@ -57,7 +57,8 @@
       {cache:"force-cache"}
     )
     .then(r=>{
-      if(!r.ok)
+      // status 0: a file served by the iOS app (capacitor://), body intact.
+      if(!r.ok&&r.status!==0)
         throw new Error(
           "position-lock audio "+r.status
         );
