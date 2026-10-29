@@ -48,12 +48,15 @@ const diag=(tag)=>{try{
   const ctx=typeof Sfx!=="undefined"?Sfx.ctx:null;
   console.log("[DropBall] "+tag+" view="+innerWidth+"x"+innerHeight+" screen="+screen.width+"x"+screen.height+" safe="+inset+
     " audio="+(ctx?ctx.state+"@"+ctx.sampleRate:"none")+" elVolIgnored="+window.__sixBallAudioElementVolumeIgnored+
-    " session="+(navigator.audioSession?navigator.audioSession.type:"n/a"));
+    " session="+(navigator.audioSession?navigator.audioSession.type:"n/a")+
+    " rotate="+(window.__sixBallRotateV15Ready?"ok":(window.__sixBallRotateV15Error||"-"))+
+    " drop="+(window.__sixBallInstantDropReady?"ok":(window.__sixBallInstantDropError||"-"))+
+    " lock="+(window.__sixBallPositionLockReady?"ok":(window.__sixBallPositionLockError||"-")));
 }catch(e){console.log("[DropBall] diag error "+e);}};
 setTimeout(()=>diag("start"),1500);
 window.addEventListener?.("resize",()=>diag("resize"));
 let diagTaps=0;
-window.addEventListener?.("pointerup",()=>{if(diagTaps++<3)setTimeout(()=>diag("tap"+diagTaps),400);},true);
+window.addEventListener?.("pointerup",()=>{if(diagTaps++<8)setTimeout(()=>diag("tap"+diagTaps),400);},true);
 
 // ---------------------------------------------------------------- haptics
 const IMPACT=ms=>ms<15?"LIGHT":ms<35?"MEDIUM":"HEAVY";
