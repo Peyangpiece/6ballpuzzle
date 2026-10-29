@@ -167,7 +167,7 @@ function pileFlowPoint(seg,t){
 
 function pileFlowNominalDuration(seg,state){
     const H=HEX_ROW_H,dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];
-    if(seg.pileGravityFall&&dy>0&&seg.pileFlowReason==="clear_support_loss"&&!seg._pileFlowBall?.isGarbage){
+    if(seg.pileGravityFall&&dy>0&&seg.pileFlowReason==="clear_support_loss"){
         const a=CLEAR_SUPPORT_LOSS_GRAV/H,vmax=CLEAR_SUPPORT_LOSS_TERMINAL_VY/H,v0=Math.min(vmax,Math.max(0,Number.isFinite(state.vy)?state.vy:0)),duration=clearSupportLossFallDuration(dy,v0,a,vmax);
         seg.pileGravityTerminal={a,vmax};seg.pileGravityV0=v0;seg.pileGravityDuration=Math.max(1/120,duration);
         state.vy=Math.min(vmax,v0+a*duration);state.speed=Math.max(state.speed||0,state.vy*H);
@@ -189,7 +189,7 @@ function pileFlowNominalDuration(seg,state){
     if(seg.pivot){
         const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*0.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*0.5);let da=a1-a0;while(da>Math.PI)da-=Math.PI*2;while(da<-Math.PI)da+=Math.PI*2;
         const radius=Math.hypot((seg.from[0]-px)*0.5,(seg.from[1]-py)*H);
-        if(seg.pileFlowReason==="clear_support_loss"&&!seg._pileFlowBall?.isGarbage&&Math.abs(radius-1)<PILE_FLOW_CONTACT_EPS&&Math.sin(a0+da)>Math.sin(a0)){
+        if(seg.pileFlowReason==="clear_support_loss"&&Math.abs(radius-1)<PILE_FLOW_CONTACT_EPS&&Math.sin(a0+da)>Math.sin(a0)){
             const v0=Math.max(0,state.vy||0)*H,profile=clearSupportLossRollProfile(a0,da,v0,CLEAR_SUPPORT_LOSS_GRAV);
             seg.pileRollProfile=profile;
             const v1=Math.sqrt(Math.max(0,v0*v0+2*CLEAR_SUPPORT_LOSS_GRAV*(Math.sin(a1)-Math.sin(a0))));
