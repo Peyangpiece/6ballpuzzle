@@ -87,7 +87,7 @@ function nativeBgmElement(){
   };
   // Taps re-apply the BGM volume and call play(); only real changes cross
   // the bridge to the native player.
-  let sent=-1;
+  let sent=-1,lastAsk=0;
   const push=()=>{const v=level();if(playing&&v!==sent){sent=v;call("NativeBgm","setVolume",{volume:v}).catch(()=>{});}};
   return{
     loop:true,preload:"none",src:"",playsInline:true,error:null,readyState:4,
@@ -97,7 +97,15 @@ function nativeBgmElement(){
     canPlayType(){return"probably";},
     load(){call("NativeBgm","load",{path:BGM_PATH}).then(()=>fire("canplaythrough")).catch(()=>{});},
     play(){
-      if(playing){push();return Promise.resolve();}
+      // Already playing: at most every 2 s, ask the native player again, so
+      // a loop stopped by an audio interruption comes back on the next tap.
+      if(playing){
+        push();
+        const now=Date.now();
+        if(now-lastAsk>2000){lastAsk=now;call("NativeBgm","play",{path:BGM_PATH,volume:level()}).catch(()=>{});}
+        return Promise.resolve();
+      }
+      lastAsk=Date.now();
       playing=true;sent=level();
       return call("NativeBgm","play",{path:BGM_PATH,volume:sent}).then(()=>{fire("playing");})
         .catch(err=>{playing=false;window.__sixBallGameplayBgmLastError="native: "+(err&&err.message||err);fire("error");throw err;});

@@ -142,6 +142,32 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
     ]
 
     private var player: AVAudioPlayer?
+    /// The web layer wants the loop playing (between play and pause).
+    private var wanted = false
+    private var observing = false
+
+    /// The web view plays its sounds (Web Audio) through its own audio
+    /// session; with the default non-mixable category each side interrupted
+    /// the other and the BGM fell silent. Ambient mixes with them and, like
+    /// the web sounds, follows the silent switch.
+    private func prepareSession() {
+        let session = AVAudioSession.sharedInstance()
+        if session.category != .ambient { try? session.setCategory(.ambient, mode: .default, options: []) }
+        try? session.setActive(true)
+        if observing { return }
+        observing = true
+        NotificationCenter.default.addObserver(self, selector: #selector(resumeIfWanted), name: AVAudioSession.interruptionNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(resumeIfWanted), name: UIApplication.didBecomeActiveNotification, object: nil)
+    }
+
+    @objc private func resumeIfWanted() {
+        DispatchQueue.main.async {
+            guard self.wanted, let player = self.player, !player.isPlaying else { return }
+            try? AVAudioSession.sharedInstance().setActive(true)
+            player.play()
+            print("[DropBall] NativeBgm resumed playing=\(player.isPlaying)")
+        }
+    }
 
     private func ensurePlayer(_ path: String?) -> AVAudioPlayer? {
         if let player = player { return player }
@@ -173,6 +199,8 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("BGM file not found")
                 return
             }
+            self.prepareSession()
+            self.wanted = true
             player.volume = self.volume(call)
             if !player.isPlaying { player.play() }
             print("[DropBall] NativeBgm play volume=\(player.volume) playing=\(player.isPlaying)")
@@ -182,6 +210,7 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func pause(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
+            self.wanted = false
             self.player?.pause()
             call.resolve()
         }
@@ -189,7 +218,13 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func setVolume(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            self.player?.volume = self.volume(call)
+            guard let player = self.player else { call.resolve(); return }
+            player.volume = self.volume(call)
+            if self.wanted && !player.isPlaying {
+                try? AVAudioSession.sharedInstance().setActive(true)
+                player.play()
+            }
+            print("[DropBall] NativeBgm volume=\(player.volume) playing=\(player.isPlaying)")
             call.resolve()
         }
     }
