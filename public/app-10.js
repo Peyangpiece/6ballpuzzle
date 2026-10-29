@@ -496,6 +496,25 @@ if(typeof window!=="undefined")window.__sixBallStaticBackgroundUrl=function(){
     try{const cv=getStaticBackgroundCanvas();if(cv)STATIC_BG_URL=cv.toDataURL("image/png");}catch(_){STATIC_BG_URL=null;}
     return STATIC_BG_URL;
 };
+// The same background with each side continued by its mirror image, for the
+// bands beside the 16:9 game area on screens wider than 16:9 (phones are about
+// 2.2:1). Mirroring keeps the horizon line and the gradients continuous at the
+// edges of the game area.
+let STATIC_BG_WIDE_URL=null;
+if(typeof window!=="undefined")window.__sixBallStaticBackgroundWideUrl=function(){
+    if(STATIC_BG_WIDE_URL)return STATIC_BG_WIDE_URL;
+    try{
+        const bg=getStaticBackgroundCanvas();if(!bg)return null;
+        const E=Math.round(VW*.3),cv=document.createElement("canvas");
+        cv.width=VW+2*E;cv.height=VH;
+        const c=cv.getContext("2d");
+        c.drawImage(bg,E,0);
+        c.save();c.translate(E,0);c.scale(-1,1);c.drawImage(bg,0,0,E,VH,0,0,E,VH);c.restore();
+        c.save();c.translate(E+VW,0);c.scale(-1,1);c.drawImage(bg,VW-E,0,E,VH,-E,0,E,VH);c.restore();
+        STATIC_BG_WIDE_URL=cv.toDataURL("image/jpeg",.9);
+    }catch(_){STATIC_BG_WIDE_URL=null;}
+    return STATIC_BG_WIDE_URL;
+};
 
 function drawAttackFlights(ctx,orbs){
     for(const o of orbs||[]){
