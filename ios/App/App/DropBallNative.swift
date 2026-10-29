@@ -147,7 +147,10 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
         if let player = player { return player }
         guard let path = path else { return nil }
         let url = Bundle.main.bundleURL.appendingPathComponent("public").appendingPathComponent(path)
-        guard let created = try? AVAudioPlayer(contentsOf: url) else { return nil }
+        guard let created = try? AVAudioPlayer(contentsOf: url) else {
+            print("[DropBall] NativeBgm: cannot open \(url.path) exists=\(FileManager.default.fileExists(atPath: url.path))")
+            return nil
+        }
         created.numberOfLoops = -1
         created.prepareToPlay()
         player = created
@@ -172,6 +175,7 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             player.volume = self.volume(call)
             if !player.isPlaying { player.play() }
+            print("[DropBall] NativeBgm play volume=\(player.volume) playing=\(player.isPlaying)")
             call.resolve()
         }
     }

@@ -50,6 +50,8 @@ const diag=(tag)=>{try{
   console.log("[DropBall] "+tag+" fps="+(fpsNow==null?"-":fpsNow)+" view="+innerWidth+"x"+innerHeight+" screen="+screen.width+"x"+screen.height+" safe="+inset+
     " audio="+(ctx?ctx.state+"@"+ctx.sampleRate:"none")+" elVolIgnored="+window.__sixBallAudioElementVolumeIgnored+
     " session="+(navigator.audioSession?navigator.audioSession.type:"n/a")+
+    " bgm="+(window.Bgm&&window.Bgm.audio?(window.Bgm.audio.paused?"paused":"playing")+"@"+(Math.round((window.Bgm.audio.volume||0)*1000)/1000)+(window.Bgm.audio.muted?"muted":""):"none")+
+    " bgmErr="+(window.__sixBallGameplayBgmLastError||"-")+
     " rotate="+(window.__sixBallRotateV15Ready?"ok":(window.__sixBallRotateV15Error||"-"))+
     " drop="+(window.__sixBallInstantDropReady?"ok":(window.__sixBallInstantDropError||"-"))+
     " lock="+(window.__sixBallPositionLockReady?"ok":(window.__sixBallPositionLockError||"-")));
@@ -74,7 +76,15 @@ function nativeBgmElement(){
   const listeners={};
   const fire=t=>{for(const f of listeners[t]||[]){try{f({type:t});}catch(_){}}};
   let volume=1,muted=false,playing=false;
-  const level=()=>muted?0:volume;
+  // The web BGM plays at volume x BGM_OUTPUT_SCALE (0.10, set for desktop
+  // speakers); Safari on iPhone ignored that and played at full volume, which
+  // is the loudness iPhone players know. So the app undoes the scale: the
+  // slider value is the native volume (100% = as loud as before).
+  const level=()=>{
+    if(muted)return 0;
+    const scale=Number(window.__sixBallGameplayBgmOutputScale)||1;
+    return Math.max(0,Math.min(1,volume/scale));
+  };
   // Taps re-apply the BGM volume and call play(); only real changes cross
   // the bridge to the native player.
   let sent=-1;
@@ -90,7 +100,7 @@ function nativeBgmElement(){
       if(playing){push();return Promise.resolve();}
       playing=true;sent=level();
       return call("NativeBgm","play",{path:BGM_PATH,volume:sent}).then(()=>{fire("playing");})
-        .catch(err=>{playing=false;fire("error");throw err;});
+        .catch(err=>{playing=false;window.__sixBallGameplayBgmLastError="native: "+(err&&err.message||err);fire("error");throw err;});
     },
     pause(){if(!playing)return;playing=false;call("NativeBgm","pause").catch(()=>{});fire("pause");},
     get paused(){return!playing;},
