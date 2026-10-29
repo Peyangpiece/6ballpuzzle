@@ -53,10 +53,15 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
         await sp.mouse.click(640, 360);
         await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 1500 });
       } else {
-        if (t < 1200) assert(await sp.evaluate(() => !!document.getElementById("boot")), "splash left before its animation played");
-        await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 4000 });
-        const gone = await sp.evaluate(() => Date.now() - window.__hexSplashShownAt);
-        assert(gone >= 1600, "splash left after " + gone + " ms, before its animation played");
+        if (t < 1800) assert(await sp.evaluate(() => !!document.getElementById("boot")), "splash left before its animation played");
+        // The splash logo and subtitle glide onto the menu's, which are hidden
+        // meanwhile and shown again when the splash is removed.
+        await sp.waitForFunction(() => document.getElementById("boot")?.classList.contains("handoff"), null, { timeout: 4000 });
+        const left = await sp.evaluate(() => Date.now() - window.__hexSplashShownAt);
+        assert(left >= 2300, "splash left after " + left + " ms, before its animation played");
+        await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 2000 });
+        const menu = await sp.evaluate(() => ({ logo: getComputedStyle(document.querySelector('#root img[src*="drop-ball-logo"]')).visibility, subtitle: [...document.querySelectorAll("#root div")].some(d => !d.children.length && d.textContent === "Connect six." && getComputedStyle(d).visibility === "visible") }));
+        assert(menu.logo === "visible" && menu.subtitle, "menu logo or subtitle stayed hidden after the splash: " + JSON.stringify(menu));
       }
       await sp.getByText("AI対戦", { exact: true }).click({ timeout: 5000 });
       assert.deepStrictEqual(spErrors, [], "page errors with the splash: " + spErrors.join(" | "));
