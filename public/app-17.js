@@ -35,7 +35,7 @@ function Matching({ onMatched, onCancel, onError }) {
                     React.createElement("div", { className: "w-11 h-11 rounded-full border-2 border-white/10 animate-spin", style: { borderTopColor: "#2FE3F5" }, "aria-hidden": "true" }),
                     React.createElement("div", { role: "status", className: "mt-4 text-[15px] font-bold text-white" }, phase === "connect" ? "サーバーに接続中" : "対戦相手を探しています"),
                     React.createElement("div", { className: "mt-1 text-[13px] tabular-nums text-white/50" }, Math.floor(waited / 1000), " 秒"),
-                    phase === "search" && waited >= 30000 && React.createElement("div", { className: "mt-3 max-w-xs text-[12px] leading-relaxed text-white/50" }, "相手がまだ見つかりません。レートの近い順から探す範囲を広げています。"),
+                    phase === "search" && waited >= 30000 && React.createElement("div", { className: "mt-3 max-w-xs text-[12px] leading-relaxed text-white/50" }, "探す範囲を広げています"),
                     React.createElement("button", { onClick: onCancel, className: "hex-btn hex-btn-secondary mt-6 px-6 text-[14px]" }, "キャンセル"))
                 : React.createElement("div", { role: "status", "aria-label": "対戦相手が見つかりました " + foe.name, className: "flex items-center justify-center gap-5" },
                     player(me.name || "Player", me.rating, NEON[0]),
@@ -47,10 +47,10 @@ function Matching({ onMatched, onCancel, onError }) {
 // the client writes itself are already Japanese; Firebase codes are mapped.
 function hexFriendlyNetError(msg) {
     const m = String(msg || "");
-    if (!m) return "オンライン対戦を開始できませんでした。通信環境を確認して、もう一度お試しください。";
-    if (/permission[_ ]denied/i.test(m)) return "サーバーに接続を拒否されました。時間をおいてもう一度お試しください。";
-    if (/network|offline|failed to fetch|unavailable/i.test(m) || /Firebase SDK|Firebaseへ接続|Firebase接続なし/.test(m)) return "サーバーに接続できません。インターネット接続を確認してください。";
-    if (/^[\x20-\x7e]+$/.test(m)) return "オンライン対戦を開始できませんでした（" + m.slice(0, 80) + "）。もう一度お試しください。";
+    if (!m) return "接続できませんでした。もう一度お試しください。";
+    if (/permission[_ ]denied/i.test(m)) return "接続が拒否されました。時間をおいてお試しください。";
+    if (/network|offline|failed to fetch|unavailable/i.test(m) || /Firebase SDK|Firebaseへ接続|Firebase接続なし/.test(m)) return "接続できません。インターネットを確認してください。";
+    if (/^[\x20-\x7e]+$/.test(m)) return "接続できませんでした（" + m.slice(0, 80) + "）";
     return m.replace(/:\s*$/, "") + "。";
 }
 function RoomSpinner({ label }) {
@@ -83,7 +83,7 @@ function RoomHost({ onMatched, onCancel, onError }) {
             React.createElement("div", { className: "text-[12px] font-semibold tracking-[.1em] text-white/50" }, "ルームコード"),
             code ? React.createElement(React.Fragment, null,
                 React.createElement("div", { className: "mt-1 font-bold tracking-[.22em] tabular-nums text-white", style: { fontSize: "clamp(32px,5vw,46px)", userSelect: "text", WebkitUserSelect: "text" }, "aria-label": "ルームコード " + code.split("").join(" ") }, code.slice(0, 3), " ", code.slice(3)),
-                React.createElement("div", { className: "mt-2 text-[13px] leading-relaxed text-white/55" }, "このコードを友だちに伝えてください。相手が参加すると自動で始まります。"),
+                React.createElement("div", { className: "mt-2 text-[13px] leading-relaxed text-white/55" }, "友だちにコードを伝えてください"),
                 React.createElement("button", { onClick: copy, className: "hex-btn hex-btn-secondary mt-4 px-5 text-[14px]" }, copied ? "コピーしました" : "コードをコピー"),
                 React.createElement("div", { className: "mt-5" }, React.createElement(RoomSpinner, { label: "相手の参加を待っています" })))
                 : React.createElement("div", { className: "mt-4" }, React.createElement(RoomSpinner, { label: "ルームを準備しています" })),
@@ -127,23 +127,23 @@ function hexTutorialSteps() {
     const kindName = kind === "touch" ? "タッチ" : kind === "pad" ? "コントローラー" : "キーボード";
     return [
         { title: "Drop Ballへようこそ", art: React.createElement(TutBalls, { cells: [[1, 0, 0], [0, 1, 3], [2, 1, 1]], d: 54, label: "3個1組の三角ピース" }),
-          body: ["上から落ちてくる、3個1組の三角ピースを積んでいきます。", "同じ色の球をつなげて消し、技で相手を攻撃します。", "球が盤面からあふれた方の負けです。"] },
+          body: ["落ちてくる3つの球を積む。", "同じ色を6個つなげて消す。あふれたら負け。"] },
         { title: `操作（${kindName}）`, art: null, rows: HEX_CONTROL_GUIDES[kind],
-          body: ["ほかの入力方法の操作は、ホームの「遊び方」で確認できます。"] },
+          body: [] },
         { title: "6個つなげて消す", art: React.createElement(TutBalls, { cells: [[2, 0, 3, 1], [4, 0, 2, 1], [1, 1, 0], [3, 1, 0], [5, 1, 0], [0, 2, 0], [2, 2, 0], [4, 2, 0], [6, 2, 1, 1]], label: "つながった6個の赤い球" }),
-          body: ["同じ色の球が6個以上つながると消えます。", "となり合っていればつながりです（ななめも含みます）。", "消えた後に落ちた球がまたつながると連鎖になります。"] },
+          body: ["同じ色が6個つながると消える（ななめも可）。", "続けて消えると連鎖。"] },
         { title: "技を作る", art: React.createElement("div", { className: "flex flex-wrap items-end justify-center gap-5" },
             [["ストレート", "19個", shapeCells([[0, 0], [2, 0], [4, 0], [6, 0], [8, 0], [10, 0]], 3)],
              ["ピラミッド", "24個", shapeCells(GARBAGE_SHAPES.PYRAMID, 2)],
              ["ヘキサゴン", "36個", shapeCells(GARBAGE_SHAPES.HEXAGON, 1)]].map(([name, n, cells]) =>
                 React.createElement("div", { key: name, className: "flex flex-col items-center gap-1.5" }, React.createElement(TutBalls, { cells, d: 24, label: name }),
                     React.createElement("div", { className: "text-[12px] font-black text-white" }, name), React.createElement("div", { className: "text-[11px] text-white/65" }, "おじゃま ", n)))),
-          body: ["つなげた6個が一直線・三角形・六角形になると「技」です。", "技を作ると、その色の球が盤面からすべて消えます。", "相手におじゃま球を送れるのは技だけです。"] },
+          body: ["6個で一直線・三角形・六角形を作ると「技」。", "その色が全部消え、相手におじゃま球を送る。"] },
         { title: "おじゃま球に注意", art: React.createElement("div", { className: "px-5 py-2 text-center", style: { background: "rgba(60,6,20,.82)", border: "2px solid #FF5A72" } },
             React.createElement("div", { className: "text-[13px] font-black", style: { color: "rgba(255,220,228,.95)" } }, "おじゃま"), React.createElement("div", { className: "text-[22px] font-black", style: { color: "#FF8A9C" } }, "×24")),
-          body: ["攻撃を受けると盤面の上が赤く光り、届く数が「NEXT」の下の「おじゃま」に出ます。", "少し後に、おじゃま球が上から降ってきます。", "先に技を決めて、相手の盤面をあふれさせましょう。"] },
+          body: ["盤面の上が赤く光ったら、まもなく降ってくる。", "先に技を決めて、相手をあふれさせよう。"] },
         { title: "準備完了！", art: React.createElement(TutBalls, { cells: shapeCells(GARBAGE_SHAPES.HEXAGON, 4), d: 40, label: "ヘキサゴン" }), final: true,
-          body: ["次は実際に動かして覚えましょう。5つの短いレッスンがあります。", "対戦中は画面中央上のボタンでポーズできます" + (kind === "keys" ? "（Esc / P キーでも可）。" : kind === "pad" ? "（＋ボタンでも可）。" : "。")] }
+          body: ["5つのレッスンで動かしてみよう。"] }
     ];
 }
 function HexTutorial({ onExit, onPractice, onVsAi, onShowHelp }) {
@@ -184,26 +184,26 @@ const HEX_RED = 0;
 function hexTutPut(g, x, y, c) { const b = mkBall(g, c); g.board[y][x] = b; setVis(g, b, x, y, 0); }
 const HEX_TUTORIAL_LESSONS = [
     { title: "動かして落とす", queue: [[1, 2, 3], [3, 4, 1], [2, 1, 4]],
-      text: { keys: "← → でピースを左右に動かして、Space（または ↑）で落とそう。", touch: "画面を左右にスワイプしてピースを動かし、2本指タップで落とそう。", pad: "十字キーでピースを左右に動かして、Y（または ↑）で落とそう。" },
+      text: { keys: "← → で動かして、Space で落とそう", touch: "スワイプで動かして、2本指タップで落とそう", pad: "十字キーで動かして、Y で落とそう" },
       checks: [["moved", "ピースを動かす"], ["landed", "ピースを落とす"]],
       goal: t => t.moved && t.landedAfterMove ? "success" : null },
     { title: "回して落とす", queue: [[4, 1, 2], [2, 3, 4], [1, 4, 3]],
-      text: { keys: "Z（左回り）/ X（右回り）でピースを回して、落とそう。", touch: "盤面をタップしてピースを回そう（盤面の左側＝左回り、右側＝右回り）。回したら落とそう。", pad: "A（左回り）/ X（右回り）でピースを回して、落とそう。" },
+      text: { keys: "Z / X で回して、落とそう", touch: "タップで回して（左側＝左回り）、落とそう", pad: "A / X で回して、落とそう" },
       checks: [["rotated", "ピースを回す"], ["landedAfterRotate", "ピースを落とす"]],
       goal: t => t.rotated && t.landedAfterRotate ? "success" : null },
     { title: "6個つなげて消す", queue: [[HEX_RED, HEX_RED, HEX_RED]],
       setup: g => { for (const x of [14, 16, 18]) hexTutPut(g, x, 11, HEX_RED); },
-      text: { all: "赤いピースを、右下の赤い球のとなりに落とそう。同じ色が6個以上つながると消えます。（ヒント：右に1〜2マス動かす）" },
+      text: { all: "赤い球のとなりに落として、6個つなげよう（右へ1〜2マス）" },
       checks: [["cleared", "赤を6個以上つなげて消す"]],
-      goal: t => t.cleared ? "success" : t.landed >= 3 ? "retry:ピースが赤い球に届きませんでした。もう一度やってみよう。" : null },
+      goal: t => t.cleared ? "success" : t.landed >= 3 ? "retry:届きませんでした。もう一度！" : null },
     { title: "技を作る", queue: [[HEX_RED, HEX_RED, HEX_RED]],
       setup: g => { for (const x of [12, 14, 16]) hexTutPut(g, x, 11, HEX_RED); },
-      text: { all: "赤い3つの上にピースをぴったり乗せて、6個で三角形（ピラミッド）を作ろう。形が合うと「技」になります。（ヒント：右に2マス動かして落とす）" },
+      text: { all: "赤い3つの上に乗せて、三角形を作ろう（右へ2マス）" },
       checks: [["waza", "ピラミッドを作る"]],
-      goal: t => t.waza ? "success" : t.cleared ? "retry:おしい！三角形にならずに消えました。もう一度。" : t.landed >= 2 ? "retry:もう一度やってみよう。" : null },
+      goal: t => t.waza ? "success" : t.cleared ? "retry:おしい！もう一度" : t.landed >= 2 ? "retry:もう一度！" : null },
     { title: "おじゃま球", queue: [[1, 2, 3], [4, 1, 2], [3, 4, 1]],
       setup: g => { g.incoming = 10; },
-      text: { all: "相手から攻撃が来ました！盤面の上が赤く光り、左の「おじゃま」に届く数が出ています。ピースを1つ落とすと、おじゃま球が降ってきます。" },
+      text: { all: "攻撃が来た！ピースを落とすと、おじゃま球が降ってくる" },
       checks: [["landed", "ピースを落とす"], ["garbageDone", "おじゃま球が降り終わる"]],
       goal: t => t.garbageDone ? "success" : null }
 ];
