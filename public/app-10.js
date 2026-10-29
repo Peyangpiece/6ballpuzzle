@@ -430,30 +430,38 @@ function drawLandingShadowBall(ctx, cx, cy, d, ci) {
 }
 let STATIC_BG_CANVAS=null;
 const REFERENCE_HORIZON_Y=607;
-function getStaticBackgroundCanvas(){
-    if(STATIC_BG_CANVAS)return STATIC_BG_CANVAS;
+// The static background, drawn E game units wider on each side (E=0: the
+// 1280x720 game area). The extension continues the same gradients, horizon
+// and glows; the stars of the game area are the same for every E.
+function buildStaticBackgroundCanvas(E){
     if(typeof document==="undefined")return null;
     const cv=document.createElement("canvas");
-    cv.width=VW;cv.height=VH;
+    cv.width=VW+2*E;cv.height=VH;
     const c=cv.getContext("2d");
+    c.translate(E,0);
     const g=c.createLinearGradient(0,0,0,VH);
     g.addColorStop(0,"#070616");g.addColorStop(0.56,"#0C0A24");g.addColorStop(.83,"#071225");g.addColorStop(1,"#050611");
-    c.fillStyle=g;c.fillRect(0,0,VW,VH);
+    c.fillStyle=g;c.fillRect(-E,0,VW+2*E,VH);
     for(const [x,y,col,r] of [[280,200,"#3C1D7A",380],[1000,260,"#0E5A7A",320],[560,660,"#7A1E58",400]]){
         const rg=c.createRadialGradient(x,y,0,x,y,r);rg.addColorStop(0,col+"55");rg.addColorStop(1,col+"00");c.fillStyle=rg;c.fillRect(x-r,y-r,r*2,r*2);
     }
     // Coloured star clusters and the glossy horizon/floor are persistent in
     // every gameplay capture. Bake them once so mobile rendering stays cheap.
-    const rr=mulberry32(1701),starCols=["#50A8FF","#FF416D","#35F0A0","#BE59FF","#FFFFFF"];
+    const rr=mulberry32(1701),rr2=mulberry32(2207),starCols=["#50A8FF","#FF416D","#35F0A0","#BE59FF","#FFFFFF"];
     for(let i=0;i<210;i++){
         const x=rr()*VW,y=18+rr()*(REFERENCE_HORIZON_Y-36),r=.35+rr()*1.5;
         c.globalAlpha=.16+rr()*.58;c.fillStyle=starCols[(rr()*starCols.length)|0];
         c.beginPath();c.arc(x,y,r,0,TAU);c.fill();
     }
+    for(let i=0,n=Math.round(210*E/VW);i<2*n;i++){
+        const x=i<n?-E+rr2()*E:VW+rr2()*E,y=18+rr2()*(REFERENCE_HORIZON_Y-36),r=.35+rr2()*1.5;
+        c.globalAlpha=.16+rr2()*.58;c.fillStyle=starCols[(rr2()*starCols.length)|0];
+        c.beginPath();c.arc(x,y,r,0,TAU);c.fill();
+    }
     c.globalAlpha=1;
     const hz=c.createLinearGradient(0,REFERENCE_HORIZON_Y-20,0,VH);
     hz.addColorStop(0,"rgba(49,102,158,.10)");hz.addColorStop(.18,"rgba(8,12,31,.62)");hz.addColorStop(1,"rgba(4,5,15,.92)");
-    c.fillStyle=hz;c.fillRect(0,REFERENCE_HORIZON_Y-20,VW,VH-REFERENCE_HORIZON_Y+20);
+    c.fillStyle=hz;c.fillRect(-E,REFERENCE_HORIZON_Y-20,VW+2*E,VH-REFERENCE_HORIZON_Y+20);
     for(const [x,col] of [[ME.X+ME.BW/2,"#2FE3F5"],[FOE.X+FOE.BW/2,"#FF3EA5"]]){
         const rg=c.createRadialGradient(x,REFERENCE_HORIZON_Y+18,4,x,REFERENCE_HORIZON_Y+48,310);
         rg.addColorStop(0,col+"72");rg.addColorStop(.32,col+"22");rg.addColorStop(1,col+"00");
@@ -467,7 +475,11 @@ function getStaticBackgroundCanvas(){
         c.lineWidth=.5+rr()*2.2;c.beginPath();c.moveTo(cx-w/2,y);c.lineTo(cx+w/2,y);c.stroke();
     }
     c.globalAlpha=1;
-    STATIC_BG_CANVAS=cv;return cv;
+    return cv;
+}
+function getStaticBackgroundCanvas(){
+    if(!STATIC_BG_CANVAS)STATIC_BG_CANVAS=buildStaticBackgroundCanvas(0);
+    return STATIC_BG_CANVAS;
 }
 // The App shows the static background once, as the CSS background of the
 // canvas wrapper (__sixBallStaticBackgroundUrl), and marks the canvas with
@@ -495,6 +507,23 @@ if(typeof window!=="undefined")window.__sixBallStaticBackgroundUrl=function(){
     if(STATIC_BG_URL)return STATIC_BG_URL;
     try{const cv=getStaticBackgroundCanvas();if(cv)STATIC_BG_URL=cv.toDataURL("image/png");}catch(_){STATIC_BG_URL=null;}
     return STATIC_BG_URL;
+};
+// The background drawn wider on both sides, for screens wider than 16:9
+// (phones are about 2.2:1): shown behind the whole screen, it replaces the
+// game area's own background there, so there is no seam at its edges.
+// It is handed out as a short blob: URL (a data: URL of this size in a style
+// attribute is re-read on every style recalculation, which made phones slow).
+let STATIC_BG_WIDE_PROMISE=null;
+if(typeof window!=="undefined")window.__sixBallStaticBackgroundWideUrl=function(){
+    if(STATIC_BG_WIDE_PROMISE)return STATIC_BG_WIDE_PROMISE;
+    STATIC_BG_WIDE_PROMISE=new Promise(resolve=>{
+        try{
+            const cv=buildStaticBackgroundCanvas(Math.round(VW*.3));
+            if(!cv||typeof cv.toBlob!=="function"||typeof URL==="undefined"||!URL.createObjectURL)return resolve(null);
+            cv.toBlob(b=>resolve(b?URL.createObjectURL(b):null),"image/png");
+        }catch(_){resolve(null);}
+    });
+    return STATIC_BG_WIDE_PROMISE;
 };
 
 function drawAttackFlights(ctx,orbs){

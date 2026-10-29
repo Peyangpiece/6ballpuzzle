@@ -24,7 +24,8 @@
     if(!rawPromise){
       rawPromise=fetch(SRC,{cache:"force-cache"})
         .then(r=>{
-          if(!r.ok)throw new Error("rotate audio fetch "+r.status);
+          // status 0: a file served by the iOS app (capacitor://), body intact.
+          if(!r.ok&&r.status!==0)throw new Error("rotate audio fetch "+r.status);
           return r.arrayBuffer();
         });
     }

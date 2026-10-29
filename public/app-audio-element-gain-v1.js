@@ -19,6 +19,10 @@
     let ignored=false;
     try{const probe=document.createElement("audio");native.set.call(probe,.5);ignored=Math.abs(native.get.call(probe)-.5)>.01;}catch(_){}
     window.__sixBallAudioElementVolumeIgnored=ignored;
+    // The iOS app plays the BGM natively and the menu tap through Web Audio
+    // (app-native-v1.js): a media element routed into Web Audio is silent
+    // in its web view.
+    if(window.__dropBallNativeAudio)return;
     if(!ignored&&!window.__sixBallForceAudioElementGain)return;
 
     const routes=new WeakMap();
