@@ -17,6 +17,7 @@ const GATE = [
   "tests/mass-fall.js",
   "tests/no-dead-overrides.js",
   "tests/motion-invariants.js",
+  "tests/closed-gate-arch.js",
   "tests/gravity-ramp.js",
   "tests/physics-speedup-parity.js",
   "tests/google-login.js",

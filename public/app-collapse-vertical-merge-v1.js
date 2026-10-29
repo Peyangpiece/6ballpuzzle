@@ -78,6 +78,12 @@
         return !!ae&&!!bs&&Math.abs(ae.x-bs.x)<1e-7&&Math.abs(ae.y-bs.y)<1e-7;
     }
 
+    // The pile-flow scheduler may hold the second fall back until another
+    // ball has passed; merging would start it with the first.
+    function scheduledGap(a,b){
+        const ae=num(a?.pileFlowEnd),bs=num(b?.pileFlowStart);
+        return ae!==null&&bs!==null&&bs>ae+1e-6;
+    }
     function durationOf(seg){
         const pf=num(seg?.pileFlowDuration);
         if(pf!==null&&pf>0)return pf;
@@ -110,7 +116,7 @@
 
             let j=i;
             let total=durationOf(first);
-            while(j+1<path.length&&pureVertical(path[j+1])&&contiguous(path[j],path[j+1])){
+            while(j+1<path.length&&pureVertical(path[j+1])&&contiguous(path[j],path[j+1])&&!scheduledGap(path[j],path[j+1])){
                 j++;
                 total+=durationOf(path[j]);
             }

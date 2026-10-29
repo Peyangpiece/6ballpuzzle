@@ -519,18 +519,12 @@
    * PILE FLOW SAFETY
    * -------------------------------
    *
-   * Never force an animation path after
-   * pileFlowWaveSafe() has rejected it.
-   */
-
-  /*
    * A segment that no short delay makes safe waits until the balls already
    * scheduled have moved out of its way -- at the latest until all of them
-   * have landed. If it still cannot be scheduled it runs unscheduled, but
-   * only after that time (liveHoldUntil, see collectLiveMotionBatch):
-   * started at once, a ball the planner moves later blocked a path scheduled
-   * earlier, and the contact correction then pushed the earlier ball
-   * sideways and up until it overlapped and snapped.
+   * have landed, and is played then. It is never left unscheduled: the
+   * scheduler then took that ball to stay at its start for good and planned
+   * later segments through it, and the contact correction pushed balls
+   * sideways and up until they overlapped and snapped.
    */
   function scheduleAfterScheduled(g,segs,from,duration,STEP){
     let last=from;
@@ -549,37 +543,6 @@
     }
     segs.forEach((q,k)=>{q.pileGravityLateralMode=modes[k];});
     return{ok:false,last};
-  }
-
-  function returnSegmentToLegacy(seg){
-    if(!seg)return;
-
-    seg.pileFlow=false;
-
-    if(
-      Number.isFinite(
-        seg.pileFlowOriginalSeq
-      )
-    ){
-      seg.motionSeq=
-        seg.pileFlowOriginalSeq;
-    }
-
-    delete seg.pileFlowStart;
-    delete seg.pileFlowDuration;
-    delete seg.pileFlowEnd;
-
-    if(seg.pileFlowInferredSupport){
-      delete seg.followSupportIds;
-      delete seg.movingSupportId;
-      delete seg.pileFlowInferredSupport;
-    }
-
-    window.__sixBallPileFlowLegacyFallbacks=
-      (
-        window.__sixBallPileFlowLegacyFallbacks||
-        0
-      )+1;
   }
 
   if(
@@ -765,11 +728,8 @@
           }
 
           /*
-           * Critical change:
-           *
-           * NEVER assign an unsafe pileFlow.
-           * The legacy/live-batch path still has
-           * collision clamping.
+           * Still unsafe: retry once after the rest
+           * of this event's segments are scheduled.
            */
           if(!safe&&!deferred.has(entry)&&pending.length){
             deferred.add(entry);
@@ -780,13 +740,11 @@
             continue;
           }
 
-          let hold=0;
-          if(!safe){const r=scheduleAfterScheduled(g,[seg],fallback+Math.max(duration,.35)+STEP,duration,STEP);safe=r.ok;hold=r.last;}
           if(!safe){
-            returnSegmentToLegacy(
-              seg
-            );
-            seg.liveHoldUntil=hold;
+            const r=scheduleAfterScheduled(g,[seg],fallback+Math.max(duration,.35)+STEP,duration,STEP);
+            // As for waves below: play it once every scheduled segment has
+            // ended rather than unscheduled.
+            if(!r.ok){seg.pileFlowStart=r.last;seg.pileFlowDuration=duration;seg.pileFlowEnd=r.last+duration;}
           }
         }
       }
@@ -972,12 +930,24 @@
           if(r.ok)start=segs[0].pileFlowStart;
           else{
             // Waves are scheduled in logical order, so once every earlier
-            // segment has ended the balls stand where this move was decided:
-            // play it then. (Falling back to unscheduled motion here left the
-            // ball where the scheduler assumed it stays for good, so later
-            // waves were planned through it.)
-            start=r.last;
-            for(const seg of segs){seg.pileFlowStart=start;seg.pileFlowDuration=duration;seg.pileFlowEnd=start+duration;}
+            // segment has ended the balls stand where this move was decided.
+            // (Falling back to unscheduled motion here left the ball where
+            // the scheduler assumed it stays for good, so later waves were
+            // planned through it.) Move the wave's balls one at a time from
+            // then on: each that can go clear of the others goes first (a
+            // ball leaving a cell before the one entering it), and one that
+            // cannot is played once everything scheduled has ended.
+            const rest=[...segs];
+            while(rest.length){
+              let moved=false;
+              for(let k=0;k<rest.length;k++){
+                if(scheduleAfterScheduled(g,[rest[k]],r.last,duration,STEP).ok){rest.splice(k--,1);moved=true;}
+              }
+              if(moved)continue;
+              const seg=rest.shift(),at=scheduleAfterScheduled(g,[seg],r.last,duration,STEP).last;
+              seg.pileFlowStart=at;seg.pileFlowDuration=duration;seg.pileFlowEnd=at+duration;
+            }
+            start=Math.max(...segs.map(q=>q.pileFlowStart));
           }
         }
         previousStart=start;

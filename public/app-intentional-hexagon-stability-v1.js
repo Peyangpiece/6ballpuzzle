@@ -255,6 +255,57 @@
 
 
     /* ========================================================
+     * CLOSED GATE (ARCH)
+     *
+     * A one-row diagonal step from (x,y) to (x+d,y+1) passes
+     * between the two cells next to both ends: (x+2d,y) beside
+     * it on its row and (x-d,y+1) beside the target. With both
+     * occupied they are 1.73 diameters apart, too narrow to
+     * pass without overlapping them by 13%, and the two
+     * side-by-side balls over the empty cell rest as an arch.
+     * ======================================================== */
+
+    const openGateNaturalMotion=
+        hexPhysNaturalMotion;
+
+    const occupied=(board,x,y,ignore)=>
+        valid(x,y)&&!hexPhysEmpty(board,x,y,ignore);
+
+    hexPhysNaturalMotion=
+        function(
+            board,
+            x,
+            y,
+            ignore=null
+        ){
+
+            const p=openGateNaturalMotion(
+                board,
+                x,
+                y,
+                ignore
+            );
+
+            if(
+                p &&
+                p.ty===y+1 &&
+                Math.abs(p.tx-x)===1
+            ){
+                const d=p.tx-x;
+
+                if(
+                    occupied(board,x+2*d,y,ignore) &&
+                    occupied(board,x-d,y+1,ignore)
+                ){
+                    return null;
+                }
+            }
+
+            return p;
+        };
+
+
+    /* ========================================================
      * REMOVE STALE RIGIDITY FROM A COMPLETED HEXAGON
      *
      * Once a member belongs to an intentional stable ring,

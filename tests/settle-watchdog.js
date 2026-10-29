@@ -23,15 +23,15 @@ for (const f of files) vm.runInContext(read(f), ctx, { filename: f });
 // leaves a different (converging) board, so keep the batched animation here.
 ctx.__sixBallMassFallDisabled = true;
 const replay = stall => JSON.parse(vm.runInContext(`(()=>{
- const g=createEngine(4),moves=${JSON.stringify(MOVES)},stall=${stall};let t=0,i=0,fires=0,last=null,afterFire=null,longest=0,run=0;
+ const g=createEngine(4),moves=${JSON.stringify(MOVES)},stall=${stall};let t=0,i=0,failed=0,fires=0,last=null,afterFire=null,longest=0,run=0;
  window.__sixBallLastSettleWatchdog=null;
  const baseResolve=resolveVisualContacts;
- // Simulated non-converging correction: from the 10th drop on, every SETTLE
+ // Simulated non-converging correction: from the first drop on, every SETTLE
  // contact pass leaves one ball off its cell and reports no convergence.
  resolveVisualContacts=function(g2){
   const r=baseResolve.apply(this,arguments);
-  if(stall&&!fires&&i>=10&&g2===g&&g.state==="RESOLVING"&&g.phase==="SETTLE"){
-   for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(v){v.x=x+0.3;g._contactNonConvergent=(g._contactNonConvergent||0)+1;return r;}}
+  if(stall&&!fires&&i>=1&&g2===g&&g.state==="RESOLVING"&&g.phase==="SETTLE"){
+   for(let y=boardScanMin(g.board);y<ROWS;y++)for(let x=0;x<W2;x++){const b=valid(x,y)?g.board[y][x]:null,v=b&&g.vis.get(b.id);if(v){v.x=x+0.3;g._contactNonConvergent=++failed;return r;}}
   }
   return r;
  };

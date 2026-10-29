@@ -404,6 +404,17 @@
                 }
 
 
+                // Wait, if needed, until the event's balls are clear of the
+                // ones already moving (a ball must not enter a cell before
+                // the ball leaving it has gone).
+                {
+                    const limit=start+Math.max(duration,.35);
+                    for(let t=start;t<=limit+1e-9;t+=PILE_FLOW_SCHEDULE_STEP){
+                        if(pileFlowWaveSafe(g,segs,t,duration)){start=t;break;}
+                    }
+                }
+
+
                 for(const seg of segs){
 
                     seg.pileFlowStart=

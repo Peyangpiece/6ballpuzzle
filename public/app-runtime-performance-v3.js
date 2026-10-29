@@ -123,16 +123,17 @@
                 );
             };
 
-        // The check above samples only [start,start+duration]. A ball whose
-        // path ends with this segment then rests at seg.to while balls
-        // scheduled earlier may still be moving past that cell, so check the
-        // resting ball against them until their last scheduled segment ends.
+        // The check above samples only [start,start+duration]. The ball then
+        // rests at seg.to -- for good, or until its next segment, which is
+        // not scheduled yet -- while balls scheduled earlier may still be
+        // moving past that cell, so check it there against them until their
+        // last scheduled segment ends.
         const REST_STEP=1/120;
         const restClear=function(g,waveSegs,end){
             const resting=[];
             for(const seg of waveSegs){
                 const path=seg?._pileFlowBall?.fallPath;
-                if(Array.isArray(path)&&path[path.length-1]===seg&&Array.isArray(seg.to))resting.push({ball:seg._pileFlowBall,p:seg.to});
+                if(Array.isArray(path)&&path.includes(seg)&&Array.isArray(seg.to))resting.push({ball:seg._pileFlowBall,p:seg.to});
             }
             if(!resting.length)return true;
             const live=[];let last=end;
