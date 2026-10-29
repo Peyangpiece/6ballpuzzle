@@ -58,6 +58,17 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
         // meanwhile and shown again when the splash is removed.
         await sp.waitForFunction(() => document.getElementById("boot")?.classList.contains("handoff"), null, { timeout: 4000 });
         const left = await sp.evaluate(() => Date.now() - window.__hexSplashShownAt);
+        // It must land where the menu image draws the logo (the image box is
+        // taller than the artwork, which is centred in it), or the logo jumps
+        // when the menu's own takes over.
+        const off = await sp.evaluate(() => {
+          const svg = document.querySelector("#boot svg.splash"), img = document.querySelector('#root img[src*="drop-ball-logo"]');
+          for (const a of svg.getAnimations()) a.finish();
+          const ar = 563.66 / 149.5, drawn = r => { const w = Math.min(r.width, r.height * ar), h = w / ar; return [r.left + (r.width - w) / 2, r.top + (r.height - h) / 2, w]; };
+          const a = drawn(svg.getBoundingClientRect()), b = drawn(img.getBoundingClientRect());
+          return Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+        });
+        assert(off < 0.5, "splash logo lands " + off.toFixed(2) + " px away from the menu logo");
         assert(left >= 2300, "splash left after " + left + " ms, before its animation played");
         await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 2000 });
         const menu = await sp.evaluate(() => ({ logo: getComputedStyle(document.querySelector('#root img[src*="drop-ball-logo"]')).visibility, subtitle: [...document.querySelectorAll("#root div")].some(d => !d.children.length && d.textContent === "Connect six." && getComputedStyle(d).visibility === "visible") }));
