@@ -35,6 +35,26 @@ const ACH={
   rating1200:"dropball.rating_1200"
 };
 
+// ---------------------------------------------------------------- diagnostics
+// One line per event in the Xcode console ("[DropBall] …"): the web view's
+// size and safe-area insets, and the audio state, to check the layout and the
+// sound on a device.
+const diag=(tag)=>{try{
+  const probe=document.createElement("div");
+  probe.style.cssText="position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)";
+  document.body.appendChild(probe);const cs=getComputedStyle(probe);
+  const inset=[cs.paddingTop,cs.paddingRight,cs.paddingBottom,cs.paddingLeft].map(v=>parseFloat(v)||0).join(",");
+  probe.remove();
+  const ctx=typeof Sfx!=="undefined"?Sfx.ctx:null;
+  console.log("[DropBall] "+tag+" view="+innerWidth+"x"+innerHeight+" screen="+screen.width+"x"+screen.height+" safe="+inset+
+    " audio="+(ctx?ctx.state+"@"+ctx.sampleRate:"none")+" elVolIgnored="+window.__sixBallAudioElementVolumeIgnored+
+    " session="+(navigator.audioSession?navigator.audioSession.type:"n/a"));
+}catch(e){console.log("[DropBall] diag error "+e);}};
+setTimeout(()=>diag("start"),1500);
+window.addEventListener?.("resize",()=>diag("resize"));
+let diagTaps=0;
+window.addEventListener?.("pointerup",()=>{if(diagTaps++<3)setTimeout(()=>diag("tap"+diagTaps),400);},true);
+
 // ---------------------------------------------------------------- haptics
 const IMPACT=ms=>ms<15?"LIGHT":ms<35?"MEDIUM":"HEAVY";
 try{

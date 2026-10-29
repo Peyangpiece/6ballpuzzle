@@ -9,6 +9,13 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(GameCenterPlugin())
     }
 
+    private var loggedLayout = ""
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        let s = "[DropBall] native view=\(view.bounds.size) safe=\(view.safeAreaInsets) web=\(webView?.frame.size ?? .zero) contentInset=\(webView?.scrollView.adjustedContentInset ?? .zero)"
+        if s != loggedLayout { loggedLayout = s; print(s) }
+    }
+
     // Capacitor's SystemBars plugin owns prefersHomeIndicatorAutoHidden (a
     // public, non-overridable property); capacitor.config.json hides the
     // status bar and the home indicator through it ("SystemBars.hidden").

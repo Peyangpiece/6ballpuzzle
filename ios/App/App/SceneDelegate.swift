@@ -5,12 +5,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let windowScene = scene as? UIWindowScene else { return }
-
-        window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = MainViewController()
-        window?.makeKeyAndVisible()
-
+        // The window and MainViewController come from Main.storyboard
+        // (UISceneStoryboardFile); creating a second window here left the
+        // storyboard's view controller unused.
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }
 
