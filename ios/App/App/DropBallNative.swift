@@ -9,8 +9,10 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(GameCenterPlugin())
     }
 
+    // Capacitor's SystemBars plugin owns prefersHomeIndicatorAutoHidden (a
+    // public, non-overridable property); capacitor.config.json hides the
+    // status bar and the home indicator through it ("SystemBars.hidden").
     override var prefersStatusBarHidden: Bool { true }
-    override var prefersHomeIndicatorAutoHidden: Bool { true }
     // Swipes at the screen edges are moves in the game; the system gesture
     // needs a second swipe.
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge { .all }
