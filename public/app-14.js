@@ -187,7 +187,7 @@ function drawMatchIntro(ctx,g){
     // covers the background beside the 16:9 game area on wide screens.
     const dim=g.state==="READY"&&g.stateT<READY_FADE_IN_DURATION?1-Math.min(1,g.stateT/READY_FADE_IN_DURATION):0;
     const layer=ctx.canvas&&ctx.canvas.__hexIntroDimLayer;
-    if(layer){const v=String(Math.round(dim*1000)/1000);if(layer.style.opacity!==v)layer.style.opacity=v;}
+    if(layer){const v=String(Math.round(dim*1000)/1000);if(layer.style.opacity!==v){layer.style.opacity=v;layer.style.display=dim>0?"":"none";}}
     if(g.state!=="READY")return;
     if(dim>0&&!layer){ctx.save();ctx.globalAlpha=dim;ctx.fillStyle="#000000";ctx.fillRect(0,0,VW,VH);ctx.restore();}
     let text="",begin=0,end=0;

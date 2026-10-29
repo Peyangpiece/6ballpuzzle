@@ -511,11 +511,19 @@ if(typeof window!=="undefined")window.__sixBallStaticBackgroundUrl=function(){
 // The background drawn wider on both sides, for screens wider than 16:9
 // (phones are about 2.2:1): shown behind the whole screen, it replaces the
 // game area's own background there, so there is no seam at its edges.
-let STATIC_BG_WIDE_URL=null;
+// It is handed out as a short blob: URL (a data: URL of this size in a style
+// attribute is re-read on every style recalculation, which made phones slow).
+let STATIC_BG_WIDE_PROMISE=null;
 if(typeof window!=="undefined")window.__sixBallStaticBackgroundWideUrl=function(){
-    if(STATIC_BG_WIDE_URL)return STATIC_BG_WIDE_URL;
-    try{const cv=buildStaticBackgroundCanvas(Math.round(VW*.3));if(cv)STATIC_BG_WIDE_URL=cv.toDataURL("image/png");}catch(_){STATIC_BG_WIDE_URL=null;}
-    return STATIC_BG_WIDE_URL;
+    if(STATIC_BG_WIDE_PROMISE)return STATIC_BG_WIDE_PROMISE;
+    STATIC_BG_WIDE_PROMISE=new Promise(resolve=>{
+        try{
+            const cv=buildStaticBackgroundCanvas(Math.round(VW*.3));
+            if(!cv||typeof cv.toBlob!=="function"||typeof URL==="undefined"||!URL.createObjectURL)return resolve(null);
+            cv.toBlob(b=>resolve(b?URL.createObjectURL(b):null),"image/png");
+        }catch(_){resolve(null);}
+    });
+    return STATIC_BG_WIDE_PROMISE;
 };
 
 function drawAttackFlights(ctx,orbs){

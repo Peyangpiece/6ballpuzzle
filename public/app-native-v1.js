@@ -46,17 +46,21 @@ const diag=(tag)=>{try{
   const inset=[cs.paddingTop,cs.paddingRight,cs.paddingBottom,cs.paddingLeft].map(v=>parseFloat(v)||0).join(",");
   probe.remove();
   const ctx=typeof Sfx!=="undefined"?Sfx.ctx:null;
-  console.log("[DropBall] "+tag+" view="+innerWidth+"x"+innerHeight+" screen="+screen.width+"x"+screen.height+" safe="+inset+
+  const fpsNow=window.__dropBallFps;
+  console.log("[DropBall] "+tag+" fps="+(fpsNow==null?"-":fpsNow)+" view="+innerWidth+"x"+innerHeight+" screen="+screen.width+"x"+screen.height+" safe="+inset+
     " audio="+(ctx?ctx.state+"@"+ctx.sampleRate:"none")+" elVolIgnored="+window.__sixBallAudioElementVolumeIgnored+
     " session="+(navigator.audioSession?navigator.audioSession.type:"n/a")+
     " rotate="+(window.__sixBallRotateV15Ready?"ok":(window.__sixBallRotateV15Error||"-"))+
     " drop="+(window.__sixBallInstantDropReady?"ok":(window.__sixBallInstantDropError||"-"))+
     " lock="+(window.__sixBallPositionLockReady?"ok":(window.__sixBallPositionLockError||"-")));
 }catch(e){console.log("[DropBall] diag error "+e);}};
-setTimeout(()=>diag("start"),1500);
+// Frames per second over the last second, sampled only around each log line.
+const measureFps=()=>new Promise(res=>{let n=0;const t0=performance.now();const f=t=>{n++;if(t-t0<1000)requestAnimationFrame(f);else res(Math.round(n*1000/(t-t0)));};requestAnimationFrame(f);});
+const diagWithFps=tag=>{if(typeof requestAnimationFrame!=="function")return diag(tag);measureFps().then(f=>{window.__dropBallFps=f;diag(tag);});};
+setTimeout(()=>diagWithFps("start"),1500);
 window.addEventListener?.("resize",()=>diag("resize"));
 let diagTaps=0;
-window.addEventListener?.("pointerup",()=>{if(diagTaps++<8)setTimeout(()=>diag("tap"+diagTaps),400);},true);
+window.addEventListener?.("pointerup",()=>{if(diagTaps++<8)setTimeout(()=>diagWithFps("tap"+diagTaps),400);},true);
 
 // ---------------------------------------------------------------- audio
 // The app's web view ignores an <audio> element's volume, and an element
@@ -71,7 +75,10 @@ function nativeBgmElement(){
   const fire=t=>{for(const f of listeners[t]||[]){try{f({type:t});}catch(_){}}};
   let volume=1,muted=false,playing=false;
   const level=()=>muted?0:volume;
-  const push=()=>{if(playing)call("NativeBgm","setVolume",{volume:level()}).catch(()=>{});};
+  // Taps re-apply the BGM volume and call play(); only real changes cross
+  // the bridge to the native player.
+  let sent=-1;
+  const push=()=>{const v=level();if(playing&&v!==sent){sent=v;call("NativeBgm","setVolume",{volume:v}).catch(()=>{});}};
   return{
     loop:true,preload:"none",src:"",playsInline:true,error:null,readyState:4,
     setAttribute(){},removeAttribute(){},
@@ -80,8 +87,9 @@ function nativeBgmElement(){
     canPlayType(){return"probably";},
     load(){call("NativeBgm","load",{path:BGM_PATH}).then(()=>fire("canplaythrough")).catch(()=>{});},
     play(){
-      playing=true;
-      return call("NativeBgm","play",{path:BGM_PATH,volume:level()}).then(()=>{fire("playing");})
+      if(playing){push();return Promise.resolve();}
+      playing=true;sent=level();
+      return call("NativeBgm","play",{path:BGM_PATH,volume:sent}).then(()=>{fire("playing");})
         .catch(err=>{playing=false;fire("error");throw err;});
     },
     pause(){if(!playing)return;playing=false;call("NativeBgm","pause").catch(()=>{});fire("pause");},
