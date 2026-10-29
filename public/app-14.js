@@ -217,7 +217,7 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
         React.createElement("div",{className:"mt-4 text-[12px] font-semibold tracking-[.14em] text-white/50",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},me?"あなた":"相手"),
         React.createElement("div",{className:"mt-0.5 text-[17px] font-bold text-white max-w-full truncate",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},name));
     const reasonText=reason==="disconnect"?(win?"相手の接続が切れたため、あなたの勝ちです":"接続が切れたため、敗北になりました"):reason==="resign"?(win?"相手が降参しました":"降参しました"):"";
-    const btn={minHeight:44};
+    const btn={minHeight:48};
     return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",role:"dialog","aria-modal":"true","aria-label":win?"勝利":"敗北",style:{background:phase?"rgba(6,5,18,.74)":"rgba(6,5,18,0)",backdropFilter:`blur(${phase?8:0}px)`,WebkitBackdropFilter:`blur(${phase?8:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
         React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]",style:summary?{flex:"1 1 0",minHeight:0,paddingTop:"max(34px, env(safe-area-inset-top))",paddingBottom:"clamp(92px,24vh,128px)"}:null},
             React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!!win,true,meName)),
@@ -227,8 +227,8 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
             online&&ranked&&React.createElement("div",{className:"mt-1 text-[15px] font-bold tabular-nums",style:{color:delta>=0?"#7DFFB2":"#FF9AB5"}},`レート ${delta>=0?"+":""}${delta}`,Number.isFinite(rating)?React.createElement("span",{className:"text-white/70 font-semibold"},`（${rating}）`):null)),
         summary&&React.createElement(ResultSummary,{summary,progress,levelName,win,show:phase>=3}),
         React.createElement("div",{className:"absolute flex gap-3 text-white font-bold",style:{right:"max(20px, env(safe-area-inset-right))",bottom:"max(16px, env(safe-area-inset-bottom))"}},
-            React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"px-5 rounded-xl text-[14px] active:scale-[.98]",style:{...btn,...HEX_MENU_SURFACE}},"メニューへ"),
-            React.createElement("button",{ref:nextRef,onClick:onNext,className:"px-6 rounded-xl text-[14px] text-[#061016] active:scale-[.98]",style:{...btn,background:"#2FE3F5"}},nextLabel||"もう一度")
+            React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"hex-btn hex-btn-secondary px-5 text-[14px]",style:btn},"メニューへ"),
+            React.createElement("button",{ref:nextRef,onClick:onNext,className:"hex-btn hex-btn-primary px-6 text-[14px]",style:btn},nextLabel||"もう一度")
         )
     );
 }
@@ -265,15 +265,15 @@ function ResultSummary({summary,progress,levelName,win,show}){
 function HexPauseMenu({online,ranked,onResume,onRestart,onQuit}){
     const resumeRef=useRef(null);
     useEffect(()=>{try{resumeRef.current&&resumeRef.current.focus({preventScroll:true});}catch(_){}},[]);
-    const b="w-full rounded-xl px-4 text-sm font-black";
+    const b="hex-btn w-full px-4 text-sm";
     return React.createElement("div",{className:"absolute inset-0 z-30 flex items-center justify-center p-4",role:"dialog","aria-modal":"true","aria-labelledby":"hex-pause-title",style:{background:"rgba(6,5,18,.72)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}},
         React.createElement("div",{className:"w-full max-w-sm rounded-2xl p-5 text-center",style:{background:"linear-gradient(145deg,rgba(28,24,60,.96),rgba(12,10,30,.96))",border:"1px solid rgba(255,255,255,.14)"}},
             React.createElement("div",{id:"hex-pause-title",className:"text-lg font-black text-white"},online?"対戦をやめますか？":"ポーズ中"),
             online&&React.createElement("div",{className:"mt-2 text-[13px] leading-relaxed text-white/75"},"オンライン対戦は一時停止できません（対戦は続いています）。やめると降参となり、敗北として記録されます。",ranked?"レートも下がります。":""),
             React.createElement("div",{className:"mt-4 grid gap-2"},
-                React.createElement("button",{ref:resumeRef,onClick:onResume,"data-hex-back":"1",className:b+" text-[#061016]",style:{minHeight:46,background:"#2FE3F5"}},"対戦に戻る"),
-                onRestart&&React.createElement("button",{onClick:onRestart,className:b+" text-white/90 border border-white/20 bg-white/5",style:{minHeight:44}},"最初からやり直す"),
-                React.createElement("button",{onClick:onQuit,className:b,style:{minHeight:44,color:"#ffb8d6",border:"1px solid rgba(255,62,165,.45)",background:"rgba(255,62,165,.08)"}},online?"降参してメニューへ":"メニューへ戻る")),
+                React.createElement("button",{ref:resumeRef,onClick:onResume,"data-hex-back":"1",className:b+" hex-btn-primary",style:{minHeight:48}},"対戦に戻る"),
+                onRestart&&React.createElement("button",{onClick:onRestart,className:b+" hex-btn-secondary",style:{minHeight:46}},"最初からやり直す"),
+                React.createElement("button",{onClick:onQuit,className:b+" hex-btn-danger",style:{minHeight:46}},online?"降参してメニューへ":"メニューへ戻る")),
             hexInputKind()!=="touch"&&React.createElement("div",{className:"mt-3 text-[11px] text-white/65"},"Esc / P キー、コントローラーの＋ボタンでも開閉できます")));
 }
 function hexInputKind(){
