@@ -122,6 +122,43 @@
                     duration
                 );
             };
+
+        // The check above samples only [start,start+duration]. A ball whose
+        // path ends with this segment then rests at seg.to while balls
+        // scheduled earlier may still be moving past that cell, so check the
+        // resting ball against them until their last scheduled segment ends.
+        const REST_STEP=1/120;
+        const restClear=function(g,waveSegs,end){
+            const resting=[];
+            for(const seg of waveSegs){
+                const path=seg?._pileFlowBall?.fallPath;
+                if(Array.isArray(path)&&path[path.length-1]===seg&&Array.isArray(seg.to))resting.push({ball:seg._pileFlowBall,p:seg.to});
+            }
+            if(!resting.length)return true;
+            const live=[];let last=end;
+            for(let y=0;y<ROWS;y++)for(let x=0;x<W2;x++){
+                const b=valid(x,y)?g.board[y][x]:null;
+                if(!b||!Array.isArray(b.fallPath)||resting.some(r=>r.ball===b))continue;
+                let bEnd=-Infinity;
+                for(const seg of b.fallPath)if(seg?.pileFlow&&Number.isFinite(seg.pileFlowStart)&&Number.isFinite(seg.pileFlowEnd))bEnd=Math.max(bEnd,seg.pileFlowEnd);
+                if(bEnd>end+1e-9){live.push(b);last=Math.max(last,bEnd);}
+            }
+            for(let t=end+REST_STEP;t<last+REST_STEP-1e-9;t+=REST_STEP){
+                const tt=Math.min(t,last);
+                for(const b of live){
+                    const p=pileFlowPositionAt(g,b,tt);
+                    for(const r of resting)if(pileFlowPhysicalDist(r.p,p)<PILE_FLOW_MIN_DIST)return false;
+                }
+            }
+            return true;
+        };
+        const sampledPileFlowWaveSafe=pileFlowWaveSafe;
+        pileFlowWaveSafe=function(g,waveSegs,start,duration){
+            if(!sampledPileFlowWaveSafe(g,waveSegs,start,duration))return false;
+            if(restClear(g,waveSegs,start+duration))return true;
+            for(const seg of waveSegs){delete seg.pileFlowStart;delete seg.pileFlowDuration;delete seg.pileFlowEnd;}
+            return false;
+        };
     }
 
 

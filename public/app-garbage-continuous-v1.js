@@ -663,7 +663,10 @@
                     if(i===0&&vis)seg.from=[vis.x,vis.y];
                     const dy=seg.to[1]-seg.from[1],vertical=Math.abs(seg.to[0]-seg.from[0])<1e-9&&dy>0;
                     const duration=vertical?flightTime(vy,dy):Math.max(1/240,seg.pileFlowDuration||1/120);
-                    seg.pileFlowStart=end;seg.pileFlowDuration=duration;seg.pileFlowEnd=end+duration;
+                    // Keep any delay the scheduler gave this segment to stay clear of
+                    // another ball's path; only a later predecessor pushes it back.
+                    const start=Number.isFinite(seg.pileFlowStart)?Math.max(end,seg.pileFlowStart):end;
+                    seg.pileFlowStart=start;seg.pileFlowDuration=duration;seg.pileFlowEnd=start+duration;
                     seg.__garbageV0=vy;seg.__garbageContinuous=true;
                     if(vertical)vy=Math.min(FLIGHT_LIMIT,vy+FLIGHT_ACCEL*duration);
                     seg.__garbageV1=vy;seg.__referenceGarbageClock=seg.from.join(',')+'>'+seg.to.join(',');
