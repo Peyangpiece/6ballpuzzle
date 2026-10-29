@@ -967,27 +967,20 @@
           start+=STEP;
         }
 
-        let hold=0;
         if(!safe){
           const r=scheduleAfterScheduled(g,segs,limit+STEP,duration,STEP);
-          if(r.ok){safe=true;start=segs[0].pileFlowStart;}else hold=r.last;
-        }
-        if(!safe){
-          /*
-           * Entire motionSeq falls back together,
-           * preserving simultaneous motion.
-           */
-          for(const seg of segs){
-            returnSegmentToLegacy(
-              seg
-            );
-            seg.liveHoldUntil=hold;
+          if(r.ok)start=segs[0].pileFlowStart;
+          else{
+            // Waves are scheduled in logical order, so once every earlier
+            // segment has ended the balls stand where this move was decided:
+            // play it then. (Falling back to unscheduled motion here left the
+            // ball where the scheduler assumed it stays for good, so later
+            // waves were planned through it.)
+            start=r.last;
+            for(const seg of segs){seg.pileFlowStart=start;seg.pileFlowDuration=duration;seg.pileFlowEnd=start+duration;}
           }
-
-          previousStart=earliest;
-        }else{
-          previousStart=start;
         }
+        previousStart=start;
       }
     };
   }

@@ -12,7 +12,9 @@
 // stepping off a wall cutting through their neighbour, a ball shoved up by the
 // contact correction, mass-fall separation pushing a ball up, garbage dropped
 // into a cell before the ball passing through it had left, a ball coming to
-// rest beside the column another ball was still falling down).
+// rest beside the column another ball was still falling down, a wave left
+// unscheduled and then planned through, garbage and ordinary balls of one
+// falling group drifting apart).
 const fs = require("fs"), path = require("path"), vm = require("vm"), assert = require("assert");
 const { files } = require("./physics-stack.js");
 const PUBLIC = path.join(__dirname, "..", "public");
@@ -39,8 +41,11 @@ const MATCHES = [
   { seed: 1000 + 1 * 7919, la: 3, lb: 4, ramp: false },
   { seed: 1000 + 2 * 7919, la: 5, lb: 3, ramp: true, garbageMin: 0.9 },
   { seed: 1000 + 3 * 7919, la: 2, lb: 5, ramp: false, garbageMin: 0.9 },
+  // 40595: the board lets a ball step down between two balls only 1.73
+  // diameters apart, which no path does without about 13% overlap.
+  { seed: 1000 + 5 * 7919, la: 5, lb: 5, ramp: false, garbageMin: 0.85 },
   { seed: 1000 + 6 * 7919, la: 3, lb: 5, ramp: true },
-  { seed: 1000 + 11 * 7919, la: 3, lb: 3, ramp: false }
+  { seed: 1000 + 11 * 7919, la: 3, lb: 3, ramp: false, garbageMin: 0.9 }
 ];
 const result = JSON.parse(vm.runInContext(`(${(matches) => {
   const out = [];
