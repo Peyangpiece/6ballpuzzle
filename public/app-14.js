@@ -150,7 +150,7 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     }
     for (const r of g.fx.rings) {const k = 1 - r.life / r.max;ctx.save();ctx.globalAlpha = (1 - k) * 0.85;ctx.strokeStyle = r.tint;ctx.lineWidth = 7 * (1 - k) + 1;ctx.shadowColor = r.tint;ctx.shadowBlur = 26;ctx.beginPath();ctx.arc(X + BW / 2, Y + BH / 2, 24 + k * BW * 0.8, 0, TAU);ctx.stroke();ctx.restore();}
     drawIncomingPreviews(ctx,g,L);
-    const nw = 128, nh = 106;const nx0 = side === 0 ? X - nw + 5 : X + BW - 5, ny0 = 35;
+    const nw = 128, nh = 100;const nx0 = side === 0 ? X - nw + 5 : X + BW - 5, ny0 = 46;
     ctx.save();hexRoundRectPath(ctx, nx0, ny0, nw, nh, 14);ctx.fillStyle = "rgba(10,12,28,0.55)";ctx.fill();ctx.strokeStyle = "rgba(255,255,255,0.22)";ctx.lineWidth = 1.5;ctx.stroke();
     // The reference keeps both NEXT windows empty throughout READY. They are
     // populated on the same frame that the first active triplets appear.
@@ -161,17 +161,17 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         drawBall(ctx, ncx + nd * 0.5, ncy + nd * 0.42, nd, q[1], {});
     }
     ctx.font = "800 24px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.8)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.shadowColor="rgba(0,0,0,.6)";ctx.shadowBlur=8;if("letterSpacing" in ctx)ctx.letterSpacing="3px";ctx.fillText("NEXT", ncx + (("letterSpacing" in ctx) ? 1.5 : 0), ny0 + nh + 9);ctx.restore();
-    const avx=side===0?44:VW-44,avy=36;
-    ctx.save();ctx.beginPath();ctx.arc(avx,avy,25,0,TAU);ctx.shadowColor=NEON[side];ctx.shadowBlur=14;ctx.fillStyle=NEON[side];ctx.fill();ctx.shadowBlur=0;
-     {const hi=typeof ctx.createLinearGradient==="function"?ctx.createLinearGradient(avx-25,avy-25,avx+25,avy+25):null;if(hi){hi.addColorStop(0,"rgba(255,255,255,.42)");hi.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=hi;ctx.fill();}}
+    const AR=18,avx=side===0?nx0+AR:nx0+nw-AR,avy=23;
+    ctx.save();ctx.beginPath();ctx.arc(avx,avy,AR,0,TAU);ctx.shadowColor=NEON[side];ctx.shadowBlur=14;ctx.fillStyle=NEON[side];ctx.fill();ctx.shadowBlur=0;
+     {const hi=typeof ctx.createLinearGradient==="function"?ctx.createLinearGradient(avx-AR,avy-AR,avx+AR,avy+AR):null;if(hi){hi.addColorStop(0,"rgba(255,255,255,.42)");hi.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=hi;ctx.fill();}}
      ctx.lineWidth=1.5;ctx.strokeStyle="rgba(255,255,255,.75)";ctx.stroke();
-     ctx.font="800 24px ui-sans-serif,system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#07101a";ctx.fillText(String(label||"P").trim().slice(0,1).toUpperCase(),avx,avy+1);ctx.restore();
-    // Player name (and rating) to the inner side of the avatar, above the NEXT
-    // window. Long names are shortened with an ellipsis instead of cut.
-    {ctx.save();const inner=side===0?1:-1,nx=avx+inner*32,ny=19,F="ui-sans-serif,system-ui,sans-serif";
+     ctx.font="800 20px ui-sans-serif,system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#07101a";ctx.fillText(String(label||"P").trim().slice(0,1).toUpperCase(),avx,avy+1);ctx.restore();
+    // Player name (and rating) to the inner side of the avatar, on the same row
+    // above the NEXT window. Long names are shortened with an ellipsis instead of cut.
+    {ctx.save();const inner=side===0?1:-1,nx=avx+inner*(AR+10),ny=avy,F="ui-sans-serif,system-ui,sans-serif";
      const fit=(str,max)=>{str=String(str||"");if(typeof ctx.measureText!=="function"||ctx.measureText(str).width<=max)return str;while(str.length>1&&ctx.measureText(str+"…").width>max)str=str.slice(0,-1);return str+"…";};
      ctx.font=`900 28px ${F}`;ctx.textAlign=side===0?"left":"right";ctx.textBaseline="middle";ctx.shadowColor="rgba(0,0,0,.8)";ctx.shadowBlur=10;ctx.shadowOffsetY=1;
-     const nm=fit(label,270);ctx.fillStyle="#FFFFFF";ctx.fillText(nm,nx,ny);
+     const nm=fit(label,300);ctx.fillStyle="#FFFFFF";ctx.fillText(nm,nx,ny);
      if(sub&&typeof ctx.measureText==="function"){const w=ctx.measureText(nm).width;ctx.font=`700 21px ${F}`;ctx.fillStyle="rgba(255,255,255,.7)";ctx.fillText(String(sub),nx+inner*(w+10),ny+1);}
      ctx.restore();}
     // Queued garbage that has not started falling yet, in balls. Remote boards
