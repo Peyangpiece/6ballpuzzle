@@ -54,14 +54,25 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
         await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 1500 });
       } else {
         if (t < 1800) assert(await sp.evaluate(() => !!document.getElementById("boot")), "splash left before its animation played");
-        // The splash logo and subtitle glide onto the menu's, which are hidden
-        // meanwhile and shown again when the splash is removed.
-        await sp.waitForFunction(() => document.getElementById("boot")?.classList.contains("handoff"), null, { timeout: 4000 });
+        // The finish: a red ball is shot onto the logo ball and knocks it off
+        // the bottom of the screen, then the splash drops away and the menu
+        // comes down from above.
+        await sp.waitForFunction(() => document.getElementById("boot")?.classList.contains("strike"), null, { timeout: 4000 });
         const left = await sp.evaluate(() => Date.now() - window.__hexSplashShownAt);
-        assert(left >= 2300, "splash left after " + left + " ms, before its animation played");
-        await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 2000 });
-        const menu = await sp.evaluate(() => ({ logo: getComputedStyle(document.querySelector('#root img[src*="drop-ball-logo"]')).visibility, subtitle: [...document.querySelectorAll("#root div")].some(d => !d.children.length && d.textContent === "Connect six." && getComputedStyle(d).visibility === "visible") }));
-        assert(menu.logo === "visible" && menu.subtitle, "menu logo or subtitle stayed hidden after the splash: " + JSON.stringify(menu));
+        assert(left >= 2050, "splash left after " + left + " ms, before its animation played");
+        // The knocked ball really leaves the screen: its fall ends below the bottom edge.
+        const below = await sp.evaluate(() => {
+          const ball = document.querySelector("#boot .sball");
+          for (const a of ball.getAnimations()) a.currentTime = a.effect.getComputedTiming().endTime - 1;
+          const r = ball.getBoundingClientRect();
+          for (const a of ball.getAnimations()) a.currentTime = 0;
+          return r.top - window.innerHeight;
+        });
+        assert(below > 0, "the knocked-off ball stops " + (-below).toFixed(1) + " px inside the screen");
+        await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 2500 });
+        await sp.waitForFunction(() => !document.getElementById("root").getAnimations().length, null, { timeout: 1500 });
+        const menu = await sp.evaluate(() => ({ logo: getComputedStyle(document.querySelector('#root img[src*="drop-ball-logo"]')).visibility, subtitle: [...document.querySelectorAll("#root div")].some(d => !d.children.length && d.textContent === "Connect six."), rootTop: document.getElementById("root").getBoundingClientRect().top }));
+        assert(menu.logo === "visible" && menu.subtitle && Math.abs(menu.rootTop) < 1, "menu not in place after the splash: " + JSON.stringify(menu));
       }
       await sp.getByText("AI対戦", { exact: true }).click({ timeout: 5000 });
       assert.deepStrictEqual(spErrors, [], "page errors with the splash: " + spErrors.join(" | "));
