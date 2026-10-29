@@ -58,6 +58,81 @@ window.addEventListener?.("resize",()=>diag("resize"));
 let diagTaps=0;
 window.addEventListener?.("pointerup",()=>{if(diagTaps++<8)setTimeout(()=>diag("tap"+diagTaps),400);},true);
 
+// ---------------------------------------------------------------- audio
+// The app's web view ignores an <audio> element's volume, and an element
+// routed into Web Audio plays nothing there. So the battle BGM is played by
+// the native NativeBgm plugin (AVAudioPlayer) behind an element-like object
+// that the existing BGM code drives unchanged (play/pause/volume/muted), and
+// the menu tap plays its decoded sample through Web Audio at the SFX volume.
+window.__dropBallNativeAudio=true;
+const BGM_PATH="assets/6ball-battle-bgm.m4a";
+function nativeBgmElement(){
+  const listeners={};
+  const fire=t=>{for(const f of listeners[t]||[]){try{f({type:t});}catch(_){}}};
+  let volume=1,muted=false,playing=false;
+  const level=()=>muted?0:volume;
+  const push=()=>{if(playing)call("NativeBgm","setVolume",{volume:level()}).catch(()=>{});};
+  return{
+    loop:true,preload:"none",src:"",playsInline:true,error:null,readyState:4,
+    setAttribute(){},removeAttribute(){},
+    addEventListener(t,f){(listeners[t]=listeners[t]||[]).push(f);},
+    removeEventListener(t,f){listeners[t]=(listeners[t]||[]).filter(x=>x!==f);},
+    canPlayType(){return"probably";},
+    load(){call("NativeBgm","load",{path:BGM_PATH}).then(()=>fire("canplaythrough")).catch(()=>{});},
+    play(){
+      playing=true;
+      return call("NativeBgm","play",{path:BGM_PATH,volume:level()}).then(()=>{fire("playing");})
+        .catch(err=>{playing=false;fire("error");throw err;});
+    },
+    pause(){if(!playing)return;playing=false;call("NativeBgm","pause").catch(()=>{});fire("pause");},
+    get paused(){return!playing;},
+    get volume(){return volume;},
+    set volume(v){const n=Number(v);if(Number.isFinite(n)){volume=Math.max(0,Math.min(1,n));push();}},
+    get muted(){return muted;},
+    set muted(v){muted=!!v;push();},
+    get currentTime(){return 0;},
+    set currentTime(t){call("NativeBgm","seek",{time:Number(t)||0}).catch(()=>{});}
+  };
+}
+const patchBgm=b=>{
+  if(!b||typeof b!=="object"||b.__dropBallNative)return b;
+  b.__dropBallNative=true;
+  b.init=function(){if(!this.audio)this.audio=nativeBgmElement();return this.audio;};
+  return b;
+};
+const patchMenuClick=m=>{
+  if(!m||typeof m!=="object"||m.__dropBallNative)return m;
+  m.__dropBallNative=true;
+  const elementPlay=m.play;
+  let buffer=null,loading=null;
+  const load=()=>{
+    if(loading||typeof Sfx==="undefined")return;
+    try{Sfx.init();}catch(_){}
+    const ctx=Sfx.ctx,src=window.__sixBallMenuClickSource;
+    if(!ctx||!src)return;
+    loading=fetch(src).then(r=>r.arrayBuffer()).then(ab=>ctx.decodeAudioData(ab)).then(b=>{buffer=b;}).catch(()=>{loading=null;});
+  };
+  m.play=function(){
+    const ctx=typeof Sfx!=="undefined"?Sfx.ctx:null;
+    if(buffer&&ctx){
+      try{
+        if(ctx.state!=="running")ctx.resume().catch(()=>{});
+        const s=ctx.createBufferSource(),g=ctx.createGain();
+        g.gain.value=Math.max(0,Math.min(1,Number(this.volume())||0));
+        s.buffer=buffer;s.connect(g);g.connect(ctx.destination);s.start();
+        return;
+      }catch(_){}
+    }
+    load();
+    return elementPlay.apply(this,arguments);
+  };
+  return m;
+};
+for(const [name,patch] of [["Bgm",patchBgm],["MenuClick",patchMenuClick]]){
+  let value=patch(window[name]);
+  try{Object.defineProperty(window,name,{configurable:true,enumerable:true,get(){return value;},set(v){value=patch(v);}});}catch(_){}
+}
+
 // ---------------------------------------------------------------- haptics
 const IMPACT=ms=>ms<15?"LIGHT":ms<35?"MEDIUM":"HEAVY";
 try{

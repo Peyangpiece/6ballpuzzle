@@ -18,12 +18,12 @@
 
     let ignored=false;
     try{const probe=document.createElement("audio");native.set.call(probe,.5);ignored=Math.abs(native.get.call(probe)-.5)>.01;}catch(_){}
-    // The iOS app's web view reports a volume it set, yet plays at full
-    // volume like Safari on iPhone, so the app always takes the gain route.
-    const cap=window.Capacitor;
-    const iosApp=!!(cap&&typeof cap.getPlatform==="function"&&cap.getPlatform()==="ios");
-    window.__sixBallAudioElementVolumeIgnored=ignored||iosApp;
-    if(!ignored&&!iosApp&&!window.__sixBallForceAudioElementGain)return;
+    window.__sixBallAudioElementVolumeIgnored=ignored;
+    // The iOS app plays the BGM natively and the menu tap through Web Audio
+    // (app-native-v1.js): a media element routed into Web Audio is silent
+    // in its web view.
+    if(window.__dropBallNativeAudio)return;
+    if(!ignored&&!window.__sixBallForceAudioElementGain)return;
 
     const routes=new WeakMap();
     function audioContext(){

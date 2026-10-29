@@ -1,3 +1,4 @@
+import AVFoundation
 import Capacitor
 import GameKit
 import UIKit
@@ -7,6 +8,7 @@ import UIKit
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(GameCenterPlugin())
+        bridge?.registerPluginInstance(NativeBgmPlugin())
     }
 
     private var loggedLayout = ""
@@ -120,5 +122,78 @@ public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin, GKGameCenterControll
 
     public func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true)
+    }
+}
+
+/// The battle BGM for the web layer (public/app-native-v1.js): the web
+/// view ignores an <audio> element's volume, so the loop is played here and
+/// the BGM volume slider sets AVAudioPlayer.volume. `path` is relative to
+/// the bundled web assets (the "public" folder).
+@objc(NativeBgmPlugin)
+public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NativeBgmPlugin"
+    public let jsName = "NativeBgm"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "load", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "play", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "pause", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setVolume", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "seek", returnType: CAPPluginReturnPromise),
+    ]
+
+    private var player: AVAudioPlayer?
+
+    private func ensurePlayer(_ path: String?) -> AVAudioPlayer? {
+        if let player = player { return player }
+        guard let path = path else { return nil }
+        let url = Bundle.main.bundleURL.appendingPathComponent("public").appendingPathComponent(path)
+        guard let created = try? AVAudioPlayer(contentsOf: url) else { return nil }
+        created.numberOfLoops = -1
+        created.prepareToPlay()
+        player = created
+        return created
+    }
+
+    private func volume(_ call: CAPPluginCall) -> Float {
+        return Float(max(0, min(1, call.getDouble("volume") ?? 1)))
+    }
+
+    @objc func load(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            if self.ensurePlayer(call.getString("path")) != nil { call.resolve() } else { call.reject("BGM file not found") }
+        }
+    }
+
+    @objc func play(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let player = self.ensurePlayer(call.getString("path")) else {
+                call.reject("BGM file not found")
+                return
+            }
+            player.volume = self.volume(call)
+            if !player.isPlaying { player.play() }
+            call.resolve()
+        }
+    }
+
+    @objc func pause(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.player?.pause()
+            call.resolve()
+        }
+    }
+
+    @objc func setVolume(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.player?.volume = self.volume(call)
+            call.resolve()
+        }
+    }
+
+    @objc func seek(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.player?.currentTime = max(0, call.getDouble("time") ?? 0)
+            call.resolve()
+        }
     }
 }

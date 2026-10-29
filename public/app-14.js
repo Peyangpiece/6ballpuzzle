@@ -182,9 +182,14 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     ctx.restore();
 }
 function drawMatchIntro(ctx,g){
+    // A short black-to-board reveal separates the menu from the match. The App
+    // shows it as a full-screen layer (canvas.__hexIntroDimLayer) so it also
+    // covers the background beside the 16:9 game area on wide screens.
+    const dim=g.state==="READY"&&g.stateT<READY_FADE_IN_DURATION?1-Math.min(1,g.stateT/READY_FADE_IN_DURATION):0;
+    const layer=ctx.canvas&&ctx.canvas.__hexIntroDimLayer;
+    if(layer){const v=String(Math.round(dim*1000)/1000);if(layer.style.opacity!==v)layer.style.opacity=v;}
     if(g.state!=="READY")return;
-    // A short black-to-board reveal separates the menu from the match.
-    if(g.stateT<READY_FADE_IN_DURATION){ctx.save();ctx.globalAlpha=1-Math.min(1,g.stateT/READY_FADE_IN_DURATION);ctx.fillStyle="#000000";ctx.fillRect(0,0,VW,VH);ctx.restore();}
+    if(dim>0&&!layer){ctx.save();ctx.globalAlpha=dim;ctx.fillStyle="#000000";ctx.fillRect(0,0,VW,VH);ctx.restore();}
     let text="",begin=0,end=0;
     if(g.stateT>=READY_RULE_BEGIN&&g.stateT<READY_RULE_END){text="同じ色を6つつなげよう！";begin=READY_RULE_BEGIN;end=READY_RULE_END;}
     else if(g.stateT>=READY_START_BEGIN&&g.stateT<READY_START_END){text="スタート！";begin=READY_START_BEGIN;end=READY_START_END;}
