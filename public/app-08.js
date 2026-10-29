@@ -715,4 +715,4 @@ function queueResidualRestDescent(g){
     }
     return entries.length;
 }
-const SETTLE_TOL = 0.34;
+const SETTLE_TOL = 0.05;

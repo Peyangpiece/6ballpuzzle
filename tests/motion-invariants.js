@@ -6,8 +6,7 @@
 //   one frame to the next;
 // - no resolve phase (clear / settle / garbage) lasts longer than 15 s;
 // - nothing throws.
-// - where a match sets garbageMin, no two balls, garbage included, are drawn
-//   closer than that.
+// - no two balls, garbage included, are drawn closer than garbageMin.
 // The seeds are matches that showed each defect before it was fixed (balls
 // stepping off a wall cutting through their neighbour, a ball shoved up by the
 // contact correction, mass-fall separation pushing a ball up, garbage dropped
@@ -38,13 +37,12 @@ ctx.__sixBallAiWorkerDisabled = true; ctx.__sixBallAiSyncBudgetMs = 1e9; ctx.__s
 ctx.__reset = s => { rs = s | 0; clk = 1000; };
 
 const MATCHES = [
-  { seed: 1000 + 1 * 7919, la: 3, lb: 4, ramp: false },
+  { seed: 1000 + 1 * 7919, la: 3, lb: 4, ramp: false, garbageMin: 0.9 },
   { seed: 1000 + 2 * 7919, la: 5, lb: 3, ramp: true, garbageMin: 0.9 },
   { seed: 1000 + 3 * 7919, la: 2, lb: 5, ramp: false, garbageMin: 0.9 },
-  // 40595: the board lets a ball step down between two balls only 1.73
-  // diameters apart, which no path does without about 13% overlap.
-  { seed: 1000 + 5 * 7919, la: 5, lb: 5, ramp: false, garbageMin: 0.85 },
-  { seed: 1000 + 6 * 7919, la: 3, lb: 5, ramp: true },
+  { seed: 1000 + 5 * 7919, la: 5, lb: 5, ramp: false, garbageMin: 0.9 },
+  { seed: 1000 + 6 * 7919, la: 3, lb: 5, ramp: true, garbageMin: 0.9 },
+  { seed: 1000 + 8 * 7919, la: 4, lb: 2, ramp: true, garbageMin: 0.9, frames: 7800 },
   { seed: 1000 + 11 * 7919, la: 3, lb: 3, ramp: false, garbageMin: 0.9 }
 ];
 const result = JSON.parse(vm.runInContext(`(${(matches) => {
@@ -56,7 +54,7 @@ const result = JSON.parse(vm.runInContext(`(${(matches) => {
     const orbs = [], st = [a, b].map(() => ({ prev: new Map(), minD: 9, worst: null, minAll: 9, worstAll: null, upMax: 0, worstUp: null, resolving: 0, maxResolving: 0 }));
     let f = 0, err = null;
     try {
-      for (; f < 120 * 60 && a.alive && b.alive; f++) {
+      for (; f < (m.frames || 120 * 60) && a.alive && b.alive; f++) {
         stepEngine(a, PHYSICS_FRAME); stepEngine(b, PHYSICS_FRAME);
         [a, b].forEach((g, i) => { if (g.sendBuffer > 0 || g.sendShapes.length > 0) { orbs.push({ side: i, t: 0, n: g.sendBuffer, shapes: g.sendShapes.splice(0) }); g.sendBuffer = 0; } });
         for (let k = orbs.length - 1; k >= 0; k--) { const o = orbs[k]; o.t += PHYSICS_FRAME; if (o.t >= .6) { const t = o.side ? a : b; if (o.shapes.length) t.incomingShapes.push(...o.shapes.filter(w => WAZA[w])); else t.incoming += o.n; orbs.splice(k, 1); } }
