@@ -119,7 +119,7 @@ const Net = {
         const foeConnRef = F.ref(this.db, base + "/players/" + foeIndex + "/connected");F.onValue(foeConnRef, (s) => {const c = s.val() === true;if(c)foeEverConnected=true;if (events.onConnection) events.onConnection(c);if (discTimer) {clearTimeout(discTimer);discTimer = null;}if (!c && foeEverConnected && !finished) discTimer = setTimeout(() => { if (!finished) handle.reportResult(true, "disconnect"); }, GRACE_MS);});refs.push(foeConnRef);
         const resRef = F.ref(this.db, base + "/result");F.onValue(resRef, (s) => {const v = s.val();if (!v || finished) return;const mine = v[myIndex], theirs = v[foeIndex];if (mine) {finished = true;if (events.onFinish) events.onFinish(mine.win, mine.reason);} else if (theirs) {finished = true;if (events.onFinish) events.onFinish(!theirs.win, theirs.reason);}});refs.push(resRef);
         const self = this;const flush = () => {if (!pending) return;const p = pending;pending = null;lastSent = Date.now();F.set(F.ref(self.db, base + "/state/" + myIndex), { board: p.b, incoming: p.inc, alive: p.alive, piece:p.piece, fx:p.fx, ts: Date.now() }).catch(() => { });};
-        const handle = {matchId, seed: m.meta.seed, myIndex, ranked: m.meta.ranked !== false, events,opponent: { uid: foe.uid, name: foe.name, rating: foe.rating },
+        const handle = {matchId, seed: m.meta.seed, myIndex, ranked: m.meta.ranked !== false, events,opponent: { uid: foe.uid, name: HexPlayerName.display(foe.name), rating: foe.rating },
             sendBoard(board, incoming, alive, piece=null, fx=null) {pending = { b: board, inc: incoming, alive, piece, fx };const wait = SNAP_MS - (Date.now() - lastSent);if (wait <= 0) flush();else if (!timer) timer = setTimeout(() => { timer = null; flush(); }, wait);},
             sendAttack(n, shapes = []) {if (n > 0 || shapes.length) F.push(F.ref(self.db, base + "/attacks/" + foeIndex), { n, shapes, ts: Date.now() }).catch(() => { });},
             async reportResult(win, reason) {if (finished) return;finished = true;await F.set(F.ref(self.db, base + "/result/" + myIndex), { win, reason, ts: Date.now() }).catch(() => { });if (events.onFinish) events.onFinish(win, reason);},
@@ -141,7 +141,7 @@ Net.fetchLeaderboard = async function (limit = 50) {
     try { snap = await F.get(F.query(ref, F.orderByChild("rating"), F.limitToLast(limit))); }
     catch (err) { if (!/index/i.test(String(err?.message || err))) throw err; snap = await F.get(ref); }
     const rows = [];
-    snap.forEach((c) => { const v = c.val() || {}; rows.push({ uid: c.key, name: String(v.name || "Player").slice(0, 24), rating: Number(v.rating) || 0 }); });
+    snap.forEach((c) => { const v = c.val() || {}; rows.push({ uid: c.key, name: HexPlayerName.display(v.name), rating: Number(v.rating) || 0 }); });
     rows.sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name));
     rows.length = Math.min(rows.length, limit);
     rows.forEach((r, i) => { r.rank = i && rows[i - 1].rating === r.rating ? rows[i - 1].rank : i + 1; });

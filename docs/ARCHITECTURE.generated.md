@@ -12,7 +12,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 4 | `app-04.js` | core: constants, physics planner, resolver, renderer | 216 |  | Canonical motion-group cleanup. No legacy rigidity metadata exists here. / |
 | 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 278 |  | Every engine by its board: the physics layers that resolve a bare board look |
 | 6 | `app-06.js` | core: constants, physics planner, resolver, renderer | 62 |  | Shared garbage presentation constants and visual collision helpers. |
-| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 535 |  | Pile/garbage collapse overlap-scheduler constants. |
+| 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 538 |  | Pile/garbage collapse overlap-scheduler constants. |
 | 8 | `app-pile-arc.js` | clear / collapse corrections | 132 |  | Accumulated-pile gravity binding (legacy filename). |
 | 9 | `app-clear-gap-collapse.js` | clear / collapse corrections | 266 |  | Post-clear accumulated-pile compaction invariant. |
 | 10 | `app-floor-gap-invariant.js` | clear / collapse corrections | 40 |  | Floor-side no-gap invariant. |
@@ -24,59 +24,60 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 16 | `app-14.js` | core: engine, assets, net, app shell | 411 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 100 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
-| 19 | `app-15.js` | core: engine, assets, net, app shell | 150 |  |  |
-| 20 | `app-google-login.js` | online | 287 |  |  |
-| 21 | `app-account-delete-v1.js` | other | 76 |  | Account deletion (App Store guideline 5.1.1(v), and for the web too). |
-| 22 | `app-online-v2.js` | online | 1754 |  |  |
-| 23 | `app-menu-ui.js` | menu / audio | 315 |  | HEXDROP immersive menu system. |
-| 24 | `app-native-v1.js` | other | 155 |  | iOS app bridge (Capacitor). Does nothing in a browser. |
-| 25 | `app-brand-bgm.js` | menu / audio | 145 |  | 6ball brand + menu audio + gameplay BGM adapter. |
-| 26 | `app-bgm-local.js` | menu / audio | 352 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
-| 27 | `app-audio-volume-control.js` | menu / audio | 277 |  | 6ball unified live audio controller. |
-| 28 | `app-menu-volume-fix.js` | menu / audio | 78 |  | 6ball menu click volume hotfix. |
-| 29 | `app-audio-element-gain-v1.js` | other | 74 |  | Volume for <audio> elements where the browser ignores it. |
-| 30 | `app-rotate-sfx.js` | menu / audio | 137 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
-| 31 | `app-instant-drop-sfx.js` | menu / audio | 140 |  | 6ball instant-drop landing v10 |
-| 32 | `app-16.js` | core: engine, assets, net, app shell | 359 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
-| 33 | `app-17.js` | core: engine, assets, net, app shell | 277 |  |  |
-| 34 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 338 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
-| 35 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |
-| 36 | `app-garbage-zero-rigidity.js` | garbage (おじゃま) pipeline | 118 | hexPhysPlanGroup | Post-split garbage rigidity invariant. |
-| 37 | `app-garbage-deep-settle.js` | garbage (おじゃま) pipeline | 133 |  | Garbage full-gravity finalization invariant. |
-| 38 | `app-garbage-simultaneous-motion.js` | garbage (おじゃま) pipeline | 118 |  | Garbage contact resolution after unit-local ordinary timelines. |
-| 39 | `app-garbage-render-overlap-guard.js` | garbage (おじゃま) pipeline | 107 |  | Render-only garbage overlap guard. |
-| 40 | `app-ai-core.js` | AI opponent | 428 |  | CPU AI core v1: one engine-accurate simulation and one decision function for |
-| 41 | `app-runtime-performance.js` | performance | 105 |  | Main-thread runtime performance guards. |
-| 42 | `app-physics-safety-invariants.js` | safety invariants | 604 |  |  |
-| 43 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |
-| 44 | `app-mass-motion-safety.js` | safety invariants | 960 |  |  |
-| 45 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4141 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
-| 46 | `app-garbage-performance-v1.js` | garbage (おじゃま) pipeline | 211 |  | 6ball GARBAGE PERFORMANCE v1 |
-| 47 | `app-garbage-continuous-v1.js` | garbage (おじゃま) pipeline | 1888 |  | 6ball GARBAGE CONTINUOUS GRAVITY v1 |
-| 48 | `app-contact-separation-v1.js` | safety invariants | 662 |  | 6ball CONTACT SEPARATION / NON-ADHESION v1 |
-| 49 | `app-floor-bridge-collapse-v1.js` | collapse scheduling authorities | 675 | hexPhysResolveEvent | 6ball FLOOR BRIDGE COLLAPSE v1 |
-| 50 | `app-lattice-finalize-v2.js` | collapse scheduling authorities | 391 |  | 6ball LATTICE FINALIZE ONLY v2 |
-| 51 | `app-coherent-collapse-v1.js` | collapse scheduling authorities | 1217 |  | 6ball COHERENT COLLAPSE v1 |
-| 52 | `app-wall-boundary-authoritative-v1.js` | rigidity / split authorities (Nintendo reference) | 406 |  | 6ball WALL BOUNDARY AUTHORITATIVE v1 |
-| 53 | `app-slope-upconvex-authoritative-v3.js` | rigidity / split authorities (Nintendo reference) | 826 | hexPhysPlanGroup | 6ball SLOPE + UP-CONVEX AUTHORITATIVE v3 |
-| 54 | `app-intentional-hexagon-stability-v1.js` | rigidity / split authorities (Nintendo reference) | 760 | hexPhysPlanGroup | 6ball INTENTIONAL HEXAGON STABILITY v1 |
-| 55 | `app-rigidity-resolver-authoritative-v3.js` | rigidity / split authorities (Nintendo reference) | 3787 | hexPhysPlanGroup | 6ball RIGIDITY RESOLVER AUTHORITATIVE v3 |
-| 56 | `app-collapse-vertical-merge-v1.js` | collapse scheduling authorities | 192 |  | 6ball COLLAPSE VERTICAL MERGE v1 |
-| 57 | `app-pile-motion-authority-v2.js` | collapse scheduling authorities | 205 |  | 6ball PILE MOTION AUTHORITY v2 |
-| 58 | `app-runtime-performance-v3.js` | performance | 1034 |  | 6ball RUNTIME PERFORMANCE AUTHORITATIVE v3 |
-| 59 | `app-runtime-performance-v4.js` | performance | 353 |  | 6ball RUNTIME PERFORMANCE AUTHORITATIVE v4 |
-| 60 | `app-rigidity-final-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 1249 | hexPhysPlanGroup | 6ball FINAL RIGIDITY AUTHORITY v1 (UP-CONVEX SCOPE) |
-| 61 | `app-reference-upconvex-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 364 | hexPhysPlanGroup |  |
-| 62 | `app-reference-first-contact-sweep-v3.js` | rigidity / split authorities (Nintendo reference) | 189 |  | Nintendo-reference first-contact sweep v3. |
-| 63 | `app-reference-inverted-flat-split-v1.js` | rigidity / split authorities (Nintendo reference) | 68 | hexPhysPlanGroup | Nintendo-reference inverted flat split v1. |
-| 64 | `app-rigidity-nintendo-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 227 | hexPhysPlanGroup | Nintendo-reference rigidity authority v1. |
-| 65 | `app-rigidity-release-bounce-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 226 | hexPhysPlanGroup, hexPhysResolveEvent | Nintendo rigidity release + no-bounce authority v1. |
-| 66 | `app-motion-smoothness-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 91 |  | Motion smoothness authority v1. |
-| 67 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 338 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
-| 68 | `app-even-row-split-continuity-v1.js` | rigidity / split authorities (Nintendo reference) | 72 |  | Even/narrow-row strict-inner split continuity authority v1. |
-| 69 | `app-split-visual-smoothness-v1.js` | rigidity / split authorities (Nintendo reference) | 15 |  | Retired split display follower. |
-| 70 | `app-settle-watchdog-v1.js` | other | 48 |  | Settle watchdog v1. |
-| 71 | `app-mass-fall-v1.js` | other | 349 |  | Mass fall v1. |
-| 72 | `controls-v7.js` | input | 308 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
-| 73 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
-| 74 | `app-ui-ux-v1.js` | other | 50 |  | UI/UX layer v1 (no physics). |
+| 19 | `app-player-name-v1.js` | other | 58 |  | Player names shown to other players (online matches, the rating ranking). |
+| 20 | `app-15.js` | core: engine, assets, net, app shell | 150 |  |  |
+| 21 | `app-google-login.js` | online | 287 |  |  |
+| 22 | `app-account-delete-v1.js` | other | 76 |  | Account deletion (App Store guideline 5.1.1(v), and for the web too). |
+| 23 | `app-online-v2.js` | online | 1754 |  |  |
+| 24 | `app-menu-ui.js` | menu / audio | 315 |  | HEXDROP immersive menu system. |
+| 25 | `app-native-v1.js` | other | 155 |  | iOS app bridge (Capacitor). Does nothing in a browser. |
+| 26 | `app-brand-bgm.js` | menu / audio | 145 |  | 6ball brand + menu audio + gameplay BGM adapter. |
+| 27 | `app-bgm-local.js` | menu / audio | 352 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
+| 28 | `app-audio-volume-control.js` | menu / audio | 277 |  | 6ball unified live audio controller. |
+| 29 | `app-menu-volume-fix.js` | menu / audio | 78 |  | 6ball menu click volume hotfix. |
+| 30 | `app-audio-element-gain-v1.js` | other | 74 |  | Volume for <audio> elements where the browser ignores it. |
+| 31 | `app-rotate-sfx.js` | menu / audio | 137 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
+| 32 | `app-instant-drop-sfx.js` | menu / audio | 140 |  | 6ball instant-drop landing v10 |
+| 33 | `app-16.js` | core: engine, assets, net, app shell | 380 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
+| 34 | `app-17.js` | core: engine, assets, net, app shell | 277 |  |  |
+| 35 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 338 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
+| 36 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |
+| 37 | `app-garbage-zero-rigidity.js` | garbage (おじゃま) pipeline | 118 | hexPhysPlanGroup | Post-split garbage rigidity invariant. |
+| 38 | `app-garbage-deep-settle.js` | garbage (おじゃま) pipeline | 133 |  | Garbage full-gravity finalization invariant. |
+| 39 | `app-garbage-simultaneous-motion.js` | garbage (おじゃま) pipeline | 118 |  | Garbage contact resolution after unit-local ordinary timelines. |
+| 40 | `app-garbage-render-overlap-guard.js` | garbage (おじゃま) pipeline | 107 |  | Render-only garbage overlap guard. |
+| 41 | `app-ai-core.js` | AI opponent | 428 |  | CPU AI core v1: one engine-accurate simulation and one decision function for |
+| 42 | `app-runtime-performance.js` | performance | 105 |  | Main-thread runtime performance guards. |
+| 43 | `app-physics-safety-invariants.js` | safety invariants | 604 |  |  |
+| 44 | `app-position-lock-sfx.js` | menu / audio | 387 |  |  |
+| 45 | `app-mass-motion-safety.js` | safety invariants | 961 |  |  |
+| 46 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4141 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
+| 47 | `app-garbage-performance-v1.js` | garbage (おじゃま) pipeline | 211 |  | 6ball GARBAGE PERFORMANCE v1 |
+| 48 | `app-garbage-continuous-v1.js` | garbage (おじゃま) pipeline | 1902 |  | 6ball GARBAGE CONTINUOUS GRAVITY v1 |
+| 49 | `app-contact-separation-v1.js` | safety invariants | 662 |  | 6ball CONTACT SEPARATION / NON-ADHESION v1 |
+| 50 | `app-floor-bridge-collapse-v1.js` | collapse scheduling authorities | 675 | hexPhysResolveEvent | 6ball FLOOR BRIDGE COLLAPSE v1 |
+| 51 | `app-lattice-finalize-v2.js` | collapse scheduling authorities | 391 |  | 6ball LATTICE FINALIZE ONLY v2 |
+| 52 | `app-coherent-collapse-v1.js` | collapse scheduling authorities | 1217 |  | 6ball COHERENT COLLAPSE v1 |
+| 53 | `app-wall-boundary-authoritative-v1.js` | rigidity / split authorities (Nintendo reference) | 406 |  | 6ball WALL BOUNDARY AUTHORITATIVE v1 |
+| 54 | `app-slope-upconvex-authoritative-v3.js` | rigidity / split authorities (Nintendo reference) | 826 | hexPhysPlanGroup | 6ball SLOPE + UP-CONVEX AUTHORITATIVE v3 |
+| 55 | `app-intentional-hexagon-stability-v1.js` | rigidity / split authorities (Nintendo reference) | 811 | hexPhysPlanGroup | 6ball INTENTIONAL HEXAGON STABILITY v1 |
+| 56 | `app-rigidity-resolver-authoritative-v3.js` | rigidity / split authorities (Nintendo reference) | 3787 | hexPhysPlanGroup | 6ball RIGIDITY RESOLVER AUTHORITATIVE v3 |
+| 57 | `app-collapse-vertical-merge-v1.js` | collapse scheduling authorities | 198 |  | 6ball COLLAPSE VERTICAL MERGE v1 |
+| 58 | `app-pile-motion-authority-v2.js` | collapse scheduling authorities | 205 |  | 6ball PILE MOTION AUTHORITY v2 |
+| 59 | `app-runtime-performance-v3.js` | performance | 1072 |  | 6ball RUNTIME PERFORMANCE AUTHORITATIVE v3 |
+| 60 | `app-runtime-performance-v4.js` | performance | 353 |  | 6ball RUNTIME PERFORMANCE AUTHORITATIVE v4 |
+| 61 | `app-rigidity-final-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 1249 | hexPhysPlanGroup | 6ball FINAL RIGIDITY AUTHORITY v1 (UP-CONVEX SCOPE) |
+| 62 | `app-reference-upconvex-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 364 | hexPhysPlanGroup |  |
+| 63 | `app-reference-first-contact-sweep-v3.js` | rigidity / split authorities (Nintendo reference) | 189 |  | Nintendo-reference first-contact sweep v3. |
+| 64 | `app-reference-inverted-flat-split-v1.js` | rigidity / split authorities (Nintendo reference) | 68 | hexPhysPlanGroup | Nintendo-reference inverted flat split v1. |
+| 65 | `app-rigidity-nintendo-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 227 | hexPhysPlanGroup | Nintendo-reference rigidity authority v1. |
+| 66 | `app-rigidity-release-bounce-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 226 | hexPhysPlanGroup, hexPhysResolveEvent | Nintendo rigidity release + no-bounce authority v1. |
+| 67 | `app-motion-smoothness-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 91 |  | Motion smoothness authority v1. |
+| 68 | `app-no-upward-bounce-split-authority-v1.js` | rigidity / split authorities (Nintendo reference) | 338 |  | Ordinary-ball no-upward-bounce + split-continuity authority v1. |
+| 69 | `app-even-row-split-continuity-v1.js` | rigidity / split authorities (Nintendo reference) | 72 |  | Even/narrow-row strict-inner split continuity authority v1. |
+| 70 | `app-split-visual-smoothness-v1.js` | rigidity / split authorities (Nintendo reference) | 15 |  | Retired split display follower. |
+| 71 | `app-settle-watchdog-v1.js` | other | 48 |  | Settle watchdog v1. |
+| 72 | `app-mass-fall-v1.js` | other | 352 |  | Mass fall v1. |
+| 73 | `controls-v7.js` | input | 308 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
+| 74 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
+| 75 | `app-ui-ux-v1.js` | other | 50 |  | UI/UX layer v1 (no physics). |
