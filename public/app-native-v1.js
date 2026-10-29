@@ -52,6 +52,9 @@ const diag=(tag)=>{try{
     " session="+(navigator.audioSession?navigator.audioSession.type:"n/a")+
     " bgm="+(window.Bgm&&window.Bgm.audio?(window.Bgm.audio.paused?"paused":"playing")+"@"+(Math.round((window.Bgm.audio.volume||0)*1000)/1000)+(window.Bgm.audio.muted?"muted":""):"none")+
     " bgmErr="+(window.__sixBallGameplayBgmLastError||"-")+
+    " build="+((document.querySelector('script[src*="6ball."]')||{}).src||"dev").replace(/^.*\/6ball\.|\.min\.js.*$/g,"")+
+    " wide="+(document.querySelector(".hex-wide-bg")?"on":"off")+
+    " intro="+(document.querySelector("[data-hex-intro-dim]")?getComputedStyle(document.querySelector("[data-hex-intro-dim]")).animationName:"-")+
     " rotate="+(window.__sixBallRotateV15Ready?"ok":(window.__sixBallRotateV15Error||"-"))+
     " drop="+(window.__sixBallInstantDropReady?"ok":(window.__sixBallInstantDropError||"-"))+
     " lock="+(window.__sixBallPositionLockReady?"ok":(window.__sixBallPositionLockError||"-")));
