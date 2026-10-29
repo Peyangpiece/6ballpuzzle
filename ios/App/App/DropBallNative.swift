@@ -11,13 +11,6 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(NativeBgmPlugin())
     }
 
-    private var loggedLayout = ""
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        let s = "[DropBall] native view=\(view.bounds.size) safe=\(view.safeAreaInsets) web=\(webView?.frame.size ?? .zero) contentInset=\(webView?.scrollView.adjustedContentInset ?? .zero)"
-        if s != loggedLayout { loggedLayout = s; print(s) }
-    }
-
     // Capacitor's SystemBars plugin owns prefersHomeIndicatorAutoHidden (a
     // public, non-overridable property); capacitor.config.json hides the
     // status bar and the home indicator through it ("SystemBars.hidden").
@@ -165,7 +158,6 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
             guard self.wanted, let player = self.player, !player.isPlaying else { return }
             try? AVAudioSession.sharedInstance().setActive(true)
             player.play()
-            print("[DropBall] NativeBgm resumed playing=\(player.isPlaying)")
         }
     }
 
@@ -203,7 +195,6 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
             self.wanted = true
             player.volume = self.volume(call)
             if !player.isPlaying { player.play() }
-            print("[DropBall] NativeBgm play volume=\(player.volume) playing=\(player.isPlaying)")
             call.resolve()
         }
     }
@@ -224,7 +215,6 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
                 try? AVAudioSession.sharedInstance().setActive(true)
                 player.play()
             }
-            print("[DropBall] NativeBgm volume=\(player.volume) playing=\(player.isPlaying)")
             call.resolve()
         }
     }

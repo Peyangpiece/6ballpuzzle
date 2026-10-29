@@ -35,38 +35,6 @@ const ACH={
   rating1200:"dropball.rating_1200"
 };
 
-// ---------------------------------------------------------------- diagnostics
-// One line per event in the Xcode console ("[DropBall] …"): the web view's
-// size and safe-area insets, and the audio state, to check the layout and the
-// sound on a device.
-const diag=(tag)=>{try{
-  const probe=document.createElement("div");
-  probe.style.cssText="position:fixed;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)";
-  document.body.appendChild(probe);const cs=getComputedStyle(probe);
-  const inset=[cs.paddingTop,cs.paddingRight,cs.paddingBottom,cs.paddingLeft].map(v=>parseFloat(v)||0).join(",");
-  probe.remove();
-  const ctx=typeof Sfx!=="undefined"?Sfx.ctx:null;
-  const fpsNow=window.__dropBallFps;
-  console.log("[DropBall] "+tag+" fps="+(fpsNow==null?"-":fpsNow)+" view="+innerWidth+"x"+innerHeight+" screen="+screen.width+"x"+screen.height+" safe="+inset+
-    " audio="+(ctx?ctx.state+"@"+ctx.sampleRate:"none")+" elVolIgnored="+window.__sixBallAudioElementVolumeIgnored+
-    " session="+(navigator.audioSession?navigator.audioSession.type:"n/a")+
-    " bgm="+(window.Bgm&&window.Bgm.audio?(window.Bgm.audio.paused?"paused":"playing")+"@"+(Math.round((window.Bgm.audio.volume||0)*1000)/1000)+(window.Bgm.audio.muted?"muted":""):"none")+
-    " bgmErr="+(window.__sixBallGameplayBgmLastError||"-")+
-    " build="+((document.querySelector('script[src*="6ball."]')||{}).src||"dev").replace(/^.*\/6ball\.|\.min\.js.*$/g,"")+
-    " wide="+(document.querySelector(".hex-wide-bg")?"on":"off")+
-    " intro="+(document.querySelector("[data-hex-intro-dim]")?getComputedStyle(document.querySelector("[data-hex-intro-dim]")).animationName:"-")+
-    " rotate="+(window.__sixBallRotateV15Ready?"ok":(window.__sixBallRotateV15Error||"-"))+
-    " drop="+(window.__sixBallInstantDropReady?"ok":(window.__sixBallInstantDropError||"-"))+
-    " lock="+(window.__sixBallPositionLockReady?"ok":(window.__sixBallPositionLockError||"-")));
-}catch(e){console.log("[DropBall] diag error "+e);}};
-// Frames per second over the last second, sampled only around each log line.
-const measureFps=()=>new Promise(res=>{let n=0;const t0=performance.now();const f=t=>{n++;if(t-t0<1000)requestAnimationFrame(f);else res(Math.round(n*1000/(t-t0)));};requestAnimationFrame(f);});
-const diagWithFps=tag=>{if(typeof requestAnimationFrame!=="function")return diag(tag);measureFps().then(f=>{window.__dropBallFps=f;diag(tag);});};
-setTimeout(()=>diagWithFps("start"),1500);
-window.addEventListener?.("resize",()=>diag("resize"));
-let diagTaps=0;
-window.addEventListener?.("pointerup",()=>{if(diagTaps++<8)setTimeout(()=>diagWithFps("tap"+diagTaps),400);},true);
-
 // ---------------------------------------------------------------- audio
 // The app's web view ignores an <audio> element's volume, and an element
 // routed into Web Audio plays nothing there. So the battle BGM is played by

@@ -9,14 +9,19 @@
 | Apple でサインイン | `@capacitor-firebase/authentication`（ネイティブのシート）→ Web の Firebase Auth | 4.8 ログインサービス |
 | Google でログイン（ネイティブ） | 同上 | 4.8 |
 | 触覚フィードバック | `@capacitor/haptics`（既存の「振動」設定がそのまま使えます） | 4.2 |
+| BGM（音量スライダー対応） | `NativeBgm` プラグイン（AVAudioPlayer、`DropBallNative.swift`）＋ `public/app-native-v1.js` | — |
 | アカウント削除 | プロフィール → 「アカウントを削除」（`public/app-account-delete-v1.js`、ウェブ版にもあり） | 5.1.1(v) |
 | プライバシーポリシー | `public/privacy.html`（設定画面からリンク） | 5.1.1 |
 
 ここから先は **Mac での作業** です（この開発環境は Linux のため、ビルドと署名はできません）。
 
 ## 1. 準備
-- Mac、Xcode 26 以降（2026 年 4 月 28 日から App Store Connect へのアップロードに必須）、Node.js 20 以降
+- Mac、正式版の Xcode 26 以降（2026 年 4 月 28 日から App Store Connect へのアップロードに必須。
+  ベータ版の Xcode でビルドしたものは審査に提出できません）、Node.js 20 以降（CI は 22）
 - Apple Developer Program（年会費）
+- 実機で動かすには、iPhone をケーブルでつないで Xcode の実行先に選び、Signing & Capabilities の
+  「Register Device」で開発者アカウントに登録し、iPhone の 設定 → プライバシーとセキュリティ →
+  デベロッパモード をオンにします（この項目は一度 Xcode につないだあとに現れます）。
 
 ```bash
 git clone https://github.com/Peyangpiece/6ballpuzzle.git && cd 6ballpuzzle
@@ -24,7 +29,8 @@ npm ci
 npm run ios:sync      # ウェブ版をビルドして ios/ にコピー、Swift パッケージを更新
 npm run ios:open      # Xcode で開く
 ```
-ウェブ側を変更したら、毎回 `npm run ios:sync` を実行してからアプリをビルドします。
+ウェブ側を変更したら、毎回 `npm run ios:sync` を実行してからアプリをビルドします
+（ターミナルはリポジトリのフォルダで実行すること。`git pull` だけではウェブ側の変更はアプリに入りません）。
 
 ## 2. Xcode の設定（ターゲット「App」）
 1. **Signing & Capabilities** → Team を選択。Bundle Identifier は `app.dropball.game`
@@ -86,6 +92,14 @@ npm run ios:open      # Xcode で開く
 
 ## 構成メモ
 - `capacitor.config.json`: `webDir` は `dist`。`experimental.ios.spm` で Firebase プラグインの Facebook SDK を除外。
-- `ios/App/App/DropBallNative.swift`: 全画面・横画面の `MainViewController` と、Game Center プラグイン。
+- `ios/App/App/DropBallNative.swift`: 全画面・横画面の `MainViewController`（`Main.storyboard` の初期画面）、
+  Game Center プラグイン、BGM の `NativeBgm` プラグイン。ホームインジケータとステータスバーは
+  `capacitor.config.json` の `plugins.SystemBars.hidden` で隠します（Capacitor 8 では
+  `prefersHomeIndicatorAutoHidden` を上書きできないため）。
+- アプリ内の Web 表示での音: `capacitor://` のファイルは fetch の status が 0 で返る（中身は正常）ため、効果音の
+  読み込みは 0 も成功として扱います。`<audio>` の volume は効かず、Web Audio に通すと無音になるため、BGM は
+  `NativeBgm`（AVAudioSession は ambient。Web 表示の音と互いに止め合わない）、メニューのタップ音は Web Audio で鳴らします。
+- 横向きの安全領域（左右 62pt）: ページ全体（`#root`）には余白を付けず、メニューと HUD が各自で
+  `env(safe-area-inset-*)` を避けます。16:9 より横長の画面では、背景を左右に広げた画像（`app-10.js`）を全面に敷きます。
 - `public/app-native-v1.js`: アプリ内でだけ動く橋渡し（ブラウザでは何もしません。`tests/native-bridge.js`）。
 - Service Worker は `http(s)` でだけ登録されるため、アプリ（`capacitor://`）では使われません。
