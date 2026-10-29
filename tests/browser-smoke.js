@@ -37,6 +37,32 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
     assert.strictEqual(gated.gateHidden, false, "portrait must show the orientation gate");
     await portrait.close();
 
+    // --- launch splash (automated browsers skip it unless ?splash=1): it stays
+    // over the mounted menu until its animation has played, then leaves; a tap
+    // ends it early.
+    for (const tap of [false, true]) {
+      const sp = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+      const spErrors = [];
+      sp.on("pageerror", e => spErrors.push(String(e && e.message || e)));
+      await sp.goto(url + "?splash=1", { waitUntil: "load" });
+      const shown = await sp.evaluate(() => ({ boot: !!document.querySelector("#boot svg.splash"), letters: document.querySelectorAll("#boot .sl").length }));
+      assert(shown.boot && shown.letters === 7, "launch splash logo is missing: " + JSON.stringify(shown));
+      await sp.waitForFunction(() => window.__hexdropMounted === true, null, { timeout: 15000 });
+      const t = await sp.evaluate(() => Date.now() - window.__hexSplashShownAt);
+      if (tap) {
+        await sp.mouse.click(640, 360);
+        await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 1500 });
+      } else {
+        if (t < 1200) assert(await sp.evaluate(() => !!document.getElementById("boot")), "splash left before its animation played");
+        await sp.waitForFunction(() => !document.getElementById("boot"), null, { timeout: 4000 });
+        const gone = await sp.evaluate(() => Date.now() - window.__hexSplashShownAt);
+        assert(gone >= 1600, "splash left after " + gone + " ms, before its animation played");
+      }
+      await sp.getByText("AI対戦", { exact: true }).click({ timeout: 5000 });
+      assert.deepStrictEqual(spErrors, [], "page errors with the splash: " + spErrors.join(" | "));
+      await sp.close();
+    }
+
     // --- landscape: full flow
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     const pageErrors = [], consoleErrors = [], requests = [];
