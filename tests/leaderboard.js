@@ -22,8 +22,10 @@ function load(entries, { indexed }) {
       return snapshot(entries);
     }
   };
-  const ctx = { console, window: {} };
+  const ctx = { console };
+  ctx.window = ctx;
   vm.createContext(ctx);
+  vm.runInContext(read("app-player-name-v1.js") + "\nthis.HexPlayerName=HexPlayerName;", ctx);
   vm.runInContext(read("app-14.js").match(/const FIREBASE_CONFIG = \{[^}]*\};/)[0], ctx);
   vm.runInContext(read("app-15.js") + "\nthis.Net=Net;", ctx);
   const Net = ctx.Net;
@@ -39,6 +41,9 @@ function load(entries, { indexed }) {
     assert.deepStrictEqual(Array.from(rows, r => r.uid), ["d", "a", "b", "me"], "highest first, limited (indexed=" + indexed + ")");
     assert.deepStrictEqual(Array.from(rows, r => r.rank), [1, 2, 3, 3], "equal ratings share a rank");
   }
+  // Names come from other clients: an offensive one is shown as "Player".
+  const named = await load({ x: { name: "f.u.c.k", rating: 1300 }, y: { name: "Hanako", rating: 1000 } }, { indexed: true }).fetchLeaderboard(5);
+  assert.deepStrictEqual(Array.from(named.rows, r => r.name), ["Player", "Hanako"], "ranking names pass the name filter");
   const app16 = read("app-16.js");
   assert(app16.includes('[["RANKING","ランキング","trophy"]'), "the home screen links to the ranking");
   assert(/const rankingScreen=screen==="RANKING"/.test(app16) && app16.includes("rankingScreen,"), "the ranking screen is rendered");

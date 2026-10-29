@@ -17,7 +17,7 @@ window.__dropBallAccountDeleteV1=true;
 
 // Game records on this device; preferences (volume, haptics, colour symbols,
 // tutorial) are not personal data and stay.
-const LOCAL_KEYS=["hexdrop_nickname","hexdrop_rating","hexdrop_wins","hexdrop_losses","hexdrop_bests","hexdrop_cpu_record"];
+const LOCAL_KEYS=["hexdrop_nickname","hexdrop_rating","hexdrop_wins","hexdrop_losses","hexdrop_bests","hexdrop_cpu_record","hexdrop_name_prompted"];
 
 function clearLocal(){
   for(const k of LOCAL_KEYS){try{localStorage.removeItem(k);}catch(_){}}
