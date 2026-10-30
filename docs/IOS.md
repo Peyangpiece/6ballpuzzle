@@ -91,6 +91,10 @@ npm run ios:open      # Xcode で開く
 3. 審査提出時のメモは `docs/APPSTORE.md` の「審査メモ」を使用。
 
 ## 構成メモ
+- ルームの招待リンク（`https://dropball.hrk-6888.workers.dev/?room=NNNNNN`）はユニバーサルリンクでアプリが開きます：
+  `public/.well-known/apple-app-site-association`（`appIDs` は「Team ID.app.dropball.game」、`?room=` 付きのリンクだけが対象）、
+  `App.entitlements` の Associated Domains（`applinks:dropball.hrk-6888.workers.dev`）、`@capacitor/app` の `appUrlOpen` /
+  `getLaunchUrl`（`public/app-native-v1.js`）。Bundle ID や Team を変えたら `appIDs` も直します。
 - `capacitor.config.json`: `webDir` は `dist`。`experimental.ios.spm` で Firebase プラグインの Facebook SDK を除外。
 - `ios/App/App/DropBallNative.swift`: 全画面・横画面の `MainViewController`（`Main.storyboard` の初期画面）、
   Game Center プラグイン、BGM の `NativeBgm` プラグイン。ホームインジケータとステータスバーは

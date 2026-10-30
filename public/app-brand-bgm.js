@@ -29,19 +29,6 @@
         window.__sixBallMenuBallSources=BALL_SRC.slice();
     }
 
-    if(typeof HexMenuShell==="function"&&!window.__sixBallShellWrapped){
-        const baseShell=HexMenuShell;
-        window.__sixBallShellWrapped=true;
-        HexMenuShell=function(props){
-            const p={...(props||{})};
-            if(p.title==="設定"){
-                const credit=React.createElement("div",{key:"sixball-bgm-credit",className:"mt-3 text-center text-[11px] font-semibold text-white/60 leading-relaxed"},"BGM：Glass Cascade");
-                p.children=React.createElement(React.Fragment,null,p.children,credit);
-            }
-            return baseShell(p);
-        };
-    }
-
     // Menu tap sound: one valid same-origin MP3 (see assets/.menu-click-source.txt).
     // The former synchronous-XHR rebuild from text chunks never matched its
     // expected byte length and always fell back to a truncated file.

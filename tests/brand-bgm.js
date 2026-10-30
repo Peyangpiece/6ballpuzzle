@@ -39,6 +39,6 @@ expect(brand.includes('ev.t==="move"'), 'legacy menu move sound is not suppresse
 // The legacy adapter must never reach an external host; app-bgm-local.js owns gameplay BGM.
 expect(!/https?:\/\//.test(brand.replace(/\/\*[\s\S]*?\*\//g, '')), 'brand adapter must not reference external URLs');
 expect(brand.includes('const CYBER44_SRC="";'), 'legacy BGM source must be empty (superseded by app-bgm-local.js)');
-expect(brand.includes('BGM：Glass Cascade'), 'music credit missing from settings');
+expect(!brand.includes('BGM：Glass Cascade'), 'the settings screen keeps only the controls (no music credit)');
 expect(!brand.includes('stepEngine(') && !brand.includes('settlePass(') && !brand.includes('SLIDE_SPEED') && !brand.includes('GRAV='), 'brand/BGM adapter must not alter gameplay physics');
 console.log('6ball brand + exact rebuilt menu tap regression PASS', JSON.stringify({ menuHash, bytes: menuAudio.length }));

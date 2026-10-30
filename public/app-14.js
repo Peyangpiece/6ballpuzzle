@@ -160,15 +160,15 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
         drawBall(ctx, ncx - nd * 0.5, ncy + nd * 0.42, nd, q[2], {});
         drawBall(ctx, ncx + nd * 0.5, ncy + nd * 0.42, nd, q[1], {});
     }
-    ctx.font = "800 24px ui-sans-serif, system-ui, sans-serif";ctx.fillStyle = "rgba(255,255,255,0.8)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.shadowColor="rgba(0,0,0,.6)";ctx.shadowBlur=8;if("letterSpacing" in ctx)ctx.letterSpacing="3px";ctx.fillText("NEXT", ncx + (("letterSpacing" in ctx) ? 1.5 : 0), ny0 + nh + 9);ctx.restore();
+    ctx.font = "800 24px DropBall,ui-sans-serif,system-ui,sans-serif";ctx.fillStyle = "rgba(255,255,255,0.8)";ctx.textAlign = "center";ctx.textBaseline = "top";ctx.shadowColor="rgba(0,0,0,.6)";ctx.shadowBlur=8;if("letterSpacing" in ctx)ctx.letterSpacing="3px";ctx.fillText("NEXT", ncx + (("letterSpacing" in ctx) ? 1.5 : 0), ny0 + nh + 9);ctx.restore();
     const AR=18,avx=side===0?nx0+AR:nx0+nw-AR,avy=23;
     ctx.save();ctx.beginPath();ctx.arc(avx,avy,AR,0,TAU);ctx.shadowColor=NEON[side];ctx.shadowBlur=14;ctx.fillStyle=NEON[side];ctx.fill();ctx.shadowBlur=0;
      {const hi=typeof ctx.createLinearGradient==="function"?ctx.createLinearGradient(avx-AR,avy-AR,avx+AR,avy+AR):null;if(hi){hi.addColorStop(0,"rgba(255,255,255,.42)");hi.addColorStop(1,"rgba(255,255,255,0)");ctx.fillStyle=hi;ctx.fill();}}
      ctx.lineWidth=1.5;ctx.strokeStyle="rgba(255,255,255,.75)";ctx.stroke();
-     ctx.font="800 20px ui-sans-serif,system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#07101a";ctx.fillText(String(label||"P").trim().slice(0,1).toUpperCase(),avx,avy+1);ctx.restore();
+     ctx.font="800 20px DropBall,ui-sans-serif,system-ui,sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillStyle="#07101a";ctx.fillText(String(label||"P").trim().slice(0,1).toUpperCase(),avx,avy+1);ctx.restore();
     // Player name (and rating) to the inner side of the avatar, on the same row
     // above the NEXT window. Long names are shortened with an ellipsis instead of cut.
-    {ctx.save();const inner=side===0?1:-1,nx=avx+inner*(AR+10),ny=avy,F="ui-sans-serif,system-ui,sans-serif";
+    {ctx.save();const inner=side===0?1:-1,nx=avx+inner*(AR+10),ny=avy,F="DropBall,ui-sans-serif,system-ui,sans-serif";
      const fit=(str,max)=>{str=String(str||"");if(typeof ctx.measureText!=="function"||ctx.measureText(str).width<=max)return str;while(str.length>1&&ctx.measureText(str+"…").width>max)str=str.slice(0,-1);return str+"…";};
      ctx.font=`900 28px ${F}`;ctx.textAlign=side===0?"left":"right";ctx.textBaseline="middle";ctx.shadowColor="rgba(0,0,0,.8)";ctx.shadowBlur=10;ctx.shadowOffsetY=1;
      const nm=fit(label,300);ctx.fillStyle="#FFFFFF";ctx.fillText(nm,nx,ny);
@@ -177,8 +177,8 @@ function drawSide(ctx, g, L, side, t, label, sub, big, renderLead=0) {
     // Queued garbage that has not started falling yet, in balls. Remote boards
     // only report a mixed counter, so the badge is limited to local engines.
     if(g.state!=="NET"){let n=Number(g.incoming)||0;for(const w of g.incomingShapes||[])n+=(GARBAGE_SHAPES[w]||[]).length;
-     if(n>0){ctx.save();const bw=106,bh=84,bx=ncx-bw/2-4,by=ny0+nh+46;ctx.globalAlpha=.94;hexRoundRectPath(ctx,bx,by,bw,bh,12);ctx.fillStyle="rgba(60,6,20,.84)";ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle="#FF5A72";ctx.shadowColor="#FF5A72";ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="900 24px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="rgba(255,220,228,.95)";ctx.fillText("おじゃま",ncx-4,by+22);ctx.font="900 36px ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="#FF8A9C";ctx.fillText(`×${n}`,ncx-4,by+59);ctx.restore();}}
-    for (const t2 of g.fx.toasts) {const k = t2.life / t2.max;const size = t2.waza ? 40 : 28+t2.big*38;ctx.save();ctx.globalAlpha = Math.min(1, k * 3);ctx.font = `900 ${size * (1 + (1 - k) * 0.08)}px ui-sans-serif, system-ui, sans-serif`;ctx.textAlign = "center";ctx.textBaseline = "middle";ctx.lineJoin="round";ctx.strokeStyle="rgba(0,0,0,.6)";ctx.lineWidth=t2.waza?5:3;ctx.shadowColor = t2.tint;ctx.shadowBlur = 24;const ty=t2.waza?Y+BH+48:Y+BH*(t2.sub?0.58:0.44)-(1-k)*26;ctx.strokeText(t2.text,X+BW/2,ty);ctx.fillStyle = "#FFFFFF";ctx.fillText(t2.text, X + BW / 2,ty);ctx.restore();}
+     if(n>0){ctx.save();const bw=106,bh=84,bx=ncx-bw/2-4,by=ny0+nh+46;ctx.globalAlpha=.94;hexRoundRectPath(ctx,bx,by,bw,bh,12);ctx.fillStyle="rgba(60,6,20,.84)";ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle="#FF5A72";ctx.shadowColor="#FF5A72";ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1;ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="900 24px DropBall,ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="rgba(255,220,228,.95)";ctx.fillText("おじゃま",ncx-4,by+22);ctx.font="900 36px DropBall,ui-sans-serif,system-ui,sans-serif";ctx.fillStyle="#FF8A9C";ctx.fillText(`×${n}`,ncx-4,by+59);ctx.restore();}}
+    for (const t2 of g.fx.toasts) {const k = t2.life / t2.max;const size = t2.waza ? 40 : 28+t2.big*38;ctx.save();ctx.globalAlpha = Math.min(1, k * 3);ctx.font = `900 ${size * (1 + (1 - k) * 0.08)}px DropBall,ui-sans-serif,system-ui,sans-serif`;ctx.textAlign = "center";ctx.textBaseline = "middle";ctx.lineJoin="round";ctx.strokeStyle="rgba(0,0,0,.6)";ctx.lineWidth=t2.waza?5:3;ctx.shadowColor = t2.tint;ctx.shadowBlur = 24;const ty=t2.waza?Y+BH+48:Y+BH*(t2.sub?0.58:0.44)-(1-k)*26;ctx.strokeText(t2.text,X+BW/2,ty);ctx.fillStyle = "#FFFFFF";ctx.fillText(t2.text, X + BW / 2,ty);ctx.restore();}
     ctx.restore();
 }
 function drawMatchIntro(ctx,g){
@@ -193,7 +193,7 @@ function drawMatchIntro(ctx,g){
     if(!text)return;
     const edge=Math.min(g.stateT-begin,end-g.stateT),a=Math.min(1,Math.max(0,edge)/.18),cx=VW/2,cy=400;
     ctx.save();ctx.globalAlpha=a;ctx.textAlign="center";ctx.textBaseline="middle";
-    ctx.font=`900 ${text==="スタート！"?56:42}px ui-sans-serif,system-ui,sans-serif`;
+    ctx.font=`900 ${text==="スタート！"?56:42}px DropBall,ui-sans-serif,system-ui,sans-serif`;
     ctx.lineJoin="round";ctx.lineWidth=text==="スタート！"?10:8;ctx.strokeStyle="rgba(0,0,0,.78)";ctx.shadowColor="#FFFFFF";ctx.shadowBlur=13;
     ctx.strokeText(text,cx,cy);ctx.fillStyle="#FFFFFF";ctx.fillText(text,cx,cy);ctx.restore();
 }
@@ -216,8 +216,8 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
         React.createElement("div",{className:"mt-5 font-black tracking-[.08em] text-white",style:{fontSize:"clamp(34px,5.2vw,54px)",lineHeight:1,opacity:phase>=2?(winner?1:.5):0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:winner?"0 0 24px rgba(255,211,106,.45)":"none"}},winner?"WIN":"LOSE"),
         React.createElement("div",{className:"mt-4 text-[12px] font-semibold tracking-[.14em] text-white/50",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},me?"あなた":"相手"),
         React.createElement("div",{className:"mt-0.5 text-[17px] font-bold text-white max-w-full truncate",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},name));
-    const reasonText=reason==="disconnect"?(win?"相手の接続が切れたため、あなたの勝ちです":"接続が切れたため、敗北になりました"):reason==="resign"?(win?"相手が降参しました":"降参しました"):"";
-    const btn={minHeight:44};
+    const reasonText=reason==="disconnect"?(win?"相手の切断で勝利":"切断で敗北"):reason==="resign"?(win?"相手が降参しました":"降参しました"):"";
+    const btn={minHeight:48};
     return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",role:"dialog","aria-modal":"true","aria-label":win?"勝利":"敗北",style:{background:phase?"rgba(6,5,18,.74)":"rgba(6,5,18,0)",backdropFilter:`blur(${phase?8:0}px)`,WebkitBackdropFilter:`blur(${phase?8:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
         React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]",style:summary?{flex:"1 1 0",minHeight:0,paddingTop:"max(34px, env(safe-area-inset-top))",paddingBottom:"clamp(92px,24vh,128px)"}:null},
             React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!!win,true,meName)),
@@ -227,8 +227,8 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
             online&&ranked&&React.createElement("div",{className:"mt-1 text-[15px] font-bold tabular-nums",style:{color:delta>=0?"#7DFFB2":"#FF9AB5"}},`レート ${delta>=0?"+":""}${delta}`,Number.isFinite(rating)?React.createElement("span",{className:"text-white/70 font-semibold"},`（${rating}）`):null)),
         summary&&React.createElement(ResultSummary,{summary,progress,levelName,win,show:phase>=3}),
         React.createElement("div",{className:"absolute flex gap-3 text-white font-bold",style:{right:"max(20px, env(safe-area-inset-right))",bottom:"max(16px, env(safe-area-inset-bottom))"}},
-            React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"px-5 rounded-xl text-[14px] active:scale-[.98]",style:{...btn,...HEX_MENU_SURFACE}},"メニューへ"),
-            React.createElement("button",{ref:nextRef,onClick:onNext,className:"px-6 rounded-xl text-[14px] text-[#061016] active:scale-[.98]",style:{...btn,background:"#2FE3F5"}},nextLabel||"もう一度")
+            React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"hex-btn hex-btn-secondary px-5 text-[14px]",style:btn},"メニューへ"),
+            React.createElement("button",{ref:nextRef,onClick:onNext,className:"hex-btn hex-btn-primary px-6 text-[14px]",style:btn},nextLabel||"もう一度")
         )
     );
 }
@@ -265,23 +265,23 @@ function ResultSummary({summary,progress,levelName,win,show}){
 function HexPauseMenu({online,ranked,onResume,onRestart,onQuit}){
     const resumeRef=useRef(null);
     useEffect(()=>{try{resumeRef.current&&resumeRef.current.focus({preventScroll:true});}catch(_){}},[]);
-    const b="w-full rounded-xl px-4 text-sm font-black";
+    const b="hex-btn w-full px-4 text-sm";
     return React.createElement("div",{className:"absolute inset-0 z-30 flex items-center justify-center p-4",role:"dialog","aria-modal":"true","aria-labelledby":"hex-pause-title",style:{background:"rgba(6,5,18,.72)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}},
         React.createElement("div",{className:"w-full max-w-sm rounded-2xl p-5 text-center",style:{background:"linear-gradient(145deg,rgba(28,24,60,.96),rgba(12,10,30,.96))",border:"1px solid rgba(255,255,255,.14)"}},
             React.createElement("div",{id:"hex-pause-title",className:"text-lg font-black text-white"},online?"対戦をやめますか？":"ポーズ中"),
-            online&&React.createElement("div",{className:"mt-2 text-[13px] leading-relaxed text-white/75"},"オンライン対戦は一時停止できません（対戦は続いています）。やめると降参となり、敗北として記録されます。",ranked?"レートも下がります。":""),
+            online&&React.createElement("div",{className:"mt-2 text-[13px] leading-relaxed text-white/75"},"一時停止できません。やめると降参（敗北）",ranked?"・レートも下がります":""),
             React.createElement("div",{className:"mt-4 grid gap-2"},
-                React.createElement("button",{ref:resumeRef,onClick:onResume,"data-hex-back":"1",className:b+" text-[#061016]",style:{minHeight:46,background:"#2FE3F5"}},"対戦に戻る"),
-                onRestart&&React.createElement("button",{onClick:onRestart,className:b+" text-white/90 border border-white/20 bg-white/5",style:{minHeight:44}},"最初からやり直す"),
-                React.createElement("button",{onClick:onQuit,className:b,style:{minHeight:44,color:"#ffb8d6",border:"1px solid rgba(255,62,165,.45)",background:"rgba(255,62,165,.08)"}},online?"降参してメニューへ":"メニューへ戻る")),
-            hexInputKind()!=="touch"&&React.createElement("div",{className:"mt-3 text-[11px] text-white/65"},"Esc / P キー、コントローラーの＋ボタンでも開閉できます")));
+                React.createElement("button",{ref:resumeRef,onClick:onResume,"data-hex-back":"1",className:b+" hex-btn-primary",style:{minHeight:48}},"対戦に戻る"),
+                onRestart&&React.createElement("button",{onClick:onRestart,className:b+" hex-btn-secondary",style:{minHeight:46}},"最初からやり直す"),
+                React.createElement("button",{onClick:onQuit,className:b+" hex-btn-danger",style:{minHeight:46}},online?"降参してメニューへ":"メニューへ戻る")),
+            ));
 }
 function hexInputKind(){
     try{if(window.__sixBallGamepadState&&window.__sixBallGamepadState.connected)return"pad";if(window.matchMedia&&window.matchMedia("(pointer: coarse)").matches)return"touch";}catch(_){}
     return"keys";
 }
 const HEX_CONTROL_GUIDES={
-    touch:[["スワイプ","左右に移動"],["タップ","回転（盤面の左側＝左回り／右側＝右回り）"],["2本指タップ","すぐ落とす"],["2本指で長押し","速く落とす"]],
+    touch:[["スワイプ","左右に移動"],["タップ","回転（左側＝左回り／右側＝右回り）"],["2本指タップ","すぐ落とす"],["2本指で長押し","速く落とす"]],
     keys:[["← →","左右に移動"],["Z / X","左回り / 右回り"],["↓（押し続ける）","速く落とす"],["Space / ↑","すぐ落とす"],["Esc / P","ポーズ"]],
     pad:[["十字キー / スティック","左右に移動"],["A / X","左回り / 右回り"],["↓（押し続ける）","速く落とす"],["Y / ↑","すぐ落とす"],["＋","ポーズ"]]
 };
