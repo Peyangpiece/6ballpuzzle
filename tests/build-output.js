@@ -19,7 +19,7 @@ for (const key of ["bundle", "css", "react", "reactDom"]) {
 }
 assert(fs.existsSync(path.join(out, manifest.bundle + ".map")), "source map must ship");
 assert(/^[0-9a-f]{40}\n$/.test(fs.readFileSync(path.join(out, "deploy-sha.txt"), "utf8")), "deploy-sha.txt must hold the commit sha");
-assert(!fs.readdirSync(out).some(f => /^(app-|controls-)/.test(f)), "individual runtime scripts must not ship");
+assert(!fs.readdirSync(out).some(f => /^(app-|controls-).*\.js$/.test(f)), "individual runtime scripts must not ship");
 const headers = fs.readFileSync(path.join(out, "_headers"), "utf8");
 assert(/\/js\/\*\n\s+Cache-Control: public, max-age=31536000, immutable/.test(headers), "hashed js must be immutable-cached");
 assert(/\/index\.html\n\s+Cache-Control: no-cache/.test(headers), "index.html must not be cached");
@@ -38,6 +38,8 @@ const webManifest = JSON.parse(fs.readFileSync(path.join(out, "manifest.webmanif
 for (const size of ["192x192", "512x512"]) assert(webManifest.icons.some(i => i.sizes === size && fs.existsSync(path.join(out, i.src))), "manifest icon missing: " + size);
 assert(webManifest.icons.some(i => i.purpose === "maskable"), "a maskable icon is required for Android");
 assert(/rel="apple-touch-icon"/.test(html) && fs.existsSync(path.join(out, "icons/apple-touch-icon.png")), "iOS home-screen icon missing");
+// AdMob checks app-ads.txt at the site root (the iOS app's ads, docs/IOS.md).
+assert(/^google\.com, pub-\d{16}, DIRECT, f08c47fec0942fa0$/m.test(fs.readFileSync(path.join(out, "app-ads.txt"), "utf8")), "app-ads.txt must ship with the AdMob publisher line");
 const sw = fs.readFileSync(path.join(out, "sw.js"), "utf8");
 const precache = JSON.parse(/const PRECACHE=(\[[^\]]*\]);/.exec(sw)[1]);
 for (const key of ["bundle", "css", "react", "reactDom"]) assert(precache.includes(manifest[key]), "service worker must precache " + key);

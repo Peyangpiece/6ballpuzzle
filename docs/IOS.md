@@ -101,7 +101,7 @@ npm run ios:open      # Xcode で開く
    - 「広告ユニット」→「インタースティシャル」を作り、**広告ユニット ID**（`ca-app-pub-…/…`）→ `public/app-native-v1.js` の `ADMOB_INTERSTITIAL`。
 2. AdMob の「プライバシーとメッセージ」で、**GDPR（EU・英国）のメッセージ**を作成して公開する（作らないと EU では広告が出ません）。
    「IDFA の説明メッセージ」は任意（作ると ATT の前に説明画面が出ます）。
-3. **app-ads.txt**: AdMob の「アプリ」→「app-ads.txt」に表示される 1 行を `public/app-ads.txt` に置き、App Store のマーケティング URL を
+3. **app-ads.txt**: `public/app-ads.txt` に置き済み（AdMob の「アプリ」→「app-ads.txt」の 1 行と同じ）。App Store のマーケティング URL を
    `https://dropball.hrk-6888.workers.dev` にする（AdMob は掲載情報の開発者サイトのルートで確認します）。
 4. **App Store Connect → アプリ内課金** →「＋」→ **非消耗型**、製品 ID `app.dropball.game.removeads`、参照名「広告を削除」、
    価格（例: 300 円）、表示名・説明（例: 広告を削除 / 対戦後の広告を表示しなくなります）、審査用スクリーンショット（設定画面の「広告を削除」）。
