@@ -29,12 +29,13 @@ function fakeFirebase(db) {
   return F;
 }
 
-function load({ native, responses = {} }) {
+function load({ native, responses = {}, debugBuild = false }) {
   const nativeCalls = [], later = [], listeners = {};
   const F = fakeFirebase({ "users/apple1": { name: "Hanako", rating: 1300, wins: 4, losses: 1 } });
   // Timers longer than a second (start-up work, safety timeouts) wait in `later`.
   const ctx = { console, setTimeout: (f, ms) => (ms > 1000 ? (later.push(f), 0) : setTimeout(f, ms)), clearTimeout, navigator: {}, FB: F };
   ctx.window = ctx;
+  if (debugBuild) ctx.__dropBallDebugBuild = true;
   if (native) {
     ctx.Capacitor = {
       isNativePlatform: () => true,
@@ -142,8 +143,8 @@ const tick = () => new Promise(r => setTimeout(r, 10));
     s.runLater(); await tick(); await tick();
     assert.deepStrictEqual(adCalls(), ["Store.owned", "AdMob.requestConsentInfo", "AdMob.showConsentForm", "AdMob.trackingAuthorizationStatus", "AdMob.requestTrackingAuthorization", "AdMob.initialize", "AdMob.prepareInterstitial"]);
     const prep = s.nativeCalls.find(c => c[1] === "prepareInterstitial")[2];
-    assert.strictEqual(prep.adId, "ca-app-pub-3940256099942544/4411468910", "Google's test ad unit until the real one is set");
-    assert.strictEqual(prep.isTesting, true);
+    assert.strictEqual(prep.adId, "ca-app-pub-3691106434438760/4546044730", "the AdMob ad unit in a release build");
+    assert.strictEqual(prep.isTesting, false);
     const bgm = { paused: false, pauses: 0, plays: 0, pause() { this.paused = true; this.pauses++; }, play() { this.paused = false; this.plays++; return Promise.resolve(); } };
     s.ctx.Bgm = { audio: bgm };
     const Ads = s.ctx.DropBallAds;
@@ -174,6 +175,15 @@ const tick = () => new Promise(r => setTimeout(r, 10));
     assert(!s.nativeCalls.some(c => c[0] === "AdMob"), "AdMob is never started");
     assert.strictEqual(s.ctx.DropBallAds.state().removed, true);
   }
+  // A debug build (Xcode's Run) asks for Google's test ads.
+  {
+    const s = load({ native: true, debugBuild: true, responses: { "Store.owned": { productIDs: [] }, "AdMob.requestConsentInfo": { status: "NOT_REQUIRED", canRequestAds: true }, "AdMob.trackingAuthorizationStatus": { status: "denied" } } });
+    s.runLater(); await tick(); await tick();
+    const prep = s.nativeCalls.find(c => c[1] === "prepareInterstitial")[2];
+    assert.strictEqual(prep.adId, "ca-app-pub-3940256099942544/4411468910");
+    assert.strictEqual(prep.isTesting, true);
+    assert(!s.nativeCalls.some(c => c[1] === "requestTrackingAuthorization"), "no prompt once the player has answered");
+  }
   // Consent refused (EU): no ad requests.
   {
     const s = load({ native: true, responses: {
@@ -195,6 +205,8 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   assert(swift.includes("registerPluginInstance(StorePlugin())"), "the Store plugin is registered");
   const plist = fs.readFileSync(path.join(__dirname, "..", "ios/App/App/Info.plist"), "utf8");
   for (const key of ["GADApplicationIdentifier", "NSUserTrackingUsageDescription", "cstr6suwn9.skadnetwork"]) assert(plist.includes(key), "Info.plist needs " + key);
+  assert(plist.includes("<string>ca-app-pub-3691106434438760~2668362996</string>"), "the AdMob app ID, not Google's test one");
+  assert(/#if DEBUG[\s\S]*__dropBallDebugBuild=true[\s\S]*#endif/.test(swift), "debug builds ask for test ads");
   // The result screen asks for an ad before leaving; settings offer the purchase.
   const app16 = read("app-16.js");
   assert(/onNext:\(\)=>hexLeaveResult\(/.test(app16) && /onExit:\(\)=>hexLeaveResult\(/.test(app16), "both result buttons go through hexLeaveResult");

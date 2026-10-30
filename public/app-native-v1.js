@@ -186,11 +186,13 @@ if(typeof hexRecordMatch==="function"){
 }
 
 // ---------------------------------------------------------------- ads
-// ADMOB_INTERSTITIAL is the interstitial ad unit from AdMob; while it is empty
-// Google's test ad unit is used (Info.plist's GADApplicationIdentifier is then
-// Google's test app ID too). Both are replaced together before release.
-const ADMOB_INTERSTITIAL="";
+// The interstitial ad unit from AdMob (the app ID is Info.plist's
+// GADApplicationIdentifier). A debug build (Xcode's Run; MainViewController
+// sets __dropBallDebugBuild) shows Google's test ads instead: real ads seen or
+// tapped by the developer count as invalid traffic.
+const ADMOB_INTERSTITIAL="ca-app-pub-3691106434438760/4546044730";
 const TEST_INTERSTITIAL="ca-app-pub-3940256099942544/4411468910";
+const TEST_ADS=window.__dropBallDebugBuild===true;
 const REMOVE_ADS="app.dropball.game.removeads";
 const ADS_EVERY=3;              // matches between two ads
 const ADS_MIN_GAP_MS=120000;    // and at least this long
@@ -207,7 +209,7 @@ const setAdsRemoved=v=>{
 const loadAd=()=>{
   if(ads.removed||!ads.ready||ads.loaded||ads.loading)return;
   ads.loading=true;
-  call("AdMob","prepareInterstitial",{adId:ADMOB_INTERSTITIAL||TEST_INTERSTITIAL,isTesting:!ADMOB_INTERSTITIAL})
+  call("AdMob","prepareInterstitial",{adId:TEST_ADS?TEST_INTERSTITIAL:ADMOB_INTERSTITIAL,isTesting:TEST_ADS})
     .then(()=>{ads.loaded=true;}).catch(()=>{}).then(()=>{ads.loading=false;});
 };
 // Consent first: Google's form where it is required (EU/UK), then Apple's

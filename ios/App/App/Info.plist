@@ -75,7 +75,7 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-3691106434438760~2668362996</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>広告をあなたの興味に合ったものにするために使います。許可しなくても、表示される広告の数は変わりません。</string>
 	<key>SKAdNetworkItems</key>

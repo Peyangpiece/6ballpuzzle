@@ -3,6 +3,7 @@ import Capacitor
 import GameKit
 import StoreKit
 import UIKit
+import WebKit
 
 /// The web view controller of the app: full screen, landscape, with the
 /// local plugins (Game Center, BGM, Store) registered here.
@@ -11,6 +12,12 @@ class MainViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(GameCenterPlugin())
         bridge?.registerPluginInstance(NativeBgmPlugin())
         bridge?.registerPluginInstance(StorePlugin())
+        #if DEBUG
+        // Xcode's Run (the Debug configuration): Google's test ads, not real
+        // ones (public/app-native-v1.js). Archives use Release.
+        let flag = WKUserScript(source: "window.__dropBallDebugBuild=true;", injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        bridge?.webView?.configuration.userContentController.addUserScript(flag)
+        #endif
     }
 
     // Capacitor's SystemBars plugin owns prefersHomeIndicatorAutoHidden (a
