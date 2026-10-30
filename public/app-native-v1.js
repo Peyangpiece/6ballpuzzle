@@ -15,8 +15,9 @@
  *   rating hooks (hexRecordMatch, Net.applyRating).
  * - Ads (@capacitor-community/admob): a full-screen ad when the player leaves
  *   the result screen of every third match, after Google's consent form (where
- *   the law asks for it) and Apple's tracking prompt; the one-time purchase
- *   "広告を削除" (StorePlugin, StoreKit 2) turns them off (window.DropBallAds).
+ *   the law asks for it) and Apple's tracking prompt; the monthly subscription
+ *   "広告なしプラン" (StorePlugin, StoreKit 2) turns them off while it is active
+ *   (window.DropBallAds).
  * The IDs below must match those created in App Store Connect and AdMob
  * (docs/IOS.md).
  */
@@ -193,11 +194,11 @@ if(typeof hexRecordMatch==="function"){
 const ADMOB_INTERSTITIAL="ca-app-pub-3691106434438760/4546044730";
 const TEST_INTERSTITIAL="ca-app-pub-3940256099942544/4411468910";
 const TEST_ADS=window.__dropBallDebugBuild===true;
-const REMOVE_ADS="app.dropball.game.removeads";
+const AD_FREE="app.dropball.game.adfree.monthly"; // auto-renewable, monthly
 const ADS_EVERY=3;              // matches between two ads
 const ADS_MIN_GAP_MS=120000;    // and at least this long
 const ADS_REMOVED_KEY="hexdrop_ads_removed";
-const ads={removed:false,ready:false,loaded:false,loading:false,sinceAd:0,lastShown:0,price:"",busy:false,onDone:null,listeners:new Set()};
+const ads={removed:false,ready:false,starting:false,loaded:false,loading:false,sinceAd:0,lastShown:0,price:"",busy:false,onDone:null,listeners:new Set()};
 try{ads.removed=localStorage.getItem(ADS_REMOVED_KEY)==="1";}catch(_){}
 const adsState=()=>({removed:ads.removed,price:ads.price,busy:ads.busy});
 const adsNotify=()=>{for(const f of ads.listeners){try{f(adsState());}catch(_){}}};
@@ -215,7 +216,8 @@ const loadAd=()=>{
 // Consent first: Google's form where it is required (EU/UK), then Apple's
 // tracking prompt; ads are requested only when the consent allows them.
 async function startAds(){
-  if(ads.removed||ads.ready)return;
+  if(ads.removed||ads.ready||ads.starting)return;
+  ads.starting=true;
   try{
     let info=await call("AdMob","requestConsentInfo");
     if(info&&info.status==="REQUIRED"&&info.isConsentFormAvailable)info=await call("AdMob","showConsentForm");
@@ -226,16 +228,24 @@ async function startAds(){
     ads.ready=true;
     loadAd();
   }catch(_){}
+  ads.starting=false;
 }
 const adFinished=()=>{const f=ads.onDone;ads.onDone=null;if(f)f();};
 try{
   cap.addListener("AdMob","interstitialAdDismissed",adFinished);
   cap.addListener("AdMob","interstitialAdFailedToShow",adFinished);
 }catch(_){}
+// The subscription can end (cancelled, refunded) while the app is closed or in
+// the background, so it is read again at launch and whenever the app returns;
+// ads start once it is no longer active.
 const refreshOwned=()=>call("Store","owned").then(r=>{
-  setAdsRemoved(Array.isArray(r&&r.productIDs)&&r.productIDs.includes(REMOVE_ADS));
+  setAdsRemoved(Array.isArray(r&&r.productIDs)&&r.productIDs.includes(AD_FREE));
 }).catch(()=>{});
-try{cap.addListener("Store","ownedChanged",refreshOwned);}catch(_){}
+const syncAds=()=>refreshOwned().then(()=>{if(!ads.removed)startAds();});
+try{
+  cap.addListener("Store","ownedChanged",syncAds);
+  cap.addListener("App","appStateChange",s=>{if(s&&s.isActive)syncAds();});
+}catch(_){}
 
 window.DropBallAds={
   state:adsState,
@@ -263,12 +273,12 @@ window.DropBallAds={
   },
   price(){
     if(ads.price)return Promise.resolve(ads.price);
-    return call("Store","product",{productID:REMOVE_ADS}).then(r=>{ads.price=String(r&&r.displayPrice||"");adsNotify();return ads.price;}).catch(()=>"");
+    return call("Store","product",{productID:AD_FREE}).then(r=>{ads.price=String(r&&r.displayPrice||"");adsNotify();return ads.price;}).catch(()=>"");
   },
   async purchase(){
     ads.busy=true;adsNotify();
     try{
-      const r=await call("Store","purchase",{productID:REMOVE_ADS});
+      const r=await call("Store","purchase",{productID:AD_FREE});
       if(r&&r.owned)setAdsRemoved(true);
       return r||{};
     }finally{ads.busy=false;adsNotify();}
@@ -277,14 +287,14 @@ window.DropBallAds={
     ads.busy=true;adsNotify();
     try{
       const r=await call("Store","restore");
-      const owned=Array.isArray(r&&r.productIDs)&&r.productIDs.includes(REMOVE_ADS);
+      const owned=Array.isArray(r&&r.productIDs)&&r.productIDs.includes(AD_FREE);
       if(owned)setAdsRemoved(true);
       return owned;
     }finally{ads.busy=false;adsNotify();}
   }
 };
-// After the Game Center sign-in banner: the purchase decides whether ads run.
-setTimeout(()=>{refreshOwned().then(()=>{if(!ads.removed)startAds();});},2500);
+// After the Game Center sign-in banner: the subscription decides whether ads run.
+setTimeout(syncAds,2500);
 
 // ---------------------------------------------------------------- Firebase Auth
 if(typeof Net!=="undefined"){

@@ -13,7 +13,9 @@ function hexLeaveResult(go){
     const ads=typeof window!=="undefined"&&window.DropBallAds;
     if(ads&&typeof ads.afterMatch==="function")ads.afterMatch().then(next,next);else next();
 }
-// "広告を削除" and "購入を復元" in the settings of the iOS app.
+// The monthly ad-free subscription in the settings of the iOS app, with what
+// App Review asks to show next to it: price and period, auto-renewal, how to
+// cancel, and the terms of use and privacy policy.
 function HexAdsSettings(){
     const ads=window.DropBallAds;
     const [st,setSt]=useState(()=>ads.state());
@@ -21,10 +23,16 @@ function HexAdsSettings(){
     useEffect(()=>{const off=ads.subscribe(setSt);ads.price();return off;},[]);
     const buy=()=>{setMsg("");ads.purchase().then(r=>{if(r.pending)setMsg("承認待ちです");},()=>setMsg("購入できませんでした"));};
     const restore=()=>{setMsg("");ads.restore().then(owned=>{if(!owned)setMsg("復元できる購入はありません");},()=>setMsg("復元できませんでした"));};
-    if(st.removed)return React.createElement("div",{"data-hex-ads-removed":"1",className:"text-center text-[13px] font-semibold text-white/60",style:{gridColumn:"1 / -1"}},"広告は削除済みです");
-    return React.createElement("div",{className:"flex justify-center items-center flex-wrap gap-3",style:{gridColumn:"1 / -1"}},
-        React.createElement("button",{disabled:st.busy,onClick:buy,"data-hex-remove-ads":"1",className:"hex-btn hex-btn-gold px-5 text-[14px]"},st.busy?"処理中…":st.price?`広告を削除（${st.price}）`:"広告を削除"),
+    const link=(href,label)=>React.createElement("a",{href,target:"_blank",rel:"noopener",className:"underline text-white/70"},label);
+    const manage=React.createElement("a",{href:"https://apps.apple.com/account/subscriptions",target:"_blank",rel:"noopener",className:"hex-btn hex-btn-ghost px-5 text-[14px]"},"サブスクリプションを管理");
+    if(st.removed)return React.createElement("div",{"data-hex-ads-removed":"1",className:"flex justify-center items-center flex-wrap gap-3",style:{gridColumn:"1 / -1"}},
+        React.createElement("span",{className:"text-[13px] font-semibold text-white/70"},"広告なしプラン 利用中"),manage);
+    return React.createElement("div",{className:"flex justify-center items-center flex-wrap gap-x-3 gap-y-2",style:{gridColumn:"1 / -1"}},
+        React.createElement("button",{disabled:st.busy,onClick:buy,"data-hex-remove-ads":"1",className:"hex-btn hex-btn-gold px-5 text-[14px]"},st.busy?"処理中…":st.price?`広告なしプラン（月額${st.price}）`:"広告なしプラン（月額）"),
         React.createElement("button",{disabled:st.busy,onClick:restore,className:"hex-btn hex-btn-ghost px-5 text-[14px]"},"購入を復元"),
+        React.createElement("div",{"data-hex-sub-terms":"1",className:"w-full text-center text-[11px] leading-relaxed text-white/50"},
+            "1か月ごとの自動更新です。期間終了の24時間前までに解約しない限り更新されます。解約は「サブスクリプションを管理」から。",
+            link("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/","利用規約")," / ",link("/privacy.html","プライバシーポリシー")),
         msg&&React.createElement("div",{role:"status",className:"w-full text-center text-[12px] font-semibold text-white/60"},msg));
 }
 function App() {

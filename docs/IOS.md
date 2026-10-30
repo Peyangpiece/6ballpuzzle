@@ -12,7 +12,7 @@
 | BGM（音量スライダー対応） | `NativeBgm` プラグイン（AVAudioPlayer、`DropBallNative.swift`）＋ `public/app-native-v1.js` | — |
 | アカウント削除 | プロフィール → 「アカウントを削除」（`public/app-account-delete-v1.js`、ウェブ版にもあり） | 5.1.1(v) |
 | 広告（1.1 以降） | `@capacitor-community/admob`。結果画面を閉じたとき 3 試合に 1 回（2 分以上あけて）全画面広告。Google の同意画面（EU・英国など）→ ATT の順に尋ねる（`public/app-native-v1.js`） | 5.1.2（ATT） |
-| 広告を削除（1.1 以降） | 買い切りの App 内課金 `app.dropball.game.removeads`（StoreKit 2、`DropBallNative.swift` の Store プラグイン）。設定画面に「広告を削除」「購入を復元」 | 3.1.1 |
+| 広告なしプラン（1.1 以降） | 月額の自動更新サブスクリプション `app.dropball.game.adfree.monthly`（StoreKit 2、`DropBallNative.swift` の Store プラグイン）。設定画面に購入・「購入を復元」・「サブスクリプションを管理」と、価格・期間・自動更新・解約方法・利用規約・プライバシーポリシーの表示。起動時とアプリに戻ったときに有効か確かめる | 3.1.1, 3.1.2 |
 | プライバシーポリシー | `public/privacy.html`（設定画面からリンク） | 5.1.1 |
 
 ここから先は **Mac での作業** です（この開発環境は Linux のため、ビルドと署名はできません）。
@@ -92,7 +92,7 @@ npm run ios:open      # Xcode で開く
 2. Product → Archive → Distribute App → App Store Connect（まず TestFlight で確認）。
 3. 審査提出時のメモは `docs/APPSTORE.md` の「審査メモ」を使用。
 
-## 6. 広告と「広告を削除」（バージョン 1.1）
+## 6. 広告と「広告なしプラン」（バージョン 1.1）
 コードは入っています。リリース前に、次の値と設定をそろえます。それまでは Google のテスト広告（「Test Ad」と表示）が出ます。
 テスト広告のまま審査に出さないこと。
 
@@ -103,15 +103,18 @@ npm run ios:open      # Xcode で開く
    「IDFA の説明メッセージ」は任意（作ると ATT の前に説明画面が出ます）。
 3. **app-ads.txt**: `public/app-ads.txt` に置き済み（AdMob の「アプリ」→「app-ads.txt」の 1 行と同じ）。App Store のマーケティング URL を
    `https://dropball.hrk-6888.workers.dev` にする（AdMob は掲載情報の開発者サイトのルートで確認します）。
-4. **App Store Connect → アプリ内課金** →「＋」→ **非消耗型**、製品 ID `app.dropball.game.removeads`、参照名「広告を削除」、
-   価格（例: 300 円）、表示名・説明（例: 広告を削除 / 対戦後の広告を表示しなくなります）、審査用スクリーンショット（設定画面の「広告を削除」）。
-   バージョン 1.1 のページの「アプリ内課金」に追加して一緒に提出する。
+4. **App Store Connect → サブスクリプション** → サブスクリプショングループ「広告なしプラン」を作り、その中に
+   自動更新サブスクリプション：製品 ID `app.dropball.game.adfree.monthly`、参照名「広告なしプラン 月額」、期間 **1か月**、
+   価格 **300 円**、表示名・説明（例: 広告なしプラン / 対戦後の広告を表示しません）、審査用スクリーンショット（設定画面の購入ボタン）。
+   グループのローカリゼーション（表示名「広告なしプラン」）も入れる。バージョン 1.1 のページの「アプリ内課金とサブスクリプション」に追加して一緒に提出する。
+   App の説明文の末尾に、利用規約（Apple 標準 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ ）と
+   プライバシーポリシーへのリンクを書く（3.1.2: サブスクがあるアプリは掲載情報にも必要）。
 5. **年齢制限**: 「広告」を「はい」に変える。
 6. **App のプライバシー**: Google の「AdMob のデータ開示」（https://developers.google.com/admob/ios/privacy/data-disclosure）に従って追加する。
    目安: 識別子 → デバイス ID、位置情報 → おおよその位置、使用状況データ → 製品の操作・広告データ、診断 → クラッシュ・パフォーマンス。
    目的は「サードパーティ広告」（と「分析」）、デバイス ID などは「トラッキングに使用」＝はい。
 7. Xcode の General で Version を 1.1、Build を 2 以上にして Archive。
-8. テスト: 実機で ATT のダイアログ、3 試合目の結果画面を閉じたときの広告、設定画面の「広告を削除」（App Store のサンドボックスアカウント、
+8. テスト: 実機で ATT のダイアログ、3 試合目の結果画面を閉じたときの広告、設定画面の「広告なしプラン」（App Store のサンドボックスアカウント。サンドボックスでは 1 か月が数分で更新・期限切れになる、
    または Xcode の StoreKit テスト）と「購入を復元」を確かめる。
 
 ## 構成メモ

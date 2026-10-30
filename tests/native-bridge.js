@@ -162,18 +162,32 @@ const tick = () => new Promise(r => setTimeout(r, 10));
     assert.strictEqual(shown, true);
     assert.strictEqual(bgm.plays, 1, "and plays again afterwards");
     assert.strictEqual(adCalls().filter(c => c === "AdMob.prepareInterstitial").length, 2, "the next ad is loaded");
-    // "広告を削除": no more ads.
+    // The ad-free subscription: no more ads.
     await Ads.purchase();
     assert.strictEqual(Ads.state().removed, true);
     for (let i = 0; i < 6; i++) assert.strictEqual(await Ads.afterMatch(), false);
     assert.strictEqual(adCalls().filter(c => c === "AdMob.showInterstitial").length, 1);
   }
-  // A player who bought "広告を削除" sees no consent form, prompt or ad.
+  // A subscriber sees no consent form, prompt or ad.
   {
-    const s = load({ native: true, responses: { "Store.owned": { productIDs: ["app.dropball.game.removeads"] } } });
+    let owned = ["app.dropball.game.adfree.monthly"];
+    const s = load({ native: true, responses: {
+      "Store.owned": () => Promise.resolve({ productIDs: owned }),
+      "AdMob.requestConsentInfo": { status: "NOT_REQUIRED", canRequestAds: true },
+      "AdMob.trackingAuthorizationStatus": { status: "authorized" }
+    } });
     s.runLater(); await tick(); await tick();
     assert(!s.nativeCalls.some(c => c[0] === "AdMob"), "AdMob is never started");
     assert.strictEqual(s.ctx.DropBallAds.state().removed, true);
+    // The subscription ended while the app was in the background: ads start on return.
+    owned = [];
+    s.fire("App.appStateChange", { isActive: true });
+    await tick(); await tick();
+    assert.strictEqual(s.ctx.DropBallAds.state().removed, false);
+    assert(s.nativeCalls.some(c => c[1] === "prepareInterstitial"), "ads start once the subscription is gone");
+    s.fire("App.appStateChange", { isActive: true });
+    await tick(); await tick();
+    assert.strictEqual(s.nativeCalls.filter(c => c[1] === "initialize").length, 1, "the SDK starts once");
   }
   // A debug build (Xcode's Run) asks for Google's test ads.
   {
@@ -210,6 +224,7 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   // The result screen asks for an ad before leaving; settings offer the purchase.
   const app16 = read("app-16.js");
   assert(/onNext:\(\)=>hexLeaveResult\(/.test(app16) && /onExit:\(\)=>hexLeaveResult\(/.test(app16), "both result buttons go through hexLeaveResult");
-  assert(app16.includes("React.createElement(HexAdsSettings,null)"), "settings show 広告を削除 in the app");
+  assert(app16.includes("React.createElement(HexAdsSettings,null)"), "settings offer the ad-free plan in the app");
+  for (const t of ["月額", "自動更新", "24時間前までに解約", "サブスクリプションを管理", "stdeula", "利用規約", "プライバシーポリシー"]) assert(app16.includes(t), "subscription disclosure needs " + t);
   console.log("native bridge PASS");
 })().catch(e => { console.error("native bridge FAIL:", e && e.stack || e); process.exit(1); });
