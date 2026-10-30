@@ -49,4 +49,9 @@ assert(fs.readFileSync(path.join(__dirname, "..", "ios", "App", "App", "App.enti
 assert(require("../package.json").dependencies["@capacitor/app"], "@capacitor/app is a dependency");
 assert(app16.includes('q.delete("room")') && app16.includes("history.replaceState"), "the parameter is removed after use");
 assert(app17.includes('"data-hex-line-invite": "1"') && app17.includes('"LINEで招待"'), "the room host screen has the LINE button");
+const aasa = JSON.parse(fs.readFileSync(path.join(PUBLIC, ".well-known", "apple-app-site-association"), "utf8"));
+const detail = aasa.applinks.details[0];
+assert.deepStrictEqual(detail.appIDs, ["9G78U9XD92.app.dropball.game"], "the site names the app (Team ID + bundle ID)");
+assert.deepStrictEqual(detail.components[0]["?"], { room: "??????" }, "only ?room=NNNNNN links open the app");
+assert.strictEqual(require("../capacitor.config.json").appId, "app.dropball.game", "bundle ID matches the site association");
 console.log("room invite PASS");

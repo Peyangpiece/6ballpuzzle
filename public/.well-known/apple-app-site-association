@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["9G78U9XD92.app.dropball.game"],
+        "components": [
+          { "/": "/", "?": { "room": "??????" }, "comment": "Room invitation links (?room=NNNNNN)" }
+        ]
+      }
+    ]
+  }
+}
