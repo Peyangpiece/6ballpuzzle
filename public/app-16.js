@@ -28,7 +28,9 @@ const [room, setRoom] = useState("");
 // the code filled in; one tap on 参加 joins. The parameter is then removed.
 // The iOS app receives the same link as a universal link (app-native-v1.js
 // calls window.__hexOpenRoomInvite, or leaves it in __hexPendingRoomInvite).
-useEffect(() => {const open = (c) => {if (!/^\d{6}$/.test(String(c || ""))) return;if (stateRef.current.screen === "GAME") return;setRoom(String(c));setScreen("FRIEND");};window.__hexOpenRoomInvite = open;if (window.__hexPendingRoomInvite) {open(window.__hexPendingRoomInvite);window.__hexPendingRoomInvite = null;}try {const q = new URLSearchParams(location.search);if (q.has("room")) {open(q.get("room"));q.delete("room");const rest = q.toString();history.replaceState(history.state, "", location.pathname + (rest ? "?" + rest : "") + location.hash);}} catch (_) {}return () => {if (window.__hexOpenRoomInvite === open) window.__hexOpenRoomInvite = null;};}, []);
+// An iPhone/iPad browser that got the link has no app: once the App Store ID
+// is set (app-17.js) it goes to the App Store page instead.
+useEffect(() => {const open = (c) => {if (!/^\d{6}$/.test(String(c || ""))) return;if (stateRef.current.screen === "GAME") return;setRoom(String(c));setScreen("FRIEND");};window.__hexOpenRoomInvite = open;if (window.__hexPendingRoomInvite) {open(window.__hexPendingRoomInvite);window.__hexPendingRoomInvite = null;}try {const q = new URLSearchParams(location.search);if (q.has("room")) {const store = hexAppStoreUrl();if (store && hexIsAppleMobileBrowser() && /^\d{6}$/.test(q.get("room") || "")) {location.replace(store);return;}open(q.get("room"));q.delete("room");q.delete("openExternalBrowser");const rest = q.toString();history.replaceState(history.state, "", location.pathname + (rest ? "?" + rest : "") + location.hash);}} catch (_) {}return () => {if (window.__hexOpenRoomInvite === open) window.__hexOpenRoomInvite = null;};}, []);
 const [result, setResult] = useState(null);
 const [portrait, setPortrait] = useState(false);
 const [, force] = useState(0);

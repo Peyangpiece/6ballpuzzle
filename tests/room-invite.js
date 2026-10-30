@@ -9,25 +9,38 @@ const start = app17.indexOf("const HEX_PUBLIC_ORIGIN"), end = app17.indexOf("// 
 assert(start > 0 && end > start, "invitation helpers present");
 function load(protocol, native) {
   const opened = [];
-  const ctx = { encodeURIComponent, location: { protocol, origin: protocol + "//dropball.example", href: "" } };
+  const ctx = { encodeURIComponent, navigator: { userAgent: "Mozilla/5.0 (Linux; Android 14)", maxTouchPoints: 5 }, location: { protocol, origin: protocol + "//dropball.example", href: "" } };
   ctx.window = { Capacitor: native ? { isNativePlatform: () => true } : undefined, open: url => { opened.push(url); return {}; } };
   vm.createContext(ctx);
-  vm.runInContext(app17.slice(start, end) + "\nthis.f={hexRoomInviteText,hexShareOnLine};", ctx);
-  return { ...ctx.f, opened, location: ctx.location };
+  vm.runInContext(app17.slice(start, end) + "\nthis.f={hexRoomInviteText,hexShareOnLine,hexIsAppleMobileBrowser,hexAppStoreUrl};", ctx);
+  return { ...ctx.f, opened, location: ctx.location, ctx };
 }
 const web = load("https:", false);
-assert.strictEqual(web.hexRoomInviteText("123456"), "Drop Ballで対戦しよう！\nルームコード 123456\nhttps://dropball.example/?room=123456");
+assert.strictEqual(web.hexRoomInviteText("123456"), "Drop Ballで対戦しよう！\nルームコード 123456\nhttps://dropball.example/?room=123456&openExternalBrowser=1");
 web.hexShareOnLine("123456");
 assert.strictEqual(web.opened.length, 1);
 assert(web.opened[0].startsWith("https://line.me/R/share?text="), "opens LINE's share page");
-assert(decodeURIComponent(web.opened[0].split("text=")[1]).endsWith("/?room=123456"), "the shared text ends with the invitation link");
+assert(decodeURIComponent(web.opened[0].split("text=")[1]).endsWith("/?room=123456&openExternalBrowser=1"), "the shared link asks LINE for the outside browser");
 const app = load("capacitor:", true);
-assert(app.hexRoomInviteText("654321").endsWith("https://dropball.hrk-6888.workers.dev/?room=654321"), "the iOS app links to the public site");
+assert(app.hexRoomInviteText("654321").endsWith("https://dropball.hrk-6888.workers.dev/?room=654321&openExternalBrowser=1"), "the iOS app links to the public site");
+// Who is sent to the App Store: an iPhone/iPad browser (not Android, not the app).
+assert.strictEqual(web.hexIsAppleMobileBrowser(), false, "Android browser stays on the web version");
+web.ctx.navigator.userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 27_0 like Mac OS X)";
+assert.strictEqual(web.hexIsAppleMobileBrowser(), true, "iPhone browser");
+web.ctx.navigator.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)";
+assert.strictEqual(web.hexIsAppleMobileBrowser(), true, "iPadOS (Mac with touch)");
+web.ctx.navigator.maxTouchPoints = 0;
+assert.strictEqual(web.hexIsAppleMobileBrowser(), false, "a Mac stays on the web version");
+assert.strictEqual(app.hexIsAppleMobileBrowser(), false, "never inside the app");
+const storeId = /const HEX_APP_STORE_ID = "(\d*)";/.exec(app17)[1];
+assert.strictEqual(web.hexAppStoreUrl(), storeId ? "https://apps.apple.com/jp/app/id" + storeId : "", "App Store link only once the ID is set");
 app.hexShareOnLine("654321");
 assert.strictEqual(app.opened.length, 0, "the iOS app hands the link to the system once");
 assert(app.location.href.startsWith("https://line.me/R/share?text="));
 const app16 = read("app-16.js");
 assert(app16.includes('setRoom(String(c));setScreen("FRIEND");') && app16.includes('open(q.get("room"))'), "?room= opens the room screen with the code");
+assert(app16.includes('if (store && hexIsAppleMobileBrowser() && /^\\d{6}$/.test(q.get("room") || "")) {location.replace(store);return;}'), "iPhone/iPad browsers go to the App Store once the ID is set");
+assert(app16.includes('q.delete("openExternalBrowser")'), "the LINE flag is removed from the address too");
 assert(app16.includes("window.__hexOpenRoomInvite = open;") && app16.includes("window.__hexPendingRoomInvite"), "the app's universal-link handler can open the room screen");
 // iOS app: a universal link (at launch or while running) opens the room screen.
 const native = read("app-native-v1.js");

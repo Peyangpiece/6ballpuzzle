@@ -62,10 +62,26 @@ function RoomSpinner({ label }) {
 // filled in (app-16.js reads ?room=), sent through LINE's share page. In the
 // iOS app (capacitor://) the link points at the public site.
 const HEX_PUBLIC_ORIGIN = "https://dropball.hrk-6888.workers.dev";
+// The App Store ID of the iOS app (App Store Connect → App Information →
+// Apple ID). While it is empty, invitation links open the web version on
+// every device; once set, iPhones and iPads without the app are sent to the
+// App Store page (app-16.js).
+const HEX_APP_STORE_ID = "";
+// openExternalBrowser=1 makes LINE open the link outside its in-app browser,
+// so iOS can hand it to the installed app (a universal link).
 function hexRoomInviteUrl(code) {
     const origin = typeof location !== "undefined" && /^https?:$/.test(location.protocol) ? location.origin : HEX_PUBLIC_ORIGIN;
-    return origin + "/?room=" + code;
+    return origin + "/?room=" + code + "&openExternalBrowser=1";
 }
+// A browser on an iPhone or iPad (iPadOS reports a Mac with touch); not the app.
+function hexIsAppleMobileBrowser() {
+    try {
+        if (window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform()) return false;
+        const ua = navigator.userAgent || "";
+        return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    } catch (_) { return false; }
+}
+function hexAppStoreUrl() { return HEX_APP_STORE_ID ? "https://apps.apple.com/jp/app/id" + HEX_APP_STORE_ID : ""; }
 function hexRoomInviteText(code) { return "Drop Ballで対戦しよう！\nルームコード " + code + "\n" + hexRoomInviteUrl(code); }
 function hexShareOnLine(code) {
     const url = "https://line.me/R/share?text=" + encodeURIComponent(hexRoomInviteText(code));
