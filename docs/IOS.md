@@ -63,14 +63,14 @@ npm run ios:open      # Xcode で開く
 | --- | --- | --- | --- | --- |
 | `dropball.rating` | レート / Rating | 整数 | 高い順 | 最新のスコア（Most Recent Score） |
 
-**実績**（ポイントは合計 1000 以下で任意。例）
+**実績**（ポイントは合計 1000 以下で任意。例）。画像は `brand/achievements/<ID>.png`（1024×1024、`tools/make-achievement-images.py` で生成。文字はラテン文字だけなので全言語で共通）
 
 | ID | 日本語 | English | ポイント |
 | --- | --- | --- | --- |
 | `dropball.first_win` | はじめての勝利 | First Win | 10 |
-| `dropball.ai_1` 〜 `dropball.ai_5` | AI「とてもよわい」〜「超強い」に勝つ | Beat AI level 1–5 | 10 / 20 / 30 / 50 / 100 |
+| `dropball.ai_1` 〜 `dropball.ai_5` | AI「とてもよわい」〜「とてもつよい」に勝つ | Beat AI level 1–5 | 10 / 20 / 30 / 50 / 100 |
 | `dropball.waza_first` | はじめての技 | First Technique | 10 |
-| `dropball.hexagon` | 六角形の技 | Hexagon | 30 |
+| `dropball.hexagon` | ヘキサゴン | Hexagon | 30 |
 | `dropball.chain_3` | 3 連鎖 | 3-Chain | 20 |
 | `dropball.chain_5` | 5 連鎖 | 5-Chain | 50 |
 | `dropball.online_win` | オンラインで勝利 | Online Win | 20 |
