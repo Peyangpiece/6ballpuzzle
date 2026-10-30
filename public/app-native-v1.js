@@ -130,6 +130,21 @@ for(const [name,patch] of [["Bgm",patchBgm],["MenuClick",patchMenuClick]]){
   try{Object.defineProperty(window,name,{configurable:true,enumerable:true,get(){return value;},set(v){value=patch(v);}});}catch(_){}
 }
 
+// ---------------------------------------------------------------- room invitations
+// A room invitation link (https://dropball.hrk-6888.workers.dev/?room=NNNNNN,
+// app-17.js) opens the app as a universal link (apple-app-site-association,
+// Associated Domains); @capacitor/app reports it at launch or while running.
+// The room screen opens with the code filled in (app-16.js).
+const openInviteUrl=url=>{
+  let code="";
+  try{code=new URL(String(url||"")).searchParams.get("room")||"";}catch(_){return;}
+  if(!/^\d{6}$/.test(code))return;
+  if(typeof window.__hexOpenRoomInvite==="function")window.__hexOpenRoomInvite(code);
+  else window.__hexPendingRoomInvite=code;
+};
+try{cap.addListener("App","appUrlOpen",e=>openInviteUrl(e&&e.url));}catch(_){}
+call("App","getLaunchUrl").then(r=>openInviteUrl(r&&r.url)).catch(()=>{});
+
 // ---------------------------------------------------------------- haptics
 const IMPACT=ms=>ms<15?"LIGHT":ms<35?"MEDIUM":"HEAVY";
 try{

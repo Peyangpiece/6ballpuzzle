@@ -118,7 +118,8 @@ async function main() {
     if (rel === "index.html" || rel === "tailwind.css") return true;
     if (/^(app-.*|controls-.*|ai-worker)\.js$/.test(rel)) return true; // bundled
     if (rel === "vendor" || rel.startsWith("vendor" + path.sep)) return true; // re-emitted hashed
-    if (entry.name.startsWith(".") && entry.name !== ".assetsignore") return true;
+    // .well-known/apple-app-site-association: the iOS app opens room invitation links.
+    if (entry.name.startsWith(".") && entry.name !== ".assetsignore" && entry.name !== ".well-known") return true;
     return false;
   });
   fs.writeFileSync(path.join(DIST, "index.html"), html);
@@ -140,6 +141,7 @@ async function main() {
     "/css/*", "  Cache-Control: public, max-age=31536000, immutable", "",
     "/vendor/*", "  Cache-Control: public, max-age=31536000, immutable", "",
     "/assets/*", "  Cache-Control: public, max-age=86400", "",
+    "/.well-known/apple-app-site-association", "  Content-Type: application/json", "  Cache-Control: public, max-age=3600", "",
     "/*", "  X-Content-Type-Options: nosniff", "  Referrer-Policy: strict-origin-when-cross-origin", ""
   ].join("\n"));
   // Service worker: precache the app shell so AI matches and the tutorial

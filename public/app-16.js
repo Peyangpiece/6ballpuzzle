@@ -26,7 +26,9 @@ const [opp, setOpp] = useState(null);
 const [room, setRoom] = useState("");
 // A room invitation link (?room=123456, app-17.js) opens the room screen with
 // the code filled in; one tap on 参加 joins. The parameter is then removed.
-useEffect(() => {try {const q = new URLSearchParams(location.search), c = q.get("room");if (c && /^\d{6}$/.test(c)) {setRoom(c);setScreen("FRIEND");}if (q.has("room")) {q.delete("room");const rest = q.toString();history.replaceState(history.state, "", location.pathname + (rest ? "?" + rest : "") + location.hash);}} catch (_) {}}, []);
+// The iOS app receives the same link as a universal link (app-native-v1.js
+// calls window.__hexOpenRoomInvite, or leaves it in __hexPendingRoomInvite).
+useEffect(() => {const open = (c) => {if (!/^\d{6}$/.test(String(c || ""))) return;if (stateRef.current.screen === "GAME") return;setRoom(String(c));setScreen("FRIEND");};window.__hexOpenRoomInvite = open;if (window.__hexPendingRoomInvite) {open(window.__hexPendingRoomInvite);window.__hexPendingRoomInvite = null;}try {const q = new URLSearchParams(location.search);if (q.has("room")) {open(q.get("room"));q.delete("room");const rest = q.toString();history.replaceState(history.state, "", location.pathname + (rest ? "?" + rest : "") + location.hash);}} catch (_) {}return () => {if (window.__hexOpenRoomInvite === open) window.__hexOpenRoomInvite = null;};}, []);
 const [result, setResult] = useState(null);
 const [portrait, setPortrait] = useState(false);
 const [, force] = useState(0);
