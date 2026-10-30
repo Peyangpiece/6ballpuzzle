@@ -13,7 +13,12 @@
  * - Game Center (GameCenterPlugin in ios/App/App/DropBallNative.swift): the
  *   rating leaderboard and achievements, from the existing match record and
  *   rating hooks (hexRecordMatch, Net.applyRating).
- * The IDs below must match those created in App Store Connect (docs/IOS.md).
+ * - Ads (@capacitor-community/admob): a full-screen ad when the player leaves
+ *   the result screen of every third match, after Google's consent form (where
+ *   the law asks for it) and Apple's tracking prompt; the one-time purchase
+ *   "広告を削除" (StorePlugin, StoreKit 2) turns them off (window.DropBallAds).
+ * The IDs below must match those created in App Store Connect and AdMob
+ * (docs/IOS.md).
  */
 (function(){
 if(typeof window==="undefined"||window.__dropBallNativeV1)return;
@@ -179,6 +184,105 @@ if(typeof hexRecordMatch==="function"){
     return out;
   };
 }
+
+// ---------------------------------------------------------------- ads
+// ADMOB_INTERSTITIAL is the interstitial ad unit from AdMob; while it is empty
+// Google's test ad unit is used (Info.plist's GADApplicationIdentifier is then
+// Google's test app ID too). Both are replaced together before release.
+const ADMOB_INTERSTITIAL="";
+const TEST_INTERSTITIAL="ca-app-pub-3940256099942544/4411468910";
+const REMOVE_ADS="app.dropball.game.removeads";
+const ADS_EVERY=3;              // matches between two ads
+const ADS_MIN_GAP_MS=120000;    // and at least this long
+const ADS_REMOVED_KEY="hexdrop_ads_removed";
+const ads={removed:false,ready:false,loaded:false,loading:false,sinceAd:0,lastShown:0,price:"",busy:false,onDone:null,listeners:new Set()};
+try{ads.removed=localStorage.getItem(ADS_REMOVED_KEY)==="1";}catch(_){}
+const adsState=()=>({removed:ads.removed,price:ads.price,busy:ads.busy});
+const adsNotify=()=>{for(const f of ads.listeners){try{f(adsState());}catch(_){}}};
+const setAdsRemoved=v=>{
+  ads.removed=!!v;
+  try{localStorage.setItem(ADS_REMOVED_KEY,ads.removed?"1":"0");}catch(_){}
+  adsNotify();
+};
+const loadAd=()=>{
+  if(ads.removed||!ads.ready||ads.loaded||ads.loading)return;
+  ads.loading=true;
+  call("AdMob","prepareInterstitial",{adId:ADMOB_INTERSTITIAL||TEST_INTERSTITIAL,isTesting:!ADMOB_INTERSTITIAL})
+    .then(()=>{ads.loaded=true;}).catch(()=>{}).then(()=>{ads.loading=false;});
+};
+// Consent first: Google's form where it is required (EU/UK), then Apple's
+// tracking prompt; ads are requested only when the consent allows them.
+async function startAds(){
+  if(ads.removed||ads.ready)return;
+  try{
+    let info=await call("AdMob","requestConsentInfo");
+    if(info&&info.status==="REQUIRED"&&info.isConsentFormAvailable)info=await call("AdMob","showConsentForm");
+    if(info&&info.canRequestAds===false)return;
+    const t=await call("AdMob","trackingAuthorizationStatus");
+    if(t&&t.status==="notDetermined")await call("AdMob","requestTrackingAuthorization");
+    await call("AdMob","initialize",{maxAdContentRating:"ParentalGuidance"});
+    ads.ready=true;
+    loadAd();
+  }catch(_){}
+}
+const adFinished=()=>{const f=ads.onDone;ads.onDone=null;if(f)f();};
+try{
+  cap.addListener("AdMob","interstitialAdDismissed",adFinished);
+  cap.addListener("AdMob","interstitialAdFailedToShow",adFinished);
+}catch(_){}
+const refreshOwned=()=>call("Store","owned").then(r=>{
+  setAdsRemoved(Array.isArray(r&&r.productIDs)&&r.productIDs.includes(REMOVE_ADS));
+}).catch(()=>{});
+try{cap.addListener("Store","ownedChanged",refreshOwned);}catch(_){}
+
+window.DropBallAds={
+  state:adsState,
+  subscribe(f){ads.listeners.add(f);return()=>ads.listeners.delete(f);},
+  // Called when the player leaves a result screen; resolves once any ad
+  // shown has been closed (the next screen opens after it).
+  afterMatch(){
+    if(ads.onDone)return Promise.resolve(false);
+    ads.sinceAd++;
+    if(ads.removed||!ads.loaded||ads.sinceAd<ADS_EVERY||Date.now()-ads.lastShown<ADS_MIN_GAP_MS)return Promise.resolve(false);
+    ads.loaded=false;ads.sinceAd=0;ads.lastShown=Date.now();
+    // The battle BGM is native (not paused with the web view's media).
+    const bgm=window.Bgm&&window.Bgm.audio,resume=!!(bgm&&!bgm.paused);
+    if(resume)bgm.pause();
+    return new Promise(resolve=>{
+      const guard=setTimeout(adFinished,90000);
+      ads.onDone=()=>{
+        clearTimeout(guard);
+        if(resume)Promise.resolve(bgm.play()).catch(()=>{});
+        loadAd();
+        resolve(true);
+      };
+      call("AdMob","showInterstitial").catch(adFinished);
+    });
+  },
+  price(){
+    if(ads.price)return Promise.resolve(ads.price);
+    return call("Store","product",{productID:REMOVE_ADS}).then(r=>{ads.price=String(r&&r.displayPrice||"");adsNotify();return ads.price;}).catch(()=>"");
+  },
+  async purchase(){
+    ads.busy=true;adsNotify();
+    try{
+      const r=await call("Store","purchase",{productID:REMOVE_ADS});
+      if(r&&r.owned)setAdsRemoved(true);
+      return r||{};
+    }finally{ads.busy=false;adsNotify();}
+  },
+  async restore(){
+    ads.busy=true;adsNotify();
+    try{
+      const r=await call("Store","restore");
+      const owned=Array.isArray(r&&r.productIDs)&&r.productIDs.includes(REMOVE_ADS);
+      if(owned)setAdsRemoved(true);
+      return owned;
+    }finally{ads.busy=false;adsNotify();}
+  }
+};
+// After the Game Center sign-in banner: the purchase decides whether ads run.
+setTimeout(()=>{refreshOwned().then(()=>{if(!ads.removed)startAds();});},2500);
 
 // ---------------------------------------------------------------- Firebase Auth
 if(typeof Net!=="undefined"){

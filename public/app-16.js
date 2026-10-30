@@ -3,6 +3,30 @@
 const ATTACK_MAX_BALLS = 120;
 function sanitizeAttackCount(n) { n = Number(n); if (!Number.isFinite(n) || n < 0) return 0; return Math.min(ATTACK_MAX_BALLS, Math.floor(n)); }
 function sanitizeAttackShapes(shapes) { if (!Array.isArray(shapes)) return []; const out = []; for (const w of shapes) { if (typeof w === "string" && WAZA[w] && out.length < 8) out.push(w); } return out; }
+// Leaving a result screen gives the iOS app a chance to show an ad first
+// (window.DropBallAds, app-native-v1.js); a second tap meanwhile is ignored.
+let hexLeavingResult=false;
+function hexLeaveResult(go){
+    if(hexLeavingResult)return;
+    hexLeavingResult=true;
+    const next=()=>{hexLeavingResult=false;go();};
+    const ads=typeof window!=="undefined"&&window.DropBallAds;
+    if(ads&&typeof ads.afterMatch==="function")ads.afterMatch().then(next,next);else next();
+}
+// "広告を削除" and "購入を復元" in the settings of the iOS app.
+function HexAdsSettings(){
+    const ads=window.DropBallAds;
+    const [st,setSt]=useState(()=>ads.state());
+    const [msg,setMsg]=useState("");
+    useEffect(()=>{const off=ads.subscribe(setSt);ads.price();return off;},[]);
+    const buy=()=>{setMsg("");ads.purchase().then(r=>{if(r.pending)setMsg("承認待ちです");},()=>setMsg("購入できませんでした"));};
+    const restore=()=>{setMsg("");ads.restore().then(owned=>{if(!owned)setMsg("復元できる購入はありません");},()=>setMsg("復元できませんでした"));};
+    if(st.removed)return React.createElement("div",{"data-hex-ads-removed":"1",className:"text-center text-[13px] font-semibold text-white/60",style:{gridColumn:"1 / -1"}},"広告は削除済みです");
+    return React.createElement("div",{className:"flex justify-center items-center flex-wrap gap-3",style:{gridColumn:"1 / -1"}},
+        React.createElement("button",{disabled:st.busy,onClick:buy,"data-hex-remove-ads":"1",className:"hex-btn hex-btn-gold px-5 text-[14px]"},st.busy?"処理中…":st.price?`広告を削除（${st.price}）`:"広告を削除"),
+        React.createElement("button",{disabled:st.busy,onClick:restore,className:"hex-btn hex-btn-ghost px-5 text-[14px]"},"購入を復元"),
+        msg&&React.createElement("div",{role:"status",className:"w-full text-center text-[12px] font-semibold text-white/60"},msg));
+}
 function App() {
 var _a, _b, _c, _d, _e, _f, _g, _h;
 const [screen, setScreen] = useState("HOME");
@@ -309,6 +333,7 @@ const settings=screen==="SETTINGS"&&React.createElement(HexMenuShell,{title:"設
         React.createElement("div",{className:shortHome?"space-y-2.5":"space-y-3.5"},
             (typeof navigator!=="undefined"&&typeof navigator.vibrate==="function")&&React.createElement(HexSettingToggle,{label:"振動",value:haptics,onChange:setHaptics,accent:"pink"}),
             React.createElement(HexSettingToggle,{label:"色の記号表示",value:colorSymbols,onChange:setColorSymbols,accent:"cyan"})),
+        typeof window!=="undefined"&&window.DropBallAds&&React.createElement(HexAdsSettings,null),
         React.createElement("div",{className:"flex justify-center flex-wrap gap-3",style:{gridColumn:"1 / -1"}},
             React.createElement("button",{onClick:()=>{setBgmVolume(70);setSfxVolume(85);setHaptics(true);setOffset(false);setColorSymbols(false);},className:"hex-btn hex-btn-ghost px-5 text-[14px]"},"初期設定に戻す"),
             React.createElement("a",{href:"/privacy.html",target:"_blank",rel:"noopener","data-hex-privacy-link":"1",className:"hex-btn hex-btn-ghost px-5 text-[14px]"},"プライバシーポリシー"))));
@@ -389,5 +414,5 @@ screen === "GAME" && React.createElement("div", { key: "intro" + matchGenRef.cur
 home,nameDialog,battle,profile,settings,help,tutorial,cpu,rankingScreen,
 screen === "MATCHING" && React.createElement(Matching, { onMatched: beginOnline, onCancel: () => { Net.cancelMatchmaking(); setScreen("HOME"); }, onError: (m) => { setNetErr(m); setScreen("HOME"); } }),
 friend,roomHost,roomJoin,
-screen === "RESULT" && React.createElement(ResultOverlay,{win:!!result?.win,delta:result?.delta||0,reason:result?.reason||"",online:!!result?.online,ranked:!!result?.ranked&&matchKindRef.current!=="ROOM",rating:result?.rating,summary:result?.summary,progress:result?.progress,levelName:mode==="CPU"?AI_PARAMS[aiLevel]?.name||"":"",meName:nickname||"Player",foeName:opp?.name??"CPU",nextLabel:mode==="ONLINE"?(matchKindRef.current==="ROOM"?"ルームへ戻る":"次の相手を探す"):(mode==="CPU"&&result?.win&&aiLevel<5?"次のレベルへ":"もう一度"),onNext:()=>{if(mode==="ONLINE")setScreen(matchKindRef.current==="ROOM"?"FRIEND":"MATCHING");else if(mode==="CPU"&&result?.win&&aiLevel<5){/* A CPU win moves on to the next level; the top level and a loss replay the same one. */const lv=aiLevel+1;startMatch("CPU",lv,{name:`CPU ${AI_PARAMS[lv].name}`,rating:880+lv*130});}else startMatch(mode,aiLevel,opp);},onExit:()=>setScreen("HOME")})));
+screen === "RESULT" && React.createElement(ResultOverlay,{win:!!result?.win,delta:result?.delta||0,reason:result?.reason||"",online:!!result?.online,ranked:!!result?.ranked&&matchKindRef.current!=="ROOM",rating:result?.rating,summary:result?.summary,progress:result?.progress,levelName:mode==="CPU"?AI_PARAMS[aiLevel]?.name||"":"",meName:nickname||"Player",foeName:opp?.name??"CPU",nextLabel:mode==="ONLINE"?(matchKindRef.current==="ROOM"?"ルームへ戻る":"次の相手を探す"):(mode==="CPU"&&result?.win&&aiLevel<5?"次のレベルへ":"もう一度"),onNext:()=>hexLeaveResult(()=>{if(mode==="ONLINE")setScreen(matchKindRef.current==="ROOM"?"FRIEND":"MATCHING");else if(mode==="CPU"&&result?.win&&aiLevel<5){/* A CPU win moves on to the next level; the top level and a loss replay the same one. */const lv=aiLevel+1;startMatch("CPU",lv,{name:`CPU ${AI_PARAMS[lv].name}`,rating:880+lv*130});}else startMatch(mode,aiLevel,opp);}),onExit:()=>hexLeaveResult(()=>setScreen("HOME"))})));
 }

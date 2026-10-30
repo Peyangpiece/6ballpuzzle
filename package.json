@@ -32,6 +32,7 @@
     "tailwindcss": "3.4.19"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.3.0",
     "@capacitor-firebase/authentication": "^8.5.2",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
