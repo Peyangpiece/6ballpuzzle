@@ -58,6 +58,24 @@ function RoomSpinner({ label }) {
         React.createElement("div", { className: "w-5 h-5 rounded-full border-2 border-white/10 animate-spin", style: { borderTopColor: "#9B6DFF" }, "aria-hidden": "true" }),
         React.createElement("div", { className: "text-[14px] font-semibold text-white/80" }, label));
 }
+// Room invitations: a link that opens the app's room screen with the code
+// filled in (app-16.js reads ?room=), sent through LINE's share page. In the
+// iOS app (capacitor://) the link points at the public site.
+const HEX_PUBLIC_ORIGIN = "https://dropball.hrk-6888.workers.dev";
+function hexRoomInviteUrl(code) {
+    const origin = typeof location !== "undefined" && /^https?:$/.test(location.protocol) ? location.origin : HEX_PUBLIC_ORIGIN;
+    return origin + "/?room=" + code;
+}
+function hexRoomInviteText(code) { return "Drop Ballで対戦しよう！\nルームコード " + code + "\n" + hexRoomInviteUrl(code); }
+function hexShareOnLine(code) {
+    const url = "https://line.me/R/share?text=" + encodeURIComponent(hexRoomInviteText(code));
+    const cap = window.Capacitor;
+    // The iOS app hands an outside link to the system (LINE opens it).
+    if (cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform()) { location.href = url; return; }
+    let w = null;
+    try { w = window.open(url, "_blank"); } catch (_) {}
+    if (!w) location.href = url;
+}
 // Host side of a private room: issue a code on the server, then wait for a
 // guest to join it. Leaving the screen withdraws the room.
 function RoomHost({ onMatched, onCancel, onError }) {
@@ -83,8 +101,9 @@ function RoomHost({ onMatched, onCancel, onError }) {
             React.createElement("div", { className: "text-[12px] font-semibold tracking-[.1em] text-white/50" }, "ルームコード"),
             code ? React.createElement(React.Fragment, null,
                 React.createElement("div", { className: "mt-1 font-bold tracking-[.22em] tabular-nums text-white", style: { fontSize: "clamp(32px,5vw,46px)", userSelect: "text", WebkitUserSelect: "text" }, "aria-label": "ルームコード " + code.split("").join(" ") }, code.slice(0, 3), " ", code.slice(3)),
-                React.createElement("div", { className: "mt-2 text-[13px] leading-relaxed text-white/55" }, "友だちにコードを伝えてください"),
-                React.createElement("button", { onClick: copy, className: "hex-btn hex-btn-secondary mt-4 px-5 text-[14px]" }, copied ? "コピーしました" : "コードをコピー"),
+                React.createElement("div", { className: "mt-4 flex flex-wrap items-center justify-center gap-2.5" },
+                    React.createElement("button", { onClick: () => hexShareOnLine(code), "data-hex-line-invite": "1", className: "hex-btn px-5 text-[14px] text-white", style: { background: "linear-gradient(180deg,#22D16D,#06C755 55%,#05B04B)", border: "1px solid rgba(160,255,200,.45)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px -10px rgba(6,199,85,.8)" } }, "LINEで招待"),
+                    React.createElement("button", { onClick: copy, className: "hex-btn hex-btn-secondary px-5 text-[14px]" }, copied ? "コピーしました" : "コードをコピー")),
                 React.createElement("div", { className: "mt-5" }, React.createElement(RoomSpinner, { label: "相手の参加を待っています" })))
                 : React.createElement("div", { className: "mt-4" }, React.createElement(RoomSpinner, { label: "ルームを準備しています" })),
             React.createElement("button", { onClick: onCancel, className: "hex-btn hex-btn-ghost mt-6 px-6 text-[14px]" }, "キャンセル")));
