@@ -10,7 +10,8 @@
 | `assets/normal-ball-rotate-v14.mp3`, `normal-ball-rotate-v15-clear.wav` | 回転音 | 所有者作成 |
 | `assets/instant-drop-land-v10.wav` | ハードドロップ着地音 | 所有者作成 |
 | `assets/ball-position-lock-v6-buin.wav` | 位置確定音 | 所有者作成 |
-| `assets/ball-{pastel,neon,gem}-{red,blue,green,yellow,purple}.png` | トロフィーロードで解放する球のデザイン（192px。色は同じで質感だけが違う） | `tools/make-ball-skins.py` がコードで描画したオリジナル作品 |
+| `assets/ball-{pastel,neon,gem}-{red,blue,green,yellow,purple}.png` | トロフィーロードで解放する球のデザイン（192px。色は同じで質感だけが違う: 釉薬のセラミック、スモークガラスのネオン管、ブリリアントカットの宝石） | `tools/make-ball-skins.py` がスタジオ照明・反射・フレネルを1ピクセルずつ計算して描画したオリジナル作品 |
+| `assets/icon-{star,bolt,flame,crown,gem,master}.png` | トロフィーロードで解放するプレイヤーアイコン（192px の丸いバッジ） | `tools/make-avatar-icons.py` がコードで描画したオリジナル作品 |
 | `assets/ball-glass-{red,blue,green,yellow,purple}.png` | 球（盤面・メニュー共通、192px） | `tools/make-balls.py` がコードで描画したオリジナル作品（ガラス玉の陰影・映り込みと、色ごとの内部模様: 赤＝キャッツアイ、青＝水面の光の網目、緑＝クラックル、黄＝サンバースト、紫＝星雲）。2026-10 に、原作の球に似ていた旧画像から置き換え |
 | `assets/drop-ball-logo.svg` | ホーム画面のロゴ | `tools/make-brand.py` が生成（`brand/drop-ball-logo-on-dark.svg` と同じ）。ブランド一式とガイドは `brand/`・`docs/BRAND.md` |
 | `icons/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon.png`, `favicon-32.png` | アプリのアイコン（ホーム画面・インストール） | `tools/make-brand.py` がシンボル（落ちるガラス玉と 3 本のスピードライン）から生成 |

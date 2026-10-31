@@ -63,17 +63,9 @@ function road(){
     for(const l of LEAGUES)if(l.min>0)steps.push({min:l.min,kind:"league",league:l});
     return steps.sort((a,b)=>a.min-b.min||(a.kind==="league"?-1:1));
 }
-// Icon glyphs (24x24 paths), drawn in the avatar circle.
-const GLYPHS={
-    star:"M12 2.8l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 16.8l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z",
-    bolt:"M13.5 2 4.8 13.4h6l-1.3 8.6 9.7-12.2h-6.1z",
-    flame:"M12 2.5c.6 3.4 4.8 5.5 4.8 10.4a4.8 4.8 0 0 1-9.6 0c0-2.3 1.1-3.6 2.2-4.8.2 1.6.9 2.6 1.9 3.1-.5-3.5.2-6.2.7-8.7z",
-    crown:"M3 8.2l4.6 3.6L12 4.6l4.4 7.2L21 8.2l-1.8 10.3H4.8zM5 20h14v1.6H5z",
-    gem:"M7 3.5h10l4 5.2-9 12.3-9-12.3zM3.9 8.7h16.2M9.2 3.6 12 8.7l2.8-5.1M12 8.7v12.2",
-    master:"M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5zM12 7.4l1.5 3.1 3.4.5-2.5 2.4.6 3.4-3-1.6-3 1.6.6-3.4-2.5-2.4 3.4-.5z"
-};
-const STROKED={gem:true};
-function glyph(id){return GLYPHS[id]?{d:GLYPHS[id],stroke:!!STROKED[id]}:null;}
+// Icon artwork: round badges drawn by tools/make-avatar-icons.py. "initial"
+// has none (the avatar shows the first character of the name).
+function iconSrc(id){return id&&id!=="initial"&&ITEMS.some(i=>i.slot==="icon"&&i.id===id)?"assets/icon-"+id+".png":null;}
 
 // ------------------------------------------------------------ local state
 const KEY="hexdrop_trophies_v1";
@@ -136,7 +128,7 @@ if(typeof document!=="undefined"){
     else applyVisuals();
 }
 return{
-    delta,LEAGUES,league,nextLeague,ITEMS,SLOTS,DEFAULTS,item,unlocked,road,glyph,
+    delta,LEAGUES,league,nextLeague,ITEMS,SLOTS,DEFAULTS,item,unlocked,road,iconSrc,
     state:snapshot,set,equip,applyVisuals,
     subscribe(f){state.listeners.add(f);return()=>state.listeners.delete(f);}
 };

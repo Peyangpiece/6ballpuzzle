@@ -45,9 +45,9 @@ for (const slot of Object.keys(T.DEFAULTS)) assert(T.item(slot, T.DEFAULTS[slot]
 const road = T.road();
 assert(road.every((s, i) => !i || road[i - 1].min <= s.min), "the road is in trophy order");
 assert.strictEqual(road.filter(s => s.kind === "item").length, T.ITEMS.filter(i => i.min > 0).length);
-// Every item has its artwork: icon glyphs, ball images, clear-effect styles.
+// Every item has its artwork: icon badges, ball images, clear-effect styles.
 for (const it of T.ITEMS) {
-  if (it.slot === "icon" && it.id !== "initial") assert(T.glyph(it.id), "icon glyph " + it.id);
+  if (it.slot === "icon" && it.id !== "initial") assert(T.iconSrc(it.id) === "assets/icon-" + it.id + ".png" && fs.existsSync(path.join(ROOT, "public", T.iconSrc(it.id))), "icon badge " + it.id);
   if (it.slot === "ball" && it.id !== "glass") for (const c of ["red", "blue", "green", "yellow", "purple"]) assert(fs.existsSync(path.join(ROOT, "public/assets/ball-" + it.id + "-" + c + ".png")), "ball image " + it.id + "-" + c);
   if (it.slot === "fx" && it.id !== "spark") assert(read("public/app-clear-all-ball-fx.js").includes('"' + it.id + '"'), "clear effect style " + it.id);
 }
