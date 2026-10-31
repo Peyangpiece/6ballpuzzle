@@ -156,29 +156,59 @@ function HexItemPreview({item,size=44}){
     else parts.push(React.createElement("path",{key:"s",d:item.id==="starburst"?star(8,7,2.4):star(6,4.6,1.9),fill:item.id==="color"||item.id==="starburst"?c:w}));
     return React.createElement("svg",{"aria-hidden":"true",width:size,height:size,viewBox:"0 0 24 24",style:{display:"block",filter:"drop-shadow(0 0 4px rgba(255,110,124,.55))",background:"rgba(6,5,18,.6)",borderRadius:size/2}},parts);
 }
-// The trophy road (left) and the items to equip (right).
+// The trophy screen: the road, a map that runs left to right as trophies
+// grow, with every reward and league on it, the gold path up to the player's
+// count and their avatar standing there; and the collection to equip items.
+const HEX_ROAD_GAP=128,HEX_ROAD_PAD=84,HEX_ROAD_TRACK=150;
+function hexRoadX(steps,trophies){
+    // Position along the road: even spacing between steps, filled in
+    // proportion to the trophies between two steps.
+    const t=Math.max(0,Number(trophies)||0);
+    for(let i=0;i<steps.length-1;i++){
+        const a=steps[i],b=steps[i+1];
+        if(t<b.min)return HEX_ROAD_PAD+HEX_ROAD_GAP*(i+(b.min>a.min?(t-a.min)/(b.min-a.min):0));
+    }
+    return HEX_ROAD_PAD+HEX_ROAD_GAP*(steps.length-1);
+}
+function HexTrophyRoad({st}){
+    const steps=[{min:0,kind:"league",league:HexTrophies.LEAGUES[0]}].concat(HexTrophies.road());
+    const boxRef=useRef(null);
+    const width=HEX_ROAD_PAD*2+HEX_ROAD_GAP*(steps.length-1);
+    const here=hexRoadX(steps,st.trophies);
+    useEffect(()=>{const box=boxRef.current;if(box)box.scrollLeft=Math.max(0,here-box.clientWidth*.35);},[]);
+    const node=(s,i)=>{
+        const x=HEX_ROAD_PAD+HEX_ROAD_GAP*i,got=st.best>=s.min,isLeague=s.kind==="league";
+        const it=s.item,on=it&&st.equip[it.slot]===it.id;
+        const card=isLeague
+            ?React.createElement("div",{className:"flex flex-col items-center"},
+                React.createElement("div",{className:"rounded-full flex items-center justify-center",style:{width:58,height:58,background:`radial-gradient(circle at 35% 30%,#ffffffaa,${s.league.color} 58%,${s.league.color}55)`,boxShadow:got?`0 0 22px ${s.league.color}aa`:"none",filter:got?"none":"grayscale(.85) brightness(.6)"}},React.createElement(HexIcon,{name:"trophy",size:26,color:"#07101a",strokeWidth:2.2})),
+                React.createElement("div",{className:"mt-1.5 text-[13px] font-black whitespace-nowrap",style:{color:got?s.league.color:"rgba(255,255,255,.45)"}},s.league.name))
+            :React.createElement("button",{disabled:!got||on,onClick:()=>HexTrophies.equip(it.slot,it.id),"data-hex-item":it.slot+":"+it.id,"aria-label":it.name+(got?(on?"（装備中）":"を装備"):`（${s.min}で解放）`),
+                className:"flex flex-col items-center rounded-2xl px-2 pt-2 pb-1.5",style:{width:108,background:on?"rgba(47,227,245,.12)":got?"rgba(255,211,106,.08)":"rgba(255,255,255,.03)",border:"1px solid "+(on?"rgba(47,227,245,.55)":got?"rgba(255,211,106,.3)":"rgba(255,255,255,.08)"),opacity:got?1:.55}},
+                React.createElement(HexItemPreview,{item:it,size:40}),
+                React.createElement("div",{className:"mt-1 text-[12px] font-bold text-white leading-tight whitespace-nowrap"},it.name),
+                React.createElement("div",{className:"text-[10px] font-semibold whitespace-nowrap",style:{color:on?"#2FE3F5":got?"#7DFFB2":"rgba(255,255,255,.5)"}},on?"装備中":got?"タップで装備":HexTrophies.SLOTS[it.slot]));
+        return React.createElement(React.Fragment,{key:i},
+            React.createElement("div",{"data-hex-road-step":got?"got":"locked",className:"absolute flex justify-center",style:{left:x-60,width:120,bottom:`calc(100% - ${HEX_ROAD_TRACK-18}px)`}},card),
+            React.createElement("div",{"aria-hidden":"true",className:"absolute rounded-full",style:{left:x-(isLeague?9:7),top:HEX_ROAD_TRACK-(isLeague?9:7),width:isLeague?18:14,height:isLeague?18:14,background:got?"#FFD36A":"#2A2850",border:"2px solid "+(got?"#FFF1C2":"rgba(255,255,255,.18)"),boxShadow:got?"0 0 10px rgba(255,211,106,.7)":"none"}}),
+            React.createElement("div",{className:"absolute flex items-center justify-center gap-1 text-[12px] font-bold tabular-nums",style:{left:x-40,width:80,top:HEX_ROAD_TRACK+14,color:got?"#FFD36A":"rgba(255,255,255,.45)"}},React.createElement(HexIcon,{name:"trophy",size:12,color:got?"#FFD36A":"rgba(255,255,255,.4)"}),s.min));
+    };
+    return React.createElement("div",{ref:boxRef,"data-hex-road":"1",className:"overflow-x-auto overflow-y-hidden",style:{width:"100%",minWidth:0,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}},
+        React.createElement("div",{className:"relative",style:{width,height:HEX_ROAD_TRACK+44}},
+            React.createElement("div",{"aria-hidden":"true",className:"absolute rounded-full",style:{left:HEX_ROAD_PAD,right:HEX_ROAD_PAD,top:HEX_ROAD_TRACK-4,height:8,background:"rgba(255,255,255,.08)"}}),
+            React.createElement("div",{"aria-hidden":"true","data-hex-road-fill":"1",className:"absolute rounded-full",style:{left:HEX_ROAD_PAD,width:Math.max(0,here-HEX_ROAD_PAD),top:HEX_ROAD_TRACK-4,height:8,background:"linear-gradient(90deg,#E3A06A,#FFD36A 60%,#FFF1C2)",boxShadow:"0 0 14px rgba(255,211,106,.55)"}}),
+            steps.map(node),
+            React.createElement("div",{"data-hex-road-here":"1",className:"absolute flex flex-col items-center",style:{left:here-22,top:HEX_ROAD_TRACK-23,width:44,zIndex:2,pointerEvents:"none"}},
+                React.createElement("div",{className:"rounded-full",style:{padding:2,background:"#FFD36A",boxShadow:"0 0 16px rgba(255,211,106,.8)"}},
+                    React.createElement(HexAvatar,{name:typeof Net!=="undefined"&&Net.profile?Net.profile.name:"P",icon:st.equip.icon,size:38})))));
+}
 function HexTrophyScreen({back}){
     const [st,setSt]=useState(()=>HexTrophies.state());
+    const [view,setView]=useState("road");
     const [slot,setSlot]=useState("icon");
-    const roadRef=useRef(null);
     useEffect(()=>HexTrophies.subscribe(setSt),[]);
-    // Open the road at the next reward.
-    useEffect(()=>{const box=roadRef.current,el=box&&box.querySelector('[data-hex-road-step="locked"]');if(box&&el)box.scrollTop=Math.max(0,el.offsetTop-box.offsetTop-64);},[]);
     const L=st.league,next=HexTrophies.nextLeague(st.trophies);
-    const span=next?Math.max(1,next.min-L.min):1,progress=next?Math.max(0,Math.min(1,(st.trophies-L.min)/span)):1;
-    const road=HexTrophies.road();
-    const trophyIcon=React.createElement(HexIcon,{name:"trophy",size:16,color:"#FFD36A"});
-    const step=(s,i)=>{
-        const got=st.best>=s.min,isLeague=s.kind==="league";
-        return React.createElement("div",{key:i,"data-hex-road-step":got?"got":"locked",className:"flex items-center gap-3 rounded-xl px-3",style:{minHeight:52,background:got?"rgba(255,211,106,.07)":"transparent",border:"1px solid "+(got?"rgba(255,211,106,.22)":"rgba(255,255,255,.06)")}},
-            React.createElement("div",{className:"w-14 shrink-0 text-[13px] font-bold tabular-nums",style:{color:got?"#FFD36A":"rgba(255,255,255,.45)"}},s.min),
-            isLeague?React.createElement("div",{className:"shrink-0 rounded-full",style:{width:34,height:34,background:`radial-gradient(circle at 35% 30%,#fff8,${s.league.color} 60%)`,boxShadow:`0 0 10px ${s.league.color}66`}})
-                :React.createElement(HexItemPreview,{item:s.item,size:34}),
-            React.createElement("div",{className:"min-w-0 flex-1"},
-                React.createElement("div",{className:"text-[14px] font-bold text-white truncate"},isLeague?s.league.name+"リーグ":s.item.name),
-                React.createElement("div",{className:"text-[11px] text-white/50"},isLeague?"リーグ昇格":HexTrophies.SLOTS[s.item.slot])),
-            React.createElement("div",{className:"shrink-0 text-[11px] font-bold",style:{color:got?"#7DFFB2":"rgba(255,255,255,.45)"}},got?"解放済み":"あと "+(s.min-st.best)));
-    };
+    const tab=(k,label)=>React.createElement("button",{key:k,role:"tab","aria-selected":view===k?"true":"false",onClick:()=>setView(k),className:"rounded-full px-4 text-[13px] font-bold",style:{minHeight:40,color:view===k?"#04121a":"rgba(255,255,255,.75)",background:view===k?"#2FE3F5":"rgba(255,255,255,.05)"}},label);
     const items=HexTrophies.ITEMS.filter(i=>i.slot===slot);
     const card=(it)=>{
         const open=HexTrophies.unlocked(it,st.best),on=st.equip[slot]===it.id;
@@ -189,19 +219,19 @@ function HexTrophyScreen({back}){
             React.createElement("div",{className:"text-[11px] font-semibold",style:{color:on?"#2FE3F5":open?"rgba(255,255,255,.6)":"rgba(255,255,255,.45)"}},on?"装備中":open?"装備する":`${it.min} で解放`));
     };
     return React.createElement(HexMenuShell,{title:"トロフィー",back,wide:true},
-        React.createElement("div",{style:{display:"grid",gridTemplateColumns:"minmax(250px,.85fr) minmax(0,1.15fr)",gap:14,alignItems:"start"}},
-            React.createElement(HexPanel,{className:"p-4"},
-                React.createElement("div",{className:"flex items-center gap-3"},
-                    React.createElement("div",{className:"shrink-0 rounded-full",style:{width:44,height:44,background:`radial-gradient(circle at 35% 30%,#fff9,${L.color} 62%)`,boxShadow:`0 0 16px ${L.color}66`}}),
-                    React.createElement("div",{className:"min-w-0"},
-                        React.createElement("div",{className:"text-[12px] font-bold text-white/55"},L.name+"リーグ"),
-                        React.createElement("div",{"data-hex-trophies":"1",className:"flex items-center gap-1.5 text-[26px] font-black tabular-nums text-white"},trophyIcon,st.trophies))),
-                React.createElement("div",{className:"mt-3 h-2 rounded-full overflow-hidden",style:{background:"rgba(255,255,255,.08)"}},React.createElement("div",{style:{width:(progress*100).toFixed(1)+"%",height:"100%",background:`linear-gradient(90deg,${L.color},#FFD36A)`}})),
-                React.createElement("div",{className:"mt-1.5 text-[11px] text-white/50"},next?`${next.name}リーグまで あと ${next.min-st.trophies}`:"最高リーグです"),
-                React.createElement("div",{className:"mt-1 text-[11px] text-white/40"},"オンライン対戦で勝つと増えます（300未満は負けても減りません）"),
-                React.createElement("div",{ref:roadRef,"data-hex-road":"1",className:"mt-3 grid gap-1.5 overflow-y-auto pr-1",style:{maxHeight:"46vh"}},road.map(step))),
-            React.createElement(HexPanel,{className:"p-4"},
-                React.createElement("div",{role:"tablist",className:"flex gap-2 mb-3"},Object.keys(HexTrophies.SLOTS).map(k=>React.createElement("button",{key:k,role:"tab","aria-selected":slot===k?"true":"false",onClick:()=>setSlot(k),className:"rounded-full px-4 text-[13px] font-bold",style:{minHeight:40,color:slot===k?"#04121a":"rgba(255,255,255,.75)",background:slot===k?"#2FE3F5":"rgba(255,255,255,.05)"}},HexTrophies.SLOTS[k]))),
+        React.createElement("div",{className:"flex items-center gap-4 flex-wrap mb-3"},
+            React.createElement("div",{className:"flex items-center gap-3"},
+                React.createElement("div",{className:"shrink-0 rounded-full flex items-center justify-center",style:{width:42,height:42,background:`radial-gradient(circle at 35% 30%,#ffffffaa,${L.color} 60%)`,boxShadow:`0 0 16px ${L.color}66`}},React.createElement(HexIcon,{name:"trophy",size:20,color:"#07101a",strokeWidth:2.2})),
+                React.createElement("div",null,
+                    React.createElement("div",{"data-hex-trophies":"1",className:"text-[24px] font-black tabular-nums text-white leading-none"},st.trophies),
+                    React.createElement("div",{className:"mt-1 text-[11px] font-bold text-white/55"},L.name+"リーグ"+(next?` · ${next.name}まで あと ${next.min-st.trophies}`:" · 最高リーグ")))),
+            React.createElement("div",{role:"tablist",className:"ml-auto flex gap-2"},tab("road","トロフィーロード"),tab("collection","コレクション"))),
+        view==="road"
+            ?React.createElement(HexPanel,{className:"py-3",style:{minWidth:0,overflow:"hidden"}},
+                React.createElement(HexTrophyRoad,{st}),
+                React.createElement("div",{className:"px-4 mt-1 text-[11px] text-white/45"},"オンライン対戦で勝つとトロフィーが増え、右へ進みます（300未満は負けても減りません）。解放した報酬はタップで装備できます。"))
+            :React.createElement(HexPanel,{className:"p-4"},
+                React.createElement("div",{role:"tablist",className:"flex gap-2 mb-3"},Object.keys(HexTrophies.SLOTS).map(k=>React.createElement("button",{key:k,role:"tab","aria-selected":slot===k?"true":"false",onClick:()=>setSlot(k),className:"rounded-full px-4 text-[13px] font-bold",style:{minHeight:40,color:slot===k?"#04121a":"rgba(255,255,255,.75)",background:slot===k?"rgba(255,211,106,.95)":"rgba(255,255,255,.05)"}},HexTrophies.SLOTS[k]))),
                 React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(96px,1fr))",gap:8}},items.map(card)),
-                React.createElement("div",{className:"mt-3 text-[11px] text-white/45"},slot==="icon"?"アイコンはランキングや対戦相手にも表示されます":slot==="ball"?"球のデザインは自分の画面に表示されます（色は変わりません）":"自分の盤面で球が消えるときの演出です"))));
+                React.createElement("div",{className:"mt-3 text-[11px] text-white/45"},slot==="icon"?"アイコンはランキングや対戦相手にも表示されます":slot==="ball"?"球のデザインは自分の画面に表示されます（色は変わりません）":"自分の盤面で球が消えるときの演出です")));
 }
