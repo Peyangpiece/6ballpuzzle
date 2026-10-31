@@ -66,7 +66,7 @@ const HEX_PUBLIC_ORIGIN = "https://dropball.hrk-6888.workers.dev";
 // Apple ID). While it is empty, invitation links open the web version on
 // every device; once set, iPhones and iPads without the app are sent to the
 // App Store page (app-16.js).
-const HEX_APP_STORE_ID = "6828692964";
+const HEX_APP_STORE_ID = ""; // "6828692964" once the app is on the App Store
 // openExternalBrowser=1 makes LINE open the link outside its in-app browser,
 // so iOS can hand it to the installed app (a universal link).
 function hexRoomInviteUrl(code) {
