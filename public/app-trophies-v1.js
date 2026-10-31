@@ -6,6 +6,8 @@
  *   The Elo rating stays as the hidden matchmaking strength (app-15.js).
  * - best is the highest trophy count ever reached. Items on the road unlock at
  *   their trophy count and stay unlocked after a loss.
+ * - Points come from the daily challenge (HexDaily, app-daily-v1.js) and buy
+ *   the shop items (price instead of min); owned items stay owned.
  * - Three slots are equipped: icon (shown to others: home, ranking, online
  *   opponent), ball (the ball design this player sees) and fx (the clear
  *   effect on this player's own board).
@@ -51,12 +53,27 @@ const ITEMS=[
     {slot:"ball",id:"gem",min:1500,name:"ジェム"},
     {slot:"icon",id:"gem",min:1800,name:"ダイヤ"},
     {slot:"fx",id:"nova",min:2200,name:"ノヴァ"},
-    {slot:"icon",id:"master",min:2200,name:"マスター"}
+    {slot:"icon",id:"master",min:2200,name:"マスター"},
+    // The shop: bought with points (price), not on the road.
+    {slot:"icon",id:"moon",price:300,name:"ムーン"},
+    {slot:"icon",id:"sakura",price:400,name:"さくら"},
+    {slot:"icon",id:"comet",price:600,name:"コメット"},
+    {slot:"fx",id:"ripple",price:500,name:"リップル"},
+    {slot:"fx",id:"petal",price:800,name:"ペタル"},
+    {slot:"ball",id:"candy",price:1000,name:"キャンディ"},
+    {slot:"ball",id:"metal",price:1500,name:"メタル"}
 ];
 const SLOTS={icon:"アイコン",ball:"球のデザイン",fx:"消すときの演出"};
 const DEFAULTS={icon:"initial",ball:"glass",fx:"spark"};
 const item=(slot,id)=>ITEMS.find(i=>i.slot===slot&&i.id===id)||null;
-const unlocked=(it,best)=>!!it&&Math.max(0,Number(best)||0)>=it.min;
+// Shop items are keyed "<slot>_<id>" under users/{uid}/owned.
+const ownKey=it=>it.slot+"_"+it.id;
+const SHOP=ITEMS.filter(i=>i.price>0);
+function unlocked(it,best,owned){
+    if(!it)return false;
+    if(it.price>0)return(owned||state.owned).includes(ownKey(it));
+    return Math.max(0,Number(best===undefined?state.best:best)||0)>=it.min;
+}
 // The road: every item above 0 trophies, and each league, in trophy order.
 function road(){
     const steps=ITEMS.filter(i=>i.min>0).map(i=>({min:i.min,kind:"item",item:i}));
@@ -69,12 +86,13 @@ function iconSrc(id){return id&&id!=="initial"&&ITEMS.some(i=>i.slot==="icon"&&i
 
 // ------------------------------------------------------------ local state
 const KEY="hexdrop_trophies_v1";
-const state={trophies:0,best:0,equip:{...DEFAULTS},listeners:new Set()};
+const state={trophies:0,best:0,points:0,owned:[],streak:0,dailyDay:0,equip:{...DEFAULTS},listeners:new Set()};
 function read(){try{return JSON.parse(localStorage.getItem(KEY)||"null")||{};}catch(_){return{};}}
-function write(){try{localStorage.setItem(KEY,JSON.stringify({trophies:state.trophies,best:state.best,equip:state.equip}));}catch(_){}}
-function clean(slot,id){const it=item(slot,id);return it&&unlocked(it,state.best)?id:DEFAULTS[slot];}
+function write(){try{localStorage.setItem(KEY,JSON.stringify({trophies:state.trophies,best:state.best,points:state.points,owned:state.owned,streak:state.streak,dailyDay:state.dailyDay,equip:state.equip}));}catch(_){}}
+function clean(slot,id){const it=item(slot,id);return it&&unlocked(it)?id:DEFAULTS[slot];}
 function notify(){for(const f of state.listeners){try{f(snapshot());}catch(_){}}}
-function snapshot(){return{trophies:state.trophies,best:state.best,equip:{...state.equip},league:league(state.trophies)};}
+function snapshot(){return{trophies:state.trophies,best:state.best,points:state.points,owned:state.owned.slice(),streak:state.streak,dailyDay:state.dailyDay,equip:{...state.equip},league:league(state.trophies)};}
+const ownedList=o=>Array.isArray(o)?o.filter(k=>typeof k==="string"):o&&typeof o==="object"?Object.keys(o).filter(k=>o[k]===true):[];
 // What this player sees: the ball design (all balls on screen) and the clear
 // effect on their own board (app-clear-all-ball-fx.js reads __hexClearFxStyle).
 function applyVisuals(){
@@ -96,6 +114,10 @@ function set(profile){
     const t=Math.max(0,Math.floor(Number(profile.trophies)||0));
     state.trophies=t;
     state.best=Math.max(t,Math.floor(Number(profile.best)||0));
+    state.points=Math.max(0,Math.floor(Number(profile.points)||0));
+    state.owned=ownedList(profile.owned);
+    state.streak=Math.max(0,Math.floor(Number(profile.streak)||0));
+    state.dailyDay=Math.max(0,Math.floor(Number(profile.dailyDay)||0));
     const e=profile.equip&&typeof profile.equip==="object"?profile.equip:{};
     for(const slot of Object.keys(DEFAULTS))state.equip[slot]=clean(slot,e[slot]||state.equip[slot]);
     write();applyVisuals();notify();
@@ -104,6 +126,10 @@ function set(profile){
     const saved=read();
     state.trophies=Math.max(0,Math.floor(Number(saved.trophies)||0));
     state.best=Math.max(state.trophies,Math.floor(Number(saved.best)||0));
+    state.points=Math.max(0,Math.floor(Number(saved.points)||0));
+    state.owned=ownedList(saved.owned);
+    state.streak=Math.max(0,Math.floor(Number(saved.streak)||0));
+    state.dailyDay=Math.max(0,Math.floor(Number(saved.dailyDay)||0));
     const e=saved.equip||{};
     for(const slot of Object.keys(DEFAULTS))state.equip[slot]=clean(slot,e[slot]);
 }
@@ -111,7 +137,7 @@ function set(profile){
 // icon on the ranking entry.
 function equip(slot,id){
     const it=item(slot,id);
-    if(!it||!unlocked(it,state.best))return false;
+    if(!it||!unlocked(it))return false;
     state.equip[slot]=id;write();applyVisuals();notify();
     try{
         if(typeof Net!=="undefined"&&Net.fb&&Net.uid){
@@ -123,13 +149,28 @@ function equip(slot,id){
     }catch(_){}
     return true;
 }
+// Buying a shop item: points go down by its price and the item is owned, in
+// one write that the rules check (lastPurchase names the item). Online only.
+async function buy(slot,id){
+    const it=item(slot,id);
+    if(!it||!(it.price>0))throw new Error("not for sale");
+    if(unlocked(it))return true;
+    if(state.points<it.price)throw Object.assign(new Error("points"),{code:"points"});
+    if(typeof Net==="undefined")throw new Error("offline");
+    await Net.connect();
+    const F=Net.fb,key=ownKey(it),points=state.points-it.price;
+    await F.update(F.ref(Net.db,"users/"+Net.uid),{points,lastPurchase:key,["owned/"+key]:true,updatedAt:F.serverTimestamp()});
+    Net.profile.points=points;Net.profile.lastPurchase=key;Net.profile.owned={...(Net.profile.owned||{}),[key]:true};
+    state.points=points;if(!state.owned.includes(key))state.owned.push(key);write();notify();
+    return true;
+}
 if(typeof document!=="undefined"){
     if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",applyVisuals,{once:true});
     else applyVisuals();
 }
 return{
-    delta,LEAGUES,league,nextLeague,ITEMS,SLOTS,DEFAULTS,item,unlocked,road,iconSrc,
-    state:snapshot,set,equip,applyVisuals,
+    delta,LEAGUES,league,nextLeague,ITEMS,SHOP,SLOTS,DEFAULTS,item,unlocked,ownKey,road,iconSrc,
+    state:snapshot,set,equip,buy,applyVisuals,
     subscribe(f){state.listeners.add(f);return()=>state.listeners.delete(f);}
 };
 })();
@@ -140,11 +181,13 @@ return{
 function HexItemPreview({item,size=44}){
     if(item.slot==="icon")return React.createElement(HexAvatar,{name:typeof Net!=="undefined"&&Net.profile?Net.profile.name:"P",icon:item.id,size});
     if(item.slot==="ball")return React.createElement("img",{src:item.id==="glass"?"assets/ball-glass-red.png":"assets/ball-"+item.id+"-red.png",alt:"",width:size,height:size,style:{display:"block",width:size,height:size}});
-    const c="#FF6E7C",w="#FFFFFF",ink=item.id==="spark"||item.id==="hexring"?w:c,star=(n,r,ri)=>{let d="";for(let i=0;i<n*2;i++){const a=i*Math.PI/n-Math.PI/2,k=i%2?ri:r;d+=(i?"L":"M")+(12+Math.cos(a)*k).toFixed(2)+" "+(12+Math.sin(a)*k).toFixed(2);}return d+"Z";};
+    const c=item.id==="petal"?"#FF9CC2":"#FF6E7C",w="#FFFFFF",ink=item.id==="spark"||item.id==="hexring"?w:c,star=(n,r,ri)=>{let d="";for(let i=0;i<n*2;i++){const a=i*Math.PI/n-Math.PI/2,k=i%2?ri:r;d+=(i?"L":"M")+(12+Math.cos(a)*k).toFixed(2)+" "+(12+Math.sin(a)*k).toFixed(2);}return d+"Z";};
     const parts=[];
     if(item.id==="hexring")parts.push(React.createElement("path",{key:"r",d:"M12 3l7.8 4.5v9L12 21l-7.8-4.5v-9z",fill:"none",stroke:ink,strokeWidth:1.6}));
     else parts.push(React.createElement("circle",{key:"r",cx:12,cy:12,r:item.id==="nova"?10:9,fill:"none",stroke:ink,strokeWidth:item.id==="nova"?2:1.6}));
-    if(item.id==="nova"){for(let i=0;i<8;i++){const a=i*Math.PI/4;parts.push(React.createElement("line",{key:"l"+i,x1:12+Math.cos(a)*2.6,y1:12+Math.sin(a)*2.6,x2:12+Math.cos(a)*7.4,y2:12+Math.sin(a)*7.4,stroke:c,strokeWidth:1.6,strokeLinecap:"round"}));}parts.push(React.createElement("circle",{key:"c",cx:12,cy:12,r:2,fill:w}));}
+    if(item.id==="ripple"){parts.push(React.createElement("circle",{key:"r2",cx:12,cy:12,r:5,fill:"none",stroke:c,strokeWidth:1.4}));parts.push(React.createElement("circle",{key:"d",cx:12,cy:12,r:1.8,fill:w}));}
+    else if(item.id==="petal"){for(let i=0;i<5;i++){const a=i*72-90;parts.push(React.createElement("ellipse",{key:"p"+i,cx:12+Math.cos(a*Math.PI/180)*3.6,cy:12+Math.sin(a*Math.PI/180)*3.6,rx:3.3,ry:1.9,transform:`rotate(${a} ${12+Math.cos(a*Math.PI/180)*3.6} ${12+Math.sin(a*Math.PI/180)*3.6})`,fill:"#FFD1E3"}));}parts.push(React.createElement("circle",{key:"c",cx:12,cy:12,r:1.5,fill:"#FFE38A"}));}
+    else if(item.id==="nova"){for(let i=0;i<8;i++){const a=i*Math.PI/4;parts.push(React.createElement("line",{key:"l"+i,x1:12+Math.cos(a)*2.6,y1:12+Math.sin(a)*2.6,x2:12+Math.cos(a)*7.4,y2:12+Math.sin(a)*7.4,stroke:c,strokeWidth:1.6,strokeLinecap:"round"}));}parts.push(React.createElement("circle",{key:"c",cx:12,cy:12,r:2,fill:w}));}
     else parts.push(React.createElement("path",{key:"s",d:item.id==="starburst"?star(8,7,2.4):star(6,4.6,1.9),fill:item.id==="color"||item.id==="starburst"?c:w}));
     return React.createElement("svg",{"aria-hidden":"true",width:size,height:size,viewBox:"0 0 24 24",style:{display:"block",filter:"drop-shadow(0 0 4px rgba(255,110,124,.55))",background:"rgba(6,5,18,.6)",borderRadius:size/2}},parts);
 }
@@ -194,21 +237,39 @@ function HexTrophyRoad({st}){
                 React.createElement("div",{className:"rounded-full",style:{padding:2,background:"#FFD36A",boxShadow:"0 0 16px rgba(255,211,106,.8)"}},
                     React.createElement(HexAvatar,{name:typeof Net!=="undefined"&&Net.profile?Net.profile.name:"P",icon:st.equip.icon,size:38})))));
 }
-function HexTrophyScreen({back}){
+function HexTrophyScreen({back,initialView="road"}){
     const [st,setSt]=useState(()=>HexTrophies.state());
-    const [view,setView]=useState("road");
+    const [view,setView]=useState(initialView);
+    const [buying,setBuying]=useState("");
+    const [shopMsg,setShopMsg]=useState("");
     const [slot,setSlot]=useState("icon");
     useEffect(()=>HexTrophies.subscribe(setSt),[]);
     const L=st.league,next=HexTrophies.nextLeague(st.trophies);
     const tab=(k,label)=>React.createElement("button",{key:k,role:"tab","aria-selected":view===k?"true":"false",onClick:()=>setView(k),className:"rounded-full px-4 text-[13px] font-bold",style:{minHeight:40,color:view===k?"#04121a":"rgba(255,255,255,.75)",background:view===k?"#2FE3F5":"rgba(255,255,255,.05)"}},label);
     const items=HexTrophies.ITEMS.filter(i=>i.slot===slot);
     const card=(it)=>{
-        const open=HexTrophies.unlocked(it,st.best),on=st.equip[slot]===it.id;
+        const open=HexTrophies.unlocked(it,st.best,st.owned),on=st.equip[slot]===it.id;
         return React.createElement("button",{key:it.id,disabled:!open||on,onClick:()=>HexTrophies.equip(slot,it.id),"data-hex-item":it.slot+":"+it.id,"aria-pressed":on?"true":"false",
             className:"flex flex-col items-center gap-1.5 rounded-xl p-2.5 text-center",style:{minHeight:112,background:on?"rgba(47,227,245,.10)":"rgba(255,255,255,.03)",border:"1px solid "+(on?"rgba(47,227,245,.5)":"rgba(255,255,255,.08)"),opacity:open?1:.45}},
             React.createElement(HexItemPreview,{item:it,size:44}),
             React.createElement("div",{className:"text-[12px] font-bold text-white leading-tight"},it.name),
-            React.createElement("div",{className:"text-[11px] font-semibold",style:{color:on?"#2FE3F5":open?"rgba(255,255,255,.6)":"rgba(255,255,255,.45)"}},on?"装備中":open?"装備する":`${it.min} で解放`));
+            React.createElement("div",{className:"text-[11px] font-semibold",style:{color:on?"#2FE3F5":open?"rgba(255,255,255,.6)":"rgba(255,255,255,.45)"}},on?"装備中":open?"装備する":it.price>0?"ショップ":`${it.min} で解放`));
+    };
+    // The shop: items bought with points from the daily challenge.
+    const buy=(it)=>{
+        setShopMsg("");setBuying(it.slot+":"+it.id);
+        HexTrophies.buy(it.slot,it.id).then(()=>{setShopMsg(`${it.name}を手に入れました`);HexTrophies.equip(it.slot,it.id);})
+            .catch(err=>setShopMsg(err&&err.code==="points"?"ポイントが足りません":"購入できませんでした（通信を確認してください）"))
+            .then(()=>setBuying(""));
+    };
+    const shopCard=(it)=>{
+        const own=HexTrophies.unlocked(it,st.best,st.owned),busy=buying===it.slot+":"+it.id,afford=st.points>=it.price;
+        return React.createElement("div",{key:it.slot+it.id,"data-hex-shop-item":it.slot+":"+it.id,className:"flex flex-col items-center gap-1.5 rounded-xl p-2.5 text-center",style:{minHeight:132,background:own?"rgba(125,255,178,.06)":"rgba(255,255,255,.03)",border:"1px solid "+(own?"rgba(125,255,178,.3)":"rgba(255,255,255,.08)")}},
+            React.createElement(HexItemPreview,{item:it,size:46}),
+            React.createElement("div",{className:"text-[12px] font-bold text-white leading-tight"},it.name),
+            React.createElement("div",{className:"text-[10px] text-white/45"},HexTrophies.SLOTS[it.slot]),
+            own?React.createElement("div",{className:"text-[11px] font-bold",style:{color:"#7DFFB2"}},"購入済み")
+                :React.createElement("button",{disabled:!afford||!!buying,onClick:()=>buy(it),className:"hex-btn hex-btn-gold px-3 text-[12px] disabled:opacity-50",style:{minHeight:34}},busy?"購入中…":`${it.price} P`));
     };
     return React.createElement(HexMenuShell,{title:"トロフィー",back,wide:true},
         React.createElement("div",{className:"flex items-center gap-4 flex-wrap mb-3"},
@@ -217,8 +278,14 @@ function HexTrophyScreen({back}){
                 React.createElement("div",null,
                     React.createElement("div",{"data-hex-trophies":"1",className:"text-[24px] font-black tabular-nums text-white leading-none"},st.trophies),
                     React.createElement("div",{className:"mt-1 text-[11px] font-bold text-white/55"},L.name+"リーグ"+(next?` · ${next.name}まで あと ${next.min-st.trophies}`:" · 最高リーグ")))),
-            React.createElement("div",{role:"tablist",className:"ml-auto flex gap-2"},tab("road","トロフィーロード"),tab("collection","コレクション"))),
-        view==="road"
+            React.createElement("div",{"data-hex-points":String(st.points),className:"flex items-center gap-1.5 rounded-full px-3 text-[14px] font-black tabular-nums",style:{minHeight:36,color:"#FFD36A",background:"rgba(255,211,106,.1)",border:"1px solid rgba(255,211,106,.3)"}},React.createElement("span",{className:"text-[11px] font-bold text-white/60"},"ポイント"),st.points),
+            React.createElement("div",{role:"tablist",className:"ml-auto flex gap-2"},tab("road","トロフィーロード"),tab("collection","コレクション"),tab("shop","ショップ"))),
+        view==="shop"
+            ?React.createElement(HexPanel,{className:"p-4"},
+                React.createElement("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:8}},HexTrophies.SHOP.map(shopCard)),
+                shopMsg&&React.createElement("div",{role:"status",className:"mt-3 text-[12px] font-bold",style:{color:"#FFD36A"}},shopMsg),
+                React.createElement("div",{className:"mt-3 text-[11px] text-white/45"},`ポイントはデイリーチャレンジで1日1回もらえます（${HexDaily.reward(0)}〜${HexDaily.reward(1e9)}、${HexDaily.STREAK_EVERY}日連続ごとに +${HexDaily.STREAK_BONUS}）`))
+        :view==="road"
             ?React.createElement(HexPanel,{className:"py-3",style:{minWidth:0,overflow:"hidden"}},
                 React.createElement(HexTrophyRoad,{st}),
                 React.createElement("div",{className:"px-4 mt-1 text-[11px] text-white/45"},"オンライン対戦で勝つとトロフィーが増え、右へ進みます（300未満は負けても減りません）。解放した報酬はタップで装備できます。"))

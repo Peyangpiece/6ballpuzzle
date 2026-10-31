@@ -194,6 +194,50 @@ async function deny(label, p) { try { await assertFails(p); passed++; console.lo
     await ok("ranking query by trophies", C.ref("leaderboard").orderByChild("trophies").limitToLast(50).get());
   }
 
+  console.log("daily points, streak, shop, daily ranking");
+  {
+    const G = env.authenticatedContext("uidG").database(), H = env.authenticatedContext("uidH").database();
+    const TODAY = Math.floor((Date.now() + 32400000) / 86400000);
+    await ok("G creates a profile", G.ref("users/uidG").set(profile("uidG")));
+    await deny("points cannot appear without a daily claim", G.ref("users/uidG").update({ points: 100 }));
+    await deny("a claim must be for today", G.ref("users/uidG").update({ points: 50, dailyDay: TODAY - 1, streak: 1 }));
+    await deny("a claim gives at least 30", G.ref("users/uidG").update({ points: 10, dailyDay: TODAY, streak: 1 }));
+    await deny("a claim gives at most 100 without the streak bonus", G.ref("users/uidG").update({ points: 101, dailyDay: TODAY, streak: 1 }));
+    await deny("the first streak day is 1", G.ref("users/uidG").update({ points: 70, dailyDay: TODAY, streak: 5 }));
+    await ok("G claims today's points", G.ref("users/uidG").update({ points: 70, dailyDay: TODAY, streak: 1 }));
+    await deny("a second claim on the same day", G.ref("users/uidG").update({ points: 140, dailyDay: TODAY, streak: 1 }));
+    await deny("the claimed day cannot be removed", G.ref("users/uidG/dailyDay").remove());
+    await deny("points cannot grow afterwards", G.ref("users/uidG").update({ points: 1000 }));
+    await admin(db => db.ref("users/uidG").update({ dailyDay: TODAY - 1, streak: 6, points: 0 }));
+    await deny("the streak continues from yesterday (6 + 1)", G.ref("users/uidG").update({ points: 100, dailyDay: TODAY, streak: 1 }));
+    await ok("7th day in a row: up to 100 + 100", G.ref("users/uidG").update({ points: 200, dailyDay: TODAY, streak: 7 }));
+    await admin(db => db.ref("users/uidG").update({ dailyDay: TODAY - 3, streak: 9, points: 0 }));
+    await deny("a missed day: the streak restarts and no bonus", G.ref("users/uidG").update({ points: 200, dailyDay: TODAY, streak: 1 }));
+    await ok("a missed day: streak 1", G.ref("users/uidG").update({ points: 100, dailyDay: TODAY, streak: 1 }));
+    console.log("shop");
+    await admin(db => db.ref("users/uidG/points").set(1000));
+    await deny("an item without paying (points untouched)", G.ref("users/uidG").update({ lastPurchase: "icon_moon", "owned/icon_moon": true }));
+    await deny("an item for less than its price", G.ref("users/uidG").update({ points: 900, lastPurchase: "icon_moon", "owned/icon_moon": true }));
+    await deny("a road item is not for sale", G.ref("users/uidG").update({ points: 900, lastPurchase: "icon_star", "owned/icon_star": true }));
+    await deny("an unknown item", G.ref("users/uidG").update({ points: 900, lastPurchase: "icon_dragon", "owned/icon_dragon": true }));
+    await ok("G buys the moon icon (300)", G.ref("users/uidG").update({ points: 700, lastPurchase: "icon_moon", "owned/icon_moon": true }));
+    await deny("the same item twice", G.ref("users/uidG").update({ points: 400, lastPurchase: "icon_moon", "owned/icon_moon": true }));
+    await deny("points cannot go below 0", G.ref("users/uidG").update({ points: -800, lastPurchase: "ball_metal", "owned/ball_metal": true }));
+    await ok("G buys the sakura icon (400)", G.ref("users/uidG").update({ points: 300, lastPurchase: "icon_sakura", "owned/icon_sakura": true }));
+    await ok("G equips an owned shop icon", G.ref("users/uidG/equip/icon").set("moon"));
+    await deny("G cannot equip a shop icon not owned", G.ref("users/uidG/equip/icon").set("comet"));
+    await deny("H cannot buy for G", H.ref("users/uidG").update({ points: 0, lastPurchase: "icon_comet", "owned/icon_comet": true }));
+    console.log("daily ranking");
+    await ok("G posts today's score", G.ref("daily/" + TODAY + "/uidG").set({ name: "G", score: 500, icon: "moon" }));
+    await deny("the score cannot go down", G.ref("daily/" + TODAY + "/uidG").set({ name: "G", score: 400, icon: "moon" }));
+    await ok("a better score replaces it", G.ref("daily/" + TODAY + "/uidG").set({ name: "G", score: 640, icon: "moon" }));
+    await deny("only today's ranking", G.ref("daily/" + (TODAY - 1) + "/uidG").set({ name: "G", score: 10, icon: "moon" }));
+    await deny("the icon must be the equipped one", G.ref("daily/" + TODAY + "/uidG").set({ name: "G", score: 700, icon: "crown" }));
+    await deny("H cannot post for G", H.ref("daily/" + TODAY + "/uidG").set({ name: "G", score: 9999, icon: "moon" }));
+    await ok("signed-in players read today's ranking", H.ref("daily/" + TODAY).orderByChild("score").limitToLast(10).get());
+    await deny("anonymous cannot read the ranking", anon.ref("daily/" + TODAY).get());
+  }
+
   console.log("server rating authority (config/ratingAuthority = 'server')");
   await deny("clients cannot write config", A.ref("config/ratingAuthority").set("client"));
   await env.withSecurityRulesDisabled(ctx => ctx.database().ref("config/ratingAuthority").set("server"));

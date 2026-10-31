@@ -90,10 +90,20 @@
             const ink=style==="spark"||style==="hexring"?"#FFFFFF":(col?.glow||"#FFFFFF");
             ctx.strokeStyle=ink;
             ctx.lineWidth=Math.max(1,D*(style==="nova"?.06:.042));
-            if(st.ringStrength>0){ringPath(ctx,px,py,radius*(style==="nova"?1.25:1),style);ctx.stroke();}
+            if(st.ringStrength>0){
+                ringPath(ctx,px,py,radius*(style==="nova"?1.25:1),style);ctx.stroke();
+                if(style==="ripple"){ringPath(ctx,px,py,radius*.6,style);ctx.stroke();}
+            }
             if(st.starStrength>0){
                 const r=D*(.16+.08*st.starStrength);
-                if(style==="nova"){
+                if(style==="ripple"){
+                    ringPath(ctx,px,py,r*1.5,style);ctx.stroke();
+                    ctx.beginPath();ctx.arc(px,py,r*.35,0,TAU);ctx.fillStyle="#FFFFFF";ctx.fill();
+                }else if(style==="petal"){
+                    ctx.fillStyle="#FFD1E3";
+                    for(let i=0;i<5;i++){const a=i*TAU/5-Math.PI/2;ctx.beginPath();ctx.ellipse(px+Math.cos(a)*r*.7,py+Math.sin(a)*r*.7,r*.62,r*.34,a,0,TAU);ctx.fill();}
+                    ctx.beginPath();ctx.arc(px,py,r*.28,0,TAU);ctx.fillStyle="#FFE38A";ctx.fill();
+                }else if(style==="nova"){
                     ctx.beginPath();
                     for(let i=0;i<8;i++){const a=i*TAU/8,c=Math.cos(a),s=Math.sin(a);ctx.moveTo(px+c*r*.5,py+s*r*.5);ctx.lineTo(px+c*r*1.9,py+s*r*1.9);}
                     ctx.stroke();

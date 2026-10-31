@@ -54,7 +54,7 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert.strictEqual(play(3, [{ ev: [{ t: "land" }, { t: "clear" }, { t: "waza", w: "PYRAMID" }] }]), "success", "a technique passes lesson 4");
   assert.strictEqual(play(4, [{ ev: [{ t: "land" }, { t: "garbage" }], state: "RESOLVING", pending: 6 }]), null, "lesson 5 waits for the garbage to land");
   assert.strictEqual(play(4, [{ ev: [{ t: "land" }, { t: "garbage" }], state: "RESOLVING", pending: 6 }, { state: "PLAYING", pending: 0 }]), "success", "lesson 5 passes once the garbage has landed");
-  assert(/else if \(!tutorialRef\.current\) stepEngine\(foe, h\)/.test(app16), "the tutorial must not simulate an opponent");
+  assert(/else if \(!tutorialRef\.current(?: && !dailyRef\.current)?\) stepEngine\(foe, h\)/.test(app16), "the tutorial must not simulate an opponent");
   assert(/onPractice:\(\)=>\{initUiAudio\(\);startTutorial\(0\);\}/.test(app16), "the tutorial cards lead into the playable lessons");
 
   // --- Ball and background drawing (app-10.js), in the production physics stack.
