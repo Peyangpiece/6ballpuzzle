@@ -114,6 +114,36 @@ def emblem(kind):
         inner = poly([(math.cos(-math.pi / 2 + i * math.pi / 3) * 0.47, math.sin(-math.pi / 2 + i * math.pi / 3) * 0.47 + 0.02) for i in range(6)])
         star = poly(star_pts(5, 0.34, 0.15, 0, 0.05))
         return hexa, [(np.clip(inner - star, 0, 1), "inset")]
+    if kind == "moon":
+        disk = mask(lambda d: d.ellipse([N * 0.21, N * 0.22, N * 0.73, N * 0.74], fill=255))
+        bite = mask(lambda d: d.ellipse([N * 0.36, N * 0.13, N * 0.86, N * 0.63], fill=255))
+        stars = np.clip(poly(star_pts(4, 0.13, 0.04, 0.42, 0.20, 0)) + poly(star_pts(4, 0.08, 0.025, 0.26, -0.36, 0)), 0, 1)
+        return np.clip(disk - bite, 0, 1), [(stars, "stars")]
+    if kind == "sakura":
+        petals = []
+        for k in range(5):
+            a = -math.pi / 2 + k * 2 * math.pi / 5
+            ca, sa = math.cos(a), math.sin(a)
+            # One petal along +x: narrow at the centre, round, notched at the tip.
+            side = []
+            for i in range(48):
+                t = i / 47
+                x = 0.08 + 0.50 * t
+                w = 0.20 * math.sin(math.pi * min(1.0, t * 1.08)) ** 0.7 + 0.02
+                side.append((x, w))
+            shape = side + [(0.60, 0.05), (0.53, 0.0), (0.60, -0.05)] + [(x, -w) for x, w in reversed(side)]
+            pts = [(x * ca - y * sa, x * sa + y * ca + 0.02) for x, y in shape]
+            petals.append(poly(pts))
+        body = np.clip(sum(petals), 0, 1)
+        center = mask(lambda d: d.ellipse([N * 0.445, N * 0.455, N * 0.555, N * 0.565], fill=255))
+        return body, [(center, "center")]
+    if kind == "comet":
+        head = mask(lambda d: d.ellipse([N * (0.5 + 0.36 / 2 - 0.17 / 2), N * (0.5 - 0.32 / 2 - 0.17 / 2), N * (0.5 + 0.36 / 2 + 0.17 / 2), N * (0.5 - 0.32 / 2 + 0.17 / 2)], fill=255))
+        tail = poly([(0.24, -0.44), (0.48, -0.20), (-0.56, 0.56)])
+        s1 = poly([(0.10, -0.50), (0.15, -0.46), (-0.60, 0.20)])
+        s2 = poly([(0.52, -0.04), (0.56, 0.01), (-0.18, 0.62)])
+        core = mask(lambda d: d.ellipse([N * 0.628, N * 0.288, N * 0.712, N * 0.372], fill=255))
+        return np.clip(merged(head, tail, r=4) + s1 + s2, 0, 1), [(core, "center")]
     raise ValueError(kind)
 
 
@@ -125,6 +155,10 @@ THEMES = {
     "crown":  ("#9C5BFF", "#2E1170", "gold",   "#FFF3B0", "#E9A41F", "#3A2004", "#FF4F7B"),
     "gem":    ("#2FE3D5", "#0B4E63", "gold",   "#F4FFFF", "#7FE8FF", "#073241", "#46BEE0"),
     "master": ("#3B2C8F", "#0A0A24", "gold",   "#FFFFFF", "#C9A8FF", "#140A33", "#FFD36A"),
+    # Shop icons (bought with points from the daily challenge).
+    "moon":   ("#3D52C4", "#0C1140", "silver", "#FFFCE6", "#FFD764", "#2A2306", "#FFF6C4"),
+    "sakura": ("#FF8DB9", "#7E1B4E", "silver", "#FFFFFF", "#FFBBD6", "#6B1238", "#FFC93D"),
+    "comet":  ("#3460C9", "#08112E", "gold",   "#E9FBFF", "#5FD3FF", "#06243A", "#FFFFFF"),
 }
 RIMS = {"silver": ("#FFFFFF", "#9EA7B8", "#4B5263"), "gold": ("#FFF6C8", "#E6B13A", "#7A4F0C")}
 
@@ -174,6 +208,13 @@ def render(kind):
             img = img * (1 - 0.22 * m * body)[..., None]
         elif role == "line":
             img = img * (1 - 0.5 * m * body)[..., None] + rgb(detail)[None, None, :] * (0.5 * m * body)[..., None]
+        elif role == "stars":
+            img = img * (1 - m)[..., None] + rgb(detail)[None, None, :] * m[..., None]
+            img = img + (blur(m, 8) * 0.35)[..., None]
+        elif role == "center":
+            img = img * (1 - m)[..., None] + rgb(detail)[None, None, :] * m[..., None]
+        elif role == "streak":
+            img = img * (1 - 0.6 * m)[..., None] + rgb(detail)[None, None, :] * (0.6 * m)[..., None]
         elif role == "inset":
             g = np.clip((V + 0.5) / 1.0, 0, 1)
             col = rgb("#6E4BFF")[None, None, :] * (1 - g)[..., None] + rgb("#22105E")[None, None, :] * g[..., None]

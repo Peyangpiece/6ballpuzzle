@@ -34,6 +34,7 @@ const GATE = [
   "tests/online-attack-sanitize.js",
   "tests/rating-settlement.js",
   "tests/trophies.js",
+  "tests/daily.js",
   "tests/rules-elo-table.js",
   // production planner / contracts
   "tests/v1303-plan-group-smoke.js",

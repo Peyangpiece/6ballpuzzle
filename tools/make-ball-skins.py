@@ -14,6 +14,8 @@ a dark floor), like the glass balls:
           depth (the far side dimmer, seen through the glass), with bloom
   gem     a round brilliant seen from above: table, star, bezel and girdle
           facets, each reflecting the studio, with fire and sparkles
+  candy   hard candy with a white swirl under a clear glossy coat (shop)
+  metal   polished anodised metal reflecting the studio (shop)
 Unlocked on the trophy road (HexTrophies.ITEMS in public/app-trophies-v1.js).
 """
 from pathlib import Path
@@ -174,7 +176,35 @@ def gem(base, hi, deep):
     return rgb
 
 
-SKINS = {"pastel": pastel, "neon": neon, "gem": gem}
+def candy(base, hi, deep):
+    """Hard candy: a clear glossy coat over the colour with a white swirl."""
+    ang = np.arctan2(NY, NX)
+    swirl = 0.5 + 0.5 * np.sin(6 * (ang + 2.6 * D))
+    stripe = smooth(0.62, 0.8, swirl) * (1 - smooth(0.82, 0.98, D))
+    ndl = np.clip(NX * KEY[0] + NY * KEY[1] + NZ * KEY[2], 0, 1)
+    body = base[None, None, :] * (0.38 + 0.7 * ndl)[..., None]
+    body = body + hi[None, None, :] * (0.25 * (1 - D) ** 2)[..., None]          # light inside the candy
+    body = body * (1 - stripe)[..., None] + ((0.55 + 0.45 * ndl) * stripe * 0.92)[..., None] * np.ones(3) + base[None, None, :] * (stripe * 0.08)[..., None]
+    body = body * (1 - 0.3 * smooth(0.85, 1.0, D))[..., None] + deep[None, None, :] * (0.25 * smooth(0.85, 1.0, D))[..., None]
+    rx, ry, rz = reflect_dir(NX, NY, NZ)
+    return body + (studio(rx, ry, rz) * fresnel(NZ, 0.06) * 1.1)[..., None] * np.ones(3)
+
+
+def metal(base, hi, deep):
+    """Polished anodised metal: the studio reflected in the colour."""
+    rx, ry, rz = reflect_dir(NX, NY, NZ)
+    sky = 0.30 + 1.05 * smooth(0.04, -0.85, ry)                    # bright above the horizon
+    floor = 0.10 + 0.22 * smooth(0.15, 0.95, ry)
+    env = np.where(ry < 0.03, sky, np.where(ry < 0.10, 0.015, floor))
+    box = 2.4 * softbox(rx, ry, -0.46, -0.52, 0.24, 0.15, 0.16) * (rz > -0.2) + 0.8 * softbox(rx, ry, 0.6, -0.1, 0.07, 0.3, 0.25) * (rz > -0.2)
+    tint = base * 0.92 + 0.08 * hi
+    rgb = tint[None, None, :] * (1.15 * env)[..., None] + (tint * 0.55 + 0.45)[None, None, :] * box[..., None]
+    rim = fresnel(NZ, 0.0) * 0.5
+    rgb = rgb + (hi * 0.6 + 0.4)[None, None, :] * (rim * smooth(0.0, -0.6, ry))[..., None]
+    return rgb
+
+
+SKINS = {"pastel": pastel, "neon": neon, "gem": gem, "candy": candy, "metal": metal}
 
 if __name__ == "__main__":
     for skin, fn in SKINS.items():

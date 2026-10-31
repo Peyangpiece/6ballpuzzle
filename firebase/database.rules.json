@@ -9,7 +9,7 @@
       "$uid": {
         ".read": "auth != null",
         ".write": "auth != null && auth.uid == $uid",
-        ".validate": "newData.hasChildren(['name', 'rating', 'wins', 'losses'])",
+        ".validate": "newData.hasChildren(['name', 'rating', 'wins', 'losses']) && (!data.child('dailyDay').exists() || newData.child('dailyDay').exists())",
         "name": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
         },
@@ -46,13 +46,30 @@
             ".validate": false
           },
           "icon": {
-            ".validate": "newData.isString() && (newData.val() == 'initial' || (newData.val() == 'star' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 50) || (newData.val() == 'bolt' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 200) || (newData.val() == 'flame' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 450) || (newData.val() == 'crown' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1000) || (newData.val() == 'gem' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1800) || (newData.val() == 'master' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 2200))"
+            ".validate": "newData.isString() && (newData.val() == 'initial' || (newData.val() == 'star' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 50) || (newData.val() == 'bolt' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 200) || (newData.val() == 'flame' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 450) || (newData.val() == 'crown' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1000) || (newData.val() == 'gem' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1800) || (newData.val() == 'master' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 2200) || (newData.val() == 'moon' && newData.parent().parent().child('owned/icon_moon').val() == true) || (newData.val() == 'sakura' && newData.parent().parent().child('owned/icon_sakura').val() == true) || (newData.val() == 'comet' && newData.parent().parent().child('owned/icon_comet').val() == true))"
           },
           "ball": {
-            ".validate": "newData.isString() && (newData.val() == 'glass' || (newData.val() == 'pastel' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 300) || (newData.val() == 'neon' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 800) || (newData.val() == 'gem' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1500))"
+            ".validate": "newData.isString() && (newData.val() == 'glass' || (newData.val() == 'pastel' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 300) || (newData.val() == 'neon' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 800) || (newData.val() == 'gem' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1500) || (newData.val() == 'candy' && newData.parent().parent().child('owned/ball_candy').val() == true) || (newData.val() == 'metal' && newData.parent().parent().child('owned/ball_metal').val() == true))"
           },
           "fx": {
-            ".validate": "newData.isString() && (newData.val() == 'spark' || (newData.val() == 'color' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 100) || (newData.val() == 'hexring' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 600) || (newData.val() == 'starburst' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1250) || (newData.val() == 'nova' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 2200))"
+            ".validate": "newData.isString() && (newData.val() == 'spark' || (newData.val() == 'color' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 100) || (newData.val() == 'hexring' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 600) || (newData.val() == 'starburst' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1250) || (newData.val() == 'nova' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 2200) || (newData.val() == 'ripple' && newData.parent().parent().child('owned/fx_ripple').val() == true) || (newData.val() == 'petal' && newData.parent().parent().child('owned/fx_petal').val() == true))"
+          }
+        },
+        "points": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && (newData.parent().child('dailyDay').val() != data.parent().child('dailyDay').val() ? (newData.val() - (data.exists() ? data.val() : 0) >= 30 && newData.val() - (data.exists() ? data.val() : 0) <= 100 + (newData.parent().child('streak').val() % 7 == 0 ? 100 : 0)) : (newData.parent().child('lastPurchase').val() != data.parent().child('lastPurchase').val() ? (newData.val() == (data.exists() ? data.val() : 0) - (newData.parent().child('lastPurchase').val() == 'icon_moon' ? 300 : (newData.parent().child('lastPurchase').val() == 'icon_sakura' ? 400 : (newData.parent().child('lastPurchase').val() == 'icon_comet' ? 600 : (newData.parent().child('lastPurchase').val() == 'fx_ripple' ? 500 : (newData.parent().child('lastPurchase').val() == 'fx_petal' ? 800 : (newData.parent().child('lastPurchase').val() == 'ball_candy' ? 1000 : (newData.parent().child('lastPurchase').val() == 'ball_metal' ? 1500 : -1))))))) && !data.parent().child('owned/' + newData.parent().child('lastPurchase').val()).exists() && newData.parent().child('owned/' + newData.parent().child('lastPurchase').val()).val() == true) : newData.val() == (data.exists() ? data.val() : 0)))"
+        },
+        "dailyDay": {
+          ".validate": "newData.isNumber() && newData.val() == ((now + 32400000 - (now + 32400000) % 86400000) / 86400000)"
+        },
+        "streak": {
+          ".validate": "newData.isNumber() && (newData.parent().child('dailyDay').val() != data.parent().child('dailyDay').val() ? newData.val() == (data.parent().child('dailyDay').val() == ((now + 32400000 - (now + 32400000) % 86400000) / 86400000) - 1 ? (data.exists() ? data.val() : 0) + 1 : 1) : newData.val() == (data.exists() ? data.val() : 0))"
+        },
+        "lastPurchase": {
+          ".validate": "newData.isString() && newData.val() != data.val() && (newData.val() == 'icon_moon' ? 300 : (newData.val() == 'icon_sakura' ? 400 : (newData.val() == 'icon_comet' ? 600 : (newData.val() == 'fx_ripple' ? 500 : (newData.val() == 'fx_petal' ? 800 : (newData.val() == 'ball_candy' ? 1000 : (newData.val() == 'ball_metal' ? 1500 : -1))))))) > 0"
+        },
+        "owned": {
+          "$key": {
+            ".validate": "newData.val() == true && !data.exists() && newData.parent().parent().child('lastPurchase').val() == $key && ($key == 'icon_moon' ? 300 : ($key == 'icon_sakura' ? 400 : ($key == 'icon_comet' ? 600 : ($key == 'fx_ripple' ? 500 : ($key == 'fx_petal' ? 800 : ($key == 'ball_candy' ? 1000 : ($key == 'ball_metal' ? 1500 : -1))))))) > 0 && (newData.parent().parent().child('points').exists() ? newData.parent().parent().child('points').val() : 0) == (data.parent().parent().child('points').exists() ? data.parent().parent().child('points').val() : 0) - ($key == 'icon_moon' ? 300 : ($key == 'icon_sakura' ? 400 : ($key == 'icon_comet' ? 600 : ($key == 'fx_ripple' ? 500 : ($key == 'fx_petal' ? 800 : ($key == 'ball_candy' ? 1000 : ($key == 'ball_metal' ? 1500 : -1)))))))"
           }
         }
       }
@@ -179,6 +196,30 @@
           "$i": {
             ".write": "auth != null && !data.exists() && root.child('matches/' + $mid + '/players/' + $i + '/uid').val() == auth.uid && root.child('matches/' + $mid + '/players/0/joinedAt').exists() && root.child('matches/' + $mid + '/players/1/joinedAt').exists()",
             ".validate": "newData.hasChildren(['win', 'reason', 'ts']) && newData.child('win').isBoolean() && newData.child('reason').isString() && newData.child('ts').isNumber()"
+          }
+        }
+      }
+    },
+    "daily": {
+      "$day": {
+        ".read": "auth != null",
+        ".indexOn": [
+          "score"
+        ],
+        "$uid": {
+          ".write": "auth != null && auth.uid == $uid",
+          ".validate": "$day == ((now + 32400000 - (now + 32400000) % 86400000) / 86400000) + '' && newData.hasChildren(['name', 'score'])",
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
+          },
+          "score": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && (!data.exists() || newData.val() >= data.val())"
+          },
+          "icon": {
+            ".validate": "newData.isString() && newData.val() == (root.child('users/' + $uid + '/equip/icon').exists() ? root.child('users/' + $uid + '/equip/icon').val() : 'initial')"
+          },
+          "$other": {
+            ".validate": false
           }
         }
       }
