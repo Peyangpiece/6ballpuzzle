@@ -13,7 +13,13 @@
  * - Game Center (GameCenterPlugin in ios/App/App/DropBallNative.swift): the
  *   rating leaderboard and achievements, from the existing match record and
  *   rating hooks (hexRecordMatch, Net.applyRating).
- * The IDs below must match those created in App Store Connect (docs/IOS.md).
+ * - Ads (@capacitor-community/admob): a full-screen ad when the player leaves
+ *   the result screen of every third match, after Google's consent form (where
+ *   the law asks for it) and Apple's tracking prompt; the monthly subscription
+ *   "広告なしプラン" (StorePlugin, StoreKit 2) turns them off while it is active
+ *   (window.DropBallAds).
+ * The IDs below must match those created in App Store Connect and AdMob
+ * (docs/IOS.md).
  */
 (function(){
 if(typeof window==="undefined"||window.__dropBallNativeV1)return;
@@ -23,7 +29,10 @@ const isNative=!!(cap&&typeof cap.isNativePlatform==="function"&&cap.isNativePla
 if(!isNative)return;
 
 const call=(plugin,method,options={})=>cap.nativePromise(plugin,method,options);
-const LEADERBOARD_RATING="dropball.rating";
+// Trophies (HexTrophies) are the score players see; the rating leaderboard
+// of version 1.0 (dropball.rating) is hidden in App Store Connect and gets no
+// new scores.
+const LEADERBOARD_TROPHIES="dropball.trophies";
 const ACH={
   firstWin:"dropball.first_win",
   ai:lv=>"dropball.ai_"+lv,
@@ -32,7 +41,7 @@ const ACH={
   chain3:"dropball.chain_3",
   chain5:"dropball.chain_5",
   onlineWin:"dropball.online_win",
-  rating1200:"dropball.rating_1200"
+  rating1200:"dropball.rating_1200"   // shown as "トロフィー 1000" in App Store Connect
 };
 
 // ---------------------------------------------------------------- audio
@@ -159,7 +168,7 @@ try{
 let gcReady=null;
 const gameCenter=()=>gcReady||(gcReady=call("GameCenter","signIn").then(r=>!!r?.authenticated).catch(()=>false));
 const unlock=id=>gameCenter().then(ok=>ok&&call("GameCenter","unlockAchievement",{achievementID:id})).catch(()=>{});
-const submitRating=r=>gameCenter().then(ok=>ok&&Number.isFinite(r)&&call("GameCenter","submitScore",{leaderboardID:LEADERBOARD_RATING,score:Math.round(r)})).catch(()=>{});
+const submitTrophies=t=>gameCenter().then(ok=>ok&&Number.isFinite(t)&&call("GameCenter","submitScore",{leaderboardID:LEADERBOARD_TROPHIES,score:Math.round(t)})).catch(()=>{});
 
 if(typeof hexRecordMatch==="function"){
   const base=hexRecordMatch;
@@ -180,6 +189,116 @@ if(typeof hexRecordMatch==="function"){
   };
 }
 
+// ---------------------------------------------------------------- ads
+// The interstitial ad unit from AdMob (the app ID is Info.plist's
+// GADApplicationIdentifier). A debug build (Xcode's Run; MainViewController
+// sets __dropBallDebugBuild) shows Google's test ads instead: real ads seen or
+// tapped by the developer count as invalid traffic.
+const ADMOB_INTERSTITIAL="ca-app-pub-3691106434438760/4546044730";
+const TEST_INTERSTITIAL="ca-app-pub-3940256099942544/4411468910";
+const TEST_ADS=window.__dropBallDebugBuild===true;
+const AD_FREE="app.dropball.game.adfree.monthly"; // auto-renewable, monthly
+const ADS_EVERY=3;              // matches between two ads
+const ADS_MIN_GAP_MS=120000;    // and at least this long
+const ADS_REMOVED_KEY="hexdrop_ads_removed";
+const ads={removed:false,ready:false,starting:false,loaded:false,loading:false,sinceAd:0,lastShown:0,price:"",busy:false,onDone:null,listeners:new Set()};
+try{ads.removed=localStorage.getItem(ADS_REMOVED_KEY)==="1";}catch(_){}
+const adsState=()=>({removed:ads.removed,price:ads.price,busy:ads.busy});
+const adsNotify=()=>{for(const f of ads.listeners){try{f(adsState());}catch(_){}}};
+const setAdsRemoved=v=>{
+  ads.removed=!!v;
+  try{localStorage.setItem(ADS_REMOVED_KEY,ads.removed?"1":"0");}catch(_){}
+  adsNotify();
+};
+const loadAd=()=>{
+  if(ads.removed||!ads.ready||ads.loaded||ads.loading)return;
+  ads.loading=true;
+  call("AdMob","prepareInterstitial",{adId:TEST_ADS?TEST_INTERSTITIAL:ADMOB_INTERSTITIAL,isTesting:TEST_ADS})
+    .then(()=>{ads.loaded=true;}).catch(()=>{}).then(()=>{ads.loading=false;});
+};
+// Consent first: Google's form where it is required (EU/UK), then Apple's
+// tracking prompt; ads are requested only when the consent allows them.
+async function startAds(){
+  if(ads.removed||ads.ready||ads.starting)return;
+  ads.starting=true;
+  try{
+    let info=await call("AdMob","requestConsentInfo");
+    if(info&&info.status==="REQUIRED"&&info.isConsentFormAvailable)info=await call("AdMob","showConsentForm");
+    if(info&&info.canRequestAds===false)return;
+    const t=await call("AdMob","trackingAuthorizationStatus");
+    if(t&&t.status==="notDetermined")await call("AdMob","requestTrackingAuthorization");
+    await call("AdMob","initialize",{maxAdContentRating:"ParentalGuidance"});
+    ads.ready=true;
+    loadAd();
+  }catch(_){}
+  ads.starting=false;
+}
+const adFinished=()=>{const f=ads.onDone;ads.onDone=null;if(f)f();};
+try{
+  cap.addListener("AdMob","interstitialAdDismissed",adFinished);
+  cap.addListener("AdMob","interstitialAdFailedToShow",adFinished);
+}catch(_){}
+// The subscription can end (cancelled, refunded) while the app is closed or in
+// the background, so it is read again at launch and whenever the app returns;
+// ads start once it is no longer active.
+const refreshOwned=()=>call("Store","owned").then(r=>{
+  setAdsRemoved(Array.isArray(r&&r.productIDs)&&r.productIDs.includes(AD_FREE));
+}).catch(()=>{});
+const syncAds=()=>refreshOwned().then(()=>{if(!ads.removed)startAds();});
+try{
+  cap.addListener("Store","ownedChanged",syncAds);
+  cap.addListener("App","appStateChange",s=>{if(s&&s.isActive)syncAds();});
+}catch(_){}
+
+window.DropBallAds={
+  state:adsState,
+  subscribe(f){ads.listeners.add(f);return()=>ads.listeners.delete(f);},
+  // Called when the player leaves a result screen; resolves once any ad
+  // shown has been closed (the next screen opens after it).
+  afterMatch(){
+    if(ads.onDone)return Promise.resolve(false);
+    ads.sinceAd++;
+    if(ads.removed||!ads.loaded||ads.sinceAd<ADS_EVERY||Date.now()-ads.lastShown<ADS_MIN_GAP_MS)return Promise.resolve(false);
+    ads.loaded=false;ads.sinceAd=0;ads.lastShown=Date.now();
+    // The battle BGM is native (not paused with the web view's media).
+    const bgm=window.Bgm&&window.Bgm.audio,resume=!!(bgm&&!bgm.paused);
+    if(resume)bgm.pause();
+    return new Promise(resolve=>{
+      const guard=setTimeout(adFinished,90000);
+      ads.onDone=()=>{
+        clearTimeout(guard);
+        if(resume)Promise.resolve(bgm.play()).catch(()=>{});
+        loadAd();
+        resolve(true);
+      };
+      call("AdMob","showInterstitial").catch(adFinished);
+    });
+  },
+  price(){
+    if(ads.price)return Promise.resolve(ads.price);
+    return call("Store","product",{productID:AD_FREE}).then(r=>{ads.price=String(r&&r.displayPrice||"");adsNotify();return ads.price;}).catch(()=>"");
+  },
+  async purchase(){
+    ads.busy=true;adsNotify();
+    try{
+      const r=await call("Store","purchase",{productID:AD_FREE});
+      if(r&&r.owned)setAdsRemoved(true);
+      return r||{};
+    }finally{ads.busy=false;adsNotify();}
+  },
+  async restore(){
+    ads.busy=true;adsNotify();
+    try{
+      const r=await call("Store","restore");
+      const owned=Array.isArray(r&&r.productIDs)&&r.productIDs.includes(AD_FREE);
+      if(owned)setAdsRemoved(true);
+      return owned;
+    }finally{ads.busy=false;adsNotify();}
+  }
+};
+// After the Game Center sign-in banner: the subscription decides whether ads run.
+setTimeout(syncAds,2500);
+
 // ---------------------------------------------------------------- Firebase Auth
 if(typeof Net!=="undefined"){
   const baseEnsure=Net._ensureFirebase;
@@ -196,11 +315,11 @@ if(typeof Net!=="undefined"){
     const baseApply=Net.applyRating;
     Net.applyRating=async function(win,foeRating,ranked){
       const out=await baseApply.apply(this,arguments);
-      const r=Number(this.profile?.rating);
-      if(ranked!==false&&Number.isFinite(r)){
-        submitRating(r);
+      const t=Number(this.profile?.trophies);
+      if(ranked!==false&&Number.isFinite(t)){
+        submitTrophies(t);
         if(win)unlock(ACH.onlineWin);
-        if(r>=1200)unlock(ACH.rating1200);
+        if(t>=1000)unlock(ACH.rating1200);
       }
       return out;
     };
@@ -248,7 +367,7 @@ if(typeof Net!=="undefined"){
     isNative:true,
     appleSignIn:true,
     gameCenter:true,
-    showLeaderboard(){return gameCenter().then(ok=>ok&&call("GameCenter","showLeaderboard",{leaderboardID:LEADERBOARD_RATING}));},
+    showLeaderboard(){return gameCenter().then(ok=>ok&&call("GameCenter","showLeaderboard",{leaderboardID:LEADERBOARD_TROPHIES}));},
     async reauthenticate(user){
       const F=await Net._ensureFirebase();
       const apple=(user.providerData||[]).some(p=>p&&p.providerId==="apple.com");

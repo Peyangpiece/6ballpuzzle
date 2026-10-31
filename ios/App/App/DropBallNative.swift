@@ -1,14 +1,23 @@
 import AVFoundation
 import Capacitor
 import GameKit
+import StoreKit
 import UIKit
+import WebKit
 
 /// The web view controller of the app: full screen, landscape, with the
-/// Game Center plugin registered (local plugins are registered here).
+/// local plugins (Game Center, BGM, Store) registered here.
 class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(GameCenterPlugin())
         bridge?.registerPluginInstance(NativeBgmPlugin())
+        bridge?.registerPluginInstance(StorePlugin())
+        #if DEBUG
+        // Xcode's Run (the Debug configuration): Google's test ads, not real
+        // ones (public/app-native-v1.js). Archives use Release.
+        let flag = WKUserScript(source: "window.__dropBallDebugBuild=true;", injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        bridge?.webView?.configuration.userContentController.addUserScript(flag)
+        #endif
     }
 
     // Capacitor's SystemBars plugin owns prefersHomeIndicatorAutoHidden (a
@@ -223,6 +232,114 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async {
             self.player?.currentTime = max(0, call.getDouble("time") ?? 0)
             call.resolve()
+        }
+    }
+}
+
+/// The one-time purchase that removes the ads (public/app-native-v1.js),
+/// with StoreKit 2: product (its price), purchase, owned (the current
+/// entitlements) and restore (AppStore.sync, the 購入を復元 button).
+@objc(StorePlugin)
+public class StorePlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "StorePlugin"
+    public let jsName = "Store"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "product", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "purchase", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "owned", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "restore", returnType: CAPPluginReturnPromise),
+    ]
+
+    private var updates: Task<Void, Never>?
+
+    override public func load() {
+        // Purchases completed outside a purchase call (Ask to Buy, another
+        // device, a refund) arrive here; the web layer reads owned again.
+        updates = Task { [weak self] in
+            for await result in Transaction.updates {
+                guard case .verified(let transaction) = result else { continue }
+                await transaction.finish()
+                self?.notifyListeners("ownedChanged", data: [:])
+            }
+        }
+    }
+
+    deinit { updates?.cancel() }
+
+    private static func ownedProductIDs() async -> [String] {
+        var ids: [String] = []
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result, transaction.revocationDate == nil {
+                ids.append(transaction.productID)
+            }
+        }
+        return ids
+    }
+
+    private static func find(_ call: CAPPluginCall) async throws -> Product? {
+        guard let id = call.getString("productID") else { return nil }
+        return try await Product.products(for: [id]).first
+    }
+
+    @objc func product(_ call: CAPPluginCall) {
+        Task {
+            do {
+                guard let product = try await StorePlugin.find(call) else {
+                    call.reject("product not found")
+                    return
+                }
+                call.resolve(["productID": product.id, "displayName": product.displayName, "displayPrice": product.displayPrice])
+            } catch {
+                call.reject(error.localizedDescription)
+            }
+        }
+    }
+
+    @objc func purchase(_ call: CAPPluginCall) {
+        Task {
+            do {
+                guard let product = try await StorePlugin.find(call) else {
+                    call.reject("product not found")
+                    return
+                }
+                switch try await product.purchase() {
+                case .success(let verification):
+                    guard case .verified(let transaction) = verification else {
+                        call.reject("the purchase could not be verified")
+                        return
+                    }
+                    await transaction.finish()
+                    call.resolve(["owned": true])
+                case .userCancelled:
+                    call.resolve(["owned": false, "cancelled": true])
+                case .pending:
+                    call.resolve(["owned": false, "pending": true])
+                @unknown default:
+                    call.resolve(["owned": false])
+                }
+            } catch {
+                call.reject(error.localizedDescription)
+            }
+        }
+    }
+
+    @objc func owned(_ call: CAPPluginCall) {
+        Task {
+            let ids = await StorePlugin.ownedProductIDs()
+            call.resolve(["productIDs": ids])
+        }
+    }
+
+    @objc func restore(_ call: CAPPluginCall) {
+        Task {
+            do {
+                try await AppStore.sync()
+            } catch {
+                call.reject(error.localizedDescription)
+                return
+            }
+            let ids = await StorePlugin.ownedProductIDs()
+            call.resolve(["productIDs": ids])
         }
     }
 }

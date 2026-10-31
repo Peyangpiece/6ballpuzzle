@@ -29,16 +29,21 @@ function fakeFirebase(db) {
   return F;
 }
 
-function load({ native }) {
-  const nativeCalls = [];
+function load({ native, responses = {}, debugBuild = false }) {
+  const nativeCalls = [], later = [], listeners = {};
   const F = fakeFirebase({ "users/apple1": { name: "Hanako", rating: 1300, wins: 4, losses: 1 } });
-  const ctx = { console, setTimeout: (f, ms) => (ms > 1000 ? 0 : setTimeout(f, ms)), clearTimeout, navigator: {}, FB: F };
+  // Timers longer than a second (start-up work, safety timeouts) wait in `later`.
+  const ctx = { console, setTimeout: (f, ms) => (ms > 1000 ? (later.push(f), 0) : setTimeout(f, ms)), clearTimeout, navigator: {}, FB: F };
   ctx.window = ctx;
+  if (debugBuild) ctx.__dropBallDebugBuild = true;
   if (native) {
     ctx.Capacitor = {
       isNativePlatform: () => true,
+      addListener: (plugin, event, f) => { (listeners[plugin + "." + event] = listeners[plugin + "." + event] || []).push(f); },
       nativePromise: (plugin, method, options) => {
         nativeCalls.push([plugin, method, options]);
+        const r = responses[plugin + "." + method];
+        if (r !== undefined) return typeof r === "function" ? r(options) : Promise.resolve(r);
         if (plugin === "GameCenter" && method === "signIn") return Promise.resolve({ authenticated: true });
         if (plugin === "FirebaseAuthentication" && method === "signInWithApple") return Promise.resolve({ credential: { providerId: "apple.com", idToken: "apple-id-token", nonce: "raw-nonce" } });
         if (plugin === "FirebaseAuthentication" && method === "signInWithGoogle") return Promise.resolve({ credential: { providerId: "google.com", idToken: "g-id", accessToken: "g-access" } });
@@ -52,10 +57,12 @@ function load({ native }) {
   vm.runInContext(read("app-google-login.js"), ctx);
   // The match record helper of app-menu-ui.js, as the bridge sees it.
   vm.runInContext("var recorded=[];function hexRecordMatch(a){recorded.push(a);return{ok:true};}", ctx);
-  // The settled rating of a ranked match, as app-15.js leaves it on the profile.
-  vm.runInContext("Net.applyRating=async function(win){this.profile.rating=1216;return 16;};", ctx);
+  // The settled rating and trophies of a ranked match, as app-15.js leaves them on the profile.
+  vm.runInContext("Net.applyRating=async function(win){this.profile.rating=1216;this.profile.trophies=1006;return 16;};", ctx);
   vm.runInContext(read("app-native-v1.js"), ctx);
-  return { ctx, F, nativeCalls, Net: ctx.Net };
+  const fire = (key, data) => { for (const f of listeners[key] || []) f(data); };
+  const runLater = () => { for (const f of later.splice(0)) f(); };
+  return { ctx, F, nativeCalls, Net: ctx.Net, fire, runLater };
 }
 const tick = () => new Promise(r => setTimeout(r, 10));
 
@@ -109,11 +116,11 @@ const tick = () => new Promise(r => setTimeout(r, 10));
     const link = s.F.calls.find(c => c[0] === "linkWithCredential");
     assert.deepStrictEqual(Object.assign({}, link[1]), { provider: "google", idToken: "g-id", accessToken: "g-access" });
   }
-  // Rating leaderboard after a ranked match.
+  // Trophy leaderboard after a ranked match.
   assert.strictEqual(await Net.applyRating(true, 1200, true, "m1"), 16, "the settlement result is returned unchanged");
   await tick();
   const score = calls("GameCenter", "submitScore");
-  assert.deepStrictEqual(Object.assign({}, score[score.length - 1][2]), { leaderboardID: "dropball.rating", score: 1216 });
+  assert.deepStrictEqual(Object.assign({}, score[score.length - 1][2]), { leaderboardID: "dropball.trophies", score: 1006 });
   const after = calls("GameCenter", "unlockAchievement").map(c => c[2].achievementID);
   assert(after.includes("dropball.online_win") && after.includes("dropball.rating_1200"));
   const before = score.length;
@@ -122,6 +129,85 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   assert.strictEqual(calls("GameCenter", "submitScore").length, before, "unranked matches are not submitted");
   // Re-authentication for account deletion goes through the native sheet.
   assert.strictEqual(typeof ctx.DropBallNative.reauthenticate, "function");
+  // Ads: consent form, then the tracking prompt, then a test interstitial
+  // (no AdMob ad unit yet), shown when leaving every third result screen.
+  {
+    const s = load({ native: true, responses: {
+      "Store.owned": { productIDs: [] },
+      "AdMob.requestConsentInfo": { status: "REQUIRED", isConsentFormAvailable: true, canRequestAds: false },
+      "AdMob.showConsentForm": { status: "OBTAINED", canRequestAds: true },
+      "AdMob.trackingAuthorizationStatus": { status: "notDetermined" },
+      "Store.purchase": { owned: true }
+    } });
+    const adCalls = () => s.nativeCalls.filter(c => c[0] === "AdMob" || c[0] === "Store").map(c => c[0] + "." + c[1]);
+    s.runLater(); await tick(); await tick();
+    assert.deepStrictEqual(adCalls(), ["Store.owned", "AdMob.requestConsentInfo", "AdMob.showConsentForm", "AdMob.trackingAuthorizationStatus", "AdMob.requestTrackingAuthorization", "AdMob.initialize", "AdMob.prepareInterstitial"]);
+    const prep = s.nativeCalls.find(c => c[1] === "prepareInterstitial")[2];
+    assert.strictEqual(prep.adId, "ca-app-pub-3691106434438760/4546044730", "the AdMob ad unit in a release build");
+    assert.strictEqual(prep.isTesting, false);
+    const bgm = { paused: false, pauses: 0, plays: 0, pause() { this.paused = true; this.pauses++; }, play() { this.paused = false; this.plays++; return Promise.resolve(); } };
+    s.ctx.Bgm = { audio: bgm };
+    const Ads = s.ctx.DropBallAds;
+    assert.strictEqual(await Ads.afterMatch(), false);
+    assert.strictEqual(await Ads.afterMatch(), false);
+    let shown = null;
+    Ads.afterMatch().then(v => { shown = v; });
+    await tick();
+    assert(adCalls().includes("AdMob.showInterstitial"), "the third match shows the ad");
+    assert.strictEqual(shown, null, "the next screen waits until the ad is closed");
+    assert.strictEqual(bgm.pauses, 1, "the native BGM pauses under the ad");
+    assert.strictEqual(await Ads.afterMatch(), false, "a second tap while the ad is open shows nothing more");
+    s.fire("AdMob.interstitialAdDismissed");
+    await tick();
+    assert.strictEqual(shown, true);
+    assert.strictEqual(bgm.plays, 1, "and plays again afterwards");
+    assert.strictEqual(adCalls().filter(c => c === "AdMob.prepareInterstitial").length, 2, "the next ad is loaded");
+    // The ad-free subscription: no more ads.
+    await Ads.purchase();
+    assert.strictEqual(Ads.state().removed, true);
+    for (let i = 0; i < 6; i++) assert.strictEqual(await Ads.afterMatch(), false);
+    assert.strictEqual(adCalls().filter(c => c === "AdMob.showInterstitial").length, 1);
+  }
+  // A subscriber sees no consent form, prompt or ad.
+  {
+    let owned = ["app.dropball.game.adfree.monthly"];
+    const s = load({ native: true, responses: {
+      "Store.owned": () => Promise.resolve({ productIDs: owned }),
+      "AdMob.requestConsentInfo": { status: "NOT_REQUIRED", canRequestAds: true },
+      "AdMob.trackingAuthorizationStatus": { status: "authorized" }
+    } });
+    s.runLater(); await tick(); await tick();
+    assert(!s.nativeCalls.some(c => c[0] === "AdMob"), "AdMob is never started");
+    assert.strictEqual(s.ctx.DropBallAds.state().removed, true);
+    // The subscription ended while the app was in the background: ads start on return.
+    owned = [];
+    s.fire("App.appStateChange", { isActive: true });
+    await tick(); await tick();
+    assert.strictEqual(s.ctx.DropBallAds.state().removed, false);
+    assert(s.nativeCalls.some(c => c[1] === "prepareInterstitial"), "ads start once the subscription is gone");
+    s.fire("App.appStateChange", { isActive: true });
+    await tick(); await tick();
+    assert.strictEqual(s.nativeCalls.filter(c => c[1] === "initialize").length, 1, "the SDK starts once");
+  }
+  // A debug build (Xcode's Run) asks for Google's test ads.
+  {
+    const s = load({ native: true, debugBuild: true, responses: { "Store.owned": { productIDs: [] }, "AdMob.requestConsentInfo": { status: "NOT_REQUIRED", canRequestAds: true }, "AdMob.trackingAuthorizationStatus": { status: "denied" } } });
+    s.runLater(); await tick(); await tick();
+    const prep = s.nativeCalls.find(c => c[1] === "prepareInterstitial")[2];
+    assert.strictEqual(prep.adId, "ca-app-pub-3940256099942544/4411468910");
+    assert.strictEqual(prep.isTesting, true);
+    assert(!s.nativeCalls.some(c => c[1] === "requestTrackingAuthorization"), "no prompt once the player has answered");
+  }
+  // Consent refused (EU): no ad requests.
+  {
+    const s = load({ native: true, responses: {
+      "Store.owned": { productIDs: [] },
+      "AdMob.requestConsentInfo": { status: "REQUIRED", isConsentFormAvailable: true, canRequestAds: false },
+      "AdMob.showConsentForm": { status: "OBTAINED", canRequestAds: false }
+    } });
+    s.runLater(); await tick(); await tick();
+    assert(!s.nativeCalls.some(c => c[1] === "initialize" || c[1] === "prepareInterstitial" || c[1] === "requestTrackingAuthorization"));
+  }
   // Wiring.
   const index = read("index.html");
   for (const name of ["initializeAuth", "indexedDBLocalPersistence", "OAuthProvider", "linkWithCredential", "reauthenticateWithCredential"]) assert(index.includes(name + ":u." + name), "index.html must export " + name);
@@ -129,5 +215,16 @@ const tick = () => new Promise(r => setTimeout(r, 10));
   assert(!/gstatic\.com\/firebasejs/.test(index), "the Firebase SDK ships with the app (no remote code)");
   const swift = fs.readFileSync(path.join(__dirname, "..", "ios/App/App/DropBallNative.swift"), "utf8");
   for (const m of ["signIn", "submitScore", "unlockAchievement", "showLeaderboard"]) assert(swift.includes(`CAPPluginMethod(name: "${m}"`), "GameCenter." + m + " is exposed");
+  for (const m of ["product", "purchase", "owned", "restore"]) assert(swift.includes(`CAPPluginMethod(name: "${m}"`), "Store." + m + " is exposed");
+  assert(swift.includes("registerPluginInstance(StorePlugin())"), "the Store plugin is registered");
+  const plist = fs.readFileSync(path.join(__dirname, "..", "ios/App/App/Info.plist"), "utf8");
+  for (const key of ["GADApplicationIdentifier", "NSUserTrackingUsageDescription", "cstr6suwn9.skadnetwork"]) assert(plist.includes(key), "Info.plist needs " + key);
+  assert(plist.includes("<string>ca-app-pub-3691106434438760~2668362996</string>"), "the AdMob app ID, not Google's test one");
+  assert(/#if DEBUG[\s\S]*__dropBallDebugBuild=true[\s\S]*#endif/.test(swift), "debug builds ask for test ads");
+  // The result screen asks for an ad before leaving; settings offer the purchase.
+  const app16 = read("app-16.js");
+  assert(/onNext:\(\)=>hexLeaveResult\(/.test(app16) && /onExit:\(\)=>hexLeaveResult\(/.test(app16), "both result buttons go through hexLeaveResult");
+  assert(app16.includes("React.createElement(HexAdsSettings,null)"), "settings offer the ad-free plan in the app");
+  for (const t of ["月額", "自動更新", "24時間前までに解約", "サブスクリプションを管理", "stdeula", "利用規約", "プライバシーポリシー"]) assert(app16.includes(t), "subscription disclosure needs " + t);
   console.log("native bridge PASS");
 })().catch(e => { console.error("native bridge FAIL:", e && e.stack || e); process.exit(1); });

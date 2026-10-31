@@ -72,7 +72,7 @@ const publishedFiles = JSON.parse(manifest[1]);
 const selected = new Set(files);
 const separatelyTested = new Set([
   "app-clear-all-ball-fx.js", "app-gameover-garbage-fade.js", "app-15.js",
-  "app-player-name-v1.js", "app-google-login.js", "app-account-delete-v1.js", "app-native-v1.js", "app-online-v2.js", "app-menu-ui.js", "app-brand-bgm.js",
+  "app-player-name-v1.js", "app-google-login.js", "app-account-delete-v1.js", "app-trophies-v1.js", "app-native-v1.js", "app-online-v2.js", "app-menu-ui.js", "app-brand-bgm.js",
   "app-bgm-local.js", "app-audio-volume-control.js", "app-menu-volume-fix.js", "app-audio-element-gain-v1.js",
   "app-rotate-sfx.js", "app-instant-drop-sfx.js", "app-16.js",
   "app-ai-core.js", "app-position-lock-sfx.js",

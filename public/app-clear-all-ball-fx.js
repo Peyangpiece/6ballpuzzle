@@ -50,7 +50,26 @@
             radius:.46-.20*ringProgress,releaseAt,age};
     }
 
-    function drawEveryClearFlash(ctx,g,L){
+    // The clear effect equipped from the trophy road (HexTrophies in
+    // app-trophies-v1.js sets __hexClearFxStyle) is drawn on the player's own
+    // board (side 0); the opponent's board keeps "spark". Only the shapes and
+    // colours differ: every style uses the same timing (flashState).
+    function ringPath(ctx,px,py,radius,style){
+        ctx.beginPath();
+        if(style==="hexring"){for(let i=0;i<6;i++){const a=i*TAU/6-Math.PI/2,x=px+Math.cos(a)*radius,y=py+Math.sin(a)*radius;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();}
+        else ctx.arc(px,py,radius,0,TAU);
+    }
+    function starPath(ctx,px,py,r,style){
+        const points=style==="starburst"?8:6,inner=style==="starburst"?.34:.42,rr0=style==="starburst"?r*1.45:r;
+        ctx.beginPath();
+        for(let i=0;i<points*2;i++){
+            const a=i*TAU/(points*2)-Math.PI/2,rr=i%2?rr0*inner:rr0;
+            const sx=px+Math.cos(a)*rr,sy=py+Math.sin(a)*rr;
+            if(i===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);
+        }
+        ctx.closePath();
+    }
+    function drawEveryClearFlash(ctx,g,L,style="spark"){
         const cells=clearFxCells(g);if(!cells.length)return;
         const st=flashState(g);if(st.strength<=0)return;
         const {D,X,Y,BW,BH}=L;
@@ -68,18 +87,18 @@
             ctx.shadowColor=col?.glow||"#FFFFFF";
             ctx.shadowBlur=D*.23;
             ctx.globalAlpha=st.strength;
-            ctx.strokeStyle="#FFFFFF";
-            ctx.lineWidth=Math.max(1,D*.042);
-            if(st.ringStrength>0){ctx.beginPath();ctx.arc(px,py,radius,0,TAU);ctx.stroke();}
+            const ink=style==="spark"||style==="hexring"?"#FFFFFF":(col?.glow||"#FFFFFF");
+            ctx.strokeStyle=ink;
+            ctx.lineWidth=Math.max(1,D*(style==="nova"?.06:.042));
+            if(st.ringStrength>0){ringPath(ctx,px,py,radius*(style==="nova"?1.25:1),style);ctx.stroke();}
             if(st.starStrength>0){
                 const r=D*(.16+.08*st.starStrength);
-                ctx.beginPath();
-                for(let i=0;i<12;i++){
-                    const a=i*TAU/12-Math.PI/2,rr=i%2?r*.42:r;
-                    const sx=px+Math.cos(a)*rr,sy=py+Math.sin(a)*rr;
-                    if(i===0)ctx.moveTo(sx,sy);else ctx.lineTo(sx,sy);
-                }
-                ctx.closePath();ctx.fillStyle="#FFFFFF";ctx.fill();
+                if(style==="nova"){
+                    ctx.beginPath();
+                    for(let i=0;i<8;i++){const a=i*TAU/8,c=Math.cos(a),s=Math.sin(a);ctx.moveTo(px+c*r*.5,py+s*r*.5);ctx.lineTo(px+c*r*1.9,py+s*r*1.9);}
+                    ctx.stroke();
+                    ctx.beginPath();ctx.arc(px,py,r*.45,0,TAU);ctx.fillStyle="#FFFFFF";ctx.fill();
+                }else{starPath(ctx,px,py,r,style);ctx.fillStyle=style==="color"||style==="starburst"?ink:"#FFFFFF";ctx.fill();}
             }
             ctx.restore();
         }
@@ -88,7 +107,7 @@
 
     drawSide=function(ctx,g,L,side,t,label,sub,big,renderLead=0){
         const out=baseDrawSide(ctx,g,L,side,t,label,sub,big,renderLead);
-        if(g?.state==="RESOLVING"&&g?.phase==="CLEAR")drawEveryClearFlash(ctx,g,L);
+        if(g?.state==="RESOLVING"&&g?.phase==="CLEAR")drawEveryClearFlash(ctx,g,L,side===0?String(window.__hexClearFxStyle||"spark"):"spark");
         return out;
     };
 

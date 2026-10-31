@@ -33,13 +33,35 @@
         },
         "$other": {
           ".validate": false
+        },
+        "trophies": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && (newData.parent().child('lastMatch').val() == data.parent().child('lastMatch').val() ? newData.val() == (data.exists() ? data.val() : 0) : (root.child('config/ratingAuthority').val() != 'server' && (root.child('matches/' + newData.parent().child('lastMatch').val() + '/meta/ranked').val() == false ? newData.val() == (data.exists() ? data.val() : 0) : newData.val() == (data.exists() ? data.val() : 0) + (newData.parent().child('lastResult').val() == 'win' ? ((data.exists() ? data.val() : 0) < 300 ? 10 : ((data.exists() ? data.val() : 0) < 1000 ? 8 : 6)) : ((data.exists() ? data.val() : 0) < 300 ? 0 : ((data.exists() ? data.val() : 0) < 1000 ? -4 : -6))))))"
+        },
+        "best": {
+          ".validate": "newData.isNumber() && newData.val() == ((newData.parent().child('trophies').exists() ? newData.parent().child('trophies').val() : 0) > (data.exists() ? data.val() : 0) ? (newData.parent().child('trophies').exists() ? newData.parent().child('trophies').val() : 0) : (data.exists() ? data.val() : 0))"
+        },
+        "equip": {
+          ".validate": "newData.hasChildren()",
+          "$other": {
+            ".validate": false
+          },
+          "icon": {
+            ".validate": "newData.isString() && (newData.val() == 'initial' || (newData.val() == 'star' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 50) || (newData.val() == 'bolt' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 200) || (newData.val() == 'flame' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 450) || (newData.val() == 'crown' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1000) || (newData.val() == 'gem' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1800) || (newData.val() == 'master' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 2200))"
+          },
+          "ball": {
+            ".validate": "newData.isString() && (newData.val() == 'glass' || (newData.val() == 'pastel' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 300) || (newData.val() == 'neon' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 800) || (newData.val() == 'gem' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1500))"
+          },
+          "fx": {
+            ".validate": "newData.isString() && (newData.val() == 'spark' || (newData.val() == 'color' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 100) || (newData.val() == 'hexring' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 600) || (newData.val() == 'starburst' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 1250) || (newData.val() == 'nova' && (newData.parent().parent().child('best').exists() ? newData.parent().parent().child('best').val() : 0) >= 2200))"
+          }
         }
       }
     },
     "leaderboard": {
       ".read": "auth != null",
       ".indexOn": [
-        "rating"
+        "rating",
+        "trophies"
       ],
       "$uid": {
         ".write": "auth != null && auth.uid == $uid",
@@ -52,6 +74,12 @@
         },
         "$other": {
           ".validate": false
+        },
+        "trophies": {
+          ".validate": "newData.isNumber() && newData.val() == (root.child('users/' + $uid + '/trophies').exists() ? root.child('users/' + $uid + '/trophies').val() : 0)"
+        },
+        "icon": {
+          ".validate": "newData.isString() && newData.val() == (root.child('users/' + $uid + '/equip/icon').exists() ? root.child('users/' + $uid + '/equip/icon').val() : 'initial')"
         }
       }
     },
@@ -60,7 +88,13 @@
         "waiting": {
           ".read": "auth != null",
           ".write": "auth != null && $band.matches(/^[0-9]{1,2}$/) && (!newData.exists() || newData.child('uid').val() == auth.uid)",
-          ".validate": "newData.hasChildren(['uid', 'name', 'rating', 'ts']) && newData.child('ts').isNumber()"
+          ".validate": "newData.hasChildren(['uid', 'name', 'rating', 'ts']) && newData.child('ts').isNumber()",
+          "trophies": {
+            ".validate": "newData.isNumber() && newData.val() == (root.child('users/' + newData.parent().child('uid').val() + '/trophies').exists() ? root.child('users/' + newData.parent().child('uid').val() + '/trophies').val() : 0)"
+          },
+          "icon": {
+            ".validate": "newData.isString() && newData.val() == (root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').exists() ? root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').val() : 'initial')"
+          }
         }
       }
     },
@@ -74,7 +108,13 @@
       "$code": {
         ".read": "auth != null",
         ".write": "auth != null && $code.matches(/^[0-9]{6}$/) && (!newData.exists() ? data.child('hostUid').val() == auth.uid : (!data.exists() || now - data.child('createdAt').val() > 1800000 ? newData.child('hostUid').val() == auth.uid && !newData.child('matchId').exists() : (data.child('hostUid').val() == newData.child('hostUid').val() && !data.child('matchId').exists() && newData.child('matchId').isString() && root.child('matches/' + newData.child('matchId').val() + '/players/0/uid').val() == data.child('hostUid').val() && root.child('matches/' + newData.child('matchId').val() + '/players/1/uid').val() == auth.uid)))",
-        ".validate": "newData.hasChildren(['hostUid', 'hostName', 'hostRating', 'createdAt']) && newData.child('createdAt').isNumber()"
+        ".validate": "newData.hasChildren(['hostUid', 'hostName', 'hostRating', 'createdAt']) && newData.child('createdAt').isNumber()",
+        "hostTrophies": {
+          ".validate": "newData.isNumber() && newData.val() == (root.child('users/' + newData.parent().child('hostUid').val() + '/trophies').exists() ? root.child('users/' + newData.parent().child('hostUid').val() + '/trophies').val() : 0)"
+        },
+        "hostIcon": {
+          ".validate": "newData.isString() && newData.val() == (root.child('users/' + newData.parent().child('hostUid').val() + '/equip/icon').exists() ? root.child('users/' + newData.parent().child('hostUid').val() + '/equip/icon').val() : 'initial')"
+        }
       }
     },
     "matches": {
@@ -107,6 +147,12 @@
             "joinedAt": {
               ".write": "auth != null && data.parent().child('uid').val() == auth.uid && !data.exists()",
               ".validate": "newData.isNumber()"
+            },
+            "trophies": {
+              ".validate": "newData.isNumber() && newData.val() == (root.child('users/' + newData.parent().child('uid').val() + '/trophies').exists() ? root.child('users/' + newData.parent().child('uid').val() + '/trophies').val() : 0)"
+            },
+            "icon": {
+              ".validate": "newData.isString() && newData.val() == (root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').exists() ? root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').val() : 'initial')"
             }
           }
         },

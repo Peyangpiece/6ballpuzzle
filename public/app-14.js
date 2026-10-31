@@ -199,7 +199,7 @@ function drawMatchIntro(ctx,g){
 }
 function renderScene(ctx, me, foe, orbs, t, labels, dropFlash, helpAlpha = 1, renderLead=0) {drawBackground(ctx,t,me,foe);drawSide(ctx,me,ME,0,t,labels.me,labels.meSub,true,renderLead);drawSide(ctx,foe,FOE,1,t,labels.foe,labels.foeSub,true,renderLead);drawAttackFlights(ctx,orbs);drawMatchIntro(ctx,me);}
 const SPACE_BG = "radial-gradient(1000px 500px at 20% 15%, #3C1D7A55, transparent 60%)," + "radial-gradient(900px 500px at 85% 30%, #0E5A7A55, transparent 60%)," + "radial-gradient(900px 600px at 50% 100%, #7A1E5844, transparent 60%)," + "linear-gradient(180deg,#080617 0%,#100B2B 55%,#060512 100%)";
-function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=false,rating,summary=null,progress=null,levelName="",meName="Player",foeName="CPU",nextLabel="もう一度"}){
+function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=false,rating,trophyDelta=0,trophies,unlocked=[],meIcon="initial",foeIcon="initial",summary=null,progress=null,levelName="",meName="Player",foeName="CPU",nextLabel="もう一度"}){
     const [phase,setPhase]=useState(0);
     const nextRef=useRef(null);
     useEffect(()=>{const t=setTimeout(()=>{try{nextRef.current&&nextRef.current.focus({preventScroll:true});}catch(_){}},560);
@@ -212,7 +212,7 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
     const card=(winner,me,name)=>React.createElement("div",{className:"relative flex-1 flex flex-col items-center justify-center",style:{maxWidth:"42vw",height:summary?"52vh":"68vh"}},
         winner&&React.createElement("div",{"aria-hidden":"true",className:"absolute rounded-full",style:{width:280,height:280,opacity:phase>=3?1:0,transform:`scale(${phase>=3?1:.6})`,transition:"opacity .4s ease, transform .5s cubic-bezier(.18,.82,.22,1)",background:"radial-gradient(circle,rgba(255,211,106,.26),rgba(255,211,106,.07) 45%,transparent 70%)"}}),
         React.createElement("div",{className:"relative rounded-full",style:{opacity:phase>=1?1:0,transform:`scale(${phase>=1?1:.4})`,transition:"opacity .2s ease, transform .34s cubic-bezier(.15,.9,.2,1.18)",padding:4,background:winner?GOLD:"rgba(255,255,255,.16)",boxShadow:winner?"0 0 36px rgba(255,211,106,.45)":"none",filter:winner?"none":"saturate(.3)"}},
-            React.createElement(HexAvatar,{name,size:72,color:me?NEON[0]:NEON[1]})),
+            React.createElement(HexAvatar,{name,size:72,color:me?NEON[0]:NEON[1],icon:me?meIcon:foeIcon})),
         React.createElement("div",{className:"mt-5 font-black tracking-[.08em] text-white",style:{fontSize:"clamp(34px,5.2vw,54px)",lineHeight:1,opacity:phase>=2?(winner?1:.5):0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:winner?"0 0 24px rgba(255,211,106,.45)":"none"}},winner?"WIN":"LOSE"),
         React.createElement("div",{className:"mt-4 text-[12px] font-semibold tracking-[.14em] text-white/50",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},me?"あなた":"相手"),
         React.createElement("div",{className:"mt-0.5 text-[17px] font-bold text-white max-w-full truncate",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},name));
@@ -224,7 +224,10 @@ function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=
             React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!win,false,foeName))),
         (reasonText||(online&&ranked))&&React.createElement("div",{className:"absolute left-1/2 -translate-x-1/2 text-center",style:{top:"max(14px, env(safe-area-inset-top))",opacity:phase>=2?1:0,transition:"opacity .25s ease"}},
             reasonText&&React.createElement("div",{className:"text-[14px] font-semibold text-white/85"},reasonText),
-            online&&ranked&&React.createElement("div",{className:"mt-1 text-[15px] font-bold tabular-nums",style:{color:delta>=0?"#7DFFB2":"#FF9AB5"}},`レート ${delta>=0?"+":""}${delta}`,Number.isFinite(rating)?React.createElement("span",{className:"text-white/70 font-semibold"},`（${rating}）`):null)),
+            // Trophies replace the rating on screen (HexTrophies); the Elo
+            // rating still moves underneath for matchmaking.
+            online&&ranked&&React.createElement("div",{"data-hex-trophy-delta":String(trophyDelta),className:"mt-1 inline-flex items-center gap-1.5 text-[15px] font-bold tabular-nums",style:{color:trophyDelta>0?"#7DFFB2":trophyDelta<0?"#FF9AB5":"rgba(255,255,255,.7)"}},React.createElement(HexIcon,{name:"trophy",size:16,color:"#FFD36A"}),`${trophyDelta>0?"+":""}${trophyDelta}`,Number.isFinite(trophies)?React.createElement("span",{className:"text-white/70 font-semibold"},`（${trophies}）`):null),
+            online&&ranked&&unlocked.length>0&&React.createElement("div",{"data-hex-unlocked":"1",className:"mt-1 text-[13px] font-bold",style:{color:"#FFD36A"}},"解放：",unlocked.map(i=>i.name).join("・"))),
         summary&&React.createElement(ResultSummary,{summary,progress,levelName,win,show:phase>=3}),
         React.createElement("div",{className:"absolute flex gap-3 text-white font-bold",style:{right:"max(20px, env(safe-area-inset-right))",bottom:"max(16px, env(safe-area-inset-bottom))"}},
             React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"hex-btn hex-btn-secondary px-5 text-[14px]",style:btn},"メニューへ"),

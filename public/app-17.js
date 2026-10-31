@@ -22,12 +22,12 @@ function Matching({ onMatched, onCancel, onError }) {
         return () => { alive = false; sig.current.cancelled = true; Net.cancelMatchmaking(); };
     }, []);
     // Searching: a ring, the status and the elapsed time. Found: both players
-    // as the avatars used in the match, with names and ratings.
+    // with their icons, names and trophies.
     const me = (typeof Net !== "undefined" && Net.profile) || {};
-    const player = (name, rating, color) => React.createElement("div", { className: "flex flex-col items-center min-w-0", style: { width: 150 } },
-        React.createElement(HexAvatar, { name, size: 64, color }),
+    const player = (name, trophies, color, icon) => React.createElement("div", { className: "flex flex-col items-center min-w-0", style: { width: 150 } },
+        React.createElement(HexAvatar, { name, size: 64, color, icon }),
         React.createElement("div", { className: "mt-3 text-[16px] font-bold text-white truncate max-w-full" }, name),
-        Number.isFinite(Number(rating)) && rating !== null && rating !== undefined && React.createElement("div", { className: "mt-0.5 text-[12px] tabular-nums text-white/50" }, "レート ", Number(rating)));
+        React.createElement("div", { className: "mt-0.5 flex items-center gap-1 text-[12px] tabular-nums text-white/55" }, React.createElement(HexIcon, { name: "trophy", size: 13, color: "#FFD36A" }), Math.max(0, Number(trophies) || 0)));
     return React.createElement(HexMenuShell, { title: "オンライン対戦", back: onCancel, wide: false },
         React.createElement(HexPanel, { className: "p-6 flex flex-col items-center text-center" },
             phase !== "found"
@@ -38,9 +38,9 @@ function Matching({ onMatched, onCancel, onError }) {
                     phase === "search" && waited >= 30000 && React.createElement("div", { className: "mt-3 max-w-xs text-[12px] leading-relaxed text-white/50" }, "探す範囲を広げています"),
                     React.createElement("button", { onClick: onCancel, className: "hex-btn hex-btn-secondary mt-6 px-6 text-[14px]" }, "キャンセル"))
                 : React.createElement("div", { role: "status", "aria-label": "対戦相手が見つかりました " + foe.name, className: "flex items-center justify-center gap-5" },
-                    player(me.name || "Player", me.rating, NEON[0]),
+                    player(me.name || "Player", me.trophies, NEON[0], me.equip && me.equip.icon),
                     React.createElement("div", { className: "text-[13px] font-bold tracking-[.2em] text-white/35" }, "VS"),
-                    player(foe.name, foe.rating, NEON[1]))));
+                    player(foe.name, foe.trophies, NEON[1], foe.icon))));
 }
 
 // Turn a thrown network error into a sentence a player can act on. Messages
@@ -66,7 +66,7 @@ const HEX_PUBLIC_ORIGIN = "https://dropball.hrk-6888.workers.dev";
 // Apple ID). While it is empty, invitation links open the web version on
 // every device; once set, iPhones and iPads without the app are sent to the
 // App Store page (app-16.js).
-const HEX_APP_STORE_ID = "";
+const HEX_APP_STORE_ID = ""; // "6828692964" once the app is on the App Store
 // openExternalBrowser=1 makes LINE open the link outside its in-app browser,
 // so iOS can hand it to the installed app (a universal link).
 function hexRoomInviteUrl(code) {

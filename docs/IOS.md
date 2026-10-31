@@ -11,6 +11,8 @@
 | 触覚フィードバック | `@capacitor/haptics`（既存の「振動」設定がそのまま使えます） | 4.2 |
 | BGM（音量スライダー対応） | `NativeBgm` プラグイン（AVAudioPlayer、`DropBallNative.swift`）＋ `public/app-native-v1.js` | — |
 | アカウント削除 | プロフィール → 「アカウントを削除」（`public/app-account-delete-v1.js`、ウェブ版にもあり） | 5.1.1(v) |
+| 広告（1.1 以降） | `@capacitor-community/admob`。結果画面を閉じたとき 3 試合に 1 回（2 分以上あけて）全画面広告。Google の同意画面（EU・英国など）→ ATT の順に尋ねる（`public/app-native-v1.js`） | 5.1.2（ATT） |
+| 広告なしプラン（1.1 以降） | 月額の自動更新サブスクリプション `app.dropball.game.adfree.monthly`（StoreKit 2、`DropBallNative.swift` の Store プラグイン）。設定画面に購入・「購入を復元」・「サブスクリプションを管理」と、価格・期間・自動更新・解約方法・利用規約・プライバシーポリシーの表示。起動時とアプリに戻ったときに有効か確かめる | 3.1.1, 3.1.2 |
 | プライバシーポリシー | `public/privacy.html`（設定画面からリンク） | 5.1.1 |
 
 ここから先は **Mac での作業** です（この開発環境は Linux のため、ビルドと署名はできません）。
@@ -61,20 +63,21 @@ npm run ios:open      # Xcode で開く
 
 | ID | 名前 | スコアの種類 | 並び順 | 送信 |
 | --- | --- | --- | --- | --- |
-| `dropball.rating` | レート / Rating | 整数 | 高い順 | 最新のスコア（Most Recent Score） |
+| `dropball.rating` | レート / Rating | 整数 | 高い順 | 最新のスコア（Most Recent Score）。**1.1 から送信しない**（「非表示」をはいにする） |
+| `dropball.trophies` | トロフィー / Trophies | 整数 | 高い順 | 最新のスコア（1.1 で追加。アプリ内の「Game Center のランキング」もこれを開く） |
 
-**実績**（ポイントは合計 1000 以下で任意。例）
+**実績**（ポイントは合計 1000 以下で任意。例）。画像は `brand/achievements/<ID>.png`（1024×1024、`tools/make-achievement-images.py` で生成。文字はラテン文字だけなので全言語で共通）
 
 | ID | 日本語 | English | ポイント |
 | --- | --- | --- | --- |
 | `dropball.first_win` | はじめての勝利 | First Win | 10 |
-| `dropball.ai_1` 〜 `dropball.ai_5` | AI「とてもよわい」〜「超強い」に勝つ | Beat AI level 1–5 | 10 / 20 / 30 / 50 / 100 |
+| `dropball.ai_1` 〜 `dropball.ai_5` | AI「とてもよわい」〜「とてもつよい」に勝つ | Beat AI level 1–5 | 10 / 20 / 30 / 50 / 100 |
 | `dropball.waza_first` | はじめての技 | First Technique | 10 |
-| `dropball.hexagon` | 六角形の技 | Hexagon | 30 |
+| `dropball.hexagon` | ヘキサゴン | Hexagon | 30 |
 | `dropball.chain_3` | 3 連鎖 | 3-Chain | 20 |
 | `dropball.chain_5` | 5 連鎖 | 5-Chain | 50 |
 | `dropball.online_win` | オンラインで勝利 | Online Win | 20 |
-| `dropball.rating_1200` | レート 1200 | Rating 1200 | 50 |
+| `dropball.rating_1200` | トロフィー 1000（1.1 で表示名と説明を変更。ID はそのまま） | 1000 Trophies | 50 |
 
 3. 掲載文・キーワード・スクリーンショットは `docs/APPSTORE.md`。
 4. **App のプライバシー**（栄養ラベル）: 「トラッキングに使用」はすべて「いいえ」。収集するデータ:
@@ -89,6 +92,43 @@ npm run ios:open      # Xcode で開く
    ランキング画面の「Game Center のランキング」、実績の通知、プロフィールからのアカウント削除。
 2. Product → Archive → Distribute App → App Store Connect（まず TestFlight で確認）。
 3. 審査提出時のメモは `docs/APPSTORE.md` の「審査メモ」を使用。
+
+## 6. 広告と「広告なしプラン」（バージョン 1.1）
+コードは入っています。リリース前に、次の値と設定をそろえます。それまでは Google のテスト広告（「Test Ad」と表示）が出ます。
+テスト広告のまま審査に出さないこと。
+
+1. **AdMob**（https://admob.google.com）でアカウントを作り、「アプリを追加」→ iOS → App Store に公開済みのアプリとして Drop Ball を選ぶ。
+   - **アプリ ID**（`ca-app-pub-…~…`）→ `ios/App/App/Info.plist` の `GADApplicationIdentifier`（今は Google のテスト用 ID）。
+   - 「広告ユニット」→「インタースティシャル」を作り、**広告ユニット ID**（`ca-app-pub-…/…`）→ `public/app-native-v1.js` の `ADMOB_INTERSTITIAL`。
+2. AdMob の「プライバシーとメッセージ」で、**GDPR（EU・英国）のメッセージ**を作成して公開する（作らないと EU では広告が出ません）。
+   「IDFA の説明メッセージ」は任意（作ると ATT の前に説明画面が出ます）。
+3. **app-ads.txt**: `public/app-ads.txt` に置き済み（AdMob の「アプリ」→「app-ads.txt」の 1 行と同じ）。App Store のマーケティング URL を
+   `https://dropball.hrk-6888.workers.dev` にする（AdMob は掲載情報の開発者サイトのルートで確認します）。
+4. **App Store Connect → サブスクリプション** → サブスクリプショングループ「広告なしプラン」を作り、その中に
+   自動更新サブスクリプション：製品 ID `app.dropball.game.adfree.monthly`、参照名「広告なしプラン 月額」、期間 **1か月**、
+   価格 **300 円**、表示名・説明（例: 広告なしプラン / 対戦後の広告を表示しません）、審査用スクリーンショット（設定画面の購入ボタン）。
+   グループのローカリゼーション（表示名「広告なしプラン」）も入れる。バージョン 1.1 のページの「アプリ内課金とサブスクリプション」に追加して一緒に提出する。
+   App の説明文の末尾に、利用規約（Apple 標準 EULA: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ ）と
+   プライバシーポリシーへのリンクを書く（3.1.2: サブスクがあるアプリは掲載情報にも必要）。
+5. **年齢制限**: 「広告」を「はい」に変える。
+6. **App のプライバシー**: Google の「AdMob のデータ開示」（https://developers.google.com/admob/ios/privacy/data-disclosure）に従って追加する。
+   目安: 識別子 → デバイス ID、位置情報 → おおよその位置、使用状況データ → 製品の操作・広告データ、診断 → クラッシュ・パフォーマンス。
+   目的は「サードパーティ広告」（と「分析」）、デバイス ID などは「トラッキングに使用」＝はい。
+7. Xcode の General で Version を 1.1、Build を 2 以上にして Archive。
+8. テスト: 実機で ATT のダイアログ、3 試合目の結果画面を閉じたときの広告、設定画面の「広告なしプラン」（App Store のサンドボックスアカウント。サンドボックスでは 1 か月が数分で更新・期限切れになる、
+   または Xcode の StoreKit テスト）と「購入を復元」を確かめる。
+
+## 7. トロフィー（バージョン 1.1）
+画面に出す数値はレートからトロフィーに変わりました（`public/app-trophies-v1.js`。レートはマッチング用に裏で残ります）。
+ランク戦の勝ちで +10（300 未満、負けても減らない）／+8・−4（1000 未満）／+6・−6（1000 以上）。全員 0 から。
+トロフィーロードでアイコン・球のデザイン・消すときの演出が解放され、ホームの「トロフィー」で装備します。
+増減と解放はデータベースのルールでも検証します（`tools/trophy-rules.js` が生成、`main` へのマージで自動デプロイ）。
+
+App Store Connect で 1.1 の提出前に:
+1. Game Center → リーダーボード「＋」→ 標準 → 参照名 `Trophies`、ID `dropball.trophies`、整数、**最新のスコア**、**降順**、
+   日本語の名前「トロフィー」。1.1 と一緒に「審査用に追加」。
+2. 既存の `dropball.rating` を開き「非表示」を**はい**にする（削除はできません）。
+3. 実績 `dropball.rating_1200` のローカリゼーションを「トロフィー 1000」/ 達成前「トロフィーを 1000 にする」/ 達成後「トロフィーが 1000 に届いた」に変更。
 
 ## 構成メモ
 - ルームの招待リンク（`https://dropball.hrk-6888.workers.dev/?room=NNNNNN`）はユニバーサルリンクでアプリが開きます：
