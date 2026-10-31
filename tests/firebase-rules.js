@@ -140,6 +140,60 @@ async function deny(label, p) { try { await assertFails(p); passed++; console.lo
   passed += sweepOk + sweepDenied;
   console.log(`  ok   Elo parity sweep: ${sweepOk} exact settlements accepted, ${sweepDenied} off-by-one settlements denied`);
 
+  console.log("trophies, best, equipped items");
+  {
+    const D = env.authenticatedContext("uidD").database(), E = env.authenticatedContext("uidE").database();
+    await deny("a new profile starts at 0 trophies", D.ref("users/uidD").set({ ...profile("uidD"), trophies: 50, best: 50 }));
+    await ok("D creates a profile with 0 trophies", D.ref("users/uidD").set({ ...profile("uidD"), trophies: 0, best: 0 }));
+    await ok("E creates a profile without trophies (older client)", E.ref("users/uidE").set(profile("uidE")));
+    await deny("trophies cannot move without a match", D.ref("users/uidD").update({ trophies: 10, best: 10 }));
+    const t1 = "mT1", players = { 0: { uid: "uidD", name: "D", rating: 1000, trophies: 0, icon: "initial", connected: false }, 1: { uid: "uidE", name: "E", rating: 1000, trophies: 0, icon: "initial", connected: false } };
+    await deny("a match must record the true trophies", D.ref("matches/" + t1).set({ meta: { seed: 1, ranked: true, createdAt: Date.now() }, players: { ...players, 1: { ...players[1], trophies: 900 } } }));
+    await deny("a match must record the equipped icon", D.ref("matches/" + t1).set({ meta: { seed: 1, ranked: true, createdAt: Date.now() }, players: { ...players, 0: { ...players[0], icon: "crown" } } }));
+    await ok("D creates ranked match mT1 with trophies and icons", D.ref("matches/" + t1).set({ meta: { seed: 1, ranked: true, createdAt: Date.now() }, players }));
+    await ok("D joins mT1", D.ref("matches/" + t1 + "/players/0/joinedAt").set(Date.now()));
+    await ok("E joins mT1", E.ref("matches/" + t1 + "/players/1/joinedAt").set(Date.now()));
+    await ok("D reports the mT1 win", D.ref("matches/" + t1 + "/result/0").set({ win: true, reason: "foe-dead", ts: Date.now() }));
+    const won = { rating: 1016, wins: 1, losses: 0, lastMatch: t1, lastResult: "win", updatedAt: Date.now() };
+    await deny("win below 300 is +10, not +20", D.ref("users/uidD").update({ ...won, trophies: 20, best: 20 }));
+    await deny("best follows trophies", D.ref("users/uidD").update({ ...won, trophies: 10, best: 50 }));
+    await ok("D wins: +10 trophies", D.ref("users/uidD").update({ ...won, trophies: 10, best: 10 }));
+    const lost = { rating: 984, wins: 0, losses: 1, lastMatch: t1, lastResult: "loss", updatedAt: Date.now() };
+    await deny("a loss below 300 costs nothing", E.ref("users/uidE").update({ ...lost, trophies: 0 - 4 }));
+    await ok("E loses below 300: still 0", E.ref("users/uidE").update({ ...lost, trophies: 0, best: 0 }));
+    await deny("trophies cannot move again for the same match", D.ref("users/uidD").update({ trophies: 20, best: 20, updatedAt: Date.now() }));
+    await deny("best never goes down", D.ref("users/uidD").update({ best: 0 }));
+    await deny("icon not unlocked yet (star at 50)", D.ref("users/uidD/equip/icon").set("star"));
+    // Bands above 300 and 1000.
+    await admin(db => db.ref("users/uidD").update({ trophies: 300, best: 300 }));
+    await admin(db => db.ref("users/uidE").update({ trophies: 1000, best: 1000 }));
+    const t2 = "mT2";
+    await ok("D creates mT2", D.ref("matches/" + t2).set({ meta: { seed: 2, ranked: true, createdAt: Date.now() }, players: { 0: { uid: "uidD", name: "D", rating: 1016, trophies: 300, icon: "initial", connected: false }, 1: { uid: "uidE", name: "E", rating: 984, trophies: 1000, icon: "initial", connected: false } } }));
+    await ok("D joins mT2", D.ref("matches/" + t2 + "/players/0/joinedAt").set(Date.now()));
+    await ok("E joins mT2", E.ref("matches/" + t2 + "/players/1/joinedAt").set(Date.now()));
+    await ok("E reports the mT2 win", E.ref("matches/" + t2 + "/result/1").set({ win: true, reason: "foe-dead", ts: Date.now() }));
+    const dLost = { rating: 1016 + eloDelta(1016, 984, false), wins: 1, losses: 1, lastMatch: t2, lastResult: "loss", updatedAt: Date.now() };
+    await deny("a loss at 300 is -4, not 0", D.ref("users/uidD").update({ ...dLost, trophies: 300, best: 300 }));
+    await ok("D loses at 300: -4", D.ref("users/uidD").update({ ...dLost, trophies: 296, best: 300 }));
+    const eWon = { rating: 984 + eloDelta(984, 1016, true), wins: 1, losses: 1, lastMatch: t2, lastResult: "win", updatedAt: Date.now() };
+    await deny("a win at 1000 is +6, not +8", E.ref("users/uidE").update({ ...eWon, trophies: 1008, best: 1008 }));
+    await ok("E wins at 1000: +6", E.ref("users/uidE").update({ ...eWon, trophies: 1006, best: 1006 }));
+    console.log("equipped items");
+    await ok("D equips the pastel balls (300, kept after dropping to 296)", D.ref("users/uidD/equip/ball").set("pastel"));
+    await ok("D equips the star icon (50)", D.ref("users/uidD/equip/icon").set("star"));
+    await deny("D cannot equip the neon balls (800)", D.ref("users/uidD/equip/ball").set("neon"));
+    await deny("unknown item", D.ref("users/uidD/equip/fx").set("rainbow"));
+    await deny("unknown slot", D.ref("users/uidD/equip/hat").set("star"));
+    await ok("E equips the crown (1000)", E.ref("users/uidE/equip/icon").set("crown"));
+    await deny("E cannot equip another player's slot", E.ref("users/uidD/equip/icon").set("initial"));
+    console.log("trophy leaderboard");
+    await ok("D publishes trophies and icon", D.ref("leaderboard/uidD").set({ name: "D", rating: 1016 + eloDelta(1016, 984, false), trophies: 296, icon: "star" }));
+    await deny("leaderboard trophies must equal the profile", D.ref("leaderboard/uidD").set({ name: "D", rating: 1016 + eloDelta(1016, 984, false), trophies: 2000, icon: "star" }));
+    await deny("leaderboard icon must be the equipped one", D.ref("leaderboard/uidD").set({ name: "D", rating: 1016 + eloDelta(1016, 984, false), trophies: 296, icon: "crown" }));
+    await ok("D changes the icon on the entry after equipping", D.ref("users/uidD/equip/icon").set("initial").then(() => D.ref("leaderboard/uidD/icon").set("initial")));
+    await ok("ranking query by trophies", C.ref("leaderboard").orderByChild("trophies").limitToLast(50).get());
+  }
+
   console.log("server rating authority (config/ratingAuthority = 'server')");
   await deny("clients cannot write config", A.ref("config/ratingAuthority").set("client"));
   await env.withSecurityRulesDisabled(ctx => ctx.database().ref("config/ratingAuthority").set("server"));

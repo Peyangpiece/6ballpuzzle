@@ -169,17 +169,11 @@
                     "leaderboard/"+
                     this.uid
                 ),
-                {
-                    name:
-                        this.profile.name,
-                    rating:
-                        Number(
-                            this.profile.rating
-                        )||1000
-                }
+                this.leaderboardEntry()
             ).catch(()=>{});
         }
 
+        this.syncTrophies();
         return user;
     };
 

@@ -57,8 +57,8 @@ function load({ native, responses = {}, debugBuild = false }) {
   vm.runInContext(read("app-google-login.js"), ctx);
   // The match record helper of app-menu-ui.js, as the bridge sees it.
   vm.runInContext("var recorded=[];function hexRecordMatch(a){recorded.push(a);return{ok:true};}", ctx);
-  // The settled rating of a ranked match, as app-15.js leaves it on the profile.
-  vm.runInContext("Net.applyRating=async function(win){this.profile.rating=1216;return 16;};", ctx);
+  // The settled rating and trophies of a ranked match, as app-15.js leaves them on the profile.
+  vm.runInContext("Net.applyRating=async function(win){this.profile.rating=1216;this.profile.trophies=1006;return 16;};", ctx);
   vm.runInContext(read("app-native-v1.js"), ctx);
   const fire = (key, data) => { for (const f of listeners[key] || []) f(data); };
   const runLater = () => { for (const f of later.splice(0)) f(); };
@@ -116,11 +116,11 @@ const tick = () => new Promise(r => setTimeout(r, 10));
     const link = s.F.calls.find(c => c[0] === "linkWithCredential");
     assert.deepStrictEqual(Object.assign({}, link[1]), { provider: "google", idToken: "g-id", accessToken: "g-access" });
   }
-  // Rating leaderboard after a ranked match.
+  // Trophy leaderboard after a ranked match.
   assert.strictEqual(await Net.applyRating(true, 1200, true, "m1"), 16, "the settlement result is returned unchanged");
   await tick();
   const score = calls("GameCenter", "submitScore");
-  assert.deepStrictEqual(Object.assign({}, score[score.length - 1][2]), { leaderboardID: "dropball.rating", score: 1216 });
+  assert.deepStrictEqual(Object.assign({}, score[score.length - 1][2]), { leaderboardID: "dropball.trophies", score: 1006 });
   const after = calls("GameCenter", "unlockAchievement").map(c => c[2].achievementID);
   assert(after.includes("dropball.online_win") && after.includes("dropball.rating_1200"));
   const before = score.length;

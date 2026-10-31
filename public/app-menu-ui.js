@@ -253,6 +253,7 @@ const HEX_ICON_PATHS={
     help:["M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z","M9.4 9.4a2.6 2.6 0 1 1 3.7 2.4c-.8.4-1.1 1-1.1 1.8v.4","M12 17.3h.01"],
     gear:[HEX_GEAR_PATH,"M12 15.2a3.2 3.2 0 1 0 0-6.4a3.2 3.2 0 0 0 0 6.4z"],
     person:["M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8z","M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5"],
+    medal:["M8 3h3l1 4M16 3h-3l-1 4","M12 21a6.5 6.5 0 1 0 0-13a6.5 6.5 0 0 0 0 13z","M12 11.2l1.1 2.2 2.4.3-1.8 1.7.5 2.4-2.2-1.2-2.2 1.2.5-2.4-1.8-1.7 2.4-.3z"],
     trophy:["M7.5 4h9v5a4.5 4.5 0 0 1-9 0z","M7.5 6H4.5v1.2a3.3 3.3 0 0 0 3.2 3.3","M16.5 6h3v1.2a3.3 3.3 0 0 1-3.2 3.3","M12 13.5V17","M8.5 20h7","M9.5 17h5v3h-5z"]
 };
 function HexIcon({name,size=20,color="currentColor",strokeWidth=1.8}){
@@ -260,8 +261,12 @@ function HexIcon({name,size=20,color="currentColor",strokeWidth=1.8}){
     return React.createElement("svg",{"aria-hidden":"true",width:size,height:size,viewBox:"0 0 24 24",fill:"none",stroke:color,strokeWidth,strokeLinecap:"round",strokeLinejoin:"round",style:{display:"block",flexShrink:0}},P.map((d,i)=>React.createElement("path",{key:i,d})));
 }
 // Player avatar: the first character of the name on the player's colour.
-function HexAvatar({name,size=36,color=HEX_MENU_ACCENTS.cyan}){
-    return React.createElement("div",{"aria-hidden":"true",className:"shrink-0 flex items-center justify-center rounded-full font-bold",style:{width:size,height:size,fontSize:size*.46,color:"#07101a",background:`linear-gradient(145deg,#ffffff66,#ffffff00),${color}`,boxShadow:`0 0 0 1px ${color}55`}},String(name||"P").trim().slice(0,1).toUpperCase());
+// icon: an icon from the trophy road (HexTrophies.glyph); "initial" or none
+// shows the first character of the name.
+function HexAvatar({name,size=36,color=HEX_MENU_ACCENTS.cyan,icon="initial"}){
+    const g=icon&&icon!=="initial"&&typeof HexTrophies!=="undefined"?HexTrophies.glyph(icon):null;
+    return React.createElement("div",{"aria-hidden":"true","data-hex-avatar-icon":g?icon:"initial",className:"shrink-0 flex items-center justify-center rounded-full font-bold",style:{width:size,height:size,fontSize:size*.46,color:"#07101a",background:`linear-gradient(145deg,#ffffff66,#ffffff00),${color}`,boxShadow:`0 0 0 1px ${color}55`}},
+        g?React.createElement("svg",{width:size*.62,height:size*.62,viewBox:"0 0 24 24",style:{display:"block"}},React.createElement("path",{d:g.d,fill:g.stroke?"none":"#07101a",stroke:g.stroke?"#07101a":"none",strokeWidth:g.stroke?1.8:0,strokeLinejoin:"round"})):String(name||"P").trim().slice(0,1).toUpperCase());
 }
 function HexChevron({dir="right",color="rgba(255,255,255,.4)",size=18}){
     const d=dir==="left"?"M11.5 3.5 6 9l5.5 5.5":dir==="down"?"M3.5 6.5 9 12l5.5-5.5":"M6.5 3.5 12 9l-5.5 5.5";

@@ -29,7 +29,10 @@ const isNative=!!(cap&&typeof cap.isNativePlatform==="function"&&cap.isNativePla
 if(!isNative)return;
 
 const call=(plugin,method,options={})=>cap.nativePromise(plugin,method,options);
-const LEADERBOARD_RATING="dropball.rating";
+// Trophies (HexTrophies) are the score players see; the rating leaderboard
+// of version 1.0 (dropball.rating) is hidden in App Store Connect and gets no
+// new scores.
+const LEADERBOARD_TROPHIES="dropball.trophies";
 const ACH={
   firstWin:"dropball.first_win",
   ai:lv=>"dropball.ai_"+lv,
@@ -38,7 +41,7 @@ const ACH={
   chain3:"dropball.chain_3",
   chain5:"dropball.chain_5",
   onlineWin:"dropball.online_win",
-  rating1200:"dropball.rating_1200"
+  rating1200:"dropball.rating_1200"   // shown as "トロフィー 1000" in App Store Connect
 };
 
 // ---------------------------------------------------------------- audio
@@ -165,7 +168,7 @@ try{
 let gcReady=null;
 const gameCenter=()=>gcReady||(gcReady=call("GameCenter","signIn").then(r=>!!r?.authenticated).catch(()=>false));
 const unlock=id=>gameCenter().then(ok=>ok&&call("GameCenter","unlockAchievement",{achievementID:id})).catch(()=>{});
-const submitRating=r=>gameCenter().then(ok=>ok&&Number.isFinite(r)&&call("GameCenter","submitScore",{leaderboardID:LEADERBOARD_RATING,score:Math.round(r)})).catch(()=>{});
+const submitTrophies=t=>gameCenter().then(ok=>ok&&Number.isFinite(t)&&call("GameCenter","submitScore",{leaderboardID:LEADERBOARD_TROPHIES,score:Math.round(t)})).catch(()=>{});
 
 if(typeof hexRecordMatch==="function"){
   const base=hexRecordMatch;
@@ -312,11 +315,11 @@ if(typeof Net!=="undefined"){
     const baseApply=Net.applyRating;
     Net.applyRating=async function(win,foeRating,ranked){
       const out=await baseApply.apply(this,arguments);
-      const r=Number(this.profile?.rating);
-      if(ranked!==false&&Number.isFinite(r)){
-        submitRating(r);
+      const t=Number(this.profile?.trophies);
+      if(ranked!==false&&Number.isFinite(t)){
+        submitTrophies(t);
         if(win)unlock(ACH.onlineWin);
-        if(r>=1200)unlock(ACH.rating1200);
+        if(t>=1000)unlock(ACH.rating1200);
       }
       return out;
     };
@@ -364,7 +367,7 @@ if(typeof Net!=="undefined"){
     isNative:true,
     appleSignIn:true,
     gameCenter:true,
-    showLeaderboard(){return gameCenter().then(ok=>ok&&call("GameCenter","showLeaderboard",{leaderboardID:LEADERBOARD_RATING}));},
+    showLeaderboard(){return gameCenter().then(ok=>ok&&call("GameCenter","showLeaderboard",{leaderboardID:LEADERBOARD_TROPHIES}));},
     async reauthenticate(user){
       const F=await Net._ensureFirebase();
       const apple=(user.providerData||[]).some(p=>p&&p.providerId==="apple.com");

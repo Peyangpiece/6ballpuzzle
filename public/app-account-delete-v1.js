@@ -17,10 +17,12 @@ window.__dropBallAccountDeleteV1=true;
 
 // Game records on this device; preferences (volume, haptics, colour symbols,
 // tutorial) are not personal data and stay.
-const LOCAL_KEYS=["hexdrop_nickname","hexdrop_rating","hexdrop_wins","hexdrop_losses","hexdrop_bests","hexdrop_cpu_record","hexdrop_name_prompted"];
+const LOCAL_KEYS=["hexdrop_nickname","hexdrop_rating","hexdrop_wins","hexdrop_losses","hexdrop_bests","hexdrop_cpu_record","hexdrop_name_prompted","hexdrop_trophies_v1"];
 
 function clearLocal(){
   for(const k of LOCAL_KEYS){try{localStorage.removeItem(k);}catch(_){}}
+  // Trophies, the road and equipped items start over (app-trophies-v1.js).
+  if(typeof HexTrophies!=="undefined")HexTrophies.set({trophies:0,best:0,equip:{}});
 }
 
 function reauthenticate(F,user){

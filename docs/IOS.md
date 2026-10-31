@@ -63,7 +63,8 @@ npm run ios:open      # Xcode で開く
 
 | ID | 名前 | スコアの種類 | 並び順 | 送信 |
 | --- | --- | --- | --- | --- |
-| `dropball.rating` | レート / Rating | 整数 | 高い順 | 最新のスコア（Most Recent Score） |
+| `dropball.rating` | レート / Rating | 整数 | 高い順 | 最新のスコア（Most Recent Score）。**1.1 から送信しない**（「非表示」をはいにする） |
+| `dropball.trophies` | トロフィー / Trophies | 整数 | 高い順 | 最新のスコア（1.1 で追加。アプリ内の「Game Center のランキング」もこれを開く） |
 
 **実績**（ポイントは合計 1000 以下で任意。例）。画像は `brand/achievements/<ID>.png`（1024×1024、`tools/make-achievement-images.py` で生成。文字はラテン文字だけなので全言語で共通）
 
@@ -76,7 +77,7 @@ npm run ios:open      # Xcode で開く
 | `dropball.chain_3` | 3 連鎖 | 3-Chain | 20 |
 | `dropball.chain_5` | 5 連鎖 | 5-Chain | 50 |
 | `dropball.online_win` | オンラインで勝利 | Online Win | 20 |
-| `dropball.rating_1200` | レート 1200 | Rating 1200 | 50 |
+| `dropball.rating_1200` | トロフィー 1000（1.1 で表示名と説明を変更。ID はそのまま） | 1000 Trophies | 50 |
 
 3. 掲載文・キーワード・スクリーンショットは `docs/APPSTORE.md`。
 4. **App のプライバシー**（栄養ラベル）: 「トラッキングに使用」はすべて「いいえ」。収集するデータ:
@@ -116,6 +117,18 @@ npm run ios:open      # Xcode で開く
 7. Xcode の General で Version を 1.1、Build を 2 以上にして Archive。
 8. テスト: 実機で ATT のダイアログ、3 試合目の結果画面を閉じたときの広告、設定画面の「広告なしプラン」（App Store のサンドボックスアカウント。サンドボックスでは 1 か月が数分で更新・期限切れになる、
    または Xcode の StoreKit テスト）と「購入を復元」を確かめる。
+
+## 7. トロフィー（バージョン 1.1）
+画面に出す数値はレートからトロフィーに変わりました（`public/app-trophies-v1.js`。レートはマッチング用に裏で残ります）。
+ランク戦の勝ちで +10（300 未満、負けても減らない）／+8・−4（1000 未満）／+6・−6（1000 以上）。全員 0 から。
+トロフィーロードでアイコン・球のデザイン・消すときの演出が解放され、ホームの「トロフィー」で装備します。
+増減と解放はデータベースのルールでも検証します（`tools/trophy-rules.js` が生成、`main` へのマージで自動デプロイ）。
+
+App Store Connect で 1.1 の提出前に:
+1. Game Center → リーダーボード「＋」→ 標準 → 参照名 `Trophies`、ID `dropball.trophies`、整数、**最新のスコア**、**降順**、
+   日本語の名前「トロフィー」。1.1 と一緒に「審査用に追加」。
+2. 既存の `dropball.rating` を開き「非表示」を**はい**にする（削除はできません）。
+3. 実績 `dropball.rating_1200` のローカリゼーションを「トロフィー 1000」/ 達成前「トロフィーを 1000 にする」/ 達成後「トロフィーが 1000 に届いた」に変更。
 
 ## 構成メモ
 - ルームの招待リンク（`https://dropball.hrk-6888.workers.dev/?room=NNNNNN`）はユニバーサルリンクでアプリが開きます：
