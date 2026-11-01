@@ -271,17 +271,23 @@ function HexTutorialPanel({ lesson, tracker, status, message, onNext, onRetry, o
     const L = HEX_TUTORIAL_LESSONS[lesson], kind = hexInputKind(), last = lesson === HEX_TUTORIAL_LESSONS.length - 1;
     const text = L.text[kind] || L.text.all;
     const btn = "hex-btn px-4 text-[13px]";
-    return React.createElement("div", { className: "absolute flex flex-col overflow-y-auto", role: "region", "aria-label": "チュートリアルの説明", style: { left: `${671 / 12.8}%`, width: `${444 / 12.8}%`, top: `${160 / 7.2}%`, height: `${450 / 7.2}%`, padding: "clamp(8px,1.4vw,18px)", background: "rgba(8,7,24,.9)", border: "1px solid rgba(255,211,106,.45)", borderRadius: 14 } },
+    // While the lesson is played, the panel lets touches through to the game,
+    // so a tap or a drag that starts over it still turns or moves the piece
+    // (the right side of the screen turns clockwise, which lesson 2 teaches);
+    // only its buttons take touches. With a message shown (success, retry)
+    // the panel takes touches again, so it can scroll on small screens.
+    const bs = { minHeight: 40, pointerEvents: "auto" };
+    return React.createElement("div", { className: "absolute flex flex-col overflow-y-auto", role: "region", "aria-label": "チュートリアルの説明", style: { pointerEvents: status === "play" ? "none" : "auto", left: `${671 / 12.8}%`, width: `${444 / 12.8}%`, top: `${160 / 7.2}%`, height: `${450 / 7.2}%`, padding: "clamp(8px,1.4vw,18px)", background: "rgba(8,7,24,.9)", border: "1px solid rgba(255,211,106,.45)", borderRadius: 14 } },
         React.createElement("div", { className: "text-[11px] font-black tracking-[.18em]", style: { color: "#FFD36A" } }, `LESSON ${lesson + 1} / ${HEX_TUTORIAL_LESSONS.length}`),
         React.createElement("div", { className: "text-base font-black text-white mt-0.5" }, L.title),
         React.createElement("p", { className: "mt-1.5 text-[12px] leading-relaxed text-white/85" }, text),
         React.createElement("ul", { className: "mt-2 grid gap-1" }, L.checks.map(([k, label]) => { const done = status === "success" || !!tracker[k]; return React.createElement("li", { key: k, className: "flex items-center gap-2 text-[12px] font-bold", style: { color: done ? "#7DFFB2" : "rgba(255,255,255,.7)" } }, React.createElement("span", { "aria-hidden": "true", className: "inline-flex items-center justify-center rounded-full", style: { width: 16, height: 16, border: `2px solid ${done ? "#7DFFB2" : "rgba(255,255,255,.4)"}`, fontSize: 10 } }, done ? "✓" : ""), label, React.createElement("span", { className: "sr-only" }, done ? "（完了）" : "")); })),
         message && React.createElement("div", { role: "status", className: "mt-2 rounded-lg px-2.5 py-1.5 text-[12px] font-bold", style: { color: status === "success" ? "#061016" : "#ffd2e3", background: status === "success" ? "#7DFFB2" : "rgba(255,62,165,.16)" } }, message),
         React.createElement("div", { className: "mt-auto pt-2 flex flex-wrap gap-2" },
-            status === "success" && !last && React.createElement("button", { onClick: onNext, className: btn + " hex-btn-gold", style: { minHeight: 40 } }, "次のレッスンへ"),
-            status === "success" && last && React.createElement("button", { onClick: onVsAi, className: btn + " hex-btn-gold", style: { minHeight: 40 } }, "AIと対戦する"),
-            status !== "success" && React.createElement("button", { onClick: onRetry, className: btn + " hex-btn-secondary", style: { minHeight: 40 } }, "やり直す"),
-            React.createElement("button", { onClick: onExit, "data-hex-back": "1", className: btn + " hex-btn-ghost", style: { minHeight: 40 } }, last && status === "success" ? "ホームへ" : "やめる")));
+            status === "success" && !last && React.createElement("button", { onClick: onNext, className: btn + " hex-btn-gold", style: bs }, "次のレッスンへ"),
+            status === "success" && last && React.createElement("button", { onClick: onVsAi, className: btn + " hex-btn-gold", style: bs }, "AIと対戦する"),
+            status !== "success" && React.createElement("button", { onClick: onRetry, className: btn + " hex-btn-secondary", style: bs }, "やり直す"),
+            React.createElement("button", { onClick: onExit, "data-hex-back": "1", className: btn + " hex-btn-ghost", style: bs }, last && status === "success" ? "ホームへ" : "やめる")));
 }
 
 // Network packets arrive at a much lower cadence than the 120 Hz game loop.
