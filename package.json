@@ -21,22 +21,22 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.3",
+    "@capacitor/cli": "^8.6.0",
     "acorn": "8.19.0",
     "esbuild": "0.28.2",
-    "eslint": "10.12.0",
+    "eslint": "10.13.0",
     "eslint-scope": "9.1.2",
     "estraverse": "5.3.0",
     "globals": "17.13.0",
-    "playwright": "1.64.0",
+    "playwright": "1.64.1",
     "tailwindcss": "3.4.19"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.3.0",
     "@capacitor-firebase/authentication": "^8.5.2",
     "@capacitor/app": "^8.1.2",
-    "@capacitor/core": "^8.5.3",
+    "@capacitor/core": "^8.6.0",
     "@capacitor/haptics": "^8.0.2",
-    "@capacitor/ios": "^8.5.3"
+    "@capacitor/ios": "^8.6.0"
   }
 }
