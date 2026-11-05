@@ -496,6 +496,30 @@ function hexMotionDuration(seg,state={vy:0,speed:0}){
     }
     return duration;
 }
+// A pivot segment whose start is still in the air (its start was moved to the
+// rendered centre of a ball that was falling, see noBounceRebased) is not on
+// the circle it rolls along. Turning it at its start distance swung it wide of
+// the support and landed it up to a ball width beside the target, where it was
+// snapped back in one frame. Instead the distance to the pivot closes from the
+// start's to the target's while it turns: fastest at first, so the incoming
+// fall carries on into the turn, and on the rolling circle by the end, where
+// the collision checks validated the path, so it ends exactly on the target.
+// (The pivot of a rigid group's member is often a cell, not a ball, so the
+// path must not leave that circle family, e.g. by dropping straight down.)
+// Returns null when the start already lies on the circle (unchanged motion).
+function hexPivotApproachPath(seg){
+    if(!seg?.pivot||!seg.from||!seg.to)return null;
+    const H=HEX_ROW_H,[px,py]=seg.pivot;
+    const sx=(seg.from[0]-px)*.5,sy=(seg.from[1]-py)*H,tx=(seg.to[0]-px)*.5,ty=(seg.to[1]-py)*H;
+    const r0=Math.hypot(sx,sy),r1=Math.hypot(tx,ty);
+    if(!(r1>1e-6)||Math.abs(r0-r1)<=.02)return null;
+    const a0=Math.atan2(sy,sx),a1=Math.atan2(ty,tx);
+    let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
+    return t=>{
+        const u=Math.max(0,Math.min(1,t)),k=1-(1-u)*(1-u),r=r0+(r1-r0)*k,a=a0+da*u;
+        return[px+Math.cos(a)*r/.5,py+Math.sin(a)*r/H];
+    };
+}
 function liveSegDuration(seg){return hexMotionDuration(seg,{vy:0,speed:0});}
 function liveSegPoint(seg,t,startState=null,duration=null){
     if(seg?.floorContact){const c=seg.floorContact;return floorContactPoint(c.fromX,c.toX,c.side,t,c.pocket);}
@@ -503,6 +527,7 @@ function liveSegPoint(seg,t,startState=null,duration=null){
     if(seg.topPivot){const [px,py]=seg.topPivot,sx=latticeRealX(seg.from[0]),sy=cellCenterYNorm(seg.from[1]),cx=latticeRealX(px),cy=cellCenterYNorm(py),contactY=cy-1,fallDist=Math.max(0,contactY-sy),v0=Math.max(0,startState?.vy||0),fallT=fallDist>1e-9?(-v0+Math.sqrt(Math.max(0,v0*v0+2*GRAV*fallDist)))/Math.max(.0001,GRAV):0,tx=latticeRealX(seg.to[0]),ty=cellCenterYNorm(seg.to[1]);let da=Math.atan2(ty-cy,tx-cx)+Math.PI/2;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;const arcT=Math.abs(da)/Math.max(.0001,SLIDE_SPEED),naturalTotal=Math.max(1e-9,fallT+arcT),total=Number.isFinite(duration)?Math.max(1e-9,duration):naturalTotal,elapsed=t*total;if(elapsed<=fallT&&fallT>1e-9){const q=Math.max(0,Math.min(1,(v0*elapsed+.5*GRAV*elapsed*elapsed)/Math.max(1e-9,fallDist)));return[(sx+(cx-sx)*q)/.5,(sy+(contactY-sy)*q-BOARD_TOP_CENTER_N)/H];}const q=arcT<=1e-9?1:Math.max(0,Math.min(1,(elapsed-fallT)/arcT)),a=-Math.PI/2+da*q;return[(cx+Math.cos(a))/.5,(cy+Math.sin(a)-BOARD_TOP_CENTER_N)/H];}
     if(seg.pivot){const [px,py]=seg.pivot,a0=Math.atan2((seg.from[1]-py)*H,(seg.from[0]-px)*.5),a1=Math.atan2((seg.to[1]-py)*H,(seg.to[0]-px)*.5),radius=Math.hypot((seg.from[0]-px)*.5,(seg.from[1]-py)*H);let da=a1-a0;while(da>Math.PI)da-=TAU;while(da<-Math.PI)da+=TAU;
         if(seg.releasedPivotClock){const c=seg.releasedPivotClock,e=t*c.duration,j=c.points.findIndex(p=>p.t>=e);if(j>0){const p=c.points[j-1],q=c.points[j];t=p.q+(q.q-p.q)*(e-p.t)/Math.max(1e-9,q.t-p.t);}}
+        if(!seg.releasedPivotClock){const contact=hexPivotApproachPath(seg);if(contact)return contact(t);}
         const a=a0+da*t;return[px+Math.cos(a)*radius/.5,py+Math.sin(a)*radius/H];}
     const dx=seg.to[0]-seg.from[0],dy=seg.to[1]-seg.from[1];let q=t;if(Math.abs(dx)<1e-9&&dy>0){if(startState&&Number.isFinite(duration)){const dist=Math.max(1e-9,dy*H),elapsed=t*Math.max(0,duration);q=Math.max(0,Math.min(1,((Math.max(0,startState.vy||0)*elapsed)+.5*GRAV*elapsed*elapsed)/dist));}else q=t*t;}return[seg.from[0]+dx*q,seg.from[1]+dy*q];
 }

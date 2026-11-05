@@ -64,6 +64,7 @@ const GATE = [
   "tests/instant-drop-contact-integrity.js",
   "tests/online-clear-render-parity.js",
   "tests/motion-smoothness-regression-v1.js",
+  "tests/motion-continuity.js",
   "tests/no-upward-bounce-split-continuity-v1.js",
   "tests/even-row-strict-inner-split-continuity-v1.js",
   "tests/split-visual-state-integrity.js",
