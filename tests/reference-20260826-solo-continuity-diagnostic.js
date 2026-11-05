@@ -58,7 +58,7 @@ const result=vm.runInContext(`
   const dt=1/240,frames=[],events=[];
   let prevSolo=pos(soloId),lastMoveT=0,firstMoveT=null,totalDistance=0;
   let priorPath=JSON.stringify(firstPath(soloId));
-  let pairArrivalT=null,soloFirstArrivalT=null,soloFinalArrivalT=null,maxPairDriftAfterArrival=0;
+  let pairArrivalT=null,soloFirstArrivalT=null,soloFinalArrivalT=null,maxPairDriftAfterArrival=0;let soloFirstMinDist=Infinity;
 
   for(let i=0;i<=120;i++){
     const t=i*dt,p=pos(soloId),pair=pairIds.map(pos);
@@ -70,7 +70,12 @@ const result=vm.runInContext(`
     if(pairArrivalT!==null&&t>=pairArrivalT-1e-12){
       maxPairDriftAfterArrival=Math.max(maxPairDriftAfterArrival,physDist(pair[0],pairTarget[0]),physDist(pair[1],pairTarget[1]));
     }
-    if(soloFirstArrivalT===null&&near(p,soloFirstTarget))soloFirstArrivalT=t;
+    // F131 is the solo passing its first lattice cell. The continuation now
+    // starts in the same frame (no idle frame at the boundary,
+    // app-segment-chain-continuity-v1.js), so the ball passes through the cell
+    // rather than resting on it: take the closest approach before the final
+    // cell, and check below that it is on the cell (within one sample's travel).
+    if(soloFinalArrivalT===null&&p){const d=physDist(p,soloFirstTarget);if(d<soloFirstMinDist){soloFirstMinDist=d;soloFirstArrivalT=t;}}
     if(soloFinalArrivalT===null&&near(p,soloFinalTarget))soloFinalArrivalT=t;
 
     const pathNow=JSON.stringify(firstPath(soloId));
@@ -83,7 +88,7 @@ const result=vm.runInContext(`
   const continuation=events.find(e=>e.path?.referenceContinuation)||null;
   return{
     soloId,pairIds,choice,dt,firstMoveT,lastMoveT,totalDistance,
-    pairArrivalT,soloFirstArrivalT,soloFinalArrivalT,maxPairDriftAfterArrival,
+    pairArrivalT,soloFirstArrivalT,soloFirstMinDist,soloFinalArrivalT,maxPairDriftAfterArrival,
     pairTarget,soloFirstTarget,soloFinalTarget,
     finalPair:pairIds.map(pos),finalPairLogical:pairIds.map(logical),
     finalPos:pos(soloId),logicalFinal:logical(soloId),frames,events,continuation,
@@ -115,6 +120,7 @@ if(!result.continuation||result.continuation.path?.kind!=="ROLL_RIGHT")throw new
 const pairExpected=4/result.timing.fps,soloFirstExpected=5/result.timing.fps,soloFinalExpected=8/result.timing.fps;
 const tol=result.dt*1.1;
 if(result.pairArrivalT===null||Math.abs(result.pairArrivalT-pairExpected)>tol)throw new Error(`pair F130 timing mismatch: got ${result.pairArrivalT}, expected ${pairExpected}`);
+if(!(result.soloFirstMinDist<=0.03))throw new Error(`solo did not pass its F131 cell: closest ${result.soloFirstMinDist}`);
 if(result.soloFirstArrivalT===null||Math.abs(result.soloFirstArrivalT-soloFirstExpected)>tol)throw new Error(`solo F131 timing mismatch: got ${result.soloFirstArrivalT}, expected ${soloFirstExpected}`);
 if(result.soloFinalArrivalT===null||Math.abs(result.soloFinalArrivalT-soloFinalExpected)>tol)throw new Error(`solo F134 timing mismatch: got ${result.soloFinalArrivalT}, expected ${soloFinalExpected}`);
 if(result.maxPairDriftAfterArrival>2e-6)throw new Error(`pair moved after Nintendo F130 rest: drift ${result.maxPairDriftAfterArrival}`);
