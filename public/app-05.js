@@ -33,6 +33,14 @@ function spawn(g){
  g.dropT=0;g.lockT=0;g.lockResets=0;g.garbDone=false;g.garbLeft=0;g.garbShapes=[];
  g.garbagePlans=[];g.activeGarbagePacks=[];g.garbageClock=0;g.garbageMaterializeIndex=0;g.garbageNextBallAt=0;g.garbageWatchdogLimit=6;g.garbBlocked=false;g.garbageBatchPrepared=false;g.garbageSeq=0;
  g.chain=0;g.state="PLAYING";g.phase=null;
+ // Every ball on the board is at rest when a new piece appears. Its landing
+ // offset (impactOffsetX: how far left or right of the cell the piece was
+ // dropped) limits how far it may move sideways from where it actually
+ // landed, which only means something while it is landing. Kept on a resting
+ // ball, it stopped a forced roll turns later: a ball dropped right of centre
+ // could not roll left into a hole opened by a clear (more than one cell from
+ // its old landing point) and was left hanging on one support.
+ for(const row of g.board)for(const b of row)if(b&&typeof b==="object"&&b.impactOffsetX)b.impactOffsetX=0;
  if(g.ai){const lv=Math.max(1,Math.min(5,Number(g.ai.level)||1));g.ai.level=lv;g.ai.target=null;g.ai.thinkT=AI_PARAMS[lv].think*(.7+g.aiRng()*.6);g.ai.actT=0;}
 }
 function die(g,overflowCells=null,reason="LIMIT"){
