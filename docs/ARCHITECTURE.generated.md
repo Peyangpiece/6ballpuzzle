@@ -10,11 +10,11 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 2 | `app-02.js` | core: constants, physics planner, resolver, renderer | 309 |  | HEXDROP unified physics core: the only ball-motion definition. / |
 | 3 | `app-03.js` | core: constants, physics planner, resolver, renderer | 221 |  | HEXDROP unified event resolver. |
 | 4 | `app-04.js` | core: constants, physics planner, resolver, renderer | 216 |  | Canonical motion-group cleanup. No legacy rigidity metadata exists here. / |
-| 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 278 |  | Every engine by its board: the physics layers that resolve a bare board look |
+| 5 | `app-05.js` | core: constants, physics planner, resolver, renderer | 286 |  | Every engine by its board: the physics layers that resolve a bare board look |
 | 6 | `app-06.js` | core: constants, physics planner, resolver, renderer | 62 |  | Shared garbage presentation constants and visual collision helpers. |
 | 7 | `app-07.js` | core: constants, physics planner, resolver, renderer | 563 |  | Pile/garbage collapse overlap-scheduler constants. |
 | 8 | `app-pile-arc.js` | clear / collapse corrections | 132 |  | Accumulated-pile gravity binding (legacy filename). |
-| 9 | `app-clear-gap-collapse.js` | clear / collapse corrections | 266 |  | Post-clear accumulated-pile compaction invariant. |
+| 9 | `app-clear-gap-collapse.js` | clear / collapse corrections | 284 |  | Post-clear accumulated-pile compaction invariant. |
 | 10 | `app-floor-gap-invariant.js` | clear / collapse corrections | 40 |  | Floor-side no-gap invariant. |
 | 11 | `app-clear-vacancy-priority.js` | clear / collapse corrections | 331 |  | Post-clear vacancy conservation. |
 | 12 | `app-release-parity-settle.js` | clear / collapse corrections | 60 |  | Parity-safe active-piece hand-off. |
@@ -53,7 +53,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 45 | `app-physics-safety-invariants.js` | safety invariants | 604 |  |  |
 | 46 | `app-position-lock-sfx.js` | menu / audio | 388 |  |  |
 | 47 | `app-mass-motion-safety.js` | safety invariants | 961 |  |  |
-| 48 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4141 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
+| 48 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4147 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
 | 49 | `app-garbage-performance-v1.js` | garbage (おじゃま) pipeline | 211 |  | 6ball GARBAGE PERFORMANCE v1 |
 | 50 | `app-garbage-continuous-v1.js` | garbage (おじゃま) pipeline | 1902 |  | 6ball GARBAGE CONTINUOUS GRAVITY v1 |
 | 51 | `app-contact-separation-v1.js` | safety invariants | 662 |  | 6ball CONTACT SEPARATION / NON-ADHESION v1 |
@@ -81,6 +81,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 73 | `app-settle-watchdog-v1.js` | other | 48 |  | Settle watchdog v1. |
 | 74 | `app-mass-fall-v1.js` | other | 352 |  | Mass fall v1. |
 | 75 | `app-segment-chain-continuity-v1.js` | other | 66 |  | Segment chain continuity v1. |
-| 76 | `controls-v7.js` | input | 308 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
-| 77 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
-| 78 | `app-ui-ux-v1.js` | other | 50 |  | UI/UX layer v1 (no physics). |
+| 76 | `app-contention-order-v1.js` | other | 76 | hexPhysPlanGroup | Contention order v1: the ball that lost its support first takes the cell. |
+| 77 | `controls-v7.js` | input | 308 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
+| 78 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
+| 79 | `app-ui-ux-v1.js` | other | 50 |  | UI/UX layer v1 (no physics). |

@@ -186,10 +186,28 @@
         for(let y=ROWS-1;y>=boardScanMin(g.board);y--){
             for(let x=0;x<W2;x++){
                 const p=rawClearProposal(g,x,y,affected);
-                if(p)return p;
+                if(p)return earliestContender(g,p,affected);
             }
         }
         return null;
+    }
+
+    // Another ball may want the same cell (from the other side, or falling
+    // into it). The scan reaches the left one first; the ball whose support
+    // went first takes the cell instead (app-contention-order-v1.js).
+    // Equal times keep the scan order.
+    function earliestContender(g,p,affected){
+        const lostAt=window.hexPhysSupportLostAt;
+        if(typeof lostAt!=="function")return p;
+        let best=p,bestAt=lostAt(g.board,p.x,p.y);
+        for(const[qx,qy]of[[p.tx-1,p.ty-1],[p.tx+1,p.ty-1],[p.tx,p.ty-2]]){
+            if(qx===p.x&&qy===p.y)continue;
+            const q=rawClearProposal(g,qx,qy,affected);
+            if(!q||q.tx!==p.tx||q.ty!==p.ty)continue;
+            const at=lostAt(g.board,qx,qy);
+            if(at<bestAt){best=q;bestAt=at;}
+        }
+        return best;
     }
 
     function drainClearSupportLoss(g,cleared){
