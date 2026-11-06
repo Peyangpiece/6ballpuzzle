@@ -56,6 +56,11 @@ public/index.html
   進めます（経路と合計時間は不変）。空中から始まる回転区間は、回転しながら支点までの距離を縮めて目標で
   終わります（`app-07.js` の `hexPivotApproachPath`。以前は大きく回り込んで最後に最大 1.3 マス引き戻されていました）。
   どちらも `tests/motion-continuity.js` で、1 フレームの跳びと途中の停止がないことを確認します。
+- 取り合いの順番 `app-contention-order-v1.js`: 2 つの球が同じ空きマスを左右から取り合うとき、先に支えを失った球
+  （下の空きマスのうち最後に空いた時刻が早い球）が先に入ります。同時なら従来どおり左が先です。盤面は手の
+  移動で空いたマスの時刻を覚え、次のピースが出るときに忘れます（`tests/contention-order.js`）。
+  また、球の着地位置のずれ（`impactOffsetX`）は次のピースが出るときに 0 に戻します。残っていると、何手も前の
+  着地のずれのせいで消去後の穴へ転がれないことがありました（`tests/stale-landing-offset.js`）。
 - Worker が読む層は `ai-worker.js` の `AI_WORKER_FILES` に列挙し（index.html の物理層＋AI、同じ順）、
   本番では `tools/build.js` が `js/ai-worker.<hash>.min.js` に 1 本化します。物理層を足したら
   この配列にも足してください（`tests/ai-core.js` が一致を検査し、予測が実エンジンと 9 割以上一致することも確認します）。

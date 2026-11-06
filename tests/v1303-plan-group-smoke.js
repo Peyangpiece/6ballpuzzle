@@ -62,7 +62,8 @@ const files = [
   "app-split-visual-smoothness-v1.js",
   "app-settle-watchdog-v1.js",
   "app-mass-fall-v1.js",
-  "app-segment-chain-continuity-v1.js"
+  "app-segment-chain-continuity-v1.js",
+  "app-contention-order-v1.js"
 ];
 
 // Fail before testing a stale or reordered subset of the published runtime.

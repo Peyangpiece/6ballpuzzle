@@ -61,7 +61,8 @@ var AI_WORKER_FILES=[
   "app-split-visual-smoothness-v1.js",
   "app-settle-watchdog-v1.js",
   "app-mass-fall-v1.js",
-  "app-segment-chain-continuity-v1.js"
+  "app-segment-chain-continuity-v1.js",
+  "app-contention-order-v1.js"
 ];
 (function(){
   // The layers are browser scripts: give them the globals they test for.

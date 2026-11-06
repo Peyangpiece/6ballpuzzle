@@ -1697,8 +1697,14 @@
                  */
                 if(al!==bl)
                     return al-bl;
-
-
+                /*
+                 * The ball whose support went first moves first
+                 * (app-contention-order-v1.js); then left to right.
+                 */
+                const at=Math.min(...a.map(p=>Number(p.supportLostAt)||0));
+                const bt=Math.min(...b.map(p=>Number(p.supportLostAt)||0));
+                if(at!==bt)
+                    return at-bt;
                 return(
                     Math.min(
                         ...a.map(
