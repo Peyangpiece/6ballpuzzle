@@ -13,7 +13,9 @@ function Matching({ onMatched, onCancel, onError }) {
                 setPhase("search");
                 const match = await Net.findMatch((ms, sp) => {if (!alive) return;setWaited(ms);setSpread(sp);}, sig.current);
                 if (!alive) {match.leave();return;}
-                setFoe(match.opponent);setPhase("found");setTimeout(() => { if (alive) onMatched(match); }, 1400);
+                // Cancelled while the opponent is shown: leave the match, or this side stays
+                // "connected" and the opponent plays against a board that never moves.
+                setFoe(match.opponent);setPhase("found");setTimeout(() => { if (alive) onMatched(match); else match.leave(); }, 1400);
             } catch (e) {
                 const msg = (e && e.message) || String(e);
                 if (alive && msg !== "cancelled") onError(msg);
@@ -72,6 +74,12 @@ const HEX_APP_STORE_ID = ""; // "6828692964" once the app is on the App Store
 function hexRoomInviteUrl(code) {
     const origin = typeof location !== "undefined" && /^https?:$/.test(location.protocol) ? location.origin : HEX_PUBLIC_ORIGIN;
     return origin + "/?room=" + code + "&openExternalBrowser=1";
+}
+// The privacy policy. In the iOS app the page's own address is capacitor://localhost,
+// which a link opened in a new window cannot reach (iOS has no handler for that
+// scheme, so the tap did nothing); there the link goes to the public site.
+function hexPrivacyUrl() {
+    return (typeof location !== "undefined" && /^https?:$/.test(location.protocol) ? "" : HEX_PUBLIC_ORIGIN) + "/privacy.html";
 }
 // A browser on an iPhone or iPad (iPadOS reports a Mac with touch); not the app.
 function hexIsAppleMobileBrowser() {
@@ -264,30 +272,37 @@ function hexTutorialObserve(g, i, t) {
         else if (e.t === "garbage") t.garbage = true;
     }
     if (t.garbage && g.state === "PLAYING" && pendingIncomingCount(g) === 0) t.garbageDone = true;
-    return L.goal(t);
+    // "land" comes when the piece locks, "clear" and "waza" 0.1 to 0.9 s later,
+    // once the balls have settled. A retry is therefore decided only when the
+    // next piece is out: the last allowed piece used to fail on its landing
+    // frame, before its own clear could count.
+    const r = L.goal(t);
+    if (r && r.startsWith("retry") && !(g.state === "PLAYING" && g.piece)) return null;
+    return r;
 }
 // Instruction panel over the opponent board (x 671..1115, y 160..610 of 1280x720).
 function HexTutorialPanel({ lesson, tracker, status, message, onNext, onRetry, onExit, onVsAi }) {
     const L = HEX_TUTORIAL_LESSONS[lesson], kind = hexInputKind(), last = lesson === HEX_TUTORIAL_LESSONS.length - 1;
     const text = L.text[kind] || L.text.all;
-    const btn = "hex-btn px-4 text-[13px]";
+    const btn = "hex-btn px-3 text-[13px]";
     // While the lesson is played, the panel lets touches through to the game,
     // so a tap or a drag that starts over it still turns or moves the piece
     // (the right side of the screen turns clockwise, which lesson 2 teaches);
     // only its buttons take touches. With a message shown (success, retry)
-    // the panel takes touches again, so it can scroll on small screens.
+    // the panel takes touches again, so it can scroll on small screens, and a
+    // controller can reach its buttons (data-hex-pad-menu, app-ui-ux-v1.js).
     const bs = { minHeight: 40, pointerEvents: "auto" };
-    return React.createElement("div", { className: "absolute flex flex-col overflow-y-auto", role: "region", "aria-label": "チュートリアルの説明", style: { pointerEvents: status === "play" ? "none" : "auto", left: `${671 / 12.8}%`, width: `${444 / 12.8}%`, top: `${160 / 7.2}%`, height: `${450 / 7.2}%`, padding: "clamp(8px,1.4vw,18px)", background: "rgba(8,7,24,.9)", border: "1px solid rgba(255,211,106,.45)", borderRadius: 14 } },
+    return React.createElement(HexBoardPanel, { label: "チュートリアルの説明", interactive: status !== "play", attrs: status === "play" ? null : { "data-hex-pad-menu": "1" }, background: "rgba(8,7,24,.9)", border: "1px solid rgba(255,211,106,.45)",
+        actions: [
+            status === "success" && !last && React.createElement("button", { key: "next", onClick: onNext, className: btn + " hex-btn-gold", style: bs }, "次のレッスンへ"),
+            status === "success" && last && React.createElement("button", { key: "ai", onClick: onVsAi, className: btn + " hex-btn-gold", style: bs }, "AIと対戦する"),
+            status !== "success" && React.createElement("button", { key: "retry", onClick: onRetry, className: btn + " hex-btn-secondary", style: bs }, "やり直す"),
+            React.createElement("button", { key: "exit", onClick: onExit, "data-hex-back": "1", className: btn + " hex-btn-ghost", style: bs }, last && status === "success" ? "ホームへ" : "やめる")] },
         React.createElement("div", { className: "text-[11px] font-black tracking-[.18em]", style: { color: "#FFD36A" } }, `LESSON ${lesson + 1} / ${HEX_TUTORIAL_LESSONS.length}`),
         React.createElement("div", { className: "text-base font-black text-white mt-0.5" }, L.title),
         React.createElement("p", { className: "mt-1.5 text-[12px] leading-relaxed text-white/85" }, text),
         React.createElement("ul", { className: "mt-2 grid gap-1" }, L.checks.map(([k, label]) => { const done = status === "success" || !!tracker[k]; return React.createElement("li", { key: k, className: "flex items-center gap-2 text-[12px] font-bold", style: { color: done ? "#7DFFB2" : "rgba(255,255,255,.7)" } }, React.createElement("span", { "aria-hidden": "true", className: "inline-flex items-center justify-center rounded-full", style: { width: 16, height: 16, border: `2px solid ${done ? "#7DFFB2" : "rgba(255,255,255,.4)"}`, fontSize: 10 } }, done ? "✓" : ""), label, React.createElement("span", { className: "sr-only" }, done ? "（完了）" : "")); })),
-        message && React.createElement("div", { role: "status", className: "mt-2 rounded-lg px-2.5 py-1.5 text-[12px] font-bold", style: { color: status === "success" ? "#061016" : "#ffd2e3", background: status === "success" ? "#7DFFB2" : "rgba(255,62,165,.16)" } }, message),
-        React.createElement("div", { className: "mt-auto pt-2 flex flex-wrap gap-2" },
-            status === "success" && !last && React.createElement("button", { onClick: onNext, className: btn + " hex-btn-gold", style: bs }, "次のレッスンへ"),
-            status === "success" && last && React.createElement("button", { onClick: onVsAi, className: btn + " hex-btn-gold", style: bs }, "AIと対戦する"),
-            status !== "success" && React.createElement("button", { onClick: onRetry, className: btn + " hex-btn-secondary", style: bs }, "やり直す"),
-            React.createElement("button", { onClick: onExit, "data-hex-back": "1", className: btn + " hex-btn-ghost", style: bs }, last && status === "success" ? "ホームへ" : "やめる")));
+        message && React.createElement("div", { role: "status", className: "mt-2 rounded-lg px-2.5 py-1.5 text-[12px] font-bold", style: { color: status === "success" ? "#061016" : "#ffd2e3", background: status === "success" ? "#7DFFB2" : "rgba(255,62,165,.16)" } }, message));
 }
 
 // Network packets arrive at a much lower cadence than the 120 Hz game loop.
@@ -314,4 +329,25 @@ stepNetGarbageMotion=function(g,dt){
     }
 };
 
-window.__mountHexdrop = function () { ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App)); };
+// A render error anywhere in the app used to leave a blank dark screen (React
+// removes the whole tree, and the start-up error line is gone with the splash).
+// The boundary shows what happened and a way back in. The class is made when
+// the page mounts: this file is also loaded where React does not exist (the
+// CPU AI worker, the node tests), and "extends React.Component" would throw.
+function hexErrorBoundary() {
+    return class HexErrorBoundary extends React.Component {
+        constructor(props) { super(props); this.state = { error: null }; }
+        static getDerivedStateFromError(error) { return { error }; }
+        componentDidCatch(error) { try { console.error("Drop Ball render error", error); } catch (_) {} }
+        render() {
+            if (!this.state.error) return this.props.children;
+            const msg = String((this.state.error && this.state.error.message) || this.state.error || "").slice(0, 200);
+            return React.createElement("div", { role: "alert", "data-hex-crash": "1", style: { position: "fixed", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, textAlign: "center", background: "#060512", color: "#fff" } },
+                React.createElement("div", { style: { fontSize: 18, fontWeight: 800 } }, "エラーが発生しました"),
+                React.createElement("div", { style: { fontSize: 13, lineHeight: 1.7, color: "rgba(255,255,255,.7)", maxWidth: 420 } }, "お手数ですが、再読み込みしてください。記録や設定は消えません。"),
+                msg && React.createElement("div", { style: { fontSize: 11, color: "rgba(255,143,156,.85)", maxWidth: 480, wordBreak: "break-word" } }, msg),
+                React.createElement("button", { onClick: () => { try { location.reload(); } catch (_) {} }, className: "hex-btn hex-btn-primary", style: { padding: "0 28px", fontSize: 15 } }, "再読み込み"));
+        }
+    };
+}
+window.__mountHexdrop = function () { ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(hexErrorBoundary(), null, React.createElement(App))); };

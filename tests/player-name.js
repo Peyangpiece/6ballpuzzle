@@ -43,4 +43,14 @@ assert(/const saveProfile=useCallback\(\(\)=>\{const c=HexPlayerName\.check\(pro
 assert(app16.includes('hexReadStored("hexdrop_name_prompted","")!=="1"') && app16.includes('hexStoreMenuPref("hexdrop_name_prompted","1")'), "the first-launch prompt is shown once");
 assert(app16.includes("home,nameDialog,"), "the first-launch prompt is rendered on the home screen");
 assert(read("app-account-delete-v1.js").includes('"hexdrop_name_prompted"'), "deleting the account asks for a nickname again");
+// Combining marks and accents must not hide a refused word; ordinary accented and voiced names stay allowed.
+assert.strictEqual(N.check("fu\u0336ck").reason, "blocked", "a strike-through mark between the letters does not pass");
+assert.strictEqual(N.check("f\u00fcck").reason, "blocked", "an accented letter counts as its base letter");
+assert.strictEqual(N.display("fu\u0336ck"), N.FALLBACK, "the same holds for names received from the network");
+for (const okName of ["Ren\u00e9", "Zo\u00eb", "だいご", "ガブリエル", "ぱぴぷ"]) assert.strictEqual(N.check(okName).ok, true, okName + " is an ordinary name");
+// Stacked marks are reduced to one per letter; the 12-character limit never splits an emoji.
+assert.strictEqual(N.clean("a\u0300\u0301\u0302\u0303b"), "a\u0300b");
+assert.strictEqual(N.clean("12345678901\ud83d\ude00x"), "12345678901\ud83d\ude00");
+assert(!/[\ud800-\udbff]$/.test(N.clean("123456789012\ud83d\ude00")) && N.clean("123456789012\ud83d\ude00") === "123456789012", "no lone surrogate at the cut");
+assert(N.clean("\ud83d\ude00".repeat(20)).length <= 24, "a name of 12 emoji fits the 24 UTF-16 units the database accepts");
 console.log("player name PASS");

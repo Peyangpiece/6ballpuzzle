@@ -31,7 +31,7 @@ class MainViewController: CAPBridgeViewController {
 }
 
 /// Game Center for the web layer (public/app-native-v1.js):
-/// signIn, submitScore (rating leaderboard), unlockAchievement, showLeaderboard.
+/// signIn, submitScore (trophy leaderboard), unlockAchievement, showLeaderboard.
 @objc(GameCenterPlugin)
 public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin, GKGameCenterControllerDelegate {
     public let identifier = "GameCenterPlugin"
@@ -236,7 +236,7 @@ public class NativeBgmPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
-/// The one-time purchase that removes the ads (public/app-native-v1.js),
+/// The monthly subscription that removes the ads (public/app-native-v1.js),
 /// with StoreKit 2: product (its price), purchase, owned (the current
 /// entitlements) and restore (AppStore.sync, the 購入を復元 button).
 @objc(StorePlugin)

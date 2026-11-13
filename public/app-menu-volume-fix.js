@@ -66,6 +66,12 @@
 
   setPercent(percent,false);
   installMenuClickBridge();
+  // A volume changed without a slider event (the settings reset).
+  const baseSetVolumes=window.__sixBallSetAudioVolumes;
+  window.__sixBallSetAudioVolumes=function(v){
+    if(typeof baseSetVolumes==="function"){try{baseSetVolumes(v);}catch(_){}}
+    if(v&&Number.isFinite(Number(v.sfx))&&clamp(v.sfx)!==percent)setPercent(v.sfx,true);
+  };
 
   // app-brand-bgm.js normally loads first, but retry once on DOM ready for
   // defensive ordering without timers or gameplay hooks.

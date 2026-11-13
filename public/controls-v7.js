@@ -26,26 +26,6 @@
     const pointers=new Map();
     let dual=null;
 
-    // Normal-ball rotation MP3. Played directly inside the trusted
-    // pointerup gesture so Safari cannot reject it as delayed playback.
-    const ROTATE_AUDIO_SRC="/assets/normal-ball-rotate-v14.mp3?v=652d0f18f431199f";
-    const rotateAudioPool=Array.from({length:4},()=>{
-        const a=new Audio();
-        a.preload="auto";
-        a.playsInline=true;
-        a.setAttribute("playsinline","");
-        a.src=ROTATE_AUDIO_SRC;
-        try{a.load();}catch(_){}
-        return a;
-    });
-    
-
-    
-
-    
-
-    window.__sixBallRotateDirectSource=ROTATE_AUDIO_SRC;
-
     const HOLD_MS=LONG_PRESS_MS;
     const TAP_MAX_MS=350;
     const DUAL_TAP_MAX_MS=320;
@@ -55,12 +35,19 @@
     const DUAL_HOLD_DRIFT_TOL=30;
 
     const isCanvas=e=>e?.target?.tagName==="CANVAS";
+    // The engine the player controls: the one of the current match (the App
+    // exports its ref), and only while it has a piece and the match is not
+    // over. The list of created engines was searched before; between pieces
+    // and during the intro it then found an engine of an EARLIER match that
+    // had stopped with a piece in the air (a won or abandoned match), so the
+    // touch went there: a tap in the intro played a rotate sound instead of
+    // skipping it, and the winner could still move the frozen piece.
+    const playable=g=>!!(g&&g.state==="PLAYING"&&g.piece&&!g.ai&&!g.matchFrozen);
     const player=()=>{
+        const ref=window.__sixBallDebugRefs&&window.__sixBallDebugRefs.meRef;
+        if(ref)return playable(ref.current)?ref.current:null;
         const list=window.__hexEnginesV7||[];
-        for(let i=list.length-1;i>=0;i--){
-            const g=list[i];
-            if(g&&g.state==="PLAYING"&&g.piece&&!g.ai)return g;
-        }
+        for(let i=list.length-1;i>=0;i--)if(playable(list[i]))return list[i];
         return null;
     };
     const consume=e=>{
@@ -204,26 +191,51 @@
     }
     window.__hexResetTouchInput=resetAll;
 
+    // A touch that starts between two pieces (about 0.3 s after every drop,
+    // longer while balls clear) is kept and joins the next piece as soon as it
+    // appears: a swipe begun early then moves that piece instead of being
+    // ignored until the finger is lifted, and a two-finger tap whose fingers
+    // land on either side of the spawn is still a two-finger tap. Such a touch
+    // never turns the piece (a tap made before the piece existed is not a
+    // rotation), and it is not consumed, so it still skips the match intro.
+    const awaitingPiece=()=>{
+        const ref=window.__sixBallDebugRefs&&window.__sixBallDebugRefs.meRef,g=ref&&ref.current;
+        return !!(g&&!g.ai&&!g.piece&&g.alive!==false&&!g.matchFrozen&&!window.__sixBallPaused&&window.__sixBallScreen==="GAME");
+    };
+    const attach=(rec,g)=>{
+        rec.g=g;rec.startX=rec.lastX;rec.startY=rec.lastY;rec.dragBaseX=currentX(g);
+    };
+    const bindWaiting=()=>{
+        const g=player();
+        if(!validGame(g))return false;
+        for(const r of pointers.values())if(!r.g)attach(r,g);
+        if(pointers.size===2&&!dual)startDual();
+        return true;
+    };
+
     const onDown=e=>{
         if(!isCanvas(e))return;
-        const g=player();
-        if(!validGame(g))return;
-        consume(e);
-        try{Sfx.init();}catch(_){}
+        const g=player(),live=validGame(g);
+        if(!live&&!awaitingPiece())return;
+        if(live){
+            consume(e);
+            try{Sfx.init();}catch(_){}
+        }
 
         if(pointers.size>=2){resetAll("third-pointer");return;}
         const p=point(e,e.target);
         const rec={
-            id:e.pointerId,canvas:e.target,g,
+            id:e.pointerId,canvas:e.target,g:live?g:null,
             startX:p.x,startY:p.y,lastX:p.x,lastY:p.y,
             // Tap direction is relative to the player's own board: its right half
             // turns clockwise, everything left of its centre counter-clockwise.
             downAt:performance.now(),half:p.x>=ME.X+ME.BW/2?1:-1,
-            tapEligible:true,dragActive:false,dragMoved:false,dual:false,
-            dragBaseX:currentX(g)
+            tapEligible:live,dragActive:false,dragMoved:false,dual:false,
+            dragBaseX:live?currentX(g):SPAWN_X
         };
         pointers.set(rec.id,rec);
         try{rec.canvas.setPointerCapture(rec.id);}catch(_){}
+        if(live)for(const r of pointers.values())if(!r.g)attach(r,g);
         if(pointers.size===2)startDual();
     };
 
@@ -233,6 +245,7 @@
         consume(e);
         const p=point(e,rec.canvas);
         rec.lastX=p.x;rec.lastY=p.y;
+        if(!rec.g&&!bindWaiting())return;
         const totalDx=rec.lastX-rec.startX;
         const totalDy=rec.lastY-rec.startY;
         const totalDist=Math.hypot(totalDx,totalDy);

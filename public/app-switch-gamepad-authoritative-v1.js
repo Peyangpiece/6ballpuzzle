@@ -25,35 +25,46 @@
         lastActionAt:0
     };
 
-    function player(){
-
-        const list=
-            window.__hexEnginesV7||[];
-
-        for(let i=list.length-1;i>=0;i--){
-
-            const g=list[i];
-
-            if(
-                g &&
-                g.state==="PLAYING" &&
-                g.piece &&
-                !g.ai
-            ){
-                return g;
-            }
-        }
-
-        return null;
-    }
-
-    function validGame(g){
+    // The engine of the current match (the App exports its ref), not the
+    // newest engine with a piece: between pieces that was an engine of an
+    // earlier match (see controls-v7.js), so a released stick cleared fast
+    // fall on the wrong engine and the real piece kept falling fast.
+    function playable(g){
         return !!(
             g &&
             g.state==="PLAYING" &&
             g.piece &&
             !g.ai &&
-            !window.__sixBallPaused
+            !g.matchFrozen
+        );
+    }
+
+    function player(){
+
+        const ref=
+            window.__sixBallDebugRefs &&
+            window.__sixBallDebugRefs.meRef;
+
+        if(ref)return playable(ref.current)?ref.current:null;
+
+        const list=
+            window.__hexEnginesV7||[];
+
+        for(let i=list.length-1;i>=0;i--){
+            if(playable(list[i]))return list[i];
+        }
+
+        return null;
+    }
+
+    // __sixBallPauseOpen: the pause dialog is open. An online match is not
+    // frozen by it (__sixBallPaused stays false), but the controller then
+    // works the dialog, not the piece.
+    function validGame(g){
+        return !!(
+            playable(g) &&
+            !window.__sixBallPaused &&
+            !window.__sixBallPauseOpen
         );
     }
 

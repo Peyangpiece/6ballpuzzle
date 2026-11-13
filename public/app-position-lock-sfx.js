@@ -11,6 +11,14 @@
   let loading=null;
   let playScheduled=false;
   let lastPlayedAt=-Infinity;
+  // The opponent's balls settle more quietly, like every other sound of the
+  // opponent's board (app-16.js drains its events at this level).
+  const FOE_LEVEL=.32;
+  let pendingLevel=0;
+  const levelFor=g=>{
+    const ref=window.__sixBallDebugRefs&&window.__sixBallDebugRefs.foeRef;
+    return ref&&ref.current===g?FOE_LEVEL:1;
+  };
 
   function now(){
     return typeof performance!=="undefined"
@@ -84,7 +92,7 @@
     return loading;
   }
 
-  function playNow(){
+  function playNow(level=1){
     /*
      * Instant drop also receives the final-position SE.
      * The instant-drop warp/landing sound and this confirmation
@@ -95,7 +103,7 @@
     if(!ctx||!decoded)
       return false;
 
-    const vol=volume();
+    const vol=volume()*level;
 
     if(vol<=0)
       return true;
@@ -143,11 +151,14 @@
     }
   }
 
-  function schedulePlay(){
+  function schedulePlay(level=1){
     /*
      * Multiple balls can settle in the same physics frame.
-     * Coalesce them into one clean collision sound.
+     * Coalesce them into one clean collision sound (at the
+     * louder of the two boards' levels).
      */
+    pendingLevel=Math.max(pendingLevel,level);
+
     if(playScheduled)
       return;
 
@@ -156,15 +167,18 @@
     setTimeout(()=>{
       playScheduled=false;
 
+      const lv=pendingLevel||1;
+      pendingLevel=0;
+
       if(now()-lastPlayedAt<24)
         return;
 
       if(decoded){
-        playNow();
+        playNow(lv);
       }else{
         prepare().then(()=>{
           if(decoded)
-            playNow();
+            playNow(lv);
         });
       }
     },0);
@@ -255,7 +269,7 @@
         }
 
         if(finalised)
-          schedulePlay();
+          schedulePlay(levelFor(g));
       }
 
       return out;

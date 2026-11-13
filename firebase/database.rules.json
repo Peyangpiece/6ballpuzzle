@@ -9,7 +9,7 @@
       "$uid": {
         ".read": "auth != null",
         ".write": "auth != null && auth.uid == $uid",
-        ".validate": "newData.hasChildren(['name', 'rating', 'wins', 'losses']) && (!data.child('dailyDay').exists() || newData.child('dailyDay').exists())",
+        ".validate": "newData.hasChildren(['name', 'rating', 'wins', 'losses']) && (!data.child('dailyDay').exists() || newData.child('dailyDay').exists()) && (!data.child('lastMatch').exists() || newData.child('lastMatch').exists())",
         "name": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
         },
@@ -23,7 +23,7 @@
           ".validate": "newData.isNumber()"
         },
         "lastMatch": {
-          ".validate": "root.child('config/ratingAuthority').val() != 'server' && newData.isString() && newData.val() != data.val() && root.child('matches/' + newData.val() + '/result').exists() && (root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid || root.child('matches/' + newData.val() + '/players/1/uid').val() == $uid) && newData.parent().child('lastResult').exists()"
+          ".validate": "root.child('config/ratingAuthority').val() != 'server' && newData.isString() && newData.val() != data.val() && root.child('matches/' + newData.val() + '/result').exists() && (root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid || root.child('matches/' + newData.val() + '/players/1/uid').val() == $uid) && newData.parent().child('lastResult').exists() && !root.child('matches/' + newData.val() + '/settled/' + $uid).exists() && newData.parent().parent().parent().child('matches/' + newData.val() + '/settled/' + $uid).val() == true"
         },
         "lastResult": {
           ".validate": "newData.parent().child('lastMatch').val() != data.parent().child('lastMatch').val() && (newData.val() == 'win' || newData.val() == 'loss') && (!(root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/0').exists() && root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/1').exists()) || root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/0/win').val() != root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/1/win').val()) && newData.val() == (((root.child('matches/' + newData.parent().child('lastMatch').val() + '/players/0/uid').val() == $uid) ? (root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/0').exists() ? root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/0/win').val() == true : root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/1/win').val() == false) : !(root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/0').exists() ? root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/0/win').val() == true : root.child('matches/' + newData.parent().child('lastMatch').val() + '/result/1/win').val() == false)) ? 'win' : 'loss')"
@@ -104,13 +104,28 @@
       "$band": {
         "waiting": {
           ".read": "auth != null",
-          ".write": "auth != null && $band.matches(/^[0-9]{1,2}$/) && (!newData.exists() || newData.child('uid').val() == auth.uid)",
-          ".validate": "newData.hasChildren(['uid', 'name', 'rating', 'ts']) && newData.child('ts').isNumber()",
+          ".write": "auth != null && $band.matches(/^1?[0-9]$/) && (!newData.exists() || (newData.child('uid').val() == auth.uid && (!data.exists() || data.child('uid').val() == auth.uid || now - data.child('ts').val() > 15000)))",
+          ".validate": "newData.hasChildren(['uid', 'name', 'rating', 'ts'])",
           "trophies": {
             ".validate": "newData.isNumber() && newData.val() == (root.child('users/' + newData.parent().child('uid').val() + '/trophies').exists() ? root.child('users/' + newData.parent().child('uid').val() + '/trophies').val() : 0)"
           },
           "icon": {
             ".validate": "newData.isString() && newData.val() == (root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').exists() ? root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').val() : 'initial')"
+          },
+          "uid": {
+            ".validate": "newData.isString()"
+          },
+          "name": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
+          },
+          "rating": {
+            ".validate": "newData.isNumber() && newData.val() == root.child('users/' + newData.parent().child('uid').val() + '/rating').val()"
+          },
+          "ts": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
           }
         }
       }
@@ -118,19 +133,37 @@
     "pairings": {
       "$uid": {
         ".read": "auth != null && auth.uid == $uid",
-        ".write": "auth != null && (!newData.exists() ? auth.uid == $uid : (newData.isString() && root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid && root.child('matches/' + newData.val() + '/players/1/uid').val() == auth.uid))"
+        ".write": "auth != null && (!newData.exists() ? auth.uid == $uid : (!data.exists() && newData.isString() && root.child('matches/' + newData.val() + '/players/0/uid').val() == $uid && root.child('matches/' + newData.val() + '/players/1/uid').val() == auth.uid))"
       }
     },
     "rooms": {
       "$code": {
         ".read": "auth != null",
-        ".write": "auth != null && $code.matches(/^[0-9]{6}$/) && (!newData.exists() ? data.child('hostUid').val() == auth.uid : (!data.exists() || now - data.child('createdAt').val() > 1800000 ? newData.child('hostUid').val() == auth.uid && !newData.child('matchId').exists() : (data.child('hostUid').val() == newData.child('hostUid').val() && !data.child('matchId').exists() && newData.child('matchId').isString() && root.child('matches/' + newData.child('matchId').val() + '/players/0/uid').val() == data.child('hostUid').val() && root.child('matches/' + newData.child('matchId').val() + '/players/1/uid').val() == auth.uid)))",
-        ".validate": "newData.hasChildren(['hostUid', 'hostName', 'hostRating', 'createdAt']) && newData.child('createdAt').isNumber()",
+        ".write": "auth != null && $code.matches(/^[0-9]{6}$/) && (!newData.exists() ? data.child('hostUid').val() == auth.uid : ((data.exists() && data.child('hostUid').val() == newData.child('hostUid').val() && !data.child('matchId').exists() && newData.child('matchId').isString() && root.child('matches/' + newData.child('matchId').val() + '/players/0/uid').val() == data.child('hostUid').val() && root.child('matches/' + newData.child('matchId').val() + '/players/1/uid').val() == auth.uid) || ((!data.exists() || data.child('hostUid').val() == auth.uid || now - data.child('createdAt').val() > 1800000) && newData.child('hostUid').val() == auth.uid && !newData.child('matchId').exists())))",
+        ".validate": "newData.hasChildren(['hostUid', 'hostName', 'hostRating', 'createdAt'])",
         "hostTrophies": {
           ".validate": "newData.isNumber() && newData.val() == (root.child('users/' + newData.parent().child('hostUid').val() + '/trophies').exists() ? root.child('users/' + newData.parent().child('hostUid').val() + '/trophies').val() : 0)"
         },
         "hostIcon": {
           ".validate": "newData.isString() && newData.val() == (root.child('users/' + newData.parent().child('hostUid').val() + '/equip/icon').exists() ? root.child('users/' + newData.parent().child('hostUid').val() + '/equip/icon').val() : 'initial')"
+        },
+        "hostUid": {
+          ".validate": "newData.isString()"
+        },
+        "hostName": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 24"
+        },
+        "hostRating": {
+          ".validate": "newData.isNumber() && newData.val() == root.child('users/' + newData.parent().child('hostUid').val() + '/rating').val()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 600000"
+        },
+        "matchId": {
+          ".validate": "newData.isString()"
+        },
+        "$other": {
+          ".validate": false
         }
       }
     },
@@ -138,11 +171,20 @@
       "$mid": {
         ".read": "auth != null && (data.child('players/0/uid').val() == auth.uid || data.child('players/1/uid').val() == auth.uid)",
         ".write": "auth != null && !data.exists() && (newData.child('players/0/uid').val() == auth.uid || newData.child('players/1/uid').val() == auth.uid) && newData.child('players/0/uid').val() != newData.child('players/1/uid').val()",
-        ".validate": "newData.hasChildren(['meta', 'players'])",
+        ".validate": "newData.hasChildren(['meta', 'players']) && (data.exists() || (!newData.child('result').exists() && !newData.child('state').exists() && !newData.child('attacks').exists() && !newData.child('settled').exists() && !newData.child('players/0/joinedAt').exists() && !newData.child('players/1/joinedAt').exists() && newData.child('players/0/connected').val() != true && newData.child('players/1/connected').val() != true))",
         "meta": {
           ".validate": "newData.hasChildren(['seed', 'createdAt']) && newData.child('seed').isNumber()",
           "ranked": {
             ".validate": "newData.isBoolean()"
+          },
+          "seed": {
+            ".validate": "newData.isNumber()"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
           }
         },
         "players": {
@@ -170,6 +212,9 @@
             },
             "icon": {
               ".validate": "newData.isString() && newData.val() == (root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').exists() ? root.child('users/' + newData.parent().child('uid').val() + '/equip/icon').val() : 'initial')"
+            },
+            "$other": {
+              ".validate": false
             }
           }
         },
@@ -196,6 +241,15 @@
           "$i": {
             ".write": "auth != null && !data.exists() && root.child('matches/' + $mid + '/players/' + $i + '/uid').val() == auth.uid && root.child('matches/' + $mid + '/players/0/joinedAt').exists() && root.child('matches/' + $mid + '/players/1/joinedAt').exists()",
             ".validate": "newData.hasChildren(['win', 'reason', 'ts']) && newData.child('win').isBoolean() && newData.child('reason').isString() && newData.child('ts').isNumber()"
+          }
+        },
+        "$other": {
+          ".validate": false
+        },
+        "settled": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid && !data.exists() && (root.child('matches/' + $mid + '/players/0/uid').val() == $uid || root.child('matches/' + $mid + '/players/1/uid').val() == $uid)",
+            ".validate": "newData.val() == true && newData.parent().parent().parent().parent().child('users/' + $uid + '/lastMatch').val() == $mid"
           }
         }
       }

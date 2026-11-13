@@ -231,7 +231,9 @@ async function startAds(){
     ads.ready=true;
     loadAd();
   }catch(_){}
-  ads.starting=false;
+  // In finally: the early return above (consent does not allow ads yet) must
+  // not leave "starting" set, or ads could never start until the app restarts.
+  finally{ads.starting=false;}
 }
 const adFinished=()=>{const f=ads.onDone;ads.onDone=null;if(f)f();};
 try{
@@ -325,12 +327,16 @@ if(typeof Net!=="undefined"){
     };
   }
 
+  let appleAuthorizationCode=null;
   // Native sheet -> credential for the web SDK.
   async function nativeCredential(F,provider){
     if(provider==="apple"){
       const r=await call("FirebaseAuthentication","signInWithApple",{skipNativeAuth:true});
       const c=r&&r.credential;
       if(!c||!c.idToken)throw Object.assign(new Error("no Apple credential"),{code:"auth/popup-closed-by-user"});
+      // Kept for account deletion: Apple asks that the Sign in with Apple token
+      // is revoked when the account is deleted (the code is valid for 5 minutes).
+      appleAuthorizationCode=typeof c.authorizationCode==="string"&&c.authorizationCode?c.authorizationCode:null;
       return new F.OAuthProvider("apple.com").credential({idToken:c.idToken,rawNonce:c.nonce});
     }
     const r=await call("FirebaseAuthentication","signInWithGoogle",{skipNativeAuth:true});
@@ -373,6 +379,16 @@ if(typeof Net!=="undefined"){
       const apple=(user.providerData||[]).some(p=>p&&p.providerId==="apple.com");
       const cred=await nativeCredential(F,apple?"apple":"google");
       await F.reauthenticateWithCredential(user,cred);
+    },
+    // Revokes the Sign in with Apple token with the authorization code of the
+    // sign-in just made (reauthenticate above). Resolves false when there is
+    // nothing to revoke; Net.deleteAccount() calls it before deleting the user.
+    async revokeAppleToken(){
+      const code=appleAuthorizationCode;appleAuthorizationCode=null;
+      const F=await Net._ensureFirebase();
+      if(!code||typeof F.revokeAccessToken!=="function")return false;
+      await F.revokeAccessToken(Net.auth,code);
+      return true;
     }
   };
 }

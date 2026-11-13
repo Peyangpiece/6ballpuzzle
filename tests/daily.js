@@ -108,7 +108,9 @@ function load({ profile = {}, now = Date.UTC(2026, 9, 31, 3, 0) } = {}) {
   assert(/me\.pieceLimit = HexDaily\.PIECES/.test(app16), "the daily mode limits the pieces");
   assert(app16.includes("createEngine(seed, { offset: false, gravityRamp: false })") && app16.includes("HexDaily.seedFor(day)"), "today's seed, no speed-up");
   const daily = read("public/app-daily-v1.js");
-  assert(daily.includes('pointerEvents:done?"auto":"none"') && daily.includes('const bs={minHeight:40,pointerEvents:"auto"}') && !daily.includes("style:{minHeight:40}"), "while playing, touches on the panel reach the game; its buttons still take them");
+  assert(daily.includes('interactive:done') && daily.includes('const bs={minHeight:40,pointerEvents:"auto"}') && !daily.includes("style:{minHeight:40}"), "while playing, touches on the panel reach the game; its buttons still take them");
+  // A run that crosses midnight (Japan time) used yesterday's pieces: it is not recorded, claimed or submitted as today's.
+  assert(/if \(d\.day !== HexDaily\.day\(\)\) \{[^\n]*claim: \{ state: "expired" \}[^\n]*return;\}\s*const rec = HexDaily\.record\(score\)/.test(app16), "a daily run that ends on another day is not counted");
   assert(app16.includes('title:"デイリーチャレンジ"'), "the home screen offers the daily challenge");
   assert(app16.includes("else if (!tutorialRef.current && !dailyRef.current) stepEngine(foe, h);"), "no opponent in the daily challenge");
   assert(index.indexOf('"app-daily-v1.js"') > index.indexOf('"app-trophies-v1.js"') && index.indexOf('"app-daily-v1.js"') > index.indexOf('"app-05.js"'), "the daily layer wraps spawn after the engine");

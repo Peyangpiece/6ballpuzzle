@@ -98,24 +98,29 @@ function HexDailyPanel({daily,onRetry,onExit,onShop}){
         HexDaily.ranking(10).then(r=>{if(alive)setRank(r);}).catch(()=>{if(alive)setRank({rows:[],me:null,error:true});});
         return()=>{alive=false;};
     },[done,daily.submitted]);
-    const btn="hex-btn px-4 text-[13px]";
+    const btn="hex-btn px-3 text-[13px]";
     // While playing, the panel lets touches through to the game, so a tap or a
     // drag that starts over it still turns or moves the piece (the right side
-    // of the screen turns clockwise); only its buttons take touches.
+    // of the screen turns clockwise); only its buttons take touches. At the
+    // end it takes touches (it scrolls) and a controller can reach its buttons.
     const bs={minHeight:40,pointerEvents:"auto"};
     const c=daily.claim||{};
-    return React.createElement("div",{className:"absolute flex flex-col overflow-y-auto",role:"region","aria-label":"デイリーチャレンジ","data-hex-daily-panel":done?"done":"play",style:{left:`${671/12.8}%`,width:`${444/12.8}%`,top:`${160/7.2}%`,height:`${450/7.2}%`,padding:"clamp(8px,1.4vw,18px)",background:"rgba(8,8,26,.82)",border:"1px solid rgba(255,211,106,.28)",pointerEvents:done?"auto":"none",borderRadius:16,backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)"}},
+    const actions=done?[
+        React.createElement("button",{key:"retry",onClick:onRetry,className:btn+" hex-btn-gold",style:bs},"もう一度"),
+        React.createElement("button",{key:"shop",onClick:onShop,className:btn+" hex-btn-secondary",style:bs},"ショップ"),
+        React.createElement("button",{key:"exit",onClick:onExit,"data-hex-back":"1",className:btn+" hex-btn-ghost",style:bs},"ホームへ")]
+    :[
+        React.createElement("button",{key:"retry",onClick:onRetry,className:btn+" hex-btn-secondary",style:bs},"やり直す"),
+        React.createElement("button",{key:"exit",onClick:onExit,"data-hex-back":"1",className:btn+" hex-btn-ghost",style:bs},"やめる")];
+    return React.createElement(HexBoardPanel,{label:"デイリーチャレンジ",interactive:done,attrs:{"data-hex-daily-panel":done?"done":"play",...(done?{"data-hex-pad-menu":"1"}:null)},background:"rgba(8,8,26,.82)",border:"1px solid rgba(255,211,106,.28)",blur:true,actions},
         React.createElement("div",{className:"text-[11px] font-black tracking-[.18em]",style:{color:"#FFD36A"}},"DAILY · "+HexDaily.label(daily.day)),
         React.createElement("div",{className:"text-base font-black text-white mt-0.5"},"デイリーチャレンジ"),
         !done&&React.createElement(React.Fragment,null,
             React.createElement("div",{className:"mt-2 grid grid-cols-2 gap-2"},
                 React.createElement("div",{className:"rounded-xl px-3 py-2",style:{background:"rgba(255,255,255,.05)"}},React.createElement("div",{className:"text-[11px] font-bold text-white/55"},"のこり"),React.createElement("div",{"data-hex-daily-left":String(daily.left),className:"text-2xl font-black tabular-nums text-white"},daily.left,React.createElement("span",{className:"text-[12px] text-white/55 ml-1"},"手"))),
                 React.createElement("div",{className:"rounded-xl px-3 py-2",style:{background:"rgba(255,255,255,.05)"}},React.createElement("div",{className:"text-[11px] font-bold text-white/55"},"スコア"),React.createElement("div",{"data-hex-daily-score":String(daily.score),className:"text-2xl font-black tabular-nums",style:{color:"#FFD36A"}},daily.score))),
-            React.createElement("p",{className:"mt-2 text-[12px] leading-relaxed text-white/75"},`今日は全員が同じ ${HexDaily.PIECES} 手。連鎖と技で高得点を狙おう。`),
-            React.createElement("div",{className:"mt-1 text-[12px] font-bold text-white/55"},"今日のベスト ",daily.best),
-            React.createElement("div",{className:"mt-auto pt-2 flex flex-wrap gap-2"},
-                React.createElement("button",{onClick:onRetry,className:btn+" hex-btn-secondary",style:bs},"やり直す"),
-                React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:btn+" hex-btn-ghost",style:bs},"やめる"))),
+            React.createElement("p",{"data-hex-panel-hint":"1",className:"mt-2 text-[12px] leading-relaxed text-white/75"},`今日は全員が同じ ${HexDaily.PIECES} 手。連鎖と技で高得点を狙おう。`),
+            React.createElement("div",{className:"mt-1 text-[12px] font-bold text-white/55"},"今日のベスト ",daily.best)),
         done&&React.createElement(React.Fragment,null,
             React.createElement("div",{className:"mt-1 flex items-end gap-3"},
                 React.createElement("div",{"data-hex-daily-final":String(daily.score),className:"text-[34px] font-black tabular-nums leading-none",style:{color:"#FFD36A"}},daily.score),
@@ -124,6 +129,7 @@ function HexDailyPanel({daily,onRetry,onExit,onShop}){
                 c.state==="ok"?`+${c.gain} ポイント（連続 ${c.streak} 日${c.bonus?`・ボーナス +${c.bonus}`:""}）`
                 :c.state==="already"?"今日のポイントは受け取り済みです"
                 :c.state==="error"?"通信できず、ポイントを受け取れませんでした（もう一度遊ぶと再挑戦します）"
+                :c.state==="expired"?"日付が変わりました。「もう一度」で今日のチャレンジを遊べます"
                 :"ポイントを受け取っています…"),
             React.createElement("div",{className:"mt-2 text-[11px] font-black tracking-[.12em] text-white/50"},"今日のランキング"),
             React.createElement("div",{"data-hex-daily-ranking":"1",className:"mt-1 grid gap-0.5"},
@@ -134,9 +140,5 @@ function HexDailyPanel({daily,onRetry,onExit,onShop}){
                     React.createElement("div",{className:"w-5 text-right font-bold tabular-nums text-white/55"},r.rank),
                     React.createElement(HexAvatar,{name:r.name,icon:r.icon,size:18}),
                     React.createElement("div",{className:"min-w-0 flex-1 truncate font-semibold"},r.name),
-                    React.createElement("div",{className:"font-bold tabular-nums"},r.score)))),
-            React.createElement("div",{className:"mt-auto pt-2 flex flex-wrap gap-2"},
-                React.createElement("button",{onClick:onRetry,className:btn+" hex-btn-gold",style:bs},"もう一度"),
-                React.createElement("button",{onClick:onShop,className:btn+" hex-btn-secondary",style:bs},"ショップ"),
-                React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:btn+" hex-btn-ghost",style:bs},"ホームへ"))));
+                    React.createElement("div",{className:"font-bold tabular-nums"},r.score))))));
 }

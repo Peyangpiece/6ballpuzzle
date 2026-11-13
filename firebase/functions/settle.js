@@ -27,8 +27,16 @@ function computeSettlement(match, reporter, ratings, trophies = {}) {
   if (!match || !match.players || !match.result) return null;
   const p0 = match.players[0], p1 = match.players[1];
   if (!p0 || !p1 || typeof p0.uid !== "string" || typeof p1.uid !== "string" || p0.uid === p1.uid) return null;
+  // Both players must have taken part (the write-once joinedAt each client
+  // records when it joins); a match one account made up settles nothing.
+  if (!Number.isFinite(p0.joinedAt) || !Number.isFinite(p1.joinedAt)) return null;
   const r = match.result[reporter];
   if (!r || typeof r.win !== "boolean") return null;
+  // Two results that disagree (both claim the win, or both the loss): a client
+  // disputes a win reported against it while it was still playing. Nobody's
+  // rating moves, the same as under the database rules.
+  const other = match.result[reporter === "1" ? "0" : "1"];
+  if (other && typeof other.win === "boolean" && other.win === r.win) return null;
   const reporterIndex = reporter === "1" ? 1 : 0;
   const winnerIndex = r.win ? reporterIndex : 1 - reporterIndex;
   const loserIndex = 1 - winnerIndex;

@@ -26,20 +26,22 @@ function fakeFirebase(db, user, { deleteError } = {}) {
     ref: (_, p) => p,
     get: async p => ({ exists: () => p in db, val: () => db[p] }),
     set: async (p, v) => { db[p] = v; },
-    update: async (p, v) => { db[p] = { ...(db[p] || {}), ...v }; },
+    // A multi-path update on the root (ref "" / undefined): each key is a full path.
+    update: async (p, v) => { if (!p) { calls.push(["rootUpdate", Object.keys(v).length]); for (const k of Object.keys(v)) { if (v[k] === null) delete db[k]; else db[k] = v[k]; } return; } db[p] = { ...(db[p] || {}), ...v }; },
     remove: async p => { calls.push(["remove", p]); delete db[p]; },
     serverTimestamp: () => 1
   };
   return F;
 }
 
-function load(F, native) {
+function load(F, native, extra) {
   const store = new Map([["hexdrop_rating", "1210"], ["hexdrop_wins", "9"], ["hexdrop_nickname", "Taro"], ["hexdrop_cpu_record", "{}"], ["hexdrop_bgm_volume", "40"], ["hexdrop_tutorial_done", "1"]]);
   const ctx = { console, setTimeout, clearTimeout, localStorage: { removeItem: k => store.delete(k), getItem: k => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)) } };
   ctx.window = ctx; ctx.FB = F;
   if (native) ctx.DropBallNative = native;
   vm.createContext(ctx);
   vm.runInContext(read("app-14.js").match(/const FIREBASE_CONFIG = \{[^}]*\};/)[0], ctx);
+  if (extra) vm.runInContext(extra + "\nthis.HexDaily=HexDaily;", ctx);
   vm.runInContext(read("app-15.js") + "\nthis.Net=Net;", ctx);
   vm.runInContext(read("app-google-login.js"), ctx);
   vm.runInContext(read("app-account-delete-v1.js"), ctx);
@@ -90,15 +92,30 @@ function load(F, native) {
     const user = { uid: "a1", isAnonymous: false, providerData: [{ providerId: "apple.com" }] };
     const F = fakeFirebase({ "users/a1": { name: "A", rating: 1000, wins: 0, losses: 0 } }, user);
     const seen = [];
-    const { Net } = load(F, { reauthenticate: u => { seen.push(u.uid); return Promise.resolve(); } });
+    const { Net } = load(F, { reauthenticate: u => { seen.push(u.uid); return Promise.resolve(); }, revokeAppleToken: () => { seen.push("revoke:" + F.calls.some(c => c[0] === "deleteUser")); return Promise.resolve(true); } });
     await Net.connect();
     await Net.deleteAccount();
-    assert.deepStrictEqual(seen, ["a1"]);
+    // Sign in with Apple: the token is revoked after the fresh sign-in and before the account is deleted.
+    assert.deepStrictEqual(seen, ["a1", "revoke:false"]);
     assert(!F.calls.some(c => c[0] === "reauthenticateWithPopup"));
+  }
+  // 5. The daily ranking entries (name and score per day) and a waiting pairing go too.
+  {
+    const ctxDaily = "const HexDaily={day:()=>20405};";
+    const db = { "users/d1": { name: "Dai", rating: 1000, wins: 0, losses: 0 }, "daily/20405/d1": { name: "Dai", score: 900 }, "daily/20399/d1": { name: "Dai", score: 500 }, "daily/20405/other": { name: "X", score: 1 }, "pairings/d1": "m9" };
+    const F = fakeFirebase(db, { uid: "d1", isAnonymous: true });
+    const { Net, store } = load(F, null, ctxDaily);
+    store.set("hexdrop_daily_v1", "{}");
+    await Net.connect();
+    await Net.deleteAccount();
+    assert(!("daily/20405/d1" in db) && !("daily/20399/d1" in db), "the player's daily ranking entries are deleted");
+    assert("daily/20405/other" in db, "other players' entries stay");
+    assert(!("pairings/d1" in db), "a waiting pairing is removed");
+    assert(!store.has("hexdrop_daily_v1"), "the daily record on this device is cleared");
   }
   // Wiring: loader exports, load order, the profile screen offers it.
   const index = read("index.html");
-  for (const name of ["deleteUser", "reauthenticateWithPopup", "signOut"]) assert(index.includes(name + ":u." + name), "index.html must export " + name);
+  for (const name of ["deleteUser", "reauthenticateWithPopup", "signOut", "revokeAccessToken"]) assert(index.includes(name + ":u." + name), "index.html must export " + name);
   assert(index.indexOf('"app-account-delete-v1.js"') > index.indexOf('"app-google-login.js"'), "load after the Google login layer");
   const app = read("app-16.js");
   assert(app.includes('"data-hex-account-delete":"1"') && /pending=Net\.deleteAccount\(\)/.test(app), "the profile screen offers account deletion");
