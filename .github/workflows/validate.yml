@@ -47,8 +47,8 @@ jobs:
           test -f wrangler.jsonc
           grep -q '"directory": "./dist"' wrangler.jsonc
           grep -q 'loadCurrentGameBuild' public/index.html
-          ! grep -q 'cdn.tailwindcss.com' public/index.html
-          ! grep -q 'cdn.jsdelivr.net' public/index.html
+          if grep -q 'cdn.tailwindcss.com' public/index.html; then echo "public/index.html references the Tailwind CDN"; exit 1; fi
+          if grep -q 'cdn.jsdelivr.net' public/index.html; then echo "public/index.html references jsDelivr"; exit 1; fi
           grep -q 'hexPhysNaturalMotion' public/app-02.js
           grep -q 'hexPhysPlanGroup' public/app-02.js
           grep -q 'hexPhysResolveEvent' public/app-03.js

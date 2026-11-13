@@ -11,14 +11,14 @@
     "test:browser": "node tests/browser-smoke.js",
     "test:rules": "node tests/firebase-rules.js",
     "serve": "node tools/serve.js public",
-    "serve:dist": "node tools/serve.js dist",
+    "serve:dist": "node tools/serve.js dist 8020",
     "docs:layers": "node tools/layer-map.js > docs/ARCHITECTURE.generated.md",
     "lint": "node tools/lint.js",
     "ios:sync": "npm run build && npx cap sync ios",
     "ios:open": "npx cap open ios"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.3",

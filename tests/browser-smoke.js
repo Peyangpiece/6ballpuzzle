@@ -144,6 +144,32 @@ const manifest = JSON.parse(fs.readFileSync(path.join(distDir, "build.json"), "u
     assert.deepStrictEqual(pageErrors, [], "page errors: " + pageErrors.join(" | "));
     const realConsoleErrors = consoleErrors.filter(t => !/favicon|net::ERR_|Firebase SDK load failed/.test(t));
     assert.deepStrictEqual(realConsoleErrors, [], "console errors: " + realConsoleErrors.join(" | "));
+    // --- offline: after one visit the service worker starts the game without the
+    // server, also after the privacy policy was opened (its page once replaced
+    // the cached game, so the next offline start showed the policy).
+    {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+      const off = await ctx.newPage();
+      const offErrors = [];
+      off.on("pageerror", e => offErrors.push(String(e && e.message || e)));
+      await off.goto(url, { waitUntil: "load" });
+      await off.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+      await off.waitForFunction(() => !!navigator.serviceWorker.controller, null, { timeout: 20000 });
+      await off.goto(url + "privacy.html", { waitUntil: "load" });
+      assert(/プライバシーポリシー/.test(await off.title()), "the privacy policy page did not load");
+      server.kill();
+      await new Promise(r => server.once("exit", r));
+      await off.goto(url, { waitUntil: "load" });
+      await off.waitForFunction(() => window.__hexdropMounted === true, null, { timeout: 15000 });
+      await off.getByText("AI対戦", { exact: true }).click({ timeout: 5000 });
+      await off.getByText("とてもよわい", { exact: true }).click({ timeout: 5000 });
+      await off.locator("canvas").waitFor({ timeout: 10000 });
+      await off.waitForTimeout(1500);
+      const offState = await off.evaluate(() => ({ screen: window.__sixBallScreen, logo: !!document.querySelector("#root canvas"), font: document.fonts.check('16px DropBall') }));
+      assert.strictEqual(offState.screen, "GAME", "an AI match must start offline");
+      assert.deepStrictEqual(offErrors, [], "page errors offline: " + offErrors.join(" | "));
+      await ctx.close();
+    }
     const sameOrigin = requests.filter(u => u.startsWith(url));
     console.log(`browser smoke PASS: mounted in ${mountMs} ms, ${sameOrigin.length} same-origin requests, ${state.versions} layer version markers, ~${fps.toFixed(0)} fps headless`);
   } finally {
