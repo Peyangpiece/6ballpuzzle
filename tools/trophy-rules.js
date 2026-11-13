@@ -86,7 +86,9 @@ function apply(json, T) {
   // A claimed day cannot be removed (it would allow a second claim).
   const base = "newData.hasChildren(['name', 'rating', 'wins', 'losses'])";
   if (!user[".validate"].startsWith(base)) throw new Error("users/$uid .validate changed: " + user[".validate"]);
-  user[".validate"] = base + " && (!data.child('dailyDay').exists() || newData.child('dailyDay').exists())";
+  // Neither can lastMatch: it is half of the proof that a match was settled
+  // (the other half is matches/{mid}/settled/{uid}).
+  user[".validate"] = base + " && (!data.child('dailyDay').exists() || newData.child('dailyDay').exists()) && (!data.child('lastMatch').exists() || newData.child('lastMatch').exists())";
   R.daily = {
     "$day": {
       ".read": "auth != null",

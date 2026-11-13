@@ -17,6 +17,7 @@ const admin = require("firebase-admin");
 const { computeSettlement } = require("./settle");
 
 admin.initializeApp();
+const DISPUTE_WINDOW_MS = 3000;
 
 exports.settleMatchResult = onValueCreated(
   { ref: "/matches/{mid}/result/{index}", instance: "ballpuzzle-8cc87-default-rtdb", region: "asia-southeast1" },
@@ -29,6 +30,10 @@ exports.settleMatchResult = onValueCreated(
     const claim = await db.ref(`matches/${mid}/settlement/state`).transaction((cur) => (cur ? undefined : "claimed"));
     if (!claim.committed) return;
 
+    // Give the other client a moment to dispute the result (it reports a win
+    // of its own when a win is claimed against it while it is still playing);
+    // computeSettlement() then settles nothing.
+    await new Promise((resolve) => setTimeout(resolve, DISPUTE_WINDOW_MS));
     const match = (await db.ref(`matches/${mid}`).get()).val();
     const uids = [match && match.players && match.players[0] && match.players[0].uid, match && match.players && match.players[1] && match.players[1].uid];
     const ratings = {}, trophies = {};
@@ -46,6 +51,8 @@ exports.settleMatchResult = onValueCreated(
         if (profile.lastMatch === mid) return; // already applied (abort)
         return { ...profile, rating: u.rating, wins: (profile.wins || 0) + (u.win ? 1 : 0), losses: (profile.losses || 0) + (u.win ? 0 : 1), trophies: u.trophies, best: Math.max(profile.best || 0, u.trophies), lastMatch: mid, updatedAt: admin.database.ServerValue.TIMESTAMP };
       });
+      // The account was deleted during the match: nothing to write for it.
+      if (!res.snapshot.exists()) continue;
       const profile = res.snapshot.val() || {};
       out[uid] = { delta: u.delta, rating: profile.rating, wins: profile.wins || 0, losses: profile.losses || 0, trophies: profile.trophies || 0, trophyDelta: u.trophyDelta };
       await db.ref(`leaderboard/${uid}`).set({ name: profile.name || "Player", rating: profile.rating, trophies: profile.trophies || 0, icon: (profile.equip && profile.equip.icon) || "initial" });

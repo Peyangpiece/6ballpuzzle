@@ -6,7 +6,7 @@ const client = fs.readFileSync(path.join(__dirname, "../public/app-14.js"), "utf
 const clientElo = new Function(/const eloDelta = \(mine, foe, win\) => [^;]*;/.exec(client)[0] + "return eloDelta;")();
 assert.strictEqual(K, 32);
 for (let a = 0; a <= 3000; a += 125) for (let b = 0; b <= 3000; b += 125) for (const w of [true, false]) assert.strictEqual(eloDelta(a, b, w), clientElo(a, b, w), `elo mismatch ${a} ${b} ${w}`);
-const match = { meta: { seed: 1, ranked: true }, players: { 0: { uid: "A", name: "a", rating: 1000 }, 1: { uid: "B", name: "b", rating: 1000 } }, result: { 0: { win: true, reason: "x", ts: 1 } } };
+const match = { meta: { seed: 1, ranked: true }, players: { 0: { uid: "A", name: "a", rating: 1000, joinedAt: 1 }, 1: { uid: "B", name: "b", rating: 1000, joinedAt: 1 } }, result: { 0: { win: true, reason: "x", ts: 1 } } };
 const s = computeSettlement(match, "0", { A: 1000, B: 1000 });
 assert.deepStrictEqual([s.winnerIndex, s.loserIndex, s.ranked], [0, 1, true]);
 assert.strictEqual(s.updates.A.delta, 16); assert.strictEqual(s.updates.B.delta, -16);
@@ -24,6 +24,13 @@ assert.strictEqual(s4.updates.B.rating, 1000 + eloDelta(1000, 5, false));
 assert.strictEqual(computeSettlement({ ...match, result: { 1: { win: true, reason: "", ts: 1 } } }, "1", { A: 0, B: 2000 }).updates.A.rating, 0);
 // malformed input never settles
 assert.strictEqual(computeSettlement(null, "0", {}), null);
+// A match one account made up: the other player never joined (no joinedAt). Nothing is settled.
+assert.strictEqual(computeSettlement({ ...match, players: { 0: match.players[0], 1: { uid: "B", name: "b", rating: 1000 } } }, "0", { A: 1000, B: 1000 }), null);
+assert.strictEqual(computeSettlement({ ...match, players: { 0: { uid: "A", name: "a", rating: 1000 }, 1: match.players[1] } }, "0", { A: 1000, B: 1000 }), null);
+// Results that disagree (a disputed win, or both reporting a loss) settle nothing; agreeing results settle as one.
+assert.strictEqual(computeSettlement({ ...match, result: { 0: { win: true, reason: "x", ts: 1 }, 1: { win: true, reason: "contested", ts: 2 } } }, "0", { A: 1000, B: 1000 }), null);
+assert.strictEqual(computeSettlement({ ...match, result: { 0: { win: false, reason: "dead", ts: 1 }, 1: { win: false, reason: "dead", ts: 2 } } }, "1", { A: 1000, B: 1000 }), null);
+assert.deepStrictEqual(computeSettlement({ ...match, result: { 0: { win: true, reason: "x", ts: 1 }, 1: { win: false, reason: "dead", ts: 2 } } }, "0", { A: 1000, B: 1000 }).updates, s.updates);
 assert.strictEqual(computeSettlement({ ...match, result: {} }, "0", {}), null);
 assert.strictEqual(computeSettlement({ ...match, players: { 0: { uid: "A" }, 1: { uid: "A" } } }, "0", {}), null);
 assert.strictEqual(computeSettlement({ ...match, result: { 0: { win: "yes" } } }, "0", {}), null);

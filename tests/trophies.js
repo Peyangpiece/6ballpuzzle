@@ -25,7 +25,7 @@ const rules = JSON.parse(read("firebase/database.rules.json")).rules;
 assert.deepStrictEqual(rules.leaderboard[".indexOn"], ["rating", "trophies"], "the ranking query orders by trophies");
 
 // Server settlement carries trophies.
-const match = { meta: { ranked: true }, players: { 0: { uid: "a" }, 1: { uid: "b" } }, result: { 0: { win: true } } };
+const match = { meta: { ranked: true }, players: { 0: { uid: "a", joinedAt: 1 }, 1: { uid: "b", joinedAt: 1 } }, result: { 0: { win: true } } };
 const out = settle.computeSettlement(match, "0", { a: 1000, b: 1000 }, { a: 1000, b: 290 });
 assert.deepStrictEqual([out.updates.a.trophies, out.updates.a.trophyDelta, out.updates.b.trophies, out.updates.b.trophyDelta], [1006, 6, 290, 0]);
 const room = settle.computeSettlement({ ...match, meta: { ranked: false } }, "0", { a: 1000, b: 1000 }, { a: 500, b: 500 });
