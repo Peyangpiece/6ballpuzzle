@@ -39,6 +39,19 @@
             return this.auth.currentUser;
         }
 
+        // Wait until the SDK has restored the saved session. It reloads
+        // the saved user over the network first; the old 900 ms limit
+        // gave up on a slow connection and signed in a NEW guest, which
+        // replaced a Google/Apple session (rating 1000, 0 wins shown,
+        // and the local record overwritten).
+        if(typeof this.auth.authStateReady==="function"){
+            try{
+                await this.auth.authStateReady();
+            }catch(_){}
+
+            return this.auth.currentUser||null;
+        }
+
         return await new Promise(
             (resolve)=>{
                 let finished=false;
@@ -75,6 +88,16 @@
         );
     };
 
+    // Starting values of a profile (Net.profile in app-15.js).
+    const freshProfile=(name)=>({
+        name:name||"Player",
+        rating:1000,
+        wins:0,
+        losses:0,
+        trophies:0,
+        best:0
+    });
+
     Net._syncAuthProfile=async function(user){
         if(!user)return null;
 
@@ -84,6 +107,15 @@
         const previous={
             ...this.profile
         };
+
+        // Another account than before (guest -> Google, or a different
+        // Google account): start from clean values. Merging the stored
+        // record over the previous account's profile kept its trophies,
+        // points and equipped items wherever the new record had none,
+        // and the lobby and match rules then refused every search.
+        const switched=
+            !!this.uid &&
+            this.uid!==user.uid;
 
         this.uid=user.uid;
 
@@ -98,31 +130,18 @@
 
         if(snap.exists()){
             this.profile={
-                ...this.profile,
+                ...(switched?freshProfile(previous.name):this.profile),
                 ...snap.val()
             };
         }else{
-            let name=
-                previous.name||
-                "Player";
-
-            if(
-                (
-                    !name ||
-                    name==="Player"
-                ) &&
-                user.displayName
-            ){
-                name=
-                    String(
-                        user.displayName
-                    ).slice(0,12);
-            }
-
+            // The nickname the player chose on this device, or "Player".
+            // The Google/Apple account name is NOT copied: it is usually a
+            // real name, and the nickname is shown to opponents and on the
+            // rankings (the privacy policy asks not to use a real name).
             // The rules accept a new record only with the starting rating and
             // record, whatever the guest account had locally.
             this.profile={
-                name,
+                name:previous.name||"Player",
                 rating:1000,
                 wins:0,
                 losses:0
@@ -138,28 +157,20 @@
             );
         }
 
-        if(
-            !user.isAnonymous &&
-            (
-                !this.profile.name ||
-                this.profile.name==="Player"
-            ) &&
-            user.displayName
-        ){
-            this.profile.name=
-                String(
-                    user.displayName
-                ).slice(0,12);
+        // Who settles ratings: "client" (default, bounded by the rules) or
+        // "server" (the Cloud Function in firebase/functions). This layer
+        // replaces Net.connect(), which used to read the flag, so without
+        // this the server mode never reached the client.
+        try{
+            const cfg=
+                await F.get(
+                    F.ref(this.db,"config/ratingAuthority")
+                );
 
-            await F.update(
-                userRef,
-                {
-                    name:
-                        this.profile.name,
-                    updatedAt:
-                        F.serverTimestamp()
-                }
-            ).catch(()=>{});
+            this.ratingAuthority=
+                cfg.exists()&&cfg.val()==="server"?"server":"client";
+        }catch(_){
+            this.ratingAuthority="client";
         }
 
         if(!user.isAnonymous){

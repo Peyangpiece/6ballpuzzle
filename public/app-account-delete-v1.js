@@ -17,7 +17,12 @@ window.__dropBallAccountDeleteV1=true;
 
 // Game records on this device; preferences (volume, haptics, colour symbols,
 // tutorial) are not personal data and stay.
-const LOCAL_KEYS=["hexdrop_nickname","hexdrop_rating","hexdrop_wins","hexdrop_losses","hexdrop_bests","hexdrop_cpu_record","hexdrop_name_prompted","hexdrop_trophies_v1"];
+const LOCAL_KEYS=["hexdrop_nickname","hexdrop_rating","hexdrop_wins","hexdrop_losses","hexdrop_bests","hexdrop_cpu_record","hexdrop_name_prompted","hexdrop_trophies_v1","hexdrop_daily_v1"];
+// The daily ranking keeps one entry per day (daily/<day>/<uid>: name, score,
+// icon). The days a player took part in are not listed anywhere, so the entry
+// is removed for every day of the last 400 (the challenge is younger than
+// that); removing an entry that does not exist changes nothing.
+const DAILY_DAYS_BACK=400;
 
 function clearLocal(){
   for(const k of LOCAL_KEYS){try{localStorage.removeItem(k);}catch(_){}}
@@ -42,7 +47,19 @@ Net._deleteAccountData=async function(){
   if(user){
     const uid=user.uid;
     await F.remove(F.ref(this.db,"leaderboard/"+uid)).catch(()=>{});
+    // Name and score on the daily rankings, and a pairing that may be waiting.
+    if(typeof HexDaily!=="undefined"&&typeof F.update==="function"){
+      const today=HexDaily.day(),gone={};
+      for(let d=0;d<=DAILY_DAYS_BACK;d++)gone["daily/"+(today-d)+"/"+uid]=null;
+      await F.update(F.ref(this.db),gone).catch(()=>{});
+    }
+    await F.remove(F.ref(this.db,"pairings/"+uid)).catch(()=>{});
     await F.remove(F.ref(this.db,"users/"+uid));
+    // Sign in with Apple: revoke the token before the account goes
+    // (App Store guideline 5.1.1(v)); the iOS bridge holds the code of the
+    // sign-in it has just made. A failure here must not stop the deletion.
+    const native=window.DropBallNative;
+    if(native&&typeof native.revokeAppleToken==="function")await native.revokeAppleToken().catch(()=>{});
     try{
       await F.deleteUser(user);
     }catch(err){

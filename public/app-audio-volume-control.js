@@ -268,6 +268,14 @@
   }
   window.__sixBallAudioSfxPercent=sfxPercent;
   window.__sixBallAudioControlVersion="unified-audio-control-v3";
+  // For a volume changed without a slider event (the settings reset): update
+  // the values this layer re-applies on every gesture, without starting audio.
+  const baseSetVolumes=window.__sixBallSetAudioVolumes;
+  window.__sixBallSetAudioVolumes=function(v){
+    if(typeof baseSetVolumes==="function"){try{baseSetVolumes(v);}catch(_){}}
+    if(v&&Number.isFinite(Number(v.bgm))&&clampPercent(v.bgm)!==bgmPercent)applyBgm(v.bgm,true);
+    if(v&&Number.isFinite(Number(v.sfx))&&clampPercent(v.sfx)!==sfxPercent){sfxPercent=clampPercent(v.sfx);store("hexdrop_sfx_volume",sfxPercent);applySfxGainNow();}
+  };
   window.__sixBallApplyBgmSlider=applyBgm;
   window.__sixBallApplySfxSlider=applySfx;
   window.__sixBallPlayBgmNow=playBgmNow;

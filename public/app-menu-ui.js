@@ -61,12 +61,13 @@ function hexMatchSummary(g){
 }
 // Stores one finished match and returns what it changed, for the result screen.
 // A best counts as new only when an earlier match set the previous value.
-function hexRecordMatch({cpuLevel=0,win,summary}){
+// reason: "resign" / "disconnect" when the opponent gave up; such a win is not a fastest win.
+function hexRecordMatch({cpuLevel=0,win,summary,reason=""}){
     const out={newBests:[],level:null,firstWin:false};
     if(summary){
         const b=hexBests(),had=b.games>0,next={...b,games:b.games+1};
         for(const k of["maxChain","waza","cleared"]){const v=k==="waza"?summary.wazaTotal:summary[k];if(v>b[k]){next[k]=v;if(had&&v>0)out.newBests.push(k);}}
-        if(win&&summary.time>0&&(!b.fastestWin||summary.time<b.fastestWin)){next.fastestWin=Math.round(summary.time*10)/10;if(had&&b.fastestWin)out.newBests.push("fastestWin");}
+        if(win&&!reason&&summary.time>0&&(!b.fastestWin||summary.time<b.fastestWin)){next.fastestWin=Math.round(summary.time*10)/10;if(had&&b.fastestWin)out.newBests.push("fastestWin");}
         hexStoreMenuPref(HEX_BESTS_KEY,JSON.stringify(next));
     }
     if(cpuLevel>=1&&cpuLevel<=5){
@@ -288,14 +289,22 @@ function hexMenuScale(){
     const w=window.innerWidth||0,h=window.innerHeight||0;
     return Math.round(Math.max(1,Math.min(1.6,w/1000,h/560))*100)/100;
 }
+// The window size as React state, for layouts that must adapt to a phone in landscape.
+function useHexViewport(){
+    const read=()=>(typeof window==="undefined"?{w:1280,h:720}:{w:window.innerWidth||0,h:window.innerHeight||0});
+    const [v,setV]=React.useState(read);
+    React.useEffect(()=>{const on=()=>setV((p)=>{const n=read();return p.w===n.w&&p.h===n.h?p:n;});window.addEventListener("resize",on);window.addEventListener("orientationchange",on);return()=>{window.removeEventListener("resize",on);window.removeEventListener("orientationchange",on);};},[]);
+    return v;
+}
 function useHexMenuScale(){
     const [scale,setScale]=React.useState(hexMenuScale);
     React.useEffect(()=>{const on=()=>setScale(hexMenuScale());window.addEventListener("resize",on);return()=>window.removeEventListener("resize",on);},[]);
     return scale;
 }
-function HexMenuShell({children,title,back,wide=true}){
-    const scale=useHexMenuScale();
-    return React.createElement("div",{className:"absolute inset-0 z-20 overflow-y-auto font-sans flex flex-col",style:{paddingTop:"max(16px,env(safe-area-inset-top))",paddingBottom:"max(16px,env(safe-area-inset-bottom))",paddingLeft:"max(24px,env(safe-area-inset-left))",paddingRight:"max(24px,env(safe-area-inset-right))"}},
+// tight: the smaller top and bottom margins of a screen that must fit a short window (HOME on a phone).
+function HexMenuShell({children,title,back,wide=true,tight=false}){
+    const scale=useHexMenuScale(),padY=tight?10:16;
+    return React.createElement("div",{className:"absolute inset-0 z-20 overflow-y-auto font-sans flex flex-col",style:{paddingTop:`max(${padY}px,env(safe-area-inset-top))`,paddingBottom:`max(${padY}px,env(safe-area-inset-bottom))`,paddingLeft:"max(24px,env(safe-area-inset-left))",paddingRight:"max(24px,env(safe-area-inset-right))"}},
         React.createElement(HexMenuBackdrop,null),
         React.createElement("div",{"data-hex-menu-content":"1",className:"relative z-10 mx-auto my-auto w-full flex flex-col",style:{maxWidth:wide?920:640,zoom:scale}},
             (title||back)&&React.createElement("div",{className:"flex items-center gap-3",style:{marginBottom:"clamp(14px,3vh,28px)"}},
@@ -304,17 +313,34 @@ function HexMenuShell({children,title,back,wide=true}){
             children));
 }
 
-function HexMenuButton({icon=null,title,subtitle,meta,badge=null,accent="cyan",onClick,disabled=false,compact=false}){
+// height: an explicit row height (HOME on short screens); the icon tile shrinks with it.
+function HexMenuButton({icon=null,title,subtitle,meta,badge=null,accent="cyan",onClick,disabled=false,compact=false,height=0}){
+    const rowH=height||(compact?58:66),tile=Math.min(compact?36:42,rowH-10);
     const [hover,setHover]=React.useState(false),[down,setDown]=React.useState(false);const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;
-    return React.createElement("button",{disabled,onClick,onPointerEnter:()=>setHover(true),onPointerLeave:()=>{setHover(false);setDown(false);},onPointerDown:()=>setDown(true),onPointerUp:()=>setDown(false),className:"w-full text-left flex items-center gap-4 disabled:opacity-35",style:{minHeight:compact?58:66,padding:compact?"0 16px 0 14px":"0 18px 0 16px",borderRadius:16,...HEX_MENU_SURFACE,background:hover?"rgba(255,255,255,.085)":HEX_MENU_SURFACE.background,transform:down?"scale(.985)":"none",transition:"transform .12s ease,background .18s ease"}},
-        icon&&React.createElement("div",{"aria-hidden":"true",className:"shrink-0 flex items-center justify-center font-bold tabular-nums",style:{width:compact?36:42,height:compact?36:42,borderRadius:12,color:c,background:`${c}14`,border:`1px solid ${c}30`,fontSize:compact?15:17}},typeof icon==="string"?React.createElement(HexIcon,{name:icon,size:compact?18:21,color:c}):icon),
+    return React.createElement("button",{disabled,onClick,onPointerEnter:()=>setHover(true),onPointerLeave:()=>{setHover(false);setDown(false);},onPointerDown:()=>setDown(true),onPointerUp:()=>setDown(false),className:"w-full text-left flex items-center gap-4 disabled:opacity-35",style:{minHeight:rowH,padding:compact?"0 16px 0 14px":"0 18px 0 16px",borderRadius:rowH<48?13:16,...HEX_MENU_SURFACE,background:hover?"rgba(255,255,255,.085)":HEX_MENU_SURFACE.background,transform:down?"scale(.985)":"none",transition:"transform .12s ease,background .18s ease"}},
+        icon&&React.createElement("div",{"aria-hidden":"true",className:"shrink-0 flex items-center justify-center font-bold tabular-nums",style:{width:tile,height:tile,borderRadius:tile<34?10:12,color:c,background:`${c}14`,border:`1px solid ${c}30`,fontSize:compact?15:17}},typeof icon==="string"?React.createElement(HexIcon,{name:icon,size:tile<34?16:compact?18:21,color:c}):icon),
         React.createElement("div",{className:"min-w-0 flex-1"},
-            React.createElement("div",{className:"flex items-center gap-2 min-w-0"},React.createElement("div",{className:"font-bold text-white truncate",style:{fontSize:compact?15:17,letterSpacing:".01em"}},title),badge&&React.createElement("span",{className:"shrink-0 rounded-full px-2 text-[11px] font-bold",style:{lineHeight:"18px",color:badge.dark?"#1d1600":badge.color,background:badge.dark?badge.color:`${badge.color}22`}},badge.text)),
+            React.createElement("div",{className:"flex items-center gap-2 min-w-0"},React.createElement("div",{className:"font-bold text-white truncate",style:{fontSize:compact?15:17,letterSpacing:".01em"}},title),badge&&(badge.dot
+                // A dot where the row is too narrow for the label next to the title; the label stays for screen readers.
+                ?React.createElement("span",{className:"shrink-0 rounded-full",style:{width:8,height:8,background:badge.color,boxShadow:`0 0 8px ${badge.color}`}},React.createElement("span",{className:"sr-only"},badge.text))
+                :React.createElement("span",{className:"shrink-0 rounded-full px-2 text-[11px] font-bold",style:{lineHeight:"18px",color:badge.dark?"#1d1600":badge.color,background:badge.dark?badge.color:`${badge.color}22`}},badge.text))),
             subtitle&&React.createElement("div",{className:"mt-0.5 text-[13px] text-white/55 truncate"},subtitle)),
         meta&&React.createElement("div",{className:"text-[13px] tabular-nums shrink-0 text-white/55"},meta),
         React.createElement(HexChevron,{color:c}));
 }
 
+// The frame of the panels shown over the opponent's board in the tutorial and
+// the daily challenge (x 671..1115, y 160..610 of the 1280x720 scene). The
+// board scales with the window but text does not, so on a phone the panel is
+// about 240x240 px (185 px high in a browser): the body shrinks a little and
+// scrolls, and the buttons stay in a fixed row at the bottom, always in reach.
+// interactive=false lets touches through to the game (only the buttons take them).
+function HexBoardPanel({label,interactive,border,background,blur=false,attrs=null,actions,children}){
+    const vp=useHexViewport(),zoom=Math.max(.75,Math.min(1,vp.h/400));
+    return React.createElement("div",{className:"absolute flex flex-col",role:"region","aria-label":label,...(attrs||{}),style:{pointerEvents:interactive?"auto":"none",left:`${671/12.8}%`,width:`${444/12.8}%`,top:`${160/7.2}%`,height:`${450/7.2}%`,padding:"clamp(8px,1.4vw,18px)",background,border,borderRadius:14,overflow:"hidden",...(blur?{backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)"}:null)}},
+        React.createElement("div",{"data-hex-panel-body":"1",className:"flex-1 min-h-0 overflow-y-auto flex flex-col",style:{zoom,overscrollBehavior:"contain"}},children),
+        React.createElement("div",{"data-hex-panel-actions":"1",className:"shrink-0 pt-2 flex flex-wrap gap-2"},actions));
+}
 function HexPanel({children,className="",style={}}){return React.createElement("div",{className,style:{...HEX_MENU_SURFACE,borderRadius:18,...style}},children);}
 function HexStat({label,value,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement(HexPanel,{className:"p-4 text-center flex flex-col items-center justify-center"},React.createElement("div",{className:"text-[12px] font-bold text-white/55"},label),React.createElement("div",{className:"mt-1 font-bold tabular-nums",style:{fontSize:"clamp(20px,3vw,30px)",color:c}},value));}
 function HexSettingSlider({label,caption,value,onChange,accent="cyan"}){const c=HEX_MENU_ACCENTS[accent]||HEX_MENU_ACCENTS.cyan;return React.createElement(HexPanel,{className:"px-5 py-4"},React.createElement("div",{className:"flex items-center justify-between gap-4 mb-3"},React.createElement("div",null,React.createElement("div",{className:"text-[15px] font-bold text-white"},label),caption&&React.createElement("div",{className:"text-[12px] text-white/50 mt-0.5 leading-relaxed"},caption)),React.createElement("div",{className:"text-[13px] tabular-nums text-white/60"},`${Math.round(value)}%`)),React.createElement("input",{type:"range",min:0,max:100,step:1,value,"aria-label":label,onChange:e=>onChange(Number(e.target.value)),className:"w-full",style:{accentColor:c}}));}

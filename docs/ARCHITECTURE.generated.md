@@ -21,27 +21,27 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 13 | `app-08.js` | core: engine, assets, net, app shell | 719 |  |  |
 | 14 | `app-09.js` | core: engine, assets, net, app shell | 587 |  | Garbage pipeline entry points.  They are installed later by |
 | 15 | `app-10.js` | core: engine, assets, net, app shell | 541 |  | ボール描画 |
-| 16 | `app-14.js` | core: engine, assets, net, app shell | 416 |  |  |
+| 16 | `app-14.js` | core: engine, assets, net, app shell | 431 |  |  |
 | 17 | `app-clear-all-ball-fx.js` | presentation effects | 129 |  | Every-cleared-ball disappearance FX invariant. |
 | 18 | `app-gameover-garbage-fade.js` | presentation effects | 85 |  | Game-over garbage rendering parity. |
-| 19 | `app-player-name-v1.js` | other | 58 |  | Player names shown to other players (online matches, the rating ranking). |
-| 20 | `app-15.js` | core: engine, assets, net, app shell | 168 |  | The other player's trophies and icon as their lobby entry or room carried |
-| 21 | `app-google-login.js` | online | 281 |  |  |
-| 22 | `app-account-delete-v1.js` | other | 78 |  | Account deletion (App Store guideline 5.1.1(v), and for the web too). |
-| 23 | `app-online-v2.js` | online | 1754 |  |  |
-| 24 | `app-menu-ui.js` | menu / audio | 324 |  | HEXDROP immersive menu system. |
+| 19 | `app-player-name-v1.js` | other | 70 |  | Player names shown to other players (online matches, the rating ranking). |
+| 20 | `app-15.js` | core: engine, assets, net, app shell | 284 |  | The other player's trophies and icon as their lobby entry or room carried |
+| 21 | `app-google-login.js` | online | 292 |  |  |
+| 22 | `app-account-delete-v1.js` | other | 95 |  | Account deletion (App Store guideline 5.1.1(v), and for the web too). |
+| 23 | `app-online-v2.js` | online | 1767 |  |  |
+| 24 | `app-menu-ui.js` | menu / audio | 350 |  | HEXDROP immersive menu system. |
 | 25 | `app-trophies-v1.js` | other | 297 |  | Trophies: the score shown for online play, with leagues, the trophy road |
-| 26 | `app-daily-v1.js` | other | 143 |  | Daily challenge: a score attack that is the same for everyone each day. |
-| 27 | `app-native-v1.js` | other | 384 |  | iOS app bridge (Capacitor). Does nothing in a browser. |
+| 26 | `app-daily-v1.js` | other | 145 |  | Daily challenge: a score attack that is the same for everyone each day. |
+| 27 | `app-native-v1.js` | other | 400 |  | iOS app bridge (Capacitor). Does nothing in a browser. |
 | 28 | `app-brand-bgm.js` | menu / audio | 132 |  | 6ball brand + menu audio + gameplay BGM adapter. |
 | 29 | `app-bgm-local.js` | menu / audio | 352 |  | 6ball same-origin gameplay BGM override + Safari SFX recovery. |
-| 30 | `app-audio-volume-control.js` | menu / audio | 277 |  | 6ball unified live audio controller. |
-| 31 | `app-menu-volume-fix.js` | menu / audio | 78 |  | 6ball menu click volume hotfix. |
+| 30 | `app-audio-volume-control.js` | menu / audio | 285 |  | 6ball unified live audio controller. |
+| 31 | `app-menu-volume-fix.js` | menu / audio | 84 |  | 6ball menu click volume hotfix. |
 | 32 | `app-audio-element-gain-v1.js` | other | 78 |  | Volume for <audio> elements where the browser ignores it. |
 | 33 | `app-rotate-sfx.js` | menu / audio | 138 |  | 6ball rotation sound v15 - clear PCM / single low-latency path / |
 | 34 | `app-instant-drop-sfx.js` | menu / audio | 141 |  | 6ball instant-drop landing v10 |
-| 35 | `app-16.js` | core: engine, assets, net, app shell | 446 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
-| 36 | `app-17.js` | core: engine, assets, net, app shell | 318 |  |  |
+| 35 | `app-16.js` | core: engine, assets, net, app shell | 465 |  | Online: never trust the opponent's attack payload blindly.  A packet can |
+| 36 | `app-17.js` | core: engine, assets, net, app shell | 354 |  |  |
 | 37 | `app-garbage-normal-physics.js` | garbage (おじゃま) pipeline | 338 |  | Incoming garbage uses the ordinary ball physics, with no separate fall model. |
 | 38 | `app-garbage-presentation.js` | garbage (おじゃま) pipeline | 81 |  | Garbage presentation only. |
 | 39 | `app-garbage-zero-rigidity.js` | garbage (おじゃま) pipeline | 118 | hexPhysPlanGroup | Post-split garbage rigidity invariant. |
@@ -51,7 +51,7 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 43 | `app-ai-core.js` | AI opponent | 428 |  | CPU AI core v1: one engine-accurate simulation and one decision function for |
 | 44 | `app-runtime-performance.js` | performance | 105 |  | Main-thread runtime performance guards. |
 | 45 | `app-physics-safety-invariants.js` | safety invariants | 604 |  |  |
-| 46 | `app-position-lock-sfx.js` | menu / audio | 388 |  |  |
+| 46 | `app-position-lock-sfx.js` | menu / audio | 402 |  |  |
 | 47 | `app-mass-motion-safety.js` | safety invariants | 961 |  |  |
 | 48 | `app-gravity-priority-v1.js` | collapse scheduling authorities | 4147 | hexPhysPlanGroup, hexPhysResolveEvent | 6ball GRAVITY PRIORITY PHYSICS v1 |
 | 49 | `app-garbage-performance-v1.js` | garbage (おじゃま) pipeline | 211 |  | 6ball GARBAGE PERFORMANCE v1 |
@@ -82,6 +82,6 @@ Scripts execute in this order in one shared global scope. A later layer that wra
 | 74 | `app-mass-fall-v1.js` | other | 352 |  | Mass fall v1. |
 | 75 | `app-segment-chain-continuity-v1.js` | other | 66 |  | Segment chain continuity v1. |
 | 76 | `app-contention-order-v1.js` | other | 76 | hexPhysPlanGroup | Contention order v1: the ball that lost its support first takes the cell. |
-| 77 | `controls-v7.js` | input | 308 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
-| 78 | `app-switch-gamepad-authoritative-v1.js` | input | 643 |  |  |
-| 79 | `app-ui-ux-v1.js` | other | 50 |  | UI/UX layer v1 (no physics). |
+| 77 | `controls-v7.js` | input | 321 | createEngine | HEXDROP controls v7: single source of truth for touch input. |
+| 78 | `app-switch-gamepad-authoritative-v1.js` | input | 654 |  |  |
+| 79 | `app-ui-ux-v1.js` | other | 53 |  | UI/UX layer v1 (no physics). |

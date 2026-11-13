@@ -50,7 +50,13 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   assert.strictEqual(play(0, [{ piece: {}, vx: 11 }, { ev: [{ t: "land" }] }]), "success", "moving then dropping passes lesson 1");
   assert.strictEqual(play(1, [{ ev: [{ t: "rotate" }] }, { ev: [{ t: "land" }] }]), "success", "rotating then dropping passes lesson 2");
   assert.strictEqual(play(2, [{ ev: [{ t: "land" }, { t: "clear" }] }]), "success", "a clear passes lesson 3");
-  assert(/^retry:/.test(play(3, [{ ev: [{ t: "land" }, { t: "clear" }] }])), "a clear without a technique retries lesson 4");
+  assert(/^retry:/.test(play(3, [{ ev: [{ t: "land" }, { t: "clear" }], state: "RESOLVING" }, { piece: {} }])), "a clear without a technique retries lesson 4");
+  // The last allowed piece: its landing must not fail the lesson before its own clear (which the engine reports a moment later) can count.
+  const lands = n => Array.from({ length: n }, () => ({ ev: [{ t: "land" }], state: "RESOLVING" }));
+  assert.strictEqual(play(2, [...lands(2), { piece: {} }, { ev: [{ t: "land" }], state: "RESOLVING" }, { ev: [{ t: "clear" }], state: "RESOLVING" }]), "success", "lesson 3 passes with a clear by the third piece");
+  assert(/^retry:/.test(play(2, [...lands(3), { piece: {} }])), "lesson 3 retries once three pieces have landed without a clear and the next piece is out");
+  assert.strictEqual(play(2, lands(3)), null, "lesson 3 does not retry while the third piece is still settling");
+  assert.strictEqual(play(3, [...lands(1), { piece: {} }, { ev: [{ t: "land" }], state: "RESOLVING" }, { ev: [{ t: "clear" }, { t: "waza", w: "PYRAMID" }], state: "RESOLVING" }]), "success", "lesson 4 passes with a technique by the second piece");
   assert.strictEqual(play(3, [{ ev: [{ t: "land" }, { t: "clear" }, { t: "waza", w: "PYRAMID" }] }]), "success", "a technique passes lesson 4");
   assert.strictEqual(play(4, [{ ev: [{ t: "land" }, { t: "garbage" }], state: "RESOLVING", pending: 6 }]), null, "lesson 5 waits for the garbage to land");
   assert.strictEqual(play(4, [{ ev: [{ t: "land" }, { t: "garbage" }], state: "RESOLVING", pending: 6 }, { state: "PLAYING", pending: 0 }]), "success", "lesson 5 passes once the garbage has landed");
@@ -58,7 +64,9 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
   {
     const app17 = fs.readFileSync(path.join(__dirname, "..", "public", "app-17.js"), "utf8");
     const panel = app17.slice(app17.indexOf("function HexTutorialPanel"), app17.indexOf("\n}\n", app17.indexOf("function HexTutorialPanel")));
-    assert(panel.includes('pointerEvents: status === "play" ? "none" : "auto"') && panel.includes('const bs = { minHeight: 40, pointerEvents: "auto" }') && !panel.includes("style: { minHeight: 40 }"), "while a lesson is played, touches on the tutorial panel reach the game; its buttons still take them");
+    assert(panel.includes('interactive: status !== "play"') && panel.includes('const bs = { minHeight: 40, pointerEvents: "auto" }') && !panel.includes("style: { minHeight: 40 }"), "while a lesson is played, touches on the tutorial panel reach the game; its buttons still take them");
+    const frame = read("app-menu-ui.js"); const fp = frame.slice(frame.indexOf("function HexBoardPanel"), frame.indexOf("\n}\n", frame.indexOf("function HexBoardPanel")));
+    assert(fp.includes('pointerEvents:interactive?"auto":"none"') && fp.includes('"data-hex-panel-actions"') && fp.includes("overflow-y-auto"), "the board panel lets touches through while playing, scrolls its body and keeps its buttons in a fixed row");
   }
   assert(/onPractice:\(\)=>\{initUiAudio\(\);startTutorial\(0\);\}/.test(app16), "the tutorial cards lead into the playable lessons");
 
@@ -187,7 +195,7 @@ const app14 = read("app-14.js"), app16 = read("app-16.js"), app17 = read("app-17
     assert.strictEqual(hexFormatTime(95.4), "1:35");
   }
   assert(/me\.stats\.time = \(me\.stats\.time \|\| 0\) \+ h/.test(app16), "match time is counted while the player's game runs");
-  assert(/hexRecordMatch\(\{ cpuLevel: m === "CPU" \? lv : 0, win, summary \}\)/.test(app16) && /summary:result\?\.summary,progress:result\?\.progress/.test(app16), "finished matches are recorded and passed to the result screen");
+  assert(/hexRecordMatch\(\{ cpuLevel: m === "CPU" \? lv : 0, win, summary, reason \}\)/.test(app16) && /summary:result\?\.summary,progress:result\?\.progress/.test(app16), "finished matches are recorded and passed to the result screen");
   assert(/summary&&React\.createElement\(ResultSummary,/.test(app14), "the result screen shows the match summary");
   assert(/cpuRecord\[lv\]\.w\?\{text:"勝利"/.test(app16) && /data-hex-cpu-progress/.test(app16), "the CPU list shows which levels were beaten");
   console.log("ui-ux regression PASS");

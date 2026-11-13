@@ -269,7 +269,7 @@ function HexTrophyScreen({back,initialView="road"}){
             React.createElement("div",{className:"text-[12px] font-bold text-white leading-tight"},it.name),
             React.createElement("div",{className:"text-[10px] text-white/45"},HexTrophies.SLOTS[it.slot]),
             own?React.createElement("div",{className:"text-[11px] font-bold",style:{color:"#7DFFB2"}},"購入済み")
-                :React.createElement("button",{disabled:!afford||!!buying,onClick:()=>buy(it),className:"hex-btn hex-btn-gold px-3 text-[12px] disabled:opacity-50",style:{minHeight:34}},busy?"購入中…":`${it.price} P`));
+                :React.createElement("button",{disabled:!afford||!!buying,onClick:()=>buy(it),className:"hex-btn hex-btn-gold px-3 text-[12px] disabled:opacity-50",style:{minHeight:44,minWidth:72}},busy?"購入中…":`${it.price} P`));
     };
     return React.createElement(HexMenuShell,{title:"トロフィー",back,wide:true},
         React.createElement("div",{className:"flex items-center gap-4 flex-wrap mb-3"},

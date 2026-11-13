@@ -9,7 +9,11 @@ new Function(app);
 const menuPos=index.indexOf('"app-menu-ui.js"'),appPos=index.indexOf('"app-16.js"');
 expect(menuPos>=0&&appPos>menuPos,'menu UI must load before App');
 expect(ui.includes('window.__hexMenuUiVersion="menu-ui-v1"'),'menu UI version marker missing');
-for(const s of ['対戦','プロフィール','設定','オンライン対戦','AI対戦','フレンド対戦'])expect(app.includes(s),`missing menu item: ${s}`);
+for(const s of ['対戦','プロフィール','設定','オンライン対戦','AI対戦','ルームでプレイ','デイリーチャレンジ','チュートリアル'])expect(app.includes(s),`missing menu item: ${s}`);
+// The old "BATTLE SELECT" screen had no way in (nothing navigated to it); it must not come back as dead code.
+expect(!/screen==="BATTLE"/.test(app),'the unreachable BATTLE screen is back');
+// The daily badge is an object ({text,color}); a bare string rendered an empty pill.
+expect(/badge:trophy\.dailyDay===HexDaily\.day\(\)\?null:\{text:"今日のポイント"/.test(app),'the daily badge must be passed as {text,color}');
 for(const s of ['BGM音量','効果音音量','振動'])expect(app.includes(s),`missing setting: ${s}`);
 for(const s of ['ニックネーム','勝率','レート'])expect(app.includes(s),`missing profile field: ${s}`);
 expect(app.includes('stateRef.current.nickname||"Player"'),'game HUD should use saved nickname');

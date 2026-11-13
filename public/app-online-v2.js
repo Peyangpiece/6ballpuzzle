@@ -61,6 +61,15 @@
                 (resolve,reject)=>{
                     let finished=false;
 
+                    // Only this handshake's own listener is removed.
+                    // F.off(ref) without a callback removes EVERY
+                    // listener at that path, including the one
+                    // Net.join() keeps for the whole match to notice
+                    // that the opponent disconnected: the player who
+                    // joined first then never saw the opponent leave
+                    // and the match hung.
+                    let unsubscribe=null;
+
                     const finish=(ok)=>{
                         if(finished)return;
 
@@ -69,9 +78,7 @@
                         clearTimeout(to);
 
                         try{
-                            F.off(
-                                foeConnRef
-                            );
+                            if(unsubscribe)unsubscribe();
                         }catch(_){}
 
                         if(ok){
@@ -91,7 +98,7 @@
                             20000
                         );
 
-                    F.onValue(
+                    unsubscribe=F.onValue(
                         foeConnRef,
                         snap=>{
                             if(
@@ -101,6 +108,12 @@
                             }
                         }
                     );
+
+                    // The value was already cached: the callback ran
+                    // inside onValue(), before unsubscribe was set.
+                    if(finished){
+                        try{unsubscribe();}catch(_){}
+                    }
                 }
             ).catch(err=>{
                 try{

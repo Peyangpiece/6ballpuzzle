@@ -20,20 +20,21 @@
   `/index.html` と `/deploy-sha.txt` は no-cache、`/assets/*` は 1 日です。
 - Pull Request ごとに Cloudflare がプレビュー URL を PR コメントに投稿します（本番と同じビルド手順）。
 - `tools/build.js` が `dist/sw.js`（Service Worker）を生成します。アプリ本体（`/`、ハッシュ付き JS/CSS/React、アイコン、
-  効果音と球の画像）を事前キャッシュし、ページ遷移はネットワーク優先・失敗時にキャッシュを返すため、デプロイは次回の起動で
-  反映されます。BGM と Range リクエスト、Firebase など他オリジンの通信には関与しません。キャッシュ名はバンドルの内容から決まり、
-  新しい版が有効になると古いキャッシュを削除します。`/sw.js` は `no-cache` で配信します。
+  効果音・球とアイコンの画像・ロゴ・フォント・Firebase SDK）を事前キャッシュします。ゲーム本体（`/`）への遷移だけを扱い、
+  ネットワーク優先・失敗時にキャッシュを返すため、デプロイは次回の起動で反映されます。プライバシーポリシーなど他のページは
+  Service Worker を通りません（以前は開いたページがキャッシュ上のゲーム本体を上書きしていました）。BGM と Range リクエスト、Firebase など他オリジンの通信には関与しません。キャッシュ名は事前キャッシュする全ファイルの内容から決まり
+  （ファイル名が同じまま画像や音を差し替えても新しい版になります）、新しい版が有効になると古いキャッシュを削除します。`/sw.js` は `no-cache` で配信します。
 - ロゴとアイコンを作り直すときは `python3 tools/make-brand.py`（`pip install fonttools cairosvg` と Inter フォントが必要）を実行し、`brand/`・`public/icons/`・`public/assets/drop-ball-logo.svg` をコミットします。
 
 手元から配信物を確認する:
 
 ```bash
-npm run build && npm run serve:dist   # http://127.0.0.1:8018
+npm run build && npm run serve:dist   # http://127.0.0.1:8020（開発用の npm run serve は 8018。Service Worker が混ざらないよう別ポート）
 ```
 
 ## Firebase Realtime Database ルール
 
-ルールは `firebase/database.rules.json` にあり、`tests/firebase-rules.js` が 65 件のシナリオで契約を検証します。
+ルールは `firebase/database.rules.json` にあり、`tests/firebase-rules.js` が 380 件あまりのシナリオで契約を検証します。
 
 ### 自動反映（推奨）: GitHub Actions `Deploy Firebase Database Rules`
 
@@ -79,15 +80,23 @@ npx firebase emulators:exec --config firebase/firebase.json --only database --pr
 
 | パス | 保証 |
 | --- | --- |
-| `users/$uid` | 本人のみ書込。初期レート 1000。レート変更は `lastMatch` が新しい終了済み試合（本人が参加、両者の `joinedAt` あり）を指すときだけ。`lastResult`（win / loss）は試合の `result` から導いた勝敗と一致しなければならず、新しいレートは **試合に記録された相手レートと現在の自分のレートから Elo（K=32）で計算した値と完全一致** が必要（ルール内に区間テーブルを埋め込み、`tools/elo-rules-table.js` で生成）。未ランク戦はレート不変。勝敗数は結果どおりに +1 |
+| `users/$uid` | 本人のみ書込。初期レート 1000。レート変更は `lastMatch` が新しい終了済み試合（本人が参加、両者の `joinedAt` あり）を指すときだけ。`lastResult`（win / loss）は試合の `result` から導いた勝敗と一致しなければならず、新しいレートは **試合に記録された相手レートと現在の自分のレートから Elo（K=32）で計算した値と完全一致** が必要（ルール内に区間テーブルを埋め込み、`tools/elo-rules-table.js` で生成）。未ランク戦はレート不変。勝敗数は結果どおりに +1。**1 試合の精算は 1 回だけ**: 同じ書込で `matches/<mid>/settled/<uid>` の印を付けること（すでに印のある試合は精算できない）。`lastMatch` は一度入ると消せない |
 | `leaderboard/$uid` | 本人のみ。レートは `users/$uid/rating` と一致 |
-| `matches/$id` | 参加者のみ読取。作成は参加者本人のみ、上書き不可。`players/$i/rating` は作成時点の `users/<uid>/rating` と一致必須。`players/$i/joinedAt` は本人が 1 回だけ書ける参加証明。`result/$i` は両者の `joinedAt` が揃ってから該当プレイヤーのみ。`state/$i` `players/$i/connected` は該当プレイヤーのみ。`attacks/$i` は相手だけが追加でき、n は 0〜120、shapes は既知の技名のみ |
-| `lobby` `pairings` `rooms` | なりすまし不可。ルームの参加は実在する試合（ホスト=players/0、参加者=players/1）に限る |
+| `matches/$id` | 参加者のみ読取。作成は参加者本人のみ、上書き不可。**作成の書込には `joinedAt`・`result`・`state`・`attacks`・`settled`・`connected: true` を含められない**（作成は試合全体を 1 回で書けるため、これが無いと 1 つのアカウントだけで「終了済みの試合」を作れた）。未知のフィールドは拒否。`settled/$uid` は本人が精算と同じ書込で 1 回だけ。`players/$i/rating` は作成時点の `users/<uid>/rating` と一致必須。`players/$i/joinedAt` は本人が 1 回だけ書ける参加証明。`result/$i` は両者の `joinedAt` が揃ってから該当プレイヤーのみ。`state/$i` `players/$i/connected` は該当プレイヤーのみ。`attacks/$i` は相手だけが追加でき、n は 0〜120、shapes は既知の技名のみ |
+| `lobby` `pairings` `rooms` | なりすまし不可。ロビーの枠は本人の実際のレート・24 文字以内の名前・既知のフィールドだけで、他人の枠は 15 秒より古いときだけ置き換えられる（削除は誰でも可: 相手を取るのに必要）。`pairings` は既にあるものを上書きできない。ルームはホストの実際のレート・未来の日付不可・既知のフィールドだけ。参加は実在する試合（ホスト=players/0、参加者=players/1）に限り、**ホストが待っている限り 30 分を過ぎても参加できる**（30 分はコードを別のホストが引き継げるまでの時間） |
 
-これにより Cloud Functions なしでも、レートは「両者が実際に参加した試合の結果から機械的に決まる値」以外に書けません。
-残る理論上の抜け道は、攻撃者が自分で 2 つのアカウントを用意して実際に対戦する多重アカウントだけで、これは
-サーバー裁定でも防げない種類のものです。両者が矛盾する結果（双方が勝利を主張）を書いた試合はどちらのレートも
-確定しません（不正な利得は不可能、嫌がらせとしての確定妨害は可能）。
+これにより Cloud Functions なしでも、レートは「両者が実際に参加した試合の結果から、1 試合につき 1 回、機械的に決まる値」
+以外に書けません。残る抜け道は次の 3 つです（[SECURITY.md](../SECURITY.md) にも記載）。
+
+- 攻撃者が自分で 2 つのアカウントを用意して実際に対戦する多重アカウント（サーバー裁定でも防げない）。
+- 勝敗は各クライアントの申告です。改造クライアントが試合中に自分の勝利を書いた場合、正規のクライアントは
+  （まだ生きていて接続も途切れていなければ）自分も勝利を書いて争い、勝者が 2 人の試合はどちらのレートも確定しません。
+  つまり勝利の捏造は利得にならず、嫌がらせとしての確定妨害だけが残ります。
+- 改造クライアントは自分の負けを精算しないままにできます（負けでレートが下がらない）。これはサーバー裁定で防げます。
+
+**反映の順番**: クライアント（Cloudflare）とルール（`Deploy Firebase Database Rules`）は別々に反映されます。新しいクライアントは
+古いルールでも動き（印の書込が拒否されたら従来の精算に戻る）、新しいルールの下では、反映前から開いたままのタブだけが
+再読み込みするまで精算できません（勝敗は記録されず、再読み込みで直ります）。
 
 ### レート裁定をサーバー権威にする（任意、Blaze プランが必要）
 
@@ -123,7 +132,8 @@ GitHub → Settings → Branches → `main`:
 
 ## 障害時
 
-- 直前のデプロイへ戻す: 対象コミットで `workflow_dispatch` を実行するか、`git revert` を `main` に push します。
+- 直前のデプロイへ戻す: Cloudflare ダッシュボードの Deployments から前の版へロールバックする（または `npx wrangler rollback`）か、
+  `git revert` を `main` に push します（GitHub Actions はデプロイしません）。
 - 本番が動いているかの確認: `curl https://dropball.hrk-6888.workers.dev/deploy-sha.txt` と
   `npm run test:browser`（`DIST_DIR` を使わず本番 URL を見るには `tests/quality-browser-review.js` を `REVIEW_URL` 付きで実行）。
 - `main` への push に Cloudflare がビルドを作らないことがあります（2026-10-13、#20 のマージ `a1db2d0` で発生。

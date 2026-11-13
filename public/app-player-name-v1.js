@@ -30,12 +30,24 @@ const WHOLE=["rape","cock","dick","sex","sexy","ass","fag","tits","cum","kys","�
 
 function normalize(raw){
     let s=String(raw==null?"":raw).normalize("NFKC").toLowerCase();
+    // Accented Latin letters count as their base letter, and marks that NFKC
+    // could not merge into a letter are dropped (a strike-through or any other
+    // combining mark between the letters of a refused word let it pass).
+    // Kana with dakuten are single letters after NFKC and are not touched.
+    s=s.replace(/[\u00c0-\u024f\u1e00-\u1eff]/g,c=>c.normalize("NFD")).replace(/\p{M}/gu,"");
     s=s.replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-0x60));
     s=s.replace(/[013457@$!|]/g,c=>LEET[c]);
     return s.replace(/[\s\p{P}\p{S}\p{Cc}\p{Cf}]/gu,"");
 }
+// At most one combining mark per letter (stacks of them draw over the lines
+// above and below), and cut by code point, so an emoji at the limit is kept
+// whole or dropped, never split into half a surrogate pair.
+function tidy(raw,max){
+    const s=String(raw==null?"":raw).replace(/[\p{Cc}\p{Cf}]/gu,"").replace(/(\p{M})\p{M}+/gu,"$1").replace(/\s+/g," ").trim();
+    return Array.from(s).slice(0,max).join("").trim();
+}
 function clean(raw){
-    return String(raw==null?"":raw).replace(/[\p{Cc}\p{Cf}]/gu,"").replace(/\s+/g," ").trim().slice(0,MAX);
+    return tidy(raw,MAX);
 }
 function isAllowed(name){
     const n=normalize(name);
@@ -50,7 +62,7 @@ function check(raw){
     return{ok:true,name,reason:""};
 }
 function display(raw){
-    const name=String(raw==null?"":raw).replace(/[\p{Cc}\p{Cf}]/gu,"").replace(/\s+/g," ").trim().slice(0,24);
+    const name=tidy(raw,24);
     return name&&isAllowed(name)?name:FALLBACK;
 }
 return{MAX,FALLBACK,normalize,clean,isAllowed,check,display};

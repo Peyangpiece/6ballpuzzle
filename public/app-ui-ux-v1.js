@@ -10,7 +10,10 @@
     const pressed=(g,i)=>!!(g.buttons[i]&&g.buttons[i].pressed);
     const just=(g,i)=>{const now=pressed(g,i),was=!!prev[i];prev[i]=now;return now&&!was;};
     const visible=(el)=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=="hidden";};
-    const scope=()=>{const d=[...document.querySelectorAll('[role="dialog"]')];return d.length?d[d.length-1]:document.getElementById("root")||document.body;};
+    // A dialog, or a panel shown over the match that wants menu control
+    // (data-hex-pad-menu: the tutorial panel after a lesson, the daily result).
+    const MENU_SCOPE='[role="dialog"],[data-hex-pad-menu]';
+    const scope=()=>{const d=[...document.querySelectorAll(MENU_SCOPE)];return d.length?d[d.length-1]:document.getElementById("root")||document.body;};
     const buttons=()=>[...scope().querySelectorAll("button:not([disabled])")].filter(visible);
     const focusStep=(dir)=>{const list=buttons();if(!list.length)return;const i=list.indexOf(document.activeElement);const n=i<0?(dir>0?0:list.length-1):(i+dir+list.length)%list.length;document.documentElement.classList.add("hex-pad-nav");try{list[n].focus({preventScroll:false});}catch(_){}};
     const tick=()=>{
@@ -18,7 +21,7 @@
         if(!g){running=false;return;}
         requestAnimationFrame(tick);
         const screen=window.__sixBallScreen;
-        const dialog=!!document.querySelector('[role="dialog"]');
+        const dialog=!!document.querySelector(MENU_SCOPE);
         if(just(g,9)&&screen==="GAME")window.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape"}));
         // During play the controller drives the piece; menus only take over
         // outside a match or while a dialog (pause / result) is shown.

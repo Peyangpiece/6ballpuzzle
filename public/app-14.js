@@ -202,33 +202,47 @@ const SPACE_BG = "radial-gradient(1000px 500px at 20% 15%, #3C1D7A55, transparen
 function ResultOverlay({win,onNext,onExit,delta=0,reason="",online=false,ranked=false,rating,trophyDelta=0,trophies,unlocked=[],meIcon="initial",foeIcon="initial",summary=null,progress=null,levelName="",meName="Player",foeName="CPU",nextLabel="もう一度"}){
     const [phase,setPhase]=useState(0);
     const nextRef=useRef(null);
-    useEffect(()=>{const t=setTimeout(()=>{try{nextRef.current&&nextRef.current.focus({preventScroll:true});}catch(_){}},560);
-        const key=(e)=>{if(e.key==="Escape"){e.preventDefault();onExit();}};window.addEventListener("keydown",key);return()=>{clearTimeout(t);window.removeEventListener("keydown",key);};},[onExit]);
+    // Short screens (a phone in landscape): the two cards shrink to the height
+    // left above the summary row, so the names never run into it.
+    // The area for the cards is what is left between the line at the top
+    // (reason, trophies: online only) and the summary row with its headline.
+    const vp=useHexViewport(),topLine=reason==="disconnect"||reason==="resign"||reason==="contested"||(online&&ranked);
+    const padTop=topLine&&vp.h<480?60:34,padBottom=Math.round(Math.max(126,Math.min(128,vp.h*.24)));
+    const cardH=162+Math.max(34,Math.min(54,vp.w*.052)),cardZoom=summary?Math.max(.6,Math.min(1,(vp.h-padTop-padBottom)/cardH)):1;
+    // The focus timer has its own effect: the App re-renders the result screen
+    // every 0.2 s with a new onExit, which cancelled the timer before it fired
+    // (Enter did nothing; a controller's A landed on 「メニューへ」).
+    useEffect(()=>{const t=setTimeout(()=>{try{nextRef.current&&nextRef.current.focus({preventScroll:true});}catch(_){}},560);return()=>clearTimeout(t);},[]);
+    const exitRef=useRef(onExit);exitRef.current=onExit;
+    useEffect(()=>{const key=(e)=>{if(e.key==="Escape"){e.preventDefault();exitRef.current();}};window.addEventListener("keydown",key);return()=>window.removeEventListener("keydown",key);},[]);
     useEffect(()=>{const a=requestAnimationFrame(()=>setPhase(1)),b=setTimeout(()=>setPhase(2),240),c=setTimeout(()=>setPhase(3),520);return()=>{cancelAnimationFrame(a);clearTimeout(b);clearTimeout(c);};},[]);
     // One card per player: the avatar from the match HUD (initial on the
     // player's colour), a gold ring and halo for the winner, then WIN / LOSE
     // and the name. No medals, crowns or starbursts.
     const GOLD="#FFD36A";
-    const card=(winner,me,name)=>React.createElement("div",{className:"relative flex-1 flex flex-col items-center justify-center",style:{maxWidth:"42vw",height:summary?"52vh":"68vh"}},
+    const card=(winner,me,name)=>React.createElement("div",{className:"relative flex-1 flex flex-col items-center justify-center",style:{maxWidth:"42vw",height:summary?"52vh":"68vh",zoom:cardZoom}},
         winner&&React.createElement("div",{"aria-hidden":"true",className:"absolute rounded-full",style:{width:280,height:280,opacity:phase>=3?1:0,transform:`scale(${phase>=3?1:.6})`,transition:"opacity .4s ease, transform .5s cubic-bezier(.18,.82,.22,1)",background:"radial-gradient(circle,rgba(255,211,106,.26),rgba(255,211,106,.07) 45%,transparent 70%)"}}),
         React.createElement("div",{className:"relative rounded-full",style:{opacity:phase>=1?1:0,transform:`scale(${phase>=1?1:.4})`,transition:"opacity .2s ease, transform .34s cubic-bezier(.15,.9,.2,1.18)",padding:4,background:winner?GOLD:"rgba(255,255,255,.16)",boxShadow:winner?"0 0 36px rgba(255,211,106,.45)":"none",filter:winner?"none":"saturate(.3)"}},
             React.createElement(HexAvatar,{name,size:72,color:me?NEON[0]:NEON[1],icon:me?meIcon:foeIcon})),
-        React.createElement("div",{className:"mt-5 font-black tracking-[.08em] text-white",style:{fontSize:"clamp(34px,5.2vw,54px)",lineHeight:1,opacity:phase>=2?(winner?1:.5):0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:winner?"0 0 24px rgba(255,211,106,.45)":"none"}},winner?"WIN":"LOSE"),
+        React.createElement("div",{className:"mt-5 font-black tracking-[.08em] text-white",style:{fontSize:"clamp(34px,5.2vw,54px)",lineHeight:1,opacity:phase>=2?(winner?1:.5):0,transform:`translateY(${phase>=2?0:10}px)`,transition:"opacity .25s ease, transform .3s ease",textShadow:winner?"0 0 24px rgba(255,211,106,.45)":"none"}},reason==="contested"?"無効":winner?"WIN":"LOSE"),
         React.createElement("div",{className:"mt-4 text-[12px] font-semibold tracking-[.14em] text-white/50",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},me?"あなた":"相手"),
         React.createElement("div",{className:"mt-0.5 text-[17px] font-bold text-white max-w-full truncate",style:{opacity:phase>=2?1:0,transition:"opacity .25s ease"}},name));
-    const reasonText=reason==="disconnect"?(win?"相手の切断で勝利":"切断で敗北"):reason==="resign"?(win?"相手が降参しました":"降参しました"):"";
+    // "contested": the opponent reported a win while this player was still
+    // playing; the match counts for nobody, so neither card shows a winner.
+    const noContest=reason==="contested";
+    const reasonText=noContest?"結果が食い違ったため、この試合は無効です":reason==="disconnect"?(win?"相手の切断で勝利":"切断で敗北"):reason==="resign"?(win?"相手が降参しました":"降参しました"):"";
     const btn={minHeight:48};
-    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",role:"dialog","aria-modal":"true","aria-label":win?"勝利":"敗北",style:{background:phase?"rgba(6,5,18,.74)":"rgba(6,5,18,0)",backdropFilter:`blur(${phase?8:0}px)`,WebkitBackdropFilter:`blur(${phase?8:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
-        React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]",style:summary?{flex:"1 1 0",minHeight:0,paddingTop:"max(34px, env(safe-area-inset-top))",paddingBottom:"clamp(92px,24vh,128px)"}:null},
-            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!!win,true,meName)),
-            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!win,false,foeName))),
+    return React.createElement("div",{className:"absolute inset-0 z-20 flex flex-col items-center justify-center",role:"dialog","aria-modal":"true","aria-label":noContest?"無効試合":win?"勝利":"敗北",style:{background:phase?"rgba(6,5,18,.74)":"rgba(6,5,18,0)",backdropFilter:`blur(${phase?8:0}px)`,WebkitBackdropFilter:`blur(${phase?8:0}px)`,transition:"background .3s ease, backdrop-filter .3s ease"}},
+        React.createElement("div",{className:"w-full px-[10vw] flex items-center justify-between gap-[8vw]",style:summary?{flex:"1 1 0",minHeight:0,paddingTop:`max(${padTop}px, env(safe-area-inset-top))`,paddingBottom:padBottom}:null},
+            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!!win&&reason!=="contested",true,meName)),
+            React.createElement("div",{className:"flex-1 flex flex-col items-center min-w-0"},card(!win&&reason!=="contested",false,foeName))),
         (reasonText||(online&&ranked))&&React.createElement("div",{className:"absolute left-1/2 -translate-x-1/2 text-center",style:{top:"max(14px, env(safe-area-inset-top))",opacity:phase>=2?1:0,transition:"opacity .25s ease"}},
             reasonText&&React.createElement("div",{className:"text-[14px] font-semibold text-white/85"},reasonText),
             // Trophies replace the rating on screen (HexTrophies); the Elo
             // rating still moves underneath for matchmaking.
             online&&ranked&&React.createElement("div",{"data-hex-trophy-delta":String(trophyDelta),className:"mt-1 inline-flex items-center gap-1.5 text-[15px] font-bold tabular-nums",style:{color:trophyDelta>0?"#7DFFB2":trophyDelta<0?"#FF9AB5":"rgba(255,255,255,.7)"}},React.createElement(HexIcon,{name:"trophy",size:16,color:"#FFD36A"}),`${trophyDelta>0?"+":""}${trophyDelta}`,Number.isFinite(trophies)?React.createElement("span",{className:"text-white/70 font-semibold"},`（${trophies}）`):null),
             online&&ranked&&unlocked.length>0&&React.createElement("div",{"data-hex-unlocked":"1",className:"mt-1 text-[13px] font-bold",style:{color:"#FFD36A"}},"解放：",unlocked.map(i=>i.name).join("・"))),
-        summary&&React.createElement(ResultSummary,{summary,progress,levelName,win,show:phase>=3}),
+        summary&&React.createElement(ResultSummary,{summary,progress,levelName,win,show:phase>=3,narrow:vp.w<720}),
         React.createElement("div",{className:"absolute flex gap-3 text-white font-bold",style:{right:"max(20px, env(safe-area-inset-right))",bottom:"max(16px, env(safe-area-inset-bottom))"}},
             React.createElement("button",{onClick:onExit,"data-hex-back":"1",className:"hex-btn hex-btn-secondary px-5 text-[14px]",style:btn},"メニューへ"),
             React.createElement("button",{ref:nextRef,onClick:onNext,className:"hex-btn hex-btn-primary px-6 text-[14px]",style:btn},nextLabel||"もう一度")
@@ -244,20 +258,21 @@ function resultHeadline(progress,levelName,win){
     if(win&&lv.streak>=2)return`「${levelName}」に${lv.streak}連勝中！`;
     return`「${levelName}」との通算 ${lv.w}勝 ${lv.l}敗`;
 }
-function ResultSummary({summary,progress,levelName,win,show}){
+// narrow: tighter chips, so the four labels are not cut off beside the buttons on a small phone.
+function ResultSummary({summary,progress,levelName,win,show,narrow=false}){
     const best=new Set((progress&&progress.newBests)||[]);
     const headline=resultHeadline(progress,levelName,win),gold=!!(progress&&(progress.firstWin||(win&&progress.level&&progress.level.streak>=2)));
     // Each technique as its first letter in its own colour (ス／ピ／ヘ); the full names are in the label for screen readers.
     const used=["STRAIGHT","PYRAMID","HEXAGON"].filter((k)=>summary.waza[k]>0);
     const parts=used.length?React.createElement("span",{"aria-label":used.map((k)=>`${WAZA[k].jp}${summary.waza[k]}回`).join("、")},used.map((k)=>React.createElement("span",{key:k,className:"mr-1.5",style:{color:WAZA[k].tint}},`${WAZA[k].jp[0]}×${summary.waza[k]}`))):null;
-    const chip=(key,label,value,sub)=>React.createElement("div",{key,className:"relative min-w-0 flex-1 rounded-xl px-3 py-2",style:{...HEX_MENU_SURFACE,border:`1px solid ${best.has(key)?"rgba(255,211,106,.7)":"rgba(255,255,255,.09)"}`,boxShadow:best.has(key)?"0 0 18px rgba(255,211,106,.22)":"none"}},
-        React.createElement("div",{className:"text-[11px] font-semibold tracking-[.06em] text-white/50 truncate"},label),
+    const chip=(key,label,value,sub)=>React.createElement("div",{key,className:"relative min-w-0 flex-1 rounded-xl py-2 "+(narrow?"px-2":"px-3"),style:{...HEX_MENU_SURFACE,border:`1px solid ${best.has(key)?"rgba(255,211,106,.7)":"rgba(255,255,255,.09)"}`,boxShadow:best.has(key)?"0 0 18px rgba(255,211,106,.22)":"none"}},
+        React.createElement("div",{className:"text-[11px] font-semibold text-white/50 truncate",style:{letterSpacing:narrow?0:".06em"}},label),
         React.createElement("div",{className:"text-[20px] leading-tight font-bold tabular-nums text-white"},value),
         sub&&React.createElement("div",{className:"text-[11px] font-semibold text-white/60 truncate"},sub),
         best.has(key)&&React.createElement("div",{className:"absolute -top-2 right-2 rounded-full px-1.5 text-[9px] font-bold tracking-[.08em] text-[#3a2a00]",style:{background:"#FFD36A",lineHeight:"16px"}},"BEST"));
     return React.createElement("div",{"data-hex-result-summary":"1",className:"absolute",style:{left:"max(20px, env(safe-area-inset-left))",right:"calc(max(20px, env(safe-area-inset-right)) + 236px)",bottom:"max(16px, env(safe-area-inset-bottom))",opacity:show?1:0,transform:`translateY(${show?0:8}px)`,transition:"opacity .3s ease, transform .3s ease"}},
         headline&&React.createElement("div",{role:"status",className:"mb-2 text-[13px] font-semibold truncate",style:{color:gold?"#FFD36A":"rgba(255,255,255,.75)"}},headline),
-        React.createElement("div",{className:"flex gap-2",style:{maxWidth:520}},
+        React.createElement("div",{className:"flex",style:{maxWidth:520,gap:narrow?6:8}},
             chip("waza","技",summary.wazaTotal,parts),
             chip("maxChain","最大連鎖",summary.maxChain),
             chip("cleared","消した球",summary.cleared),

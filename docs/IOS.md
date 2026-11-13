@@ -5,7 +5,7 @@
 
 | 機能 | 実装 | 審査ガイドライン |
 | --- | --- | --- |
-| Game Center（レートのランキング・実績） | `ios/App/App/DropBallNative.swift`（GameCenter プラグイン）＋ `public/app-native-v1.js` | 4.2 最低限の機能 |
+| Game Center（トロフィーのランキング・実績） | `ios/App/App/DropBallNative.swift`（GameCenter プラグイン）＋ `public/app-native-v1.js` | 4.2 最低限の機能 |
 | Apple でサインイン | `@capacitor-firebase/authentication`（ネイティブのシート）→ Web の Firebase Auth | 4.8 ログインサービス |
 | Google でログイン（ネイティブ） | 同上 | 4.8 |
 | 触覚フィードバック | `@capacitor/haptics`（既存の「振動」設定がそのまま使えます） | 4.2 |
@@ -19,7 +19,7 @@
 
 ## 1. 準備
 - Mac、正式版の Xcode 26 以降（2026 年 4 月 28 日から App Store Connect へのアップロードに必須。
-  ベータ版の Xcode でビルドしたものは審査に提出できません）、Node.js 20 以降（CI は 22）
+  ベータ版の Xcode でビルドしたものは審査に提出できません）、Node.js 22 以降（Capacitor CLI 8 の要件。CI も 22）
 - Apple Developer Program（年会費）
 - 実機で動かすには、iPhone をケーブルでつないで Xcode の実行先に選び、Signing & Capabilities の
   「Register Device」で開発者アカウントに登録し、iPhone の 設定 → プライバシーとセキュリティ →
@@ -94,12 +94,12 @@ npm run ios:open      # Xcode で開く
 3. 審査提出時のメモは `docs/APPSTORE.md` の「審査メモ」を使用。
 
 ## 6. 広告と「広告なしプラン」（バージョン 1.1）
-コードは入っています。リリース前に、次の値と設定をそろえます。それまでは Google のテスト広告（「Test Ad」と表示）が出ます。
-テスト広告のまま審査に出さないこと。
+コードと AdMob の ID は入っています（下の 1.）。Debug ビルドは Google のテスト広告（「Test Ad」と表示）、Release ビルドは本物の広告を出します。
+リリース前に、次の設定をそろえます。
 
 1. **AdMob**（https://admob.google.com）でアカウントを作り、「アプリを追加」→ iOS → App Store に公開済みのアプリとして Drop Ball を選ぶ。
-   - **アプリ ID**（`ca-app-pub-…~…`）→ `ios/App/App/Info.plist` の `GADApplicationIdentifier`（今は Google のテスト用 ID）。
-   - 「広告ユニット」→「インタースティシャル」を作り、**広告ユニット ID**（`ca-app-pub-…/…`）→ `public/app-native-v1.js` の `ADMOB_INTERSTITIAL`。
+   - **アプリ ID**（`ca-app-pub-…~…`）→ `ios/App/App/Info.plist` の `GADApplicationIdentifier`（設定済み）。
+   - 「広告ユニット」→「インタースティシャル」を作り、**広告ユニット ID**（`ca-app-pub-…/…`）→ `public/app-native-v1.js` の `ADMOB_INTERSTITIAL`（設定済み）。
 2. AdMob の「プライバシーとメッセージ」で、**GDPR（EU・英国）のメッセージ**を作成して公開する（作らないと EU では広告が出ません）。
    「IDFA の説明メッセージ」は任意（作ると ATT の前に説明画面が出ます）。
 3. **app-ads.txt**: `public/app-ads.txt` に置き済み（AdMob の「アプリ」→「app-ads.txt」の 1 行と同じ）。App Store のマーケティング URL を
